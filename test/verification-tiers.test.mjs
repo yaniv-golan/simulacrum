@@ -69,6 +69,19 @@ test('completion priority arguments preserve tier and normalized provenance', as
     /inside project/,
   );
   assert.throws(() => parseCompletionArgs('final', ['--priority-files']), /Usage/);
+  // No tier accepts a hand-supplied file list: a diagnosed retry's byte delta reaches selection
+  // through the attempt ledger only, so nothing typed on a command line can narrow coverage.
+  for (const tier of ['local', 'merge', 'final'])
+    assert.throws(
+      () =>
+        parseCompletionArgs(tier, [
+          ...(tier === 'merge' ? ['--base', 'HEAD'] : []),
+          '--changed-files',
+          'README.md',
+        ]),
+      /Usage/,
+      `${tier} refuses --changed-files`,
+    );
 });
 
 test('phase reporting publishes start and finish with elapsed time even on failure', async () => {

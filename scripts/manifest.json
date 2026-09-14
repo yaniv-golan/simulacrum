@@ -533,7 +533,8 @@
       "smoke": true,
       "timeoutMs": 150000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-guide-feedback",
@@ -621,7 +622,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-selection-browser",
@@ -965,7 +967,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-lifecycle",
@@ -976,7 +979,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-recovery",
@@ -987,7 +991,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-parts-catalog",
@@ -4832,6 +4837,14 @@
           {
             "path": "test/candidate-after.test.mjs",
             "anchor": "reexecution covers non-pass leaves, their registered controls and every always-fresh class"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "every environment variable read in the tree binds identity or is exempted with a reason"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "required browser checks widen a selection from the registry and never narrow it"
           }
         ],
         "negative": [
@@ -4857,7 +4870,11 @@
           },
           {
             "path": "test/verification-resume-controls.test.mjs",
-            "anchor": "aggregate and unaudited checks run on every attempt and never enter the ledger"
+            "anchor": "plain resume never reads aggregate, timing-sensitive or unaudited leaves, whatever the production save policy stored"
+          },
+          {
+            "path": "test/verification-tiers.test.mjs",
+            "anchor": "refuses --changed-files"
           }
         ]
       },

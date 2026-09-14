@@ -5,6 +5,7 @@ import { affectedBrowserChecks } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { mergeChanges, mergeSelection } from './merge-selection.mjs';
+import { withRequiredChecks } from './candidate-after.mjs';
 import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
 const started = performance.now();
 const report = {
@@ -22,9 +23,18 @@ const write = () => {
 write();
 try {
   const options = parseCompletionArgs('merge', process.argv.slice(2));
-  const changes = mergeChanges(options);
   const context = createVerificationContext();
-  Object.assign(report, context.identity, { integration: changes, priority: options });
+  // A diagnosed retry's byte delta arrives through the attempt ledger, never as an argument.
+  const scope = {
+    ...options,
+    ...(context.selection?.changedFiles ? { changedFiles: context.selection.changedFiles } : {}),
+  };
+  const changes = mergeChanges(scope);
+  Object.assign(report, context.identity, {
+    integration: changes,
+    priority: options,
+    retry: context.selection,
+  });
   let selection;
   const results = await runVerificationPhases(
     [
@@ -33,18 +43,33 @@ try {
         'selection',
         () =>
           context.check('selection:merge', { refs: changes.refs, files: changes.files }, () => {
-            if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
+            if (JSON.stringify(mergeChanges(scope)) !== JSON.stringify(changes))
               throw Error('Integration scope changed during verification');
+            const merged = mergeSelection({
+              checks: browserChecks(),
+              selection: affectedBrowserChecks(
+                changes.files.filter((path) => !changes.metadataOnlyFiles?.includes(path)),
+              ),
+              files: changes.files,
+              reviewOnlyFiles: changes.reviewOnlyFiles,
+              metadataOnlyFiles: changes.metadataOnlyFiles,
+            });
+            const widened = withRequiredChecks(
+              merged,
+              context.selection?.required ?? [],
+              browserChecks(),
+            );
             selection = {
-              ...mergeSelection({
-                checks: browserChecks(),
-                selection: affectedBrowserChecks(
-                  changes.files.filter((path) => !changes.metadataOnlyFiles?.includes(path)),
-                ),
-                files: changes.files,
-                reviewOnlyFiles: changes.reviewOnlyFiles,
-                metadataOnlyFiles: changes.metadataOnlyFiles,
-              }),
+              ...widened,
+              selected: [
+                ...merged.selected,
+                ...widened.checks
+                  .filter((check) => !merged.checks.some((c) => c.id === check.id))
+                  .map((check) => ({ ...check, reason: 'diagnosed retry: required re-execution' })),
+              ],
+              omitted: merged.omitted.filter(
+                (check) => !widened.checks.some((c) => c.id === check.id),
+              ),
               source: context.identity.source,
             };
             report.selection = selection;
@@ -65,7 +90,7 @@ try {
       [
         'scope-stability',
         () => {
-          if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
+          if (JSON.stringify(mergeChanges(scope)) !== JSON.stringify(changes))
             throw Error('Integration scope changed during verification');
           return { ok: true };
         },

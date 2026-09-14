@@ -102,15 +102,33 @@ export function createVerificationRun({
     },
   };
 }
+/** Shape of the retry selection a ledger configuration may carry; anything else is refused. */
+export function readRetrySelection(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) throw Error('invalid retry selection');
+  const list = (name) => {
+    const rows = value[name];
+    if (rows === undefined) return undefined;
+    if (!Array.isArray(rows) || rows.some((row) => typeof row !== 'string' || !row))
+      throw Error(`invalid retry selection ${name}`);
+    return [...new Set(rows)].sort();
+  };
+  return { changedFiles: list('changedFiles') ?? null, required: list('required') ?? [] };
+}
 export function initializeVerificationEnvironment() {
   assertRuntime();
   process.env.NODE_ENV ??= 'production';
 }
 export function createVerificationContext(options) {
   initializeVerificationEnvironment();
-  let ledgerOptions = {};
+  let ledgerOptions = {},
+    selection = null;
   if (process.env.SIMULACRUM_LEAF_LEDGER && !options?.readIdentity) {
     const config = JSON.parse(readFileSync(process.env.SIMULACRUM_LEAF_LEDGER, 'utf8'));
+    // A diagnosed retry hands its selection through this private, attempt-scoped file only:
+    // the byte delta the tier's policy classifies in place of the git diff, and the browser
+    // checks it must add to whatever it selects. No command-line flag carries either.
+    selection = readRetrySelection(config.selection);
     const manifest = JSON.parse(readFileSync('scripts/manifest.json', 'utf8'));
     const identity = verificationIdentity();
     const shared = { key: Buffer.from(config.key, 'hex'), identity };
@@ -168,6 +186,7 @@ export function createVerificationContext(options) {
     assertAdmission: () => remaining(Infinity),
   });
   return Object.assign(run, {
+    selection,
     async withDeadline(limit, execute) {
       const previous = deadline;
       deadline = Math.min(deadline, performance.now() + limit);

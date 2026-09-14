@@ -99,4 +99,32 @@ test('timing-sensitive browser checks are registered, exclusive, and cover every
   const parallel = structuredClone(manifest);
   parallel.browserChecks.find((c) => c.timingSensitive === true).execution = 'parallel';
   assert.throws(() => validateManifest(parallel), /exclusively|browser check/);
+  // Every performance-tier check is timing-sensitive by construction.
+  const perf = structuredClone(manifest);
+  const performance = perf.browserChecks.find((c) => c.tier === 'performance');
+  assert.ok(performance, 'a performance-tier check exists');
+  performance.timingSensitive = false;
+  assert.throws(() => validateManifest(perf), /performance-tier/);
+});
+
+test('checks that launch a system browser channel are registered so the channel version binds their receipts', () => {
+  const m = structuredClone(manifest);
+  // Source guard: a script launching channel 'chrome' must be registered (launch ⇒ declared),
+  // and a registered row must actually launch it (declared ⇒ launch).
+  for (const c of m.browserChecks) {
+    const launchesChrome = /channel:\s*['"]chrome['"]/.test(
+      readFileSync(new URL(`../${c.script}`, import.meta.url), 'utf8'),
+    );
+    assert.equal(
+      c.browserChannel === 'chrome',
+      launchesChrome,
+      `${c.id}: browserChannel registration must match the script's channel launch`,
+    );
+  }
+  assert.ok(
+    m.browserChecks.some((c) => c.browserChannel === 'chrome'),
+    'positive control',
+  );
+  m.browserChecks[0].browserChannel = 'firefox';
+  assert.throws(() => validateManifest(m), /browserChannel/);
 });

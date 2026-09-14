@@ -6,10 +6,14 @@ import {
   validateCauses,
   reexecutionSet,
   afterMode,
+  deltaSelection,
   afterSummary,
   validateAfterReport,
   CHAIN_DEPTH_LIMIT,
+  CANDIDATE_CAUSE,
   reusableLeaf,
+  requiredReexecution,
+  withRequiredChecks,
 } from '../scripts/candidate-after.mjs';
 
 const manifest = {
@@ -18,6 +22,7 @@ const manifest = {
     { id: 'spring-perf', script: 'scripts/spring.mjs', tier: 'performance', timingSensitive: true },
     { id: 'audio', script: 'scripts/audio.mjs', tier: 'browser', timingSensitive: true },
     { id: 'mirror', script: 'scripts/mirror.mjs', tier: 'browser' },
+    { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
   ],
   checks: [{ id: 'layers' }, { id: 'invariant-controls' }],
   invariants: [
@@ -66,6 +71,7 @@ function parent(overrides = {}) {
         receipt('browser:spring-perf', true),
         receipt('browser:audio', true),
         receipt('browser:mirror', true),
+        receipt('browser:smoke', true),
       ],
     },
     ...overrides,
@@ -99,6 +105,9 @@ test('after arguments are separated from tier arguments and refused alongside re
   assert.throws(() => parseAfterArgs(['local', '--after', 'x', '--cause', 'noequals']), /cause/);
   assert.throws(() => parseAfterArgs(['local', '--after', 'x', '--cause', 'ci=']), /cause/);
   assert.throws(() => parseAfterArgs(['local', '--cause', 'ci=text']), /--after/);
+  // Qualification evidence is always a fresh full run.
+  assert.throws(() => parseAfterArgs(['final', '--after', 'x', '--cause', 'ci=text']), /final/);
+  assert.doesNotThrow(() => parseAfterArgs(['final']));
 });
 
 test('parent leaves classify into passing, failed, unexecuted and aborted aggregates', () => {
@@ -122,10 +131,20 @@ test('parent leaves classify into passing, failed, unexecuted and aborted aggreg
       'browser:spring-perf',
       'browser:audio',
       'browser:mirror',
+      'browser:smoke',
     ],
   );
+  assert.equal(c.candidateFailure, null);
   assert.throws(() => classifyParentLeaves({ ...p, status: 'passed' }), /failed/);
-  assert.throws(() => classifyParentLeaves({ ...p, verification: undefined }), /incomplete/);
+  // Only a failed parent is retried; a chained passed-after-failure report has nothing to retry.
+  assert.throws(() => classifyParentLeaves({ ...p, status: 'passed after failure' }), /failed/);
+  // A parent that died before its tier completed carries no receipts to retry from.
+  assert.throws(() => classifyParentLeaves({ ...p, verification: undefined }), /fresh candidate/);
+  // A candidate-level failure around the tier is classified as its own cause target.
+  assert.equal(
+    classifyParentLeaves({ ...p, error: 'Candidate changed during verification' }).candidateFailure,
+    'Candidate changed during verification',
+  );
 });
 
 test('every failed or unexecuted leaf needs its own cause; an aborted aggregate covers absent leaves', () => {
@@ -168,15 +187,43 @@ test('every failed or unexecuted leaf needs its own cause; an aborted aggregate 
   );
   assert.deepEqual(coverage.browser, { aggregate: true, covers: [] });
   assert.deepEqual(coverage['browser:ball'], { aggregate: false, covers: ['browser:ball'] });
-  // A chained parent that already passed after failure needs no cause when nothing failed.
-  const chained = parent({
-    status: 'passed after failure',
-    after: { chain: ['00000000-0000-4000-8000-000000000000'] },
+  // A parent that failed around the tier with every leaf green needs the candidate cause, and
+  // a cause-less retry of such a parent is refused rather than admitted with nothing to say.
+  const drifted = parent({ error: 'Candidate changed during verification' });
+  drifted.verification.status = 'passed';
+  drifted.verification.results[2].status = 'passed';
+  drifted.verification.checks.find((x) => x.id === 'browser:ball').ok = true;
+  const dc = classifyParentLeaves(drifted);
+  assert.throws(() => validateCauses(dc, new Map()), /--cause candidate=/);
+  assert.deepEqual(validateCauses(dc, new Map([[CANDIDATE_CAUSE, 'a stray editor save']])), {
+    candidate: {
+      aggregate: false,
+      covers: [],
+      candidateFailure: 'Candidate changed during verification',
+    },
   });
-  chained.verification.status = 'passed';
-  chained.verification.results[2].status = 'passed';
-  chained.verification.checks.find((x) => x.id === 'browser:ball').ok = true;
-  assert.deepEqual(validateCauses(classifyParentLeaves(chained), new Map()), {});
+  // The candidate cause is refused when the parent reported no candidate failure, and a parent
+  // with nothing failed at all is not a retry target.
+  assert.throws(
+    () =>
+      validateCauses(
+        c,
+        new Map([
+          ['browser:ball', 'x'],
+          [CANDIDATE_CAUSE, 'y'],
+        ]),
+      ),
+    /candidate failure/,
+  );
+  const green = parent();
+  green.verification.checks.find((x) => x.id === 'browser:ball').ok = true;
+  assert.throws(() => validateCauses(classifyParentLeaves(green), new Map()), /nothing to retry/);
+  // Both kinds of failure in one parent need both kinds of cause.
+  const both = parent({ error: 'Installed dependencies changed during verification' });
+  assert.throws(
+    () => validateCauses(classifyParentLeaves(both), new Map([['browser:ball', 'x']])),
+    /--cause candidate=/,
+  );
   // Chain depth is refused before anything runs.
   const deep = parent({ after: { chain: Array(CHAIN_DEPTH_LIMIT).fill(parent().attempt) } });
   assert.throws(() => classifyParentLeaves(deep), /chain/);
@@ -219,9 +266,41 @@ test('reexecution covers non-pass leaves, their registered controls and every al
   );
   assert.equal(reusableLeaf('browser:ball', manifest), true);
   assert.equal(reusableLeaf('browser:audio', manifest), false);
+  // Registered merge smoke re-executes on every retry, same bytes or not.
+  assert.equal(reusableLeaf('browser:smoke', manifest), false);
+  assert.ok(r.has('browser:smoke'));
   assert.equal(reusableLeaf('unit:test/x.test.mjs', manifest), true);
   assert.equal(reusableLeaf('check:layers', manifest), false);
   assert.equal(reusableLeaf('ci:budget', manifest), false);
+  // The required set is the observed part: non-pass leaves and invariant-derived leaves, never
+  // the always-fresh classes that merely lack a receipt.
+  const required = requiredReexecution({ classification: c, manifest });
+  assert.deepEqual([...required].sort(), [
+    'browser:ball',
+    'unit:test/geometry-wrong.test.mjs',
+    'unit:test/geometry.test.mjs',
+  ]);
+  assert.ok(
+    requiredReexecution({ classification: classifyParentLeaves(q), manifest }).has(
+      'browser:mirror',
+    ),
+  );
+});
+
+test('required browser checks widen a selection from the registry and never narrow it', () => {
+  const checks = manifest.browserChecks;
+  const selection = { scope: 'documentation', checks: [checks[0]], reasons: [{ id: 'ball' }] };
+  assert.equal(withRequiredChecks(selection, [], checks), selection);
+  assert.equal(withRequiredChecks(selection, ['ball'], checks), selection);
+  const widened = withRequiredChecks(selection, ['mirror', 'ball'], checks);
+  assert.deepEqual(
+    widened.checks.map((c) => c.id),
+    ['ball', 'mirror'],
+  );
+  assert.deepEqual(widened.required, ['mirror']);
+  assert.equal(widened.scope, 'documentation');
+  assert.ok(widened.reasons.some((r) => r.id === 'mirror' && /required/.test(r.reason)));
+  assert.throws(() => withRequiredChecks(selection, ['ghost'], checks), /unregistered/);
 });
 
 test('mode is same-bytes only when source, installed dependencies and relevant identity all match', () => {
@@ -234,12 +313,18 @@ test('mode is same-bytes only when source, installed dependencies and relevant i
       afterMode({ sameSource: true, sameDependencies: true, sameIdentity: true, [flip]: false }),
       'delta',
     );
+  // The byte delta narrows selection only when nothing but source changed; a new runtime,
+  // environment or dependency set makes every parent browser pass stale.
+  assert.equal(deltaSelection({ sameDependencies: true, sameIdentity: true }), 'source-only');
+  assert.equal(deltaSelection({ sameDependencies: false, sameIdentity: true }), 'fresh-policy');
+  assert.equal(deltaSelection({ sameDependencies: true, sameIdentity: false }), 'fresh-policy');
 });
 
 test('the summary names reused origins, re-executed leaves and maps a passing tier to passed after failure', () => {
   const p = parent();
   const classification = classifyParentLeaves(p);
   const reexecute = reexecutionSet({ classification, manifest });
+  const required = requiredReexecution({ classification, manifest });
   const causes = new Map([
     ['browser:ball', 'late pause'],
     ['browser', 'suite aborted'],
@@ -264,6 +349,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
         resumed: true,
         origin: { attempt: p.attempt, report: p.attemptReport, depth: 1 },
       }),
+      receipt('browser:smoke', true),
     ],
   };
   const summary = afterSummary({
@@ -272,6 +358,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
     causes,
     coverage,
     reexecute,
+    required,
     child,
   });
   assert.equal(summary.status, 'passed after failure');
@@ -289,10 +376,17 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
   assert.ok(summary.after.reexecuted.includes('browser:ball'));
   assert.deepEqual(summary.after.alwaysFresh, [
     'browser:audio',
+    'browser:smoke',
     'browser:spring-perf',
     'build:browser',
     'check:layers',
   ]);
+  assert.deepEqual(summary.after.required, [
+    'browser:ball',
+    'unit:test/geometry-wrong.test.mjs',
+    'unit:test/geometry.test.mjs',
+  ]);
+  assert.equal(summary.after.deltaSelection, undefined);
   assert.deepEqual(summary.after.controls, [
     'unit:test/geometry-wrong.test.mjs',
     'unit:test/geometry.test.mjs',
@@ -309,6 +403,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
       causes,
       coverage,
       reexecute,
+      required,
       child: { ...child, status: 'failed' },
     }).status,
     'failed',
@@ -318,15 +413,71 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
     checks: child.checks.map((r) => ({ ...r, resumed: undefined, origin: undefined })),
   };
   assert.equal(
-    afterSummary({ parent: p, mode: 'same-bytes', causes, coverage, reexecute, child: fresh })
-      .status,
+    afterSummary({
+      parent: p,
+      mode: 'same-bytes',
+      causes,
+      coverage,
+      reexecute,
+      required,
+      child: fresh,
+    }).status,
     'passed',
   );
+  // A resumed receipt counts as reuse even when it cannot name its origin; the report then
+  // fails validation instead of passing plainly.
+  const orphan = {
+    ...child,
+    checks: child.checks.map((r) => (r.resumed ? { ...r, origin: undefined } : r)),
+  };
+  const orphanSummary = afterSummary({
+    parent: p,
+    mode: 'same-bytes',
+    causes,
+    coverage,
+    reexecute,
+    required,
+    child: orphan,
+  });
+  assert.equal(orphanSummary.status, 'passed after failure');
+  assert.deepEqual(
+    orphanSummary.after.reused.map((r) => r.origin),
+    [null, null],
+  );
+  assert.throws(
+    () =>
+      validateAfterReport({
+        status: orphanSummary.status,
+        after: orphanSummary.after,
+        verification: orphan,
+      }),
+    /origin attempt/,
+  );
+  // Delta mode records which selection the tier applied.
+  const deltaSummary = afterSummary({
+    parent: p,
+    mode: 'delta',
+    deltaSelection: 'fresh-policy',
+    causes,
+    coverage,
+    reexecute,
+    required,
+    child: fresh,
+  });
+  assert.equal(deltaSummary.after.deltaSelection, 'fresh-policy');
+  assert.deepEqual(deltaSummary.after.noReceipt, []);
   // Chains accumulate and are bounded.
   const grand = { ...p, after: { chain: ['00000000-0000-4000-8000-000000000000'] } };
   assert.deepEqual(
-    afterSummary({ parent: grand, mode: 'same-bytes', causes, coverage, reexecute, child }).after
-      .chain,
+    afterSummary({
+      parent: grand,
+      mode: 'same-bytes',
+      causes,
+      coverage,
+      reexecute,
+      required,
+      child,
+    }).after.chain,
     ['00000000-0000-4000-8000-000000000000', p.attempt],
   );
 });
@@ -335,6 +486,7 @@ test('an after report is admitted only when its block is consistent with the chi
   const p = parent();
   const classification = classifyParentLeaves(p);
   const reexecute = reexecutionSet({ classification, manifest });
+  const required = requiredReexecution({ classification, manifest });
   const causes = new Map([
     ['browser:ball', 'late pause'],
     ['browser', 'suite aborted'],
@@ -348,6 +500,8 @@ test('an after report is admitted only when its block is consistent with the chi
         resumed: true,
         origin: { attempt: p.attempt, report: 'r', depth: 1 },
       }),
+      receipt('unit:test/geometry.test.mjs', true),
+      receipt('unit:test/geometry-wrong.test.mjs', true),
     ],
   };
   const summary = afterSummary({
@@ -356,6 +510,7 @@ test('an after report is admitted only when its block is consistent with the chi
     causes,
     coverage,
     reexecute,
+    required,
     child,
   });
   const report = { status: summary.status, after: summary.after, verification: child };
@@ -376,10 +531,26 @@ test('an after report is admitted only when its block is consistent with the chi
   nothingReused.after.skippedByDelta = [];
   nothingReused.verification.checks[1].resumed = false;
   assert.doesNotThrow(() => validateAfterReport(nothingReused));
+  // ...but never while any child receipt is resumed, with or without an origin.
+  const hiddenReuse = structuredClone(nothingReused);
+  hiddenReuse.verification.checks[1].resumed = true;
+  hiddenReuse.verification.checks[1].origin = undefined;
+  assert.throws(() => validateAfterReport(hiddenReuse), /resumed receipt: browser:mirror/);
   // A failed leaf that never appears as an executed child receipt cannot pass after failure.
   const unobserved = structuredClone(report);
   unobserved.verification.checks = unobserved.verification.checks.filter(
     (r) => r.id !== 'browser:ball',
   );
   assert.throws(() => validateAfterReport(unobserved), /browser:ball/);
+  // An invariant-derived leaf is observed like a non-pass leaf: a delta retry whose narrowed
+  // selection never ran the control cannot pass after failure on the strength of the plan.
+  const unobservedControl = structuredClone(report);
+  unobservedControl.verification.checks = unobservedControl.verification.checks.filter(
+    (r) => r.id !== 'unit:test/geometry-wrong.test.mjs',
+  );
+  assert.throws(() => validateAfterReport(unobservedControl), /geometry-wrong/);
+  // Nothing re-executed may also be skipped by delta.
+  const overlap = structuredClone(report);
+  overlap.after.skippedByDelta = [{ id: 'browser:ball', parentAttempt: p.attempt }];
+  assert.throws(() => validateAfterReport(overlap), /both re-executed and skipped/);
 });

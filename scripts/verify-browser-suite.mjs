@@ -19,6 +19,7 @@ import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { selectChecks, validateBrowserCoverage, parseBrowserArgs } from './browser-registry.mjs';
 import { runProcess } from './run-check.mjs';
+import { systemBrowserVersion } from './verification-environment.mjs';
 import { checkBreadth } from './check-breadth.mjs';
 import {
   createVerificationContext,
@@ -361,6 +362,15 @@ async function executeBrowserSuite(
                 environment: check.environment ?? 'workshop',
                 workers,
                 execution: check.execution ?? 'exclusive',
+                // A system browser channel is not pinned by installed dependencies; its
+                // version is part of this check's configuration so a browser update refuses
+                // reuse of this receipt and nothing else.
+                ...(check.browserChannel
+                  ? {
+                      browserChannel: check.browserChannel,
+                      browserVersion: systemBrowserVersion(check.browserChannel),
+                    }
+                  : {}),
               },
               async () => {
                 const origin = {

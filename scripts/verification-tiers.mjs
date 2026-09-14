@@ -100,11 +100,6 @@ export function parseCompletionArgs(tier, args) {
     else if (arg === '--priority-files') {
       while (args[i + 1] && !args[i + 1].startsWith('-')) result.priorityFiles.push(args[++i]);
       if (!result.priorityFiles.length) throw usage();
-    } else if (arg === '--changed-files' && ['local', 'merge'].includes(tier)) {
-      // Supplied by a diagnosed retry: the delta between two captured candidates replaces the
-      // git diff for selection only; an empty list is explicit (no runtime file changed).
-      result.changedFiles = [];
-      while (args[i + 1] && !args[i + 1].startsWith('-')) result.changedFiles.push(args[++i]);
     } else throw usage();
   }
   if (
@@ -113,7 +108,5 @@ export function parseCompletionArgs(tier, args) {
   )
     throw usage();
   result.priorityFiles = [...new Set(normalizeSelectedFiles(result.priorityFiles))];
-  if (result.changedFiles)
-    result.changedFiles = [...new Set(normalizeSelectedFiles(result.changedFiles))].sort();
   return result;
 }

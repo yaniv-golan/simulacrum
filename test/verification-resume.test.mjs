@@ -166,8 +166,16 @@ test('receipts record their origin attempt, carry it through resumed saves and e
   }
 });
 
-test('an unrestricted save policy is a predicate: non-process, aggregate and timing-sensitive leaves are never saved', async () => {
+test('the production save policy is the reusable-leaf predicate: non-process, aggregate, timing-sensitive and smoke leaves are never saved', async () => {
   const { createVerificationRun } = await import('../scripts/verification-run.mjs');
+  const { reusableLeaf } = await import('../scripts/candidate-after.mjs');
+  const manifest = {
+    browserChecks: [
+      { id: 'perf', timingSensitive: true },
+      { id: 'mirror' },
+      { id: 'smoke', mergeSmoke: true },
+    ],
+  };
   const dir = mkdtempSync(join(tmpdir(), 'resume-policy-'));
   try {
     const identity = { source: 'fixed' },
@@ -177,13 +185,14 @@ test('an unrestricted save policy is a predicate: non-process, aggregate and tim
       key,
       identity,
       eligible: [],
-      saveEligible: (id) => id.startsWith('unit:') || id === 'browser:mirror',
+      saveEligible: (id) => reusableLeaf(id, manifest),
       origin: { attempt: 'a', report: '/a' },
     });
     const run = createVerificationRun({ readIdentity: () => identity, writeLedger: ledger });
     await run.check('ci:budget', {}, () => ({ elapsedMs: 1 }));
     await run.check('check:layers', {}, () => undefined);
     await run.check('browser:perf', {}, () => ({ code: 0 }));
+    await run.check('browser:smoke', {}, () => ({ code: 0 }));
     await run.check('browser:mirror', {}, () => ({ code: 0 }));
     await run.check('unit:test/a.test.mjs', {}, () => ({ code: 0 }));
     assert.ok(
@@ -195,6 +204,7 @@ test('an unrestricted save policy is a predicate: non-process, aggregate and tim
     assert.equal(reader('ci:budget'), null);
     assert.equal(reader('check:layers'), null);
     assert.equal(reader('browser:perf'), null);
+    assert.equal(reader('browser:smoke'), null);
     assert.equal(reader('browser:mirror')?.origin.attempt, 'a');
     assert.equal(reader('unit:test/a.test.mjs')?.origin.attempt, 'a');
   } finally {

@@ -639,32 +639,47 @@ full-CI duration. A candidate ownership lock refuses concurrent attempts and is 
 expired automatically: establish the prior process tree has stopped before recovery.
 
 A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
---after <attempt-report.json> --cause <checkId>=<diagnosed cause>`. Every failed or
-unexecuted leaf of the parent needs its own cause; one cause on the aggregate that listed
-unexecuted files (for example `ci:budget`) covers exactly those files, and a cause on an
-aborted phase (`ci`, `browser`) records that the leaves beneath it never ran. On identical
-source bytes, installed dependencies (which pin the browser runtime) and relevant identity
-(runtime, platform and the declared relevant environment — `NODE_ENV` defaulting to
-`production` as the tier does, `NODE_OPTIONS`, `FEEDBACK_SOURCE`, `PLAYWRIGHT_*` including
-`PLAYWRIGHT_BROWSERS_PATH`, `PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable is
-recorded forensically, not bound, which also lets a plain `resume` accept a different
-terminal) the retry
-reuses the parent directory and the parent's passing unit and browser leaves through the
-signed ledger, each naming its origin attempt and bounded to three chained attempts. Non-pass
-leaves, the registered controls of their invariants, the checks of invariants a failed control
-guards, checks registered `timingSensitive` in the manifest, structural gates, builds and
-aggregates always execute. When bytes, dependencies or identity differ, the retry captures a
-fresh candidate, loads no receipt, and passes the byte delta between the two candidates to the
-tier as `--changed-files`, which the tier's own selection policy classifies exactly as it would
-a git diff (risky paths and unknown inputs still select everything); leaves omitted that way are
-recorded as `skippedByDelta`, reasoning rather than evidence. A retry that reused a receipt
-or skipped a leaf by delta reports `passed after failure`, never plain `passed`; a retry that
-re-executed everything reports `passed` with the same `after` block. Either way every
-non-pass leaf of the parent must appear in the child as an executed passing receipt, or the
-retry fails. Tampered or oversized receipts fail closed. The `after` block carries the causes,
-reused origins with their attempt and chain depth (three attempts at most), the re-executed
-non-pass leaves, the controls they pulled in and the always-fresh leaves. This is the diagnosed
-retry the norm above requires, not a retry-to-green.
+--after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
+only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
+parent must be a `failed` report that completed its tier; an attempt that failed around the tier
+(window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
+no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
+its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
+`ci:budget`) covers exactly those files, and a cause on an aborted phase (`ci`, `browser`)
+records that the leaves beneath it never ran. The parent's bytes are read from its signed
+candidate descriptor, never from the report. On identical source bytes, installed dependencies
+and relevant identity (runtime, platform and the declared relevant environment — `NODE_ENV`
+defaulting to `production` as the tier does, `NODE_OPTIONS`, `POWER_BASELINE_SOURCE`,
+`FEEDBACK_*`, `LOAD_CELL_MATRIX_*`, `PLAYWRIGHT_*` including `PLAYWRIGHT_BROWSERS_PATH`,
+`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable read in the tree is listed with its
+reason in `ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound, which also lets a plain
+`resume` accept a different terminal) the retry reuses the parent directory and the parent's
+passing unit and browser leaves through the signed ledger, each naming its origin attempt and
+bounded to three chained attempts. Installed dependencies pin only the bundled Playwright
+browsers; checks registered `browserChannel: "chrome"` launch the system browser, whose version
+is bound into that check's configuration so a browser update refuses those receipts alone.
+Non-pass leaves, the registered controls of their invariants, the checks of invariants a failed
+control guards (together the `required` set), checks registered `timingSensitive` or
+`mergeSmoke` in the manifest, structural gates, builds and aggregates always execute; the
+required browser checks are added to whatever the tier selects, a widening the tier reads from
+the attempt's private ledger configuration. When bytes, dependencies or identity differ, the
+retry captures a fresh candidate and loads no receipt. If only source bytes differ
+(`deltaSelection: source-only`), the byte delta between the two candidates reaches the tier
+through the same ledger configuration — never as a command-line flag; `--changed-files` is
+refused everywhere — and the tier's own selection policy classifies it exactly as it would a git
+diff (risky paths and unknown inputs still select everything); leaves omitted that way are
+recorded as `skippedByDelta`, reasoning rather than evidence. If the runtime, platform, relevant
+environment or installed dependencies changed (`deltaSelection: fresh-policy`), every parent
+browser pass is stale and the tier runs its ordinary selection with nothing skipped. A retry
+that reused a receipt or skipped a leaf by delta reports `passed after failure`, never plain
+`passed`; a retry that re-executed everything reports `passed` with the same `after` block, and
+a resumed receipt without an origin attempt fails the report. Either way every required leaf
+must appear in the child as an executed passing receipt, and nothing re-executed may also be
+skipped, or the retry fails. Tampered or oversized receipts fail closed. The `after` block
+carries the causes, the chain (recorded before capture, three attempts at most), reused
+origins with their attempt and depth, the required and re-executed leaves, the controls they
+pulled in and the always-fresh leaves. This is the diagnosed retry the norm above requires,
+not a retry-to-green.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested

@@ -83,10 +83,12 @@ test('identity binds the declared relevant environment only; the whole environme
     assert.equal(first.environmentDigest, second.environmentDigest);
     assert.notEqual(environmentForensics().environmentDigest, forensicFirst.environmentDigest);
     assert.equal(JSON.stringify(second).includes('second-private-value'), false);
-    assert.ok(RELEVANT_ENVIRONMENT.names.includes('FEEDBACK_SOURCE'));
     assert.ok(RELEVANT_ENVIRONMENT.names.includes('NODE_OPTIONS'));
-    assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes('PLAYWRIGHT_'));
-    assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes('PLAYTEST_'));
+    // Every variable a reusable leaf reads binds identity: the feedback fixtures' client and
+    // remote sources, the power baseline stub and the load-cell matrix knobs included.
+    assert.ok(RELEVANT_ENVIRONMENT.names.includes('POWER_BASELINE_SOURCE'));
+    for (const prefix of ['FEEDBACK_', 'LOAD_CELL_MATRIX_', 'PLAYWRIGHT_', 'PLAYTEST_'])
+      assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes(prefix), prefix);
     // The tier defaults NODE_ENV to production; an unset NODE_ENV must digest the same way.
     const { relevantEnvironmentDigest } = await import('../scripts/verification-environment.mjs');
     assert.equal(
@@ -98,9 +100,59 @@ test('identity binds the declared relevant environment only; the whole environme
     delete process.env.FEEDBACK_SOURCE;
     process.env.PLAYWRIGHT_TEST_FLAG = '1';
     assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
+    delete process.env.PLAYWRIGHT_TEST_FLAG;
+    // Counterexample from review: a unit leaf passing against a stubbed power baseline must not
+    // be reusable by an attempt that runs without the stub.
+    assert.notEqual(
+      relevantEnvironmentDigest({ POWER_BASELINE_SOURCE: '/tmp/stub.mjs' }),
+      relevantEnvironmentDigest({}),
+    );
+    assert.notEqual(
+      relevantEnvironmentDigest({ FEEDBACK_CLIENT_SOURCE: 'x' }),
+      relevantEnvironmentDigest({}),
+    );
   } finally {
     restore();
   }
+});
+
+test('every environment variable read in the tree binds identity or is exempted with a reason', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { isRelevantEnvironmentName, ENVIRONMENT_EXEMPTIONS } = await import(
+    '../scripts/verification-environment.mjs'
+  );
+  const root = new URL('../', import.meta.url).pathname;
+  const names = new Set();
+  const visit = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) visit(path);
+      else if (/\.(mjs|js|mts|ts)$/.test(name))
+        for (const m of readFileSync(path, 'utf8').matchAll(
+          /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[['"]([A-Za-z_][A-Za-z0-9_]*)['"]\])/g,
+        ))
+          names.add(m[1] ?? m[2]);
+    }
+  };
+  for (const dir of ['scripts', 'src', 'test']) visit(join(root, dir));
+  assert.ok(names.has('NODE_ENV') && names.has('POWER_BASELINE_SOURCE'), 'scan found reads');
+  const exempt = new Set(Object.values(ENVIRONMENT_EXEMPTIONS).flat());
+  const unaccounted = [...names].filter((n) => !isRelevantEnvironmentName(n) && !exempt.has(n));
+  assert.deepEqual(unaccounted, [], 'reads that neither bind identity nor carry an exemption');
+  const both = [...exempt].filter((n) => isRelevantEnvironmentName(n));
+  assert.deepEqual(both, [], 'an exempted name cannot also be relevant');
+  for (const reason of Object.keys(ENVIRONMENT_EXEMPTIONS)) assert.ok(reason.length > 20, reason);
+});
+
+test('a system browser channel is bound per check through its version, never assumed equal', async () => {
+  const { systemBrowserVersion } = await import('../scripts/verification-environment.mjs');
+  assert.throws(() => systemBrowserVersion('firefox'), /unknown browser channel/);
+  const here = systemBrowserVersion('chrome');
+  assert.equal(typeof here, 'string');
+  assert.ok(here === 'unavailable' || /chrome/i.test(here), here);
+  // A platform without a known system Chrome location reports it rather than a blank value.
+  assert.equal(systemBrowserVersion('chrome', 'sunos'), 'unavailable');
 });
 test('Vite receives an initialized environment before final verification identity is sealed', async () => {
   const { resolveConfig } = await import('vite');

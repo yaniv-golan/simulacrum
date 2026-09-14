@@ -1,8 +1,11 @@
 /** Diagnosed retry of a failed candidate attempt. Pure decisions; the candidate command wires them.
- * A retry never narrows below the tier's own policy: non-pass leaves, the registered controls of
- * their invariants and every always-fresh class execute; only unit and non-always-fresh browser
- * leaves that passed on identical bytes and relevant identity are reused, each naming its origin. */
+ * A retry applies the tier's own policy to what changed: non-pass leaves, the registered controls
+ * of their invariants and every always-fresh class execute; only unit and non-always-fresh browser
+ * leaves that passed on identical bytes and relevant identity are reused, each naming its origin.
+ * When bytes differ, the tier's selection sees the byte delta only if identity and dependencies
+ * still match; otherwise it runs its fresh policy. */
 export const CHAIN_DEPTH_LIMIT = 3;
+export const CANDIDATE_CAUSE = 'candidate';
 const usage =
   'Usage: verify:candidate -- <tier> [tier options] --after <attemptReport.json> --cause <checkId>=<diagnosed cause> [--cause ...]';
 const attemptId = (v) => /^[\da-f-]{36}$/.test(v ?? '');
@@ -31,15 +34,16 @@ export function parseAfterArgs(argv) {
   if (after === null && causes.size) throw Error(`${usage}\n--cause needs --after`);
   if (after !== null && rest[0] === 'resume')
     throw Error('--after cannot be combined with resume; retry from the failed attempt report');
+  if (after !== null && rest[0] === 'final')
+    throw Error('--after is refused for final; qualification evidence is always a fresh full run');
   return { rest, after, causes: after === null ? null : causes };
 }
 
-/** Passing, failed and unexecuted leaves of a completed failed attempt, plus aborted aggregates. */
+/** Passing, failed and unexecuted leaves of a completed failed attempt, plus aborted aggregates
+ * and whether the candidate itself failed around the tier (drift, dependencies, window). */
 export function classifyParentLeaves(parent) {
-  if (!['failed', 'passed after failure'].includes(parent?.status))
-    throw Error(
-      '--after needs a completed failed attempt report (or a chained passed-after-failure one)',
-    );
+  if (parent?.status !== 'failed')
+    throw Error('--after needs a failed attempt report; a passed attempt has nothing to retry');
   if ((parent.after?.chain?.length ?? 0) >= CHAIN_DEPTH_LIMIT)
     throw Error(`retry chain exceeds ${CHAIN_DEPTH_LIMIT} attempts; run a fresh candidate`);
   const verification = parent.verification;
@@ -49,7 +53,9 @@ export function classifyParentLeaves(parent) {
     !attemptId(parent.attempt) ||
     typeof parent.directory !== 'string'
   )
-    throw Error('parent attempt report is incomplete');
+    throw Error(
+      'parent attempt report has no tier receipts to retry from (it failed before the tier completed); run a fresh candidate',
+    );
   const passing = verification.checks.filter((r) => r.ok === true);
   const failed = verification.checks.filter((r) => r.ok === false).map((r) => r.id);
   // Files a budget-bound aggregate never admitted, keyed by the leaf that listed them.
@@ -62,19 +68,41 @@ export function classifyParentLeaves(parent) {
     .filter((row) => row.status === 'failed')
     .map((row) => row.id)
     .sort();
-  return { passing, failed, unexecuted, unexecutedBy, abortedAggregates };
+  // A candidate-level failure (drift, dependency change, window) leaves no failed leaf behind;
+  // it is a cause of its own, named `candidate`.
+  const candidateFailure =
+    typeof parent.error === 'string' && parent.error.trim() ? parent.error.trim() : null;
+  return { passing, failed, unexecuted, unexecutedBy, abortedAggregates, candidateFailure };
 }
 
 /** Every failed or unexecuted leaf needs its own cause; a failed aggregate may carry one for the
- * leaves that never ran beneath it. Unknown targets are refused. */
+ * leaves that never ran beneath it (optional: each such leaf may carry its own instead). A
+ * candidate-level failure needs `--cause candidate=<reason>`. Unknown targets are refused. */
 export function validateCauses(
-  { failed, unexecuted, unexecutedBy = {}, abortedAggregates },
+  { failed, unexecuted, unexecutedBy = {}, abortedAggregates, candidateFailure = null },
   causes,
 ) {
   if (!(causes instanceof Map)) throw Error('--after needs --cause entries');
+  const coverage = {};
+  if (candidateFailure) {
+    if (!causes.has(CANDIDATE_CAUSE))
+      throw Error(
+        `--cause ${CANDIDATE_CAUSE}=<reason> required: the parent attempt failed around the tier (${candidateFailure})`,
+      );
+    coverage[CANDIDATE_CAUSE] = { aggregate: false, covers: [], candidateFailure };
+  } else if (causes.has(CANDIDATE_CAUSE))
+    throw Error(`--cause ${CANDIDATE_CAUSE} names a candidate failure the parent did not report`);
   if (!failed.length && !unexecuted.length) {
-    if (causes.size) throw Error('--cause names leaves but nothing failed in the parent attempt');
-    return {};
+    const extra = [...causes.keys()].filter((id) => id !== CANDIDATE_CAUSE);
+    if (extra.length)
+      throw Error(
+        `--cause names leaves but nothing failed in the parent attempt: ${extra.join(', ')}`,
+      );
+    if (!candidateFailure)
+      throw Error(
+        'the parent attempt reports no failed leaf and no candidate failure; nothing to retry',
+      );
+    return coverage;
   }
   // An unexecuted file is covered by its own cause or by a cause on the leaf that listed it.
   const coveredByAggregate = new Set(
@@ -85,8 +113,8 @@ export function validateCauses(
     ...unexecuted.filter((id) => !causes.has(id) && !coveredByAggregate.has(id)),
   ];
   if (missing.length) throw Error(`--cause required for each non-pass leaf: ${missing.join(', ')}`);
-  const coverage = {};
   for (const [id, text] of causes) {
+    if (id === CANDIDATE_CAUSE) continue;
     if (!text.trim()) throw Error(`--cause ${id} needs a diagnosed cause`);
     if (failed.includes(id))
       coverage[id] = unexecutedBy[id]
@@ -102,20 +130,20 @@ export function validateCauses(
 
 const browserId = (id) => (id.startsWith('browser:') ? id.slice('browser:'.length) : null);
 const unitFile = (id) => (id.startsWith('unit:') ? id.slice('unit:'.length) : null);
-/** Only unit leaves and browser checks not registered timing-sensitive may carry a receipt
- * forward. Always-fresh is derived: the registered timingSensitive fact plus the structural
- * classes (gates, builds, aggregates, hosted and human bars). */
+/** Only unit leaves and browser checks registered neither timing-sensitive nor as merge smoke
+ * may carry a receipt forward. Always-fresh is derived: the registered timingSensitive and
+ * mergeSmoke facts plus the structural classes (gates, builds, aggregates, hosted and human bars). */
 export function reusableLeaf(id, manifest) {
   if (unitFile(id)) return true;
   const check = browserId(id);
   if (!check) return false;
   const row = manifest.browserChecks.find((c) => c.id === check);
-  return !!row && row.timingSensitive !== true;
+  return !!row && row.timingSensitive !== true && row.mergeSmoke !== true;
 }
 
-/** Non-pass leaves, the registered controls of their invariants, the checks of invariants a
- * failed control guards, and every structural or timing-sensitive (always-fresh) leaf. */
-export function reexecutionSet({ classification, manifest }) {
+/** Leaves a retry must observe executing and passing: non-pass leaves, the registered controls
+ * of their invariants and the checks of invariants a failed control guards. */
+export function requiredReexecution({ classification, manifest }) {
   const set = new Set([...classification.failed, ...classification.unexecuted]);
   const invariants = manifest.invariants ?? [];
   const controlsOf = (invariant) =>
@@ -139,12 +167,47 @@ export function reexecutionSet({ classification, manifest }) {
         for (const checkId of invariant.checks ?? []) set.add(leafOfCheck(checkId));
     }
   }
+  return set;
+}
+
+/** The required set plus every passing leaf that never carries a receipt (always fresh). */
+export function reexecutionSet({ classification, manifest }) {
+  const set = requiredReexecution({ classification, manifest });
   for (const r of classification.passing) if (!reusableLeaf(r.id, manifest)) set.add(r.id);
   return set;
 }
 
 export function afterMode({ sameSource, sameDependencies, sameIdentity }) {
   return sameSource && sameDependencies && sameIdentity ? 'same-bytes' : 'delta';
+}
+/** In delta mode the tier's selection sees the byte delta only when identity and installed
+ * dependencies are unchanged; a new runtime, platform, dependency set or relevant environment
+ * invalidates every parent browser pass, so the tier runs its ordinary fresh policy. */
+export function deltaSelection({ sameDependencies, sameIdentity }) {
+  return sameDependencies && sameIdentity ? 'source-only' : 'fresh-policy';
+}
+
+/** Browser check ids the tier must add to its own selection: required re-execution is a widening
+ * of the tier's policy, never a narrowing. Rows are the registered checks. */
+export function withRequiredChecks(selection, required, checks) {
+  const ids = new Set((selection.checks ?? []).map((c) => c.id));
+  const added = [];
+  for (const id of [...new Set(required)].sort()) {
+    if (ids.has(id)) continue;
+    const row = checks.find((c) => c.id === id);
+    if (!row) throw Error(`required re-execution names an unregistered browser check: ${id}`);
+    added.push(row);
+  }
+  if (!added.length) return selection;
+  return {
+    ...selection,
+    checks: [...(selection.checks ?? []), ...added],
+    reasons: [
+      ...(selection.reasons ?? []),
+      ...added.map((row) => ({ id: row.id, reason: 'diagnosed retry: required re-execution' })),
+    ],
+    required: added.map((row) => row.id),
+  };
 }
 
 /** The after block and the candidate status. Reuse is evidence only with an origin receipt. */
@@ -154,16 +217,20 @@ export function afterSummary({
   causes,
   coverage,
   reexecute,
+  required,
   child,
   skippedByDelta = [],
+  deltaSelection: deltaKind = null,
 }) {
   const chain = [...(parent.after?.chain ?? []), parent.attempt];
   if (chain.length > CHAIN_DEPTH_LIMIT)
     throw Error(`retry chain exceeds ${CHAIN_DEPTH_LIMIT} attempts; run a fresh candidate`);
   const receipts = child.checks ?? [];
+  // Every resumed receipt counts as reuse, with or without an origin; validation refuses the
+  // ones that cannot name theirs.
   const reused = receipts
-    .filter((r) => r.resumed && r.origin)
-    .map((r) => ({ id: r.id, origin: r.origin }))
+    .filter((r) => r.resumed)
+    .map((r) => ({ id: r.id, origin: r.origin ?? null }))
     .sort((a, b) => a.id.localeCompare(b.id));
   const classification = classifyParentLeaves(parent);
   const parentPassing = new Set(classification.passing.map((r) => r.id));
@@ -172,20 +239,25 @@ export function afterSummary({
   // Split what re-executed and why: the parent's failures, the controls they pulled in, and
   // the timing-sensitive or structural classes that never carry a receipt.
   const alwaysFresh = [...reexecute]
-    .filter((id) => parentPassing.has(id) && !id.startsWith('unit:'))
+    .filter((id) => parentPassing.has(id) && !required.has(id))
     .sort();
-  const controls = [...reexecute].filter((id) => id.startsWith('unit:') && !nonPass.has(id)).sort();
+  const controls = [...required].filter((id) => id.startsWith('unit:') && !nonPass.has(id)).sort();
   const noReceipt =
     mode === 'same-bytes'
       ? [...parentPassing].filter((id) => !reexecute.has(id) && executed.has(id)).sort()
       : [];
+  // Re-executed is what the child observed running, never the plan; planned always-fresh
+  // leaves the tier's own policy did not select are named separately.
   const after = {
     parentAttempt: parent.attempt,
     parentReport: parent.attemptReport ?? null,
     mode,
+    ...(mode === 'delta' ? { deltaSelection: deltaKind } : {}),
     causes: Object.fromEntries(causes),
     coverage,
-    reexecuted: [...reexecute].sort(),
+    reexecuted: [...reexecute].filter((id) => executed.has(id)).sort(),
+    notSelected: [...reexecute].filter((id) => !executed.has(id) && !required.has(id)).sort(),
+    required: [...required].sort(),
     nonPass: [...nonPass].sort(),
     controls,
     alwaysFresh,
@@ -208,15 +280,15 @@ export function validateAfterReport(report) {
   const after = report.after,
     receipts = new Map((report.verification?.checks ?? []).map((r) => [r.id, r]));
   if (report.status !== 'passed after failure') {
-    if (
-      after &&
-      report.status === 'passed' &&
-      (after.reused?.length || after.skippedByDelta?.length)
-    )
-      throw Error(
-        'status must be passed after failure when receipts were reused or leaves skipped',
-      );
-    if (after && report.status === 'passed') observeReexecution(after, receipts);
+    if (after && report.status === 'passed') {
+      if (after.reused?.length || after.skippedByDelta?.length)
+        throw Error(
+          'status must be passed after failure when receipts were reused or leaves skipped',
+        );
+      for (const [id, r] of receipts)
+        if (r.resumed) throw Error(`retry reports passed with a resumed receipt: ${id}`);
+      observeReexecution(after, receipts);
+    }
     return report;
   }
   if (!after || !attemptId(after.parentAttempt) || !Array.isArray(after.reused))
@@ -230,17 +302,22 @@ export function validateAfterReport(report) {
       throw Error(`resumed leaf ${id} is missing from the after block`);
   return report;
 }
-/** Re-execution is an observation: every non-pass leaf of the parent and every leaf a cause
- * covers must appear in the child as an executed, passing receipt, never merely as a plan. */
+/** Re-execution is an observation: every non-pass leaf of the parent, every leaf a cause covers
+ * and every invariant-derived leaf must appear in the child as an executed, passing receipt,
+ * never merely as a plan; nothing re-executed may also be listed as skipped by delta. */
 function observeReexecution(after, receipts) {
   for (const id of after.reexecuted ?? []) {
     const r = receipts.get(id);
     if (r && r.resumed) throw Error(`re-executed leaf ${id} was resumed instead of executed`);
   }
+  const skipped = new Set((after.skippedByDelta ?? []).map((row) => row.id));
+  for (const id of after.reexecuted ?? [])
+    if (skipped.has(id)) throw Error(`leaf ${id} is both re-executed and skipped by delta`);
   for (const id of Object.keys(after.causes ?? {}))
     if (!after.coverage?.[id]) throw Error(`cause ${id} has no recorded coverage`);
   const mustRun = new Set([
     ...(after.nonPass ?? []),
+    ...(after.required ?? []),
     ...Object.values(after.coverage ?? {}).flatMap((entry) => entry.covers ?? []),
   ]);
   for (const id of mustRun) {

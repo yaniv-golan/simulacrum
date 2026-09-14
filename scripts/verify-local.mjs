@@ -6,6 +6,8 @@ import {
 } from './verification-run.mjs';
 import { runCI } from './ci.mjs';
 import { affectedBrowserChecks } from './browser-selection.mjs';
+import { browserChecks } from './browser-registry.mjs';
+import { withRequiredChecks } from './candidate-after.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
 const started = performance.now();
@@ -40,8 +42,8 @@ try {
       [
         'selection',
         () =>
-          context.check('selection:browser', { base, changedFiles: options.changedFiles }, () => {
-            const files = options.changedFiles ?? [
+          context.check('selection:browser', { base, retry: context.selection }, () => {
+            const files = context.selection?.changedFiles ?? [
               ...new Set(
                 [
                   ...execFileSync('git', ['diff', '--name-only', '-z', base, '--'], {
@@ -53,7 +55,11 @@ try {
                 ].filter(Boolean),
               ),
             ];
-            selection = affectedBrowserChecks(files);
+            selection = withRequiredChecks(
+              affectedBrowserChecks(files),
+              context.selection?.required ?? [],
+              browserChecks(),
+            );
             console.log(
               `Browser selection: ${selection.checks.length} checks; ${selection.fallback ?? 'see recorded dependency reasons'}`,
             );

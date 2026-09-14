@@ -1,5 +1,7 @@
 // One candidate attempt per process: `first` fails browser:x; `after` retries with --after/--cause;
 // arguments: <mode> <origin root or "new"> [attemptReport] [flags...]
+// flags: x=fail|pass, omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the
+// candidate itself fails), cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
 // Stubs keep capture, preflight and processes local; the tier is emulated with a real
 // verification context and leaf ledger so receipts, reuse and origins are the production ones.
 import { registerHooks } from 'node:module';
@@ -23,8 +25,11 @@ const root = rootArg === 'new' ? mkdtempSync('/tmp/candidate-after-') : rootArg;
 const flag = (name) => flags.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1);
 const calls = [],
   unitRuns = [];
+let tierRan = false;
 const manifest = {
+  // y runs before x so the first attempt leaves one reusable browser pass behind its failure.
   browserChecks: [
+    { id: 'y', script: 'scripts/y.mjs', tier: 'browser' },
     { id: 'x', script: 'scripts/x.mjs', tier: 'browser' },
     { id: 'perf', script: 'scripts/perf.mjs', tier: 'browser', timingSensitive: true },
   ],
@@ -61,6 +66,7 @@ if (mode === 'first') {
   mkdirSync(join(root, 'scripts'), { recursive: true });
   writeFileSync(join(root, 'scripts/manifest.json'), JSON.stringify(manifest));
   writeFileSync(join(root, 'src.mjs'), 'export const v = 1;');
+  writeFileSync(join(root, 'scripts/y.mjs'), 'export const y = 1;');
 }
 if (flag('touch')) writeFileSync(join(root, flag('touch')), `changed ${Date.now()}`);
 globalThis.candidateTransport = {
@@ -81,6 +87,9 @@ globalThis.candidateTransport = {
   },
   async matches(path, candidate) {
     calls.push({ kind: 'identity', path });
+    // drift=yes: the candidate's own bytes change once the tier has run (an editor save into
+    // the frozen clone), so the attempt fails around a green tier.
+    if (flag('drift') === 'yes' && tierRan && path !== root) return false;
     return JSON.stringify(filesOf(path)) === JSON.stringify(candidate.files);
   },
   drift() {
@@ -95,6 +104,7 @@ globalThis.candidateTransport = {
       return { code: 0, output: `ran ${args[1]}` };
     }
     const tier = args[1].match(/verify-(\w+)\.mjs/)[1];
+    tierRan = true;
     const previous = process.cwd(),
       env = { ...process.env };
     process.chdir(options.cwd);
@@ -107,6 +117,13 @@ globalThis.candidateTransport = {
       );
       initializeVerificationEnvironment();
       const context = createVerificationContext();
+      // The retry selection reaches the tier through the ledger only: a byte delta narrows the
+      // browser checks to the scripts it names plus the required ids; no argument carries it.
+      const retrySelection = context.selection;
+      const selected = (check) =>
+        !retrySelection?.changedFiles ||
+        retrySelection.changedFiles.includes(check.script) ||
+        retrySelection.required.includes(check.id);
       const executed = [];
       const leaf = (id, value) => () => {
         executed.push(id);
@@ -139,8 +156,9 @@ globalThis.candidateTransport = {
             { mode: 'production' },
             leaf('build:browser', { code: 0 }),
           );
-          for (const id of ['browser:x', 'browser:perf']) {
-            if (omit.includes(id)) continue;
+          for (const check of manifest.browserChecks) {
+            const id = `browser:${check.id}`;
+            if (omit.includes(id) || !selected(check)) continue;
             await context.check(id, { script: id }, () => {
               executed.push(id);
               if (id === 'browser:x' && flag('x') === 'fail')
@@ -162,9 +180,8 @@ globalThis.candidateTransport = {
           results,
           checks: context.receipts(),
           executed: [...executed, ...unitRuns],
-          changedFiles: args.includes('--changed-files')
-            ? args.slice(args.indexOf('--changed-files') + 1)
-            : null,
+          retrySelection,
+          argv: args.slice(2),
           outcome: {
             automation: { status: code ? 'FAIL' : 'PASS' },
             exitCode: code,
@@ -214,11 +231,11 @@ if (mode === 'first')
 process.argv = [
   process.execPath,
   `${repo}/scripts/verify-candidate.mjs`,
-  'local',
-  '--base',
-  'HEAD~1',
+  flag('tier') ?? 'local',
+  ...(flag('tier') === 'final' ? [] : ['--base', 'HEAD~1']),
   ...(mode === 'after' ? ['--after', parentReport] : []),
   ...flags.filter((f) => f.startsWith('--cause=')).flatMap((f) => ['--cause', f.slice(8)]),
+  ...flags.filter((f) => f.startsWith('--arg=')).map((f) => f.slice(6)),
 ];
 let report = null;
 try {

@@ -121,6 +121,12 @@ export function validateManifest(m) {
     browser.some((x) => x.timingSensitive === true && (x.execution ?? 'exclusive') !== 'exclusive')
   )
     throw Error('timing-sensitive checks run exclusively');
+  if (browser.some((x) => x.tier === 'performance' && x.timingSensitive !== true))
+    throw Error('performance-tier checks must be registered timingSensitive');
+  // A check that launches a system browser channel says so; the channel's version is bound
+  // into that check's receipt because installed dependencies pin only the bundled browsers.
+  if (browser.some((x) => x.browserChannel !== undefined && x.browserChannel !== 'chrome'))
+    throw Error('invalid browserChannel metadata');
   const mergeSmoke = browser
     .filter((x) => x.mergeSmoke)
     .map((x) => x.id)
