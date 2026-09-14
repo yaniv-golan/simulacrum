@@ -222,3 +222,18 @@ export function readinessLine(issues, blueprint) {
   ).join(' · ');
   return `${ready ? 'Ready to run' : 'Not ready to run'} · ${glyphs} · Check machine`;
 }
+const NEXT_STEPS = {
+  MISSING_POWER: 'wire a cell to the motor',
+  MISSING_AXLE: 'connect the motor to a wheel',
+  COMMAND_OFF: 'set the drive above zero',
+};
+/** The first missing readiness class as a step, or null when the health line owns the story. */
+export function readinessNext(issues, blueprint) {
+  const parts = blueprint.parts;
+  if (!parts.length) return null;
+  if (!parts.some((p) => p.type === 'poweredMotor'))
+    return parts.some((p) => p.type === 'poweredHinge') ? null : 'add a motor';
+  if (issues.some((i) => !Object.hasOwn(NEXT_STEPS, i.code))) return null;
+  const code = Object.keys(NEXT_STEPS).find((c) => issues.some((i) => i.code === c));
+  return code ? NEXT_STEPS[code] : null;
+}

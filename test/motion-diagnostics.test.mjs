@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStarterVehicle } from '../src/model/starter-vehicle.mjs';
 import { createPart } from '../src/model/blueprint.mjs';
-import { diagnoseMotion, readinessLine } from '../src/model/motion-diagnostics.mjs';
+import { diagnoseMotion, readinessLine, readinessNext } from '../src/model/motion-diagnostics.mjs';
 function fixture() {
   const blueprint = createStarterVehicle();
   return {
@@ -168,4 +168,20 @@ test('build readiness line defers to other issues and says nothing on an empty b
   assert.equal(line(), null, 'hinge-only machines are not "missing" a motor');
   f.metadata.blueprint.parts = [];
   assert.equal(line(), null, 'the empty bench explains itself');
+});
+test('the next step names the first missing readiness class and nothing else', () => {
+  const f = fixture(),
+    next = () => readinessNext(diagnoseMotion(f), f.metadata.blueprint);
+  assert.equal(next(), null, 'a ready machine has no invented next step');
+  f.metadata.blueprint.parts[1].parameters.defaultDuty = 0;
+  assert.equal(next(), 'set the drive above zero');
+  f.metadata.blueprint.connections = f.metadata.blueprint.connections.filter(
+    (c) => c.kind !== 'power',
+  );
+  assert.equal(next(), 'wire a cell to the motor', 'power comes before the drive setting');
+  const shaft = f.metadata.blueprint.connections.find((c) => c.kind === 'shaft');
+  f.metadata.connections.find((c) => c.id === shaft.id).reasonCode = 'AXIS_MISMATCH';
+  assert.equal(next(), null, 'an alignment blocker is the health line’s story');
+  f.metadata.blueprint.parts = [];
+  assert.equal(next(), null);
 });

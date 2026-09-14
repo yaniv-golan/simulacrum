@@ -452,6 +452,13 @@ measurements closed. No measurement is permission to invent physical causality.
 Closing Measurements suppresses formatting of hidden readings while completed-tick
 measurement accumulation continues. Reopening displays the retained window and
 current readings. Boundary warnings remain independent of this preference.
+The workshop footer is a status line composed by
+[footerModel](../../src/presentation/workbench-content.mjs#source): the mode (with the
+tick once the clock runs), the part count, the live status message (`role=status`) and
+"Next: …" — the guide's current step while a guide is active, otherwise the first missing
+readiness class from the diagnosis owner, and nothing when nothing is pending. The
+Space and "." keys are shown as badges on the control they currently trigger (Run,
+Pause, Step) instead of a footer hint; the badge never enters the control's name.
 Inspector readouts update their DOM only when formatted values change, and a live readout
 that shows a shaft speed reserves two lines for its reason line, so the hold buttons and
 sections below it stay put whether the command reads zero or "Powered" (a three-line

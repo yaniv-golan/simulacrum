@@ -467,15 +467,14 @@ h3 {
   color: #9bb1bd;
 }
 .mode-label {
-  letter-spacing: 0.1em;
   color: #f2bd7c;
-  font-size: 10px;
   font-weight: 800;
-  min-width: 45px;
-}
-.tick-label {
   font-variant-numeric: tabular-nums;
-  min-width: 60px;
+  white-space: nowrap;
+}
+.parts-label {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: #7d96a3;
 }
 .status-message {
@@ -483,10 +482,28 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.shortcuts {
+/* The pending step: the guide's current label, else the first missing readiness class. */
+.next-step {
   margin-left: auto;
   white-space: nowrap;
-  color: #718b99;
+  color: #a9dcc6;
+}
+.next-step[hidden] {
+  display: none;
+}
+/* The key that triggers a control, shown only while it would. */
+.key-badge {
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  margin-left: 6px;
+  padding: 2px 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.75;
+}
+button:not(.keyed) > .key-badge {
+  display: none;
 }
 .build-id {
   position: absolute;
@@ -512,7 +529,7 @@ h3 {
   .inspector {
     padding: 20px 14px;
   }
-  .shortcuts {
+  .next-step {
     display: none;
   }
 }

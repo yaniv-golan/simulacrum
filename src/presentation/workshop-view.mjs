@@ -18,7 +18,7 @@ import {
   applyGraphicsQuality,
   createGraphicsRenderer,
 } from './graphics-quality.mjs';
-import { movementScope } from './workbench-content.mjs';
+import { footerModel, movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
@@ -61,7 +61,12 @@ import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { UI_FEATURES } from '../model/features.mjs';
 import { CATALOG, MATERIALS } from '../model/catalog.mjs';
-import { diagnoseMotion, motorShaftSpeed, readinessLine } from '../model/motion-diagnostics.mjs';
+import {
+  diagnoseMotion,
+  motorShaftSpeed,
+  readinessLine,
+  readinessNext,
+} from '../model/motion-diagnostics.mjs';
 import { CONNECTION_LABELS, inspectorSummary } from './inspector-summary.mjs';
 import { explainReason, explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
@@ -286,6 +291,15 @@ export function createWorkshopView(
   build.dataset.command = 'build';
   const stepButton = button('Step', () => send({ type: 'step' }));
   stepButton.dataset.command = 'step';
+  // Visible key badges on the control the key currently triggers; names stay the plain verb.
+  const keyBadge = (control, key) => {
+    control.setAttribute('aria-label', control.textContent);
+    control.title = `${control.textContent} · ${key}`;
+    control.append(element('kbd', 'key-badge', key));
+  };
+  keyBadge(run, 'Space');
+  keyBadge(pause, 'Space');
+  keyBadge(stepButton, '.');
   modebar.append(run, pause, build, stepButton);
   const filebar = element('div', 'filebar');
   const failureButton = button('Failure record', () => onFailure?.());
@@ -976,13 +990,13 @@ export function createWorkshopView(
   });
   mirrorButton.dataset.command = 'mirror-assembly';
   const footer = element('footer', 'workshop-footer'),
-    modeLabel = element('span', 'mode-label', 'BUILD'),
-    tickLabel = element('span', 'tick-label', 'Tick 0'),
+    modeLabel = element('span', 'mode-label', 'Build'),
+    partsLabel = element('span', 'parts-label', '0 parts'),
     message = element('span', 'status-message', 'Choose your first part.'),
-    shortcut = element('span', 'shortcuts', 'Space: run / pause · .: one tick');
+    nextLabel = element('span', 'next-step', '');
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
-  footer.append(modeLabel, tickLabel, message, shortcut);
+  footer.append(modeLabel, partsLabel, message, nextLabel);
   body.append(left, viewport, rightPanel);
   root.append(header, body, footer, partHelp.panel);
   const graphicsQuality = createGraphicsQuality();
@@ -3329,6 +3343,7 @@ export function createWorkshopView(
         text: build
           ? readinessLine(issues, frame.metadata.blueprint)
           : blocker && `${blocker.title} · Check machine`,
+        next: build ? readinessNext(issues, frame.metadata.blueprint) : null,
       };
     }
     if (healthSample.text) {
@@ -3999,9 +4014,23 @@ export function createWorkshopView(
     refreshHealth();
     failureButton.hidden = frame.status !== 'failed';
     empty.hidden = sceneEditor?.active() || blueprint.parts.length > 0 || guideActive;
-    tickLabel.textContent = `Tick ${frame.tick}`;
-    modeLabel.textContent =
-      frame.status === 'failed' ? 'STOPPED' : frame.metadata.mode.toUpperCase();
+    const footerState = footerModel({
+      mode: frame.metadata.mode,
+      status: frame.status,
+      tick: frame.tick,
+      parts: blueprint.parts.length,
+      message: message.textContent,
+      next: guideActive
+        ? guideSteps.find((s) => !s.done(blueprint))?.label
+        : (healthSample?.next ?? null),
+    });
+    modeLabel.textContent = footerState.mode;
+    partsLabel.textContent = footerState.parts;
+    nextLabel.textContent = footerState.next;
+    nextLabel.hidden = !footerState.next;
+    run.classList.toggle('keyed', frame.metadata.mode !== 'run');
+    pause.classList.toggle('keyed', frame.metadata.mode === 'run');
+    stepButton.classList.toggle('keyed', frame.metadata.mode === 'paused');
     retryButton.hidden = frame.metadata.mode === 'build';
     retryButton.disabled = !!retryCamera;
     run.disabled = frame.metadata.mode === 'run';

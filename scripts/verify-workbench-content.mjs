@@ -18,6 +18,20 @@ try {
     false,
     'the parts catalogue must not start with an unsolicited lesson/example panel',
   ]);
+  const footer = page.locator('.workshop-footer');
+  evidence.assert('equal', [
+    await footer.locator('.next-step').isVisible(),
+    false,
+    'an empty bench has no invented next step',
+  ]);
+  evidence.assert('match', [await footer.locator('.mode-label').textContent(), /^Build$/]);
+  evidence.assert('equal', [
+    await page
+      .getByRole('button', { name: '▶ Run', exact: true })
+      .locator('.key-badge')
+      .textContent(),
+    'Space',
+  ]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   evidence.assert('equal', [
     await page
@@ -67,9 +81,20 @@ try {
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
+  evidence.assert('equal', [
+    await footer.locator('.next-step').textContent(),
+    'Next: Place Chassis',
+    'the footer repeats the guide’s current step',
+  ]);
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
   evidence.assert('equal', [await page.locator('.starter-guide').isVisible(), false]);
+  evidence.assert('match', [await footer.locator('.parts-label').textContent(), /^8 parts$/]);
+  evidence.assert('equal', [
+    await footer.locator('.next-step').isVisible(),
+    false,
+    'a ready machine has nothing pending',
+  ]);
   const before = await read();
   evidence.assert('equal', [await page.locator('.selection-actions').count(), 0]);
   await page.locator('canvas').focus();
