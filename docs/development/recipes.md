@@ -768,7 +768,12 @@ The final 50% to 40% step
 reduces pixel work by 36%, leaving the full scene present while sacrificing fine detail.
 DOM controls, authored geometry, picking, simulation rate and completed observations
 remain unchanged. Shadow enable/disable refreshes shader variants; old shadow targets
-are released. Resize uses the current scale without changing CSS coordinates.
+are released. Each level also carries a lamp shadow map size (1024, 512 and 256 pixels
+at the three shadowed levels, 0 below), applied to every lamp view on a level change;
+lamp shadow casting therefore flips only on the transition that already toggles the
+renderer shadow map, and Three's lights-state version handles the changed
+shadow-casting light count without another shader sweep. Resize uses the current
+scale without changing CSS coordinates.
 No permanent panel or action is added; the existing 3D view owns this behavior.
 
 The [graphics controls](../../test/graphics-quality.test.mjs) cover full startup,
@@ -787,11 +792,19 @@ simulation catch-up; it does not qualify overloaded runtime cadence.
 Agent screenshots are not target-player acceptance.
 
 The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
-completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
-lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+completed optical telemetry. Each admitted lamp retains one spotlight and lens. A hard
+cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
 concentration without adding modeled flux. Display exposure and tint are illustrative;
-black tint is dark while electrical demand remains. No lamp shadows are offered, so
-light can pass through occluders. Quality reduction retains every lamp. The
+black tint is dark while electrical demand remains. Whether a lamp casts shadows is a
+presentation budget, never telemetry: the graphics level supplies a lamp shadow map
+size through the view's `applyShadowBudget`, applied by the workshop's shared mesh
+factory to authored, surface-preview and placement-preview lamps alike so the
+shadow-casting light count never depends on which mesh is a preview. Changing the
+budget releases the old depth target and requests one reallocation pass. An unlit or
+black-tinted lamp skips its shadow pass (`shadow.autoUpdate` follows lit output), so
+eight mounted lamps cost depth passes only while lit. At reduced graphics levels lamp
+shadows are off and light passes through occluders. Quality reduction retains every
+lamp. The
 [lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
 [eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
 checks, not target-player or calibrated photometry evidence.

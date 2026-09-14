@@ -37,7 +37,7 @@ export const PART_HELP = {
       'Tune color, brightness and beam spread in Build. Black is dark but still consumes power.',
       'Wire a Command Receiver to Signal for keys or controller programs through that receiver. Its output replaces the default: zero, negative or Off gives no light. Disconnect Signal in Build to restore the default next Run.',
       'A lit status lamp shows its own powered input, not proof that another actuator moved or released.',
-      'Up to eight lamps illuminate at every quality level. Lamp shadows are not offered: light can pass through objects.',
+      'Up to eight lamps illuminate at every quality level. Lamps cast shadows while the view is running smoothly; when graphics are reduced to keep up, light passes through objects.',
     ],
   ),
   camera: help(

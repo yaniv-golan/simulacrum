@@ -1100,10 +1100,19 @@ export function createWorkshopView(
   }
   const guideCues = new THREE.Group();
   scene.add(guideCues);
+  // Every lamp mesh this view creates, including surface and placement previews,
+  // receives the current lamp shadow budget so the shadow-casting light count never
+  // depends on which mesh is a preview.
+  const createBudgetedMesh = (part) => {
+    const mesh = createPartMesh(part);
+    mesh.userData.lamp?.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    return mesh;
+  };
+  const lampViews = () => [...meshes.values()].map((mesh) => mesh.userData.lamp).filter(Boolean);
   const partResources = createResourceCache({
     key: partAppearanceKey,
     create: (part) => {
-      const mesh = createPartMesh(part),
+      const mesh = createBudgetedMesh(part),
         display = new THREE.Group();
       display.add(mesh);
       scene.add(display);
@@ -1160,7 +1169,7 @@ export function createWorkshopView(
     send,
     onMessage: setMessage,
     onInteraction,
-    createMesh: createPartMesh,
+    createMesh: createBudgetedMesh,
     onInvalidate: invalidateScene,
   });
   function beginSurface(part, options) {
@@ -1569,7 +1578,7 @@ export function createWorkshopView(
       canvas: renderer.domElement,
       orbit: controls,
       getMachineMeshes: () => meshes.values(),
-      createMesh: createPartMesh,
+      createMesh: createBudgetedMesh,
       disposeMesh: disposePart,
       invalidate: invalidateScene,
       onState: refreshAssemblyState,
@@ -2503,7 +2512,7 @@ export function createWorkshopView(
         element(
           'p',
           'parameter-help',
-          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps; no lamp shadows, so light can pass through objects.',
+          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps. Lamps cast shadows while the view is running smoothly; when graphics are reduced to keep up, light passes through objects.',
         ),
       );
       if (part.parameters.color === 0)
@@ -4016,6 +4025,11 @@ export function createWorkshopView(
       return { id, x: p.x, y: p.y, z: p.z };
     });
   }
+  /** Diagnostics: normalized device coordinates of a world point under the live camera. */
+  function projectWorldPoint(position) {
+    const p = new THREE.Vector3().fromArray(position).project(camera);
+    return { x: p.x, y: p.y, z: p.z };
+  }
   function readRenderedTransforms() {
     return [...meshes].map(([id, mesh]) => ({
       id,
@@ -4286,13 +4300,19 @@ export function createWorkshopView(
   const warmMeshes = Object.keys(CATALOG).map((type) =>
     createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
   );
-  const warmLights = [];
+  const warmLights = [],
+    warmLamps = warmMeshes.map((mesh) => mesh.userData.lamp).filter(Boolean);
   for (const mesh of warmMeshes)
     mesh.traverse((object) => {
       if (object.isLight) warmLights.push({ light: object, visible: object.visible });
     });
   try {
     scene.add(...warmMeshes);
+    // Shadow-casting light count is part of the shader key: warm the lamp-shadow
+    // variant, then the unshadowed variant used once graphics reduce.
+    for (const lamp of warmLamps) lamp.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    renderer.render(scene, camera);
+    for (const lamp of warmLamps) lamp.applyShadowBudget(0);
     renderer.render(scene, camera);
     // Light count is part of the shader key, even for unpowered lamps. Retain
     // the ordinary no-part-light variants too, including across New/Load.
@@ -4334,6 +4354,7 @@ export function createWorkshopView(
         pixelRatio: Math.min(window.devicePixelRatio, 2),
         width: stage.clientWidth,
         height: stage.clientHeight,
+        lampShadows: lampViews(),
       });
       invalidateScene();
     }
@@ -4490,6 +4511,7 @@ export function createWorkshopView(
           emission: m.userData.lamp.lens.material.emissiveIntensity,
           position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
           shadows: m.userData.lamp.light.castShadow,
+          shadowPass: m.userData.lamp.light.shadow.autoUpdate,
         })),
       cameraFrustum: cameraFrustum.read(),
       cameraPhoto: cameraSession
@@ -4575,6 +4597,7 @@ export function createWorkshopView(
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
     readRenderedRopeEndpoints: () => ropeView.readRenderedEndpoints(),
     readRenderedCenters,
+    projectWorldPoint,
     camera,
     dispose() {
       disposed = true;

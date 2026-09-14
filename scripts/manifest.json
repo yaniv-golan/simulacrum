@@ -3355,7 +3355,7 @@
       "id": "adaptive-graphics",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes.",
+      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes. Lamp shadow budgets exist exactly where key-light shadows exist and reach every lamp view on a level change.",
       "owners": [
         {
           "path": "src/presentation/graphics-quality.mjs",
@@ -3402,6 +3402,10 @@
           {
             "path": "test/graphics-quality.test.mjs",
             "anchor": "graphics transitions refresh shadow shader variants and release old targets without changing geometry"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "lamp shadows exist exactly where key-light shadows exist and follow the applied level"
           }
         ]
       },
@@ -5892,7 +5896,7 @@
       "id": "powered-lamp-output",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives all admitted lamp rendering.",
+      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives admitted lamp output, and the presentation graphics budget alone decides whether a lit lamp casts shadows.",
       "owners": [
         {
           "path": "src/simulation/power.mjs",
@@ -5935,6 +5939,10 @@
           {
             "path": "test/lamp-view.test.mjs",
             "anchor": "lamp emission and fixed-flux cone read completed telemetry including off and weak output"
+          },
+          {
+            "path": "test/lamp-view.test.mjs",
+            "anchor": "shadow budget owns cast and map size, releases old maps and forces one reallocation pass"
           }
         ]
       },
