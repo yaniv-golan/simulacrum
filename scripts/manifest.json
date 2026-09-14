@@ -6012,6 +6012,44 @@
       "qualificationBars": []
     },
     {
+      "id": "feedback-sync-read-only",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The local feedback sync issues only GET requests to the admin feedback, session listing, snapshot and object routes; it never deletes, drains or mutates hosted feedback or recordings, and every listed submission is either saved with its attachments, recorded as gone, or reported as failed with a non-zero exit.",
+      "owners": [
+        {
+          "path": "scripts/playtest/sync-feedback.mjs",
+          "anchor": "syncFeedback"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync saves every listed feedback across pages with text, media and context"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "an export whose receipt hash does not match is recorded as failed without a final directory"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "feedback-capture-privacy",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",

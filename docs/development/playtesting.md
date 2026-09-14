@@ -80,6 +80,24 @@ visibly. Save/export the complete workshop when recording is unavailable. Review
 retains legacy preset interpretation and individual scene IDs/transforms; it does
 not execute or convert historical opaque checkpoints.
 
+For an ongoing local copy of hosted feedback, the [feedback sync](../../scripts/playtest/sync-feedback.mjs#implementation)
+runs `node scripts/playtest/sync-feedback.mjs <private-config.json>` on a schedule. The private
+config (mode 0600, outside the repository under `~/.simulacrum-private/` or an ignored
+`.playtest-private/` path) names the HTTPS origin, the admin token and the data directory. Every run
+lists all committed feedback from the start (the listing is ordered by identifier, so no cursor is
+persisted), exports what is missing through the existing feedback and recording downloaders, and
+writes `feedback/<receivedAt>-<id>/` with the validated export, `text.txt`, decoded voice and image
+files, `context.json` and `references.json`, plus `recordings/<session>/cutoff-<sequence>/` with one
+recording export per observed upload sequence and a derived `feedback.json` for combined review. The
+filesystem is the index: temporary directories are renamed into place only when complete, existing
+directories are never rewritten, a lock file rejects overlapping runs, and `status.json` records
+each run with exit 0 (complete), 1 (configuration or authorization failure), 2 (some submissions
+failed) or 3 (another run holds the lock). Submissions that disappear between listing and export
+count as gone, not failed. The sync issues only GET requests and never deletes, drains or mutates
+hosted data. `--print-plist` emits an hourly launchd user agent for this Mac and `--print-readme`
+the operator notes; the data directory's `README.md` (rewritten each run) states how to check, stop
+(`launchctl bootout gui/$(id -u)/build.simulacrum.feedback-sync`, keeping the data) and uninstall the job.
+
 ## Release operations
 
 <!-- doc-review {"version":1,"fingerprint":"1d43ed820a62138e14e58a97944a7be1d6eb8403e5da7b764f9a1df415652701","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"965879fee29554fe80d91a801fdadd8a53fc2ee39544709e7da69e888128f08d","disposition":"still accurate","rationale":"Package verification launch row (fix-package-verification-launch-row on main 125a5ae): assertPackageVerification now admits a passed launch-admission row ahead of the final's ci,browser,gate phases (every tier opens with that row since 845c3d0) and still refuses a refused, misplaced or extra row; the release operations described — the exact package's passing automated verification, the integrity envelope, deployment authorization and recovery — are unchanged."} -->
