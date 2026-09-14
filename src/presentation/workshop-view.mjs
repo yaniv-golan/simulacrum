@@ -1108,7 +1108,14 @@ export function createWorkshopView(
     mesh.userData.lamp?.applyShadowBudget(graphicsQuality.read().lampShadowSize);
     return mesh;
   };
-  const lampViews = () => [...meshes.values()].map((mesh) => mesh.userData.lamp).filter(Boolean);
+  // Authored and live preview lamps alike: a level change must reach every casting light.
+  const lampViews = () => {
+    const views = [];
+    scene.traverse((object) => {
+      if (object.userData.lamp) views.push(object.userData.lamp);
+    });
+    return views;
+  };
   const partResources = createResourceCache({
     key: partAppearanceKey,
     create: (part) => {
@@ -4511,7 +4518,7 @@ export function createWorkshopView(
           emission: m.userData.lamp.lens.material.emissiveIntensity,
           position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
           shadows: m.userData.lamp.light.castShadow,
-          shadowPass: m.userData.lamp.light.shadow.autoUpdate,
+          shadowRefresh: m.userData.lamp.light.shadow.autoUpdate,
         })),
       cameraFrustum: cameraFrustum.read(),
       cameraPhoto: cameraSession

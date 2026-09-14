@@ -26,18 +26,17 @@ try {
     await placeCatalogPartByName(page, name);
     return (await read()).metadata.blueprint.parts.at(-1);
   };
-  const mount = async (part, target, face = 'top', acrossMm = null) => {
+  const mount = async (part, target, face = 'top', precise = {}) => {
     await select(part);
     await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
     await page.getByLabel('Mounting face', { exact: true }).selectOption('bottom');
     await page
       .getByLabel('Target surface', { exact: true })
       .selectOption(JSON.stringify([target.id, face]));
-    if (acrossMm !== null) {
-      if (!(await page.locator('.surface-precise').evaluate((e) => e.open)))
-        await page.locator('.surface-precise summary').click();
-      await page.getByLabel('Across surface (mm)').fill(String(acrossMm));
-    }
+    const fields = Object.entries(precise);
+    if (fields.length && !(await page.locator('.surface-precise').evaluate((e) => e.open)))
+      await page.locator('.surface-precise summary').click();
+    for (const [label, value] of fields) await page.getByLabel(label).fill(String(value));
     await page.locator('[data-command=apply-surface]').click();
   };
   const wire = async (part, port, target, targetPort) => {
@@ -53,7 +52,8 @@ try {
   };
   const base = await place('Chassis');
   const lamp = await place('Powered Lamp');
-  await mount(lamp, base);
+  // Turn 0 aims the beam along -z, across the default camera's view of the floor.
+  await mount(lamp, base, 'top', { 'Turn (degrees)': 0 });
   const cell = await place('Power Cell');
   await mount(cell, base, 'bottom');
   await wire(cell, 'power', lamp, 'power');
@@ -71,7 +71,7 @@ try {
     () => window.workshopProbe.readInteractionState().rendering.quality,
   );
   assert.equal(v.shadows, quality.lampShadowSize > 0);
-  assert.equal(v.shadowPass, true, 'a lit lamp refreshes its shadow map');
+  assert.equal(v.shadowRefresh, true, 'a lit lamp refreshes its shadow map');
   await page.screenshot({ path: `${out}/default-on.png` });
   await page.locator('[data-command=pause]').click();
   const paused = await read();
@@ -214,6 +214,10 @@ try {
   // Occlusion: the same floor window, lit by the key-driven lamp, must darken once a
   // plate stands across the cone. Each lit capture is paired with its own unlit capture
   // so grid lines, key-light shadows and UI state cancel; only lamp light remains.
+  const frames = (count) =>
+    page.evaluate(async (n) => {
+      for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
+    }, count);
   const floorWindow = async () => {
     const lampPose = (await page.evaluate(() => window.workshopProbe.readRenderedTransforms()))
       .find((row) => row.id === lamp.id);
@@ -221,34 +225,35 @@ try {
       lensOffset = rotateVector(lampPose.rotation, [0, 0, 0.045]),
       origin = lampPose.position.map((c, i) => c + lensOffset[i]);
     assert.ok(Math.abs(direction[1]) < 0.01, 'mounted lamp shines level with the floor');
-    // Beyond the plate's far edge, inside the 0.9 rad cone, short of where a ray over
-    // the plate top meets the floor.
-    const reach = Math.max(0.5, origin[1] / Math.tan(0.6));
+    // The light sits 0.05 m above the chassis top with 0.175 m of chassis ahead of it,
+    // so the chassis's own shadow ends 3.5 H from the light (H = light height). The
+    // plate top is 0.03 m below the light and its far edge 0.255 m ahead, so its shadow
+    // reaches 8.5 H. Sample at 5 H: lit without the plate, dark with it, 11 degrees
+    // below the axis of the 0.9 rad cone.
+    const reach = 5 * origin[1];
     const point = [origin[0] + direction[0] * reach, 0, origin[2] + direction[2] * reach];
     const ndc = await page.evaluate((p) => window.workshopProbe.projectWorldPoint(p), point);
-    return { direction, origin, point, ndc };
-  };
-  const settle = async () => {
-    await page.evaluate(() => window.advanceTime(1500));
-    await page.evaluate(async () => {
-      for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-    });
+    assert.ok(
+      Math.abs(ndc.x) < 0.85 && Math.abs(ndc.y) < 0.85,
+      `floor window on canvas (${ndc.x}, ${ndc.y})`,
+    );
+    return { direction, origin, reach, point, ndc };
   };
   const lampLight = async () => {
     await page.locator('[data-command=run]').click();
-    await settle();
+    await page.evaluate(() => window.advanceTime(1500));
+    await frames(3);
     const probe = await floorWindow();
     await page.keyboard.down('w');
     await page.evaluate(() => window.advanceTime(100));
-    await page.evaluate(async () => {
-      for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-    });
+    await frames(3);
     const lit = await page.locator('canvas').first().screenshot();
+    const level = await page.evaluate(
+      () => window.workshopProbe.readInteractionState().rendering.quality,
+    );
     await page.keyboard.up('w');
     await page.evaluate(() => window.advanceTime(100));
-    await page.evaluate(async () => {
-      for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-    });
+    await frames(3);
     const unlit = await page.locator('canvas').first().screenshot();
     await page.locator('[data-command=build]').click();
     const region = await page.evaluate(
@@ -286,21 +291,26 @@ try {
       },
       { lit: lit.toString('base64'), unlit: unlit.toString('base64'), ndc: probe.ndc },
     );
-    return { ...probe, ...region };
+    return { ...probe, ...region, level: level.level, lampShadowSize: level.lampShadowSize };
   };
   const open = await lampLight();
   assert.equal(open.count, 576, 'floor window is fully on the canvas');
   assert.ok(open.meanDelta > 24, `lamp lights the floor window (${open.meanDelta})`);
   const plate = await place('Plate');
-  await mount(plate, base, 'top', Math.round(180 * Math.sign(open.direction[2])));
+  await mount(plate, base, 'top', {
+    'Across surface (mm)': Math.round(180 * Math.sign(open.direction[2])),
+  });
   const mounted = (await read()).metadata.blueprint.connections.filter((c) => c.kind === 'fixed');
   assert.equal(mounted.length, 3, 'plate is bolted across the beam');
   const occluded = await lampLight();
   await page.screenshot({ path: `${out}/occluded.png` });
-  const shadowQuality = await page.evaluate(
-    () => window.workshopProbe.readInteractionState().rendering.quality,
-  );
-  const shadowChecked = shadowQuality.lampShadowSize > 0;
+  const glRenderer = await page.evaluate(() => {
+    const gl = document.querySelector('canvas').getContext('webgl2'),
+      ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER);
+  });
+  // Both captures must have run with lamp shadows on for the comparison to mean anything.
+  const shadowChecked = open.lampShadowSize > 0 && occluded.lampShadowSize > 0;
   if (shadowChecked) {
     assert.ok(
       occluded.meanDelta < open.meanDelta * 0.35,
@@ -318,7 +328,7 @@ try {
         ...evidence.identity,
         defaultFlux: f.power.lamps[0].luminousFluxLm,
         weak,
-        quality: shadowQuality,
+        glRenderer,
         shadow: { checked: shadowChecked, open, occluded },
         journey:
           'empty workshop mount wire configure keys save reload weak-supply repair occlusion',

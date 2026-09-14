@@ -640,7 +640,7 @@ so shared shader programs stay available, while yielding before rendering and be
 types. Each completed image updates mounted palette, help and inspector icons and
 remains cached for later icons, including loaded-only parts. Completion, cancellation
 and errors release the meshes, preview environment and renderer once; stale callbacks
-cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains both the catalog lighting configuration and variants without part lights, since even an unpowered lamp changes shader light counts. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
+cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains the catalog lighting configuration with a shadow-casting lamp, the same configuration with an unshadowed lamp, and variants without part lights, since even an unpowered lamp changes shader light counts and a casting lamp changes them again. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved

@@ -460,7 +460,7 @@ Its selected inspector owns Light color, Brightness and Beam spread in Build, wi
 actual input, requested/delivered watts and modeled light output in Run/Paused.
 Black tint warns that output is visually dark while consuming power. The existing
 requested part help explains receiver replacement of default-on behavior, weak supply,
-restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+restart and the eight-lamp limit with shadows only while graphics run smoothly. These controls leave with selection,
 displace no unique action and add no permanent panel. Learning admission is **no entry**:
 existing power and receiver explanations teach the same connection concept; contextual
 lamp help suffices. A powered status lamp does not establish another actuator's success.
