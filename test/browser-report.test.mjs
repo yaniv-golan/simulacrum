@@ -105,7 +105,11 @@ test('real suite owns cleanup inside failed receipts and preserves simultaneous 
       assert.match(JSON.stringify(row.report), /injected child failure/);
       // The runner's snapshot survives the cleanup AggregateError wrapper onto the row.
       assert.equal(row.report.runs[0].processSnapshot?.at, 'watchdog');
-    } else assert.equal(row.report.runs[0].processSnapshot, null);
+      assert.deepEqual(row.report.runs[0].appStatus, ['Not placed · fixture']);
+    } else {
+      assert.equal(row.report.runs[0].processSnapshot, null);
+      assert.deepEqual(row.report.runs[0].appStatus, []);
+    }
   }
 });
 

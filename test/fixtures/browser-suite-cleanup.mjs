@@ -6,6 +6,12 @@ const fixture = mkdtempSync('/tmp/adversarial-cleanup-');
 globalThis.fixtureArtifact = (options) => {
   const path = options.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT + '/witness.json';
   writeFileSync(path, JSON.stringify({ childFailed: globalThis.childMustFail }));
+  if (globalThis.childMustFail) {
+    // A browser session writes its status sidecar under a session-named directory.
+    const session = options.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT + '/browser-evidence/fixture';
+    mkdirSync(session, { recursive: true });
+    writeFileSync(session + '/failure-status.json', JSON.stringify(['Not placed · fixture']));
+  }
   return path;
 };
 globalThis.cleanupMustFail = false;

@@ -4,7 +4,14 @@ import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
 import { assertLocalServerAccess } from './runtime-preflight.mjs';
 import { build, preview, createServer } from 'vite';
-import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  renameSync,
+  readdirSync,
+} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -137,6 +144,25 @@ export async function withBrowserReport(
       throw error;
     }
   }
+}
+/** What the application announced when a check failed: every browser session's
+ * status sidecar under the evidence directory (sessions are named by script or option). */
+function readAppStatus(directory) {
+  if (!directory || !existsSync(directory)) return [];
+  const status = [];
+  try {
+    for (const entry of readdirSync(directory, { recursive: true, withFileTypes: true }))
+      if (entry.isFile() && entry.name === 'failure-status.json')
+        try {
+          const rows = JSON.parse(readFileSync(join(entry.parentPath, entry.name), 'utf8'));
+          if (Array.isArray(rows)) for (const row of rows) if (typeof row === 'string') status.push(row);
+        } catch {
+          status.push(`unreadable ${entry.name}`);
+        }
+  } catch {
+    return status;
+  }
+  return [...new Set(status)].slice(0, 16);
 }
 export async function verifyBrowserSuite(mode = 'all', options = {}) {
   return withBrowserReport(mode, options, (report, publish) =>
@@ -349,6 +375,7 @@ async function executeBrowserSuite(
             const diagnostics =
               error.processDiagnostics ??
               error.errors?.find((cause) => cause?.processDiagnostics)?.processDiagnostics;
+            const appStatus = readAppStatus(row.evidenceDirectory);
             Object.assign(row, {
               status: 'failed',
               ok: false,
@@ -358,10 +385,11 @@ async function executeBrowserSuite(
               failureKind: error.failureKind ?? 'unknown',
               checkKind: check.tier,
               processSnapshot: diagnostics?.snapshot ?? null,
+              appStatus,
             });
             publish();
             console.log(
-              `${row.reused ? 'REUSE FAIL' : 'FAIL'} ${check.id}: ${error.summary ?? error.message} — ${row.log ?? 'no retained log'}`,
+              `${row.reused ? 'REUSE FAIL' : 'FAIL'} ${check.id}: ${error.summary ?? error.message} — ${row.log ?? 'no retained log'}${appStatus.length ? ` — app: ${appStatus.map((text) => text.slice(0, 120)).join(' | ')}` : ''}`,
             );
             throw error;
           }

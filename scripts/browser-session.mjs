@@ -4,6 +4,30 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, basename } from 'node:path';
 
+/** In-page reader of what the application currently announces to assistive
+ * technology: visible, unique role=status and polite/assertive live regions.
+ * Self-contained so it can be passed to page.evaluate and unit-tested on a stub. */
+export function readLiveStatus() {
+  const seen = new Set(),
+    out = [];
+  let bytes = 0;
+  for (const el of document.querySelectorAll(
+    '[role="status"],[aria-live="polite"],[aria-live="assertive"]',
+  )) {
+    const text = String(el.textContent ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text || seen.has(text)) continue;
+    const visible = el.checkVisibility ? el.checkVisibility() : el.getClientRects?.().length > 0;
+    if (!visible) continue;
+    seen.add(text);
+    const entry = text.slice(0, 240);
+    out.push(entry);
+    bytes += entry.length + 1;
+    if (bytes > 2048) break;
+  }
+  return out;
+}
 export const BROWSER_PROFILES = Object.freeze({
   ui: { headless: true },
   focus: {
@@ -202,6 +226,12 @@ export function attachBrowserSession(
         row.captureError = e.message;
       }
       try {
+        const status = await page.evaluate(readLiveStatus);
+        row.state = { ...(row.state ?? {}), status: Array.isArray(status) ? status : [] };
+      } catch (e) {
+        row.statusError = e.message;
+      }
+      try {
         write(`failure-${index}.png`, await page.screenshot());
       } catch (e) {
         row.screenshotError = e.message;
@@ -209,6 +239,8 @@ export function attachBrowserSession(
       pageRecords.push(row);
     }
     try {
+      const status = pageRecords.flatMap((record) => record.state?.status ?? []);
+      if (status.length) write('failure-status.json', status);
       write('failure.json', {
         ...evidence.identity,
         runtime: process.version,

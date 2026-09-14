@@ -59,11 +59,14 @@ function fakeBrowser() {
   Object.assign(page, {
     locator: () => ({ getAttribute: async () => 'app-current' }),
     goto: async () => {},
-    evaluate: async () => ({
-      frame: { tick: 2, physics: [], metadata: {} },
-      interaction: { kind: 'idle' },
-      cursor: { tick: 2 },
-    }),
+    evaluate: async (fn) =>
+      fn?.name === 'readLiveStatus'
+        ? ['Powered Motor → Right support wheel · Right: the base extends beyond this surface.']
+        : {
+            frame: { tick: 2, physics: [], metadata: {} },
+            interaction: { kind: 'idle' },
+            cursor: { tick: 2 },
+          },
     screenshot: async () => Buffer.from('image'),
     url: () => 'http://fixture/',
     isClosed: () => false,
@@ -108,6 +111,45 @@ test('shared browser lifecycle captures request/page failures and closes owned c
   assert.equal(report.profile, 'ui');
   assert.ok(report.pages[0].state.cursor);
   assert.ok(records.some((r) => r.name.endsWith('.png')));
+  // The app's own announcement travels with the failure, in the artifact and a sidecar.
+  assert.deepEqual(report.pages[0].state.status, [
+    'Powered Motor → Right support wheel · Right: the base extends beyond this surface.',
+  ]);
+  assert.deepEqual(records.find((r) => r.name === 'failure-status.json').value, [
+    'Powered Motor → Right support wheel · Right: the base extends beyond this surface.',
+  ]);
+});
+test('readLiveStatus keeps visible, unique, polite announcements only, whitespace collapsed and bounded', async () => {
+  const { readLiveStatus } = await import('../scripts/browser-session.mjs');
+  const el = (text, visible = true) => ({ textContent: text, checkVisibility: () => visible });
+  const nodes = [
+    el('  '),
+    el('hidden text', false),
+    el('Machine · 12'),
+    el('Machine · 12'),
+    el('Not placed\n  ·   Powered Motor'),
+    el('x'.repeat(300)),
+    el('y'.repeat(3000)),
+  ];
+  const saved = globalThis.document;
+  globalThis.document = {
+    querySelectorAll: (selector) => {
+      assert.equal(selector, '[role="status"],[aria-live="polite"],[aria-live="assertive"]');
+      return nodes;
+    },
+  };
+  try {
+    const status = readLiveStatus();
+    assert.deepEqual(status.slice(0, 3), [
+      'Machine · 12',
+      'Not placed · Powered Motor',
+      'x'.repeat(240),
+    ]);
+    assert.ok(status.join('|').length <= 2048 + 240);
+  } finally {
+    if (saved === undefined) delete globalThis.document;
+    else globalThis.document = saved;
+  }
 });
 test('browser profiles reject fake focus mode and cleanup context setup failure', async () => {
   const f = fakeBrowser();
