@@ -397,8 +397,21 @@ niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an alrea
 parent), because a niced tier loses to every other process regardless of idle cores. It
 admits the timing phase only on a
 quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
-refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
-and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
+`SIMULACRUM_TIMING_WAIT_MS` for nightly; refusing early when the load is not falling) and
+samples what load1 cannot see — host CPU idle over one second and the busiest processes outside
+the tier's own tree, recorded in `timingAdmission.pressure` and, when
+`SIMULACRUM_TIMING_PRESSURE=enforce`, holding the wait and refusing by process name — then the
+remaining timing rows are recorded `not evaluated`
+and the run fails; nothing is retried. Every tier also runs that admission once at launch,
+inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
+deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
+is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
+`host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
+tier a timing-budget check runs only when the delta can reach what it measures (its manifest
+`measures` class — `physics` for the two node-only engine budgets, `render` for the six that
+drive the app — or its own import closure); the omitted rows carry the reason, and nightly and
+final run every row. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
 admission and records that it did. Missing metadata, performance checks, headed (focus) and recording profiles,
@@ -599,7 +612,7 @@ pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
-job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -dis npm
 run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never

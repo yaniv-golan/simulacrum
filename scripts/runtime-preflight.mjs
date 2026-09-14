@@ -1,6 +1,7 @@
 import { createServer } from 'node:net';
 import { readFileSync } from 'node:fs';
 import { getPriority } from 'node:os';
+import { spawn } from 'node:child_process';
 const engines = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).engines;
@@ -13,10 +14,29 @@ export function assertUnnicedLaunch({ priority = getPriority() } = {}) {
   if (!(Number.isFinite(priority) && priority <= 0))
     throw Error(
       `This tier was launched at nice ${priority}; a niced tier loses to every other process regardless of idle cores. ` +
-        'Relaunch un-niced: zsh -c "unsetopt bgnice; nohup caffeinate -i npm run … &" — a child cannot ' +
+        'Relaunch un-niced: zsh -c "unsetopt bgnice; nohup caffeinate -dis npm run … &" — a child cannot ' +
         'lower an inherited nice, so an already-niced parent shell or tool must itself be relaunched.',
     );
   return priority;
+}
+
+/** Keep the host awake for the life of this tier. `caffeinate -i` alone did not hold a Mac
+ * whose display had gone to sleep (the assertion registered on a dark wake); `-dis` holds the
+ * display, idle and system-on-AC assertions, and `-w <pid>` releases them with the tier. The
+ * tier asserts this itself so the launch recipe cannot be forgotten; elsewhere it is recorded
+ * as unavailable, never fatal. */
+export function assertAwake({
+  pid = process.pid,
+  platform = process.platform,
+  launch = (command, args) => spawn(command, args, { detached: true, stdio: 'ignore' }).unref(),
+} = {}) {
+  if (platform !== 'darwin') return { method: 'unavailable', platform };
+  try {
+    launch('caffeinate', ['-dis', '-w', String(pid)]);
+    return { method: 'caffeinate -dis -w', pid };
+  } catch (error) {
+    return { method: 'unavailable', platform, error: error.message };
+  }
 }
 
 /** The package owns the range. Accept comparator intersections; fail closed on new syntax. */

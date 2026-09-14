@@ -93,7 +93,7 @@ registerHooks({
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       // The fixture models an un-niced launch; the refusal itself is unit-tested on the real module.
       source =
-        'export function assertRuntime() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; }';
+        'export function assertRuntime() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; } export function assertAwake(options = {}) { globalThis.candidateAwake = (globalThis.candidateAwake ?? 0) + 1; return { method: "fixture", pid: process.pid }; }';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source = 'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args);';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
