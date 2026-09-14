@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const policy = JSON.parse(readFileSync(new URL('./release-policy.json', import.meta.url), 'utf8'));
+// Pushes to the release branch verify under the hosted profile; a release package is
+// produced only by an explicit dispatch on that branch.
 export const releaseEligible = (event, branch) =>
-  ['push', 'workflow_dispatch'].includes(event) && branch === policy.releaseBranch;
+  event === 'workflow_dispatch' && branch === policy.releaseBranch;
 export function assertVerificationJobs(eligible, jobs) {
   if (typeof eligible !== 'boolean' || jobs.route !== 'success')
     throw Error('Verification routing failed');

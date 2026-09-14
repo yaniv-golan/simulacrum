@@ -34,7 +34,9 @@ jobs:
     needs: route
     if: needs.route.outputs.eligible != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      SIMULACRUM_HOST_PROFILE: github-ubuntu-2cpu
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -57,7 +59,11 @@ jobs:
     needs: route
     if: needs.route.outputs.eligible != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Measurement mode: long enough for every check to complete at the provisional caps
+    # (registered per-check budgets shrink this once measured).
+    timeout-minutes: 300
+    env:
+      SIMULACRUM_HOST_PROFILE: github-ubuntu-2cpu
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

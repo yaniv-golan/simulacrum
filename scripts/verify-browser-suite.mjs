@@ -31,6 +31,13 @@ import {
   tierWorkers,
 } from './check-sequence.mjs';
 import { errorMessages, withCleanup } from './verification-cleanup.mjs';
+import {
+  browserBudget,
+  partitionHostedChecks,
+  measurementRotation,
+  finalSuiteRuns,
+  hostedReportFields,
+} from './host-profile.mjs';
 const stamp = 'dist/.verification-source.json';
 export async function prepareBrowserBuild(context) {
   initializeVerificationEnvironment();
@@ -222,13 +229,20 @@ async function executeBrowserSuite(
     ? { cores: host.cores, load1: load1AtStart, niceness, derived: true }
     : { explicit: workers, load1: load1AtStart, niceness, derived: false };
   report.workers = workers;
-  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
-  if (!derived && workers > 2 && (context || !Array.isArray(mode)))
-    throw Error('more than two workers requires explicit development probes');
+  // The hosted route has no tier context, so its workers are the profile's registered value
+  // (never derived from the runner's load); tiers ignore the profile entirely (they refuse it).
   context ??= createVerificationContext();
+  const hostProfile = context.hostProfile ?? null;
+  if (hostProfile && !derived) workers = hostProfile.browserWorkers ?? workers;
+  report.workers = workers;
+  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
+  if (!derived && workers > 2 && (tierContext || !Array.isArray(mode)))
+    throw Error('more than two workers requires explicit development probes');
   if (selection && JSON.stringify(selection.source) !== JSON.stringify(sourceIdentity()))
     throw Error('browser selection does not match current source');
-  const checks = selectChecks(mode),
+  Object.assign(report, hostedReportFields(hostProfile));
+  const hosted = partitionHostedChecks(selectChecks(mode), hostProfile);
+  const checks = hosted.run,
     source = sourceIdentity();
   const priority = prioritizeBrowserChecks(
     checks,
@@ -248,6 +262,10 @@ async function executeBrowserSuite(
         reason: 'previous failed browser check; ordering hint only',
       })),
   );
+  // A measurement run must eventually complete every check even when the job is cut
+  // short, so each run starts from a different point of the registered order.
+  const rotation = measurementRotation(priority.checks, hostProfile);
+  priority.checks = rotation.checks;
   report.priority = { ...priority, checks: priority.checks.map((c) => c.id) };
   const priorityCount = new Set(priority.reasons.map((row) => row.id)).size;
   const plan = planBrowserPhases(priority.checks, {
@@ -257,6 +275,7 @@ async function executeBrowserSuite(
   });
   const scheduled = plan.order;
   report.schedule = {
+    ...(rotation.note ? { rotation: rotation.note } : {}),
     policy:
       'phased: headless pool (longest first, priority as queue order), serialized lane, timing-sensitive last',
     priorityCount,
@@ -270,7 +289,10 @@ async function executeBrowserSuite(
     checks: scheduled.map((check) => check.id),
   };
   report.source = source;
-  report.runs = checks.map((check) => ({ id: check.id, status: 'queued' }));
+  report.runs = [
+    ...checks.map((check) => ({ id: check.id, status: 'queued' })),
+    ...hosted.notEvaluated,
+  ];
   const timing = createTiming({
     publish: () => {
       report.timings = timing.snapshot();
@@ -357,11 +379,12 @@ async function executeBrowserSuite(
             });
           };
           try {
+            const budget = browserBudget(hostProfile, check);
             const result = await context.check(
               `browser:${check.id}`,
               {
                 script: check.script,
-                timeoutMs: check.timeoutMs,
+                ...budget,
                 environment: check.environment ?? 'workshop',
                 workers,
                 execution: check.execution ?? 'exclusive',
@@ -393,7 +416,7 @@ async function executeBrowserSuite(
                         process.execPath,
                         [check.script, target],
                         {
-                          timeoutMs: check.timeoutMs,
+                          timeoutMs: budget.timeoutMs,
                           env: {
                             ...process.env,
                             SIMULACRUM_BROWSER_ARTIFACT_ROOT: origin.evidenceDirectory,
@@ -482,7 +505,7 @@ async function executeBrowserSuite(
         );
     },
     async () => {
-      report.runs = checks.flatMap((c) => runs.filter((r) => r.id === c.id));
+      report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);
       report.notRun = checks
         .filter((c) => !runs.some((r) => r.id === c.id && typeof r.ok === 'boolean'))
         .map((c) => c.id);

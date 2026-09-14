@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"bb016bf3e3b586a08d216a70d4aed256dfb12c9ec89737833c4fd7a47d261302","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"af4d9235e28a3bb78d52623b9cd445bde7c8bf367c28f3033ce520cee216bd03","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): validate-manifest.mjs additionally admits the timingSensitive boolean (true ⇒ exclusive) and AGENTS.md adds one verification sentence; layer ownership and the registry reader's role are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"526bb62f29a7fc6a285093c61e9194a453520c13767bdfc92e100a54c2ab4d33","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"ed1661c731f155dc3c5c61eaed4b99f27f69d3662c29f9da80605a71764e1b1e","disposition":"still accurate","rationale":"validate-manifest additionally validates hostProfiles (closed keys, deadlines no shorter than local, bounded measurement runs, per-check hosted budgets once registered) and AGENTS.md gained the hosted nightly sentence; layer ownership, module-graph rules and the manifest's role are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

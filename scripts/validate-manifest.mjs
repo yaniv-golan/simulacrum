@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { validateInvariantCoverage } from './invariant-coverage.mjs';
+import { validateHostProfiles } from './host-profile.mjs';
 /** Sorted, unique, registered ids of the checks whose root chain reaches the row's entrypoint.
  * The former whole-inventory `roots` digest is rejected; migrate through a scope proposal. */
 function reachingChecksOK(scope, browser) {
@@ -217,6 +218,7 @@ export function validateManifest(m) {
     )
       throw Error('invalid audited browser reads');
   }
+  validateHostProfiles(m);
   return m;
 }
 export const CANONICAL_LAYOUT_MESSAGE =
