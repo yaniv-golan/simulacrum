@@ -1,13 +1,16 @@
 import { sourceIdentity } from '../source-identity.mjs';
+import { identityFiles } from '../candidate.mjs';
+import { dependencyDigest } from '../candidate-resume.mjs';
 import { assertPackageVerification, verificationHash } from './package-verification.mjs';
 // One frozen verification and package path shared by local and CI releases.
-import { readFile, writeFile, mkdir, readdir, copyFile, lstat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
+import { mkdirSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const run = (command, args, cwd) =>
-  execFileSync(command, args, { cwd, stdio: 'inherit', env: process.env });
+const run = (command, args, cwd, env = process.env) =>
+  execFileSync(command, args, { cwd, stdio: 'inherit', env });
 const text = (command, args, cwd = process.cwd()) =>
   execFileSync(command, args, { cwd, encoding: 'utf8' }).trim();
 async function inventory(root) {
@@ -29,19 +32,21 @@ export async function prepareRelease(destination) {
   if (!relative(root, out).startsWith('.release-private/'))
     throw Error('Prepare destination must be a new .release-private/<release> directory');
   const head = text('git', ['rev-parse', 'HEAD']);
-  const paths = text('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
-    .split('\0')
-    .filter(Boolean)
-    .sort();
-  if (paths.some((path) => /(^|\/)(\.env(?:\.|$)|\.dev\.vars|secrets?\.)/.test(path)))
-    throw Error('Review secret-like source paths before packaging');
-  const source = {};
-  for (const path of paths) {
-    const info = await lstat(path).catch(() => null);
-    if (!info) continue;
-    if (!info.isFile()) throw Error(`Unsupported source input: ${path}`);
-    source[path] = sha(await readFile(path));
+  // One read of the tree: the candidate's per-path record (shas, modes, deletions; never the
+  // index) is the identity a later merge citation compares, and the packaged `source` map is
+  // derived from it so the two records cannot disagree. Secret-like and symlinked inputs are
+  // refused by the same rules a candidate applies.
+  let treeFiles;
+  try {
+    treeFiles = identityFiles(root);
+  } catch (error) {
+    if (/Secret-like/.test(error.message))
+      throw Error('Review secret-like source paths before packaging');
+    throw error;
   }
+  const paths = Object.keys(treeFiles).sort();
+  const source = {};
+  for (const path of paths) if (!treeFiles[path].deleted) source[path] = treeFiles[path].sha256;
   await mkdir(resolve(out, '..'), { recursive: true, mode: 0o700 });
   await mkdir(out, { recursive: false, mode: 0o700 });
   const snapshot = join(out, 'source');
@@ -51,24 +56,43 @@ export async function prepareRelease(destination) {
     await mkdir(resolve(target, '..'), { recursive: true });
     await copyFile(join(root, path), target);
   }
-  await writeFile(join(out, 'source.json'), JSON.stringify({ head, source }, null, 2), {
-    mode: 0o600,
-  });
+  const record = { head, source, files: treeFiles };
+  await writeFile(join(out, 'source.json'), JSON.stringify(record, null, 2), { mode: 0o600 });
   const timings = {};
-  const timed = (id, command, args) => {
+  const timed = (id, command, args, env) => {
     const start = performance.now();
     try {
-      return run(command, args, snapshot);
+      return run(command, args, snapshot, env);
     } finally {
       timings[id] = performance.now() - start;
     }
   };
   timed('install', 'npm', ['ci']);
-  timed('format', 'npm', ['run', 'format:check']);
+  // Installed dependencies are digested exactly as a candidate digests them: the scratch
+  // directories the tier creates exist first, and the tier's caches are redirected so the
+  // digest recorded here is the one the final ran on.
+  for (const path of ['.vite-temp', '.cache/prettier'])
+    mkdirSync(join(snapshot, 'node_modules', path), { recursive: true });
+  const installed = dependencyDigest(snapshot),
+    installedAt = new Date().toISOString();
+  // Runtime identity of the prepare process; the narrowed environment digest joins it when the
+  // declared-environment identity lands (until then the final report's own digest is whole-env).
+  Object.assign(record, {
+    installed,
+    installedAt,
+    identity: { runtime: process.version, platform: process.platform, arch: process.arch },
+  });
+  await writeFile(join(out, 'source.json'), JSON.stringify(record, null, 2), { mode: 0o600 });
+  const tierEnvironment = {
+    ...process.env,
+    SIMULACRUM_VITE_CACHE_DIR: join(out, 'cache', 'vite'),
+    MINIFLARE_CACHE_DIR: join(out, 'cache', 'miniflare'),
+  };
+  timed('format', 'npm', ['run', 'format:check'], tierEnvironment);
   // Qualification exit 2 is acceptable for release automation only when its report
   // confirms automation passed; human acceptance is never invented by deployment.
   try {
-    timed('verification', 'npm', ['run', 'verify:final']);
+    timed('verification', 'npm', ['run', 'verify:final'], tierEnvironment);
   } catch (error) {
     const report = JSON.parse(
       await readFile(join(snapshot, 'artifacts', 'verification-final.json'), 'utf8'),
@@ -82,6 +106,8 @@ export async function prepareRelease(destination) {
     throw Error('Complete release automation must pass');
   if (JSON.stringify(verification.source) !== JSON.stringify(sourceIdentity()))
     throw Error('Verification source does not match frozen candidate');
+  if (dependencyDigest(snapshot) !== installed)
+    throw Error('Release installed dependencies changed during release verification');
   const verifiedAssets = await inventory(join(snapshot, 'dist'));
   const payload = join(out, 'payload');
   await mkdir(payload);
@@ -141,6 +167,7 @@ export async function prepareRelease(destination) {
       humanAcceptance: verification.outcome.humanAcceptance,
       source: verification.source,
       runtime: verification.runtime,
+      installed,
       checks: verification.checks,
       timings,
       bundleCoverage:

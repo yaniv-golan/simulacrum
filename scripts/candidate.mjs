@@ -67,6 +67,11 @@ export function candidateIdentity(root) {
   const { bytes, ...identity } = inventory(root);
   return identity;
 }
+/** The per-path record another party compares against a candidate: shas and modes of every
+ * tracked or untracked-unignored file, deletions marked, never the index. */
+export function identityFiles(root) {
+  return inventory(root).files;
+}
 export async function candidateMatchesOrigin(root, candidate) {
   try {
     return comparable(inventory(root)) === comparable(candidate);
