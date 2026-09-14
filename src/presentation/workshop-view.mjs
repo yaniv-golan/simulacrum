@@ -1412,7 +1412,7 @@ export function createWorkshopView(
     }),
     copyStatus,
   );
-  // About: the release tag on the built commit when there is one, else the build id.
+  // About: package.json's version at build time (the app-version meta), else the build id.
   const appVersion = document.querySelector('meta[name=app-version]')?.content ?? '';
   const about = element('p', 'help-about');
   const repositoryLink = () => {

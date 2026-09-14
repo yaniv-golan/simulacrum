@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { releaseVersion } from './source-identity.mjs';
 
 /** Newest date a note may carry: HEAD's commit date or today (local, matching git's
  * short committer date), whichever is later, so a note written before its commit on a
@@ -57,4 +58,10 @@ export async function checkReleaseNotes(root = process.cwd()) {
     latestDate: latestNoteDate(root),
   });
   if (errors.length) throw Error(`release notes:\n${errors.join('\n')}`);
+  const release = releaseVersion(root);
+  if (!release.package) throw Error('package.json version must be semver: the app names it');
+  if (!release.consistent)
+    throw Error(
+      `release tag ${release.tag} does not match package.json version ${release.package}; the served About would name the build id instead`,
+    );
 }

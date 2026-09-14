@@ -14,7 +14,7 @@ export default defineConfig({
           ['build-id', appFingerprint()],
           ['source-head', source.head],
           ['source-digest', source.workingTreeDigest],
-          ['app-version', releaseVersion() ?? ''],
+          ['app-version', releaseVersion().version ?? ''],
         ].map(([name, content]) => ({
           tag: 'meta',
           attrs: { name, content },

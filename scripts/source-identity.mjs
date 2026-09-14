@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 export function sourceIdentity() {
   const files = execFileSync(
@@ -26,23 +27,31 @@ export function sourceIdentity() {
     workingTreeDigest: hash.digest('hex'),
   };
 }
-/** The semver release tag on HEAD itself (`v0.2.1`), the only version wired into the
- * served app; null for an untagged commit or a shallow checkout, in which case the app
- * names its build id instead. Release tags are applied after a build is served, so a
- * package built before tagging carries no version. Tag state is not part of the build
- * id (which hashes files, not refs), so tagged and untagged builds of one tree share it
- * while their served index.html differs by this meta tag. package.json's version is not
- * wired to the app. */
+/** The version the served app names: package.json's `version` read at build time
+ * (`v0.3.0`), the one wired source; the last candidate of a release carries the bump.
+ * The semver release tag on HEAD, when present, is only a cross-check — tags are
+ * applied after serving, so most builds have none. When both exist and differ,
+ * `version` is null (the app names its build id) and the release-notes check fails. */
 export function releaseVersion(cwd = process.cwd()) {
+  let pkg = null,
+    tag = null;
   try {
-    return (
+    const raw = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).version;
+    if (typeof raw === 'string' && /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(raw))
+      pkg = `v${raw}`;
+  } catch {
+    pkg = null;
+  }
+  try {
+    tag =
       execFileSync(
         'git',
         ['describe', '--tags', '--exact-match', '--match', 'v[0-9]*.[0-9]*.[0-9]*'],
         { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
-      ).trim() || null
-    );
+      ).trim() || null;
   } catch {
-    return null;
+    tag = null;
   }
+  const consistent = tag === null || tag === pkg;
+  return { package: pkg, tag, consistent, version: consistent ? pkg : null };
 }

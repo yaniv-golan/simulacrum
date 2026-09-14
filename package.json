@@ -1,6 +1,6 @@
 {
   "name": "simulacrum-foundry",
-  "version": "2.0.0-alpha.0",
+  "version": "0.3.0",
   "description": "A component-driven Three.js engineering construction sandbox.",
   "private": true,
   "license": "MIT",

@@ -203,7 +203,7 @@
     {
       "id": "release-notes",
       "dueAt": "M3b",
-      "description": "tracked release notes bind to this build's features, parts and dates",
+      "description": "tracked release notes bind to this build's features, parts and dates; package.json's version is semver and any release tag on the commit agrees with it",
       "ruleId": "gate-integrity",
       "module": "scripts/check-release-notes.mjs",
       "export": "checkReleaseNotes",
