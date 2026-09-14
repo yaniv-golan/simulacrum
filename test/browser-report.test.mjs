@@ -385,8 +385,12 @@ test('actual suite allows four-worker probes and rejects completion-context over
   assert.equal(rows[2].ok, true, JSON.stringify(rows[2]));
   assert.equal(rows[2].workers, 2);
   assert.deepEqual(
-    { ...rows[2].workersBasis, load1: undefined },
-    { explicit: 2, derived: false, load1: undefined },
+    { ...rows[2].workersBasis, load1: undefined, niceness: undefined },
+    { explicit: 2, derived: false, load1: undefined, niceness: undefined },
+  );
+  assert.ok(
+    rows[2].workersBasis.niceness === null || typeof rows[2].workersBasis.niceness === 'number',
+    'launch niceness is recorded when the host reports it',
   );
   assert.equal(rows[2].timingAdmission.skipped, 'no tier context');
   assert.equal(rows[2].timingAdmission.admitted, true);

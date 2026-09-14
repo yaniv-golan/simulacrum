@@ -396,7 +396,7 @@ test('tier workers follow load headroom: one per two idle cores, one to four', a
 test('quiet-host admission: within bound admits, above bound waits once bounded, then refuses without retrying', async () => {
   const { admitQuietHost } = await import('../scripts/check-sequence.mjs');
   const samples = [];
-  const run = (loads, { waitMs = 100, pollMs = 10 } = {}) => {
+  const run = (loads, { waitMs = 100, pollMs = 10, trendMs = 1000 } = {}) => {
     let i = 0;
     const clock = { now: 0 };
     return admitQuietHost({
@@ -404,6 +404,7 @@ test('quiet-host admission: within bound admits, above bound waits once bounded,
       bound: 7,
       waitMs,
       pollMs,
+      trendMs,
       load1: () => {
         const v = loads[Math.min(i++, loads.length - 1)];
         samples.push(v);
@@ -415,7 +416,13 @@ test('quiet-host admission: within bound admits, above bound waits once bounded,
       now: () => clock.now,
     });
   };
-  assert.deepEqual(await run([3.2]), { admitted: true, load1: 3.2, waitedMs: 0, samples: [3.2] });
+  assert.deepEqual(await run([3.2]), {
+    admitted: true,
+    load1: 3.2,
+    waitedMs: 0,
+    samples: [3.2],
+    trend: null,
+  });
   const waited = await run([9, 8.5, 6.9]);
   assert.equal(waited.admitted, true);
   assert.equal(waited.load1, 6.9);
@@ -425,4 +432,48 @@ test('quiet-host admission: within bound admits, above bound waits once bounded,
   assert.equal(refused.admitted, false);
   assert.equal(refused.waitedMs, 100, 'the wait is bounded by waitMs and never repeats');
   assert.match(refused.reason, /host load 10 above bound 7 after 100 ms/);
+});
+
+test('quiet-host admission tracks the one-minute decay and refuses early only when the load is not falling', async () => {
+  const { admitQuietHost } = await import('../scripts/check-sequence.mjs');
+  const run = (loads, options = {}) => {
+    let i = 0;
+    const clock = { now: 0 };
+    return admitQuietHost({
+      cores: 14,
+      bound: 7,
+      pollMs: 5000,
+      load1: () => loads[Math.min(i++, loads.length - 1)],
+      sleep: async (ms) => {
+        clock.now += ms;
+      },
+      now: () => clock.now,
+      ...options,
+    });
+  };
+  // 1b's relaunch on this host: 18.6 → 8.6 over 60 s (−0.167/s), bound 7 — a 60 s wait refused
+  // it ten seconds before the crossing. The decay is waited out and admitted.
+  const decay = Array.from({ length: 40 }, (_, k) => Number((18.6 - 0.8333 * k).toFixed(2)));
+  const admitted = await run(decay);
+  assert.equal(admitted.admitted, true);
+  assert.ok(
+    admitted.waitedMs > 60000 && admitted.waitedMs <= 80000,
+    `waited ${admitted.waitedMs} ms`,
+  );
+  assert.ok(admitted.load1 <= 7);
+  assert.ok(admitted.trend.slopePerS < 0 && admitted.trend.windowMs === 30000);
+  // Flat above the bound: refused once a trend window shows it is not falling — well before
+  // the 180 s patience, with the reason naming the slope.
+  const flat = await run(Array(60).fill(10));
+  assert.equal(flat.admitted, false);
+  assert.ok(flat.waitedMs >= 30000 && flat.waitedMs < 60000, `refused at ${flat.waitedMs} ms`);
+  assert.match(flat.reason, /not falling \(0\/s over the last 30000 ms\)/);
+  assert.equal(flat.trend.projectedMs, null);
+  // Falling too slowly to cross within the patience: waits to waitMs, then refuses (plausible
+  // wrong: an admission on projection alone would let a still-loaded host through).
+  const slow = await run(Array.from({ length: 60 }, (_, k) => 12 - 0.01 * k));
+  assert.equal(slow.admitted, false);
+  assert.equal(slow.waitedMs, 180000);
+  assert.ok(slow.load1 > 7);
+  assert.equal(slow.samples.length, 37);
 });

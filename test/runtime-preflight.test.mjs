@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertRuntime } from '../scripts/runtime-preflight.mjs';
+import { assertRuntime, assertUnnicedLaunch } from '../scripts/runtime-preflight.mjs';
 test('runtime admission uses the package range and rejects unsupported or ambiguous versions', () => {
   for (const version of ['24.18.0', '24.19.2'])
     assert.doesNotThrow(() => assertRuntime({ version }));
@@ -84,4 +84,12 @@ test('runtime rejection gives the exact repository bootstrap without starting ch
     () => assertRuntime({ version: '25.0.0' }),
     /Node 25\.0\.0.*requires.*nvm install && nvm use.*No checks were started/s,
   );
+});
+
+test('a tier that derives its workers refuses a niced launch and names the fix', () => {
+  assert.equal(assertUnnicedLaunch({ priority: 0 }), 0);
+  assert.equal(assertUnnicedLaunch({ priority: -5 }), -5, 'raised priority is fine');
+  // zsh's bgnice backgrounds a job at nice 5; the 1b tier on 421a2b1 failed exactly this way.
+  assert.throws(() => assertUnnicedLaunch({ priority: 5 }), /nice 5.*unsetopt bgnice/s);
+  assert.throws(() => assertUnnicedLaunch({ priority: NaN }), /unsetopt bgnice/);
 });
