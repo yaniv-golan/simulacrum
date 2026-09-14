@@ -75,16 +75,14 @@ export const PART_SEARCH = Object.freeze({
   ),
   travelSensor: entry('Sensors', 'travel', 'measure spring length|detect travel|suspension length'),
 });
+// The six a first machine needs, in build order; each tile shows its one-line purpose.
 export const ESSENTIAL_PARTS = Object.freeze([
   'powerCell',
   'poweredMotor',
   'gripWheel',
   'beam',
-  'plate',
-  'steelAxle',
-  'passiveBearing',
   'poweredHinge',
-  'ball',
+  'plate',
 ]);
 const normalize = (s) =>
   s

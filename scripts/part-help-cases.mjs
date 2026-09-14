@@ -3,7 +3,6 @@ import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs'
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CATALOG } from '../src/model/catalog.mjs';
-import { PRIMARY_PARTS } from '../src/presentation/part-palette.mjs';
 import { ESSENTIAL_PARTS } from '../src/presentation/part-search.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 export function partHelpPartition(name) {
@@ -53,7 +52,7 @@ export async function runPartHelpCases(partition, evidence, browser) {
     await attempt(
       'primary-placement-clicks',
       async (p, observed) => {
-        for (const [index, type] of PRIMARY_PARTS.entries()) {
+        for (const [index, type] of ESSENTIAL_PARTS.entries()) {
           const target = p.locator(`[data-part-type="${type}"]`);
           await target.hover();
           await p.locator('[role="tooltip"]').waitFor({ state: 'visible' });

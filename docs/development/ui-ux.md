@@ -136,7 +136,9 @@ inspector. The [layout](../../src/presentation/workshop.css#source) owns their s
 These are presentation responsibilities, not additional model or simulation authority.
 
 The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
-Recent and locally saved Favorites. Search covers the whole available catalog and
+Recent and locally saved Favorites. Essentials are the six parts a first machine needs
+(cell, motor, wheel, beam, hinge, plate), in build order, and only those tiles show the
+part's one-line purpose from the help content; every other category shows the name. Search covers the whole available catalog and
 ranks names, aliases, actions and related roles in that order, preferring complete
 query coverage across identity and function fields. Complete conservative typo corrections
 precede partial direct matches; numeric identities are exact.

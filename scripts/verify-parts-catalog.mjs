@@ -1,6 +1,8 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import * as THREE from 'three';
 import { CATALOG } from '../src/model/catalog.mjs';
+import { ESSENTIAL_PARTS } from '../src/presentation/part-search.mjs';
+import { PART_HELP } from '../src/presentation/part-help-content.mjs';
 import { browseAllParts } from './catalog-browser-actions.mjs';
 const evidence = createBrowserEvidence();
 const browser = await evidence.launch({ profile: 'ui' });
@@ -23,6 +25,13 @@ try {
       .boundingBox();
     equal(gridBox.height >= tileBox.height, true);
     equal(tileBox.y >= gridBox.y && tileBox.y + tileBox.height <= gridBox.y + gridBox.height, true);
+    // Essentials tiles carry their purpose line; other categories show the name only.
+    const purpose = page.locator('.catalog-entry:not([hidden]) .part-purpose').first();
+    equal(await purpose.isVisible(), category === 'Essentials');
+    if (category === 'Essentials') {
+      equal(await page.locator('.catalog-entry:not([hidden])').count(), ESSENTIAL_PARTS.length);
+      equal(await purpose.textContent(), PART_HELP[ESSENTIAL_PARTS[0]].purpose);
+    }
   }
   await page.screenshot({ path: '/tmp/catalog-fixed-1280.png' });
   await page.setViewportSize({ width: 1440, height: 900 });

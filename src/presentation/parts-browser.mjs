@@ -194,6 +194,7 @@ export function createPartsBrowser({
           .map((type) => ({ type, reason: '' }));
     if (!query && category === 'Recent')
       rows.sort((a, b) => recent.indexOf(a.type) - recent.indexOf(b.type));
+    grid.classList.toggle('catalog-essentials', !query && category === 'Essentials');
     const visible = new Map(rows.map((r, i) => [r.type, { ...r, i }]));
     for (const [type, card] of cards) {
       const result = visible.get(type);
