@@ -800,7 +800,10 @@ test('live measured-scope reach: a timing row is reached by its own import closu
     assert.equal(measuredScopeReached(row, ['src/simulation/session.mjs']), true);
     assert.equal(measuredScopeReached(row, ['scripts/check-sequence.mjs']), false);
   }
-  assert.ok(MEASURED_SCOPE.physics.length < MEASURED_SCOPE.render.length);
+  const matches = (patterns, path) => patterns.some((p) => p.test(path));
+  assert.ok(matches(MEASURED_SCOPE.render, 'src/presentation/x.mjs'));
+  assert.ok(!matches(MEASURED_SCOPE.physics, 'src/presentation/x.mjs'));
+  assert.ok(matches(MEASURED_SCOPE.physics, 'vendor/rapier-contact/x.tgz'));
   // Structural half of `physics`: the row's whole closure carries no browser session, so no
   // presentation change can move it — enforced on the closure, not on the row's own text.
   const graph = buildModuleGraph(process.cwd(), {

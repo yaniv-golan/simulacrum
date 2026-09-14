@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { basename } from 'node:path';
 
 /** Bounded host inventory at a failure. `comm` is the executable name only; no
  * arguments or environment values are read. Diagnostics, never attribution. */

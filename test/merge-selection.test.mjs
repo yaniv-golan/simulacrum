@@ -312,10 +312,23 @@ test('a timing-budget row runs in a merge tier only when the delta can reach wha
     tooling.omitted.find((row) => row.id === 'measure-gears').reason,
     /timing budget \(physics\): its measured scope is not in the delta; final and a local all-checks run execute it/,
   );
-  // Presentation-only delta: the physics stopwatches are omitted, the render budgets run.
+  // A render-scope runtime delta that forces the full selection (src/core is risky): the two
+  // physics stopwatches are omitted, the render budgets run.
+  const core = run(['src/core/workshop.mjs']);
+  assert.ok(core.fullReason);
+  assert.deepEqual(omittedTiming(core), ['measure-cameras', 'measure-gears']);
+  assert.ok(ids(core.checks).includes('verify-adaptive-graphics'));
+  // A presentation-only delta is not risky, so the audited narrow selection applies: timing rows
+  // it did not reach are omitted — physics ones with the measured-scope reason, render ones with
+  // the ordinary one — and none is added by hand.
   const css = run(['src/presentation/workshop.css']);
+  assert.equal(css.fullReason, null);
   assert.deepEqual(omittedTiming(css), ['measure-cameras', 'measure-gears']);
-  assert.ok(ids(css.checks).includes('verify-adaptive-graphics'));
+  assert.ok(!ids(css.checks).includes('verify-adaptive-graphics'));
+  assert.match(
+    css.omitted.find((row) => row.id === 'verify-adaptive-graphics').reason,
+    /outside audited/,
+  );
   // Simulation delta: every row runs (control).
   assert.deepEqual(omittedTiming(run(['src/simulation/session.mjs'])), []);
   // The engine pin reaches everything (control).

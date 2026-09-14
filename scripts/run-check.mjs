@@ -53,6 +53,7 @@ function processSnapshot(rows, rootPid, at) {
     comm,
   });
   const tree = descendantsOf(rows, rootPid);
+  const root = tree[0]?.pid === rootPid ? tree[0] : null;
   const top = (key) =>
     [...rows]
       .sort((a, b) => b[key] - a[key])
