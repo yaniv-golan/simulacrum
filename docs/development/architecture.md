@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"fdc66fc3e70e559b867a09be927e531813e1ec3afd0df777a2721755e4739d59","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"194d5570d79cbb8b073face21a2e17dbe9901558c061560fbb4ca47385affc3b","disposition":"still accurate","rationale":"The AGENTS.md wording change limits the notice claim to candidate owners; runtime, layer-edge and manifest ownership described by the overview are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4c79637ec2db550040f722476c0e3a0d6ed3653033550e24ef5700f124b68d9","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"4da7d89256e38d13f850b586fd2e4cc0aca89aeaa66b43b96d9858a23793865b","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. validate-manifest.mjs still loads and validates the canonical manifest and additionally admits reachingChecks arrays and the writer-owned text layout; AGENTS.md adds one verification paragraph. Layer ownership and the registry reader’s role are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

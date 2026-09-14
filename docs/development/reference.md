@@ -112,6 +112,7 @@ These are registered commands and checks, not evidence that they passed.
 | capture-observation-stream | [decodeCaptureEvents](../../src/application/capture-stream.mjs) | invariant-controls |
 | capture-observation-review | [sceneParts](../../src/presentation/capture-review-model.mjs) | invariant-controls |
 | local-browser-scope-safety | [selectAffectedBrowserChecks](../../scripts/browser-selection.mjs) | verification-scope-configuration |
+| audio-witness-coverage | [createMechanicalAudio](../../src/presentation/mechanical-audio.mjs), [AUDIO_POLICY](../../src/presentation/mechanical-audio-model.mjs), [createSoundControls](../../src/presentation/sound-controls.mjs), [createMechanicalAudioAdapter](../../src/application/mechanical-audio-adapter.mjs) | verification-scope-configuration |
 | verification-resource-window | [withVerificationWindow](../../scripts/verification-window.mjs), [validateIntent](../../scripts/verification-window.mjs) | verification-scope-configuration |
 | observable-test-completion | [waitUntil](../../scripts/wait-until.mjs) | verification-scope-configuration |
 | candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |

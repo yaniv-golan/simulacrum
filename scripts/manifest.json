@@ -3741,6 +3741,48 @@
       "qualificationBars": []
     },
     {
+      "id": "audio-witness-coverage",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Every browser check whose script reads the audio probe surface is in the affected browser selection for a change to any audio entrypoint, and any local scope row for an audio entrypoint declares every such reader. The reader set is a text probe over check scripts (checks drive the served page and import no audio module) -- a declared heuristic, not graph evidence.",
+      "owners": [
+        {
+          "path": "src/presentation/mechanical-audio.mjs",
+          "anchor": "createMechanicalAudio"
+        },
+        {
+          "path": "src/presentation/mechanical-audio-model.mjs",
+          "anchor": "AUDIO_POLICY"
+        },
+        {
+          "path": "src/presentation/sound-controls.mjs",
+          "anchor": "createSoundControls"
+        },
+        {
+          "path": "src/application/mechanical-audio-adapter.mjs",
+          "anchor": "createMechanicalAudioAdapter"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "verification-resource-window",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
@@ -4266,7 +4308,7 @@
       "id": "browser-scope-reviewed-application",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Scope proposals expose graph and read-boundary changes; explicit per-row review and successful source-bound candidate witnesses precede manifest application. Unknown reads and observed source drift reject; repeated unchanged application claims no new verification.",
+      "guarantee": "Scope proposals expose graph, reaching-check and read-boundary changes; explicit per-row review precedes every manifest application, and successful source-bound candidate witnesses precede application for membership removals, legacy membership recorded against a different inventory, declared-check changes and every non-membership field change. Rows whose only change is added reaching checks or the membership format apply on an explicit review decision alone and record NOT_REQUIRED; a declared reaching check executes before it is trusted. Unknown reads and observed source drift reject; repeated unchanged application claims no new verification.",
       "owners": [
         {
           "path": "scripts/browser-scope-proposal.mjs",
@@ -4293,6 +4335,18 @@
           {
             "path": "test/browser-scope-apply.test.mjs",
             "anchor": "apply verifies captured bytes"
+          },
+          {
+            "path": "test/browser-scope-reaching.test.mjs",
+            "anchor": "additive reaching checks are reviewed without witnesses"
+          },
+          {
+            "path": "test/browser-scope-apply.test.mjs",
+            "anchor": "additive-only proposal applies with NOT_REQUIRED"
+          },
+          {
+            "path": "test/browser-scope-apply.test.mjs",
+            "anchor": "a declared reaching check joins the row and its witnesses execute"
           }
         ],
         "negative": [
@@ -4303,6 +4357,22 @@
           {
             "path": "test/browser-scope-apply.test.mjs",
             "anchor": "stale proposal and review reject"
+          },
+          {
+            "path": "test/browser-scope-reaching.test.mjs",
+            "anchor": "removed reaching checks and same-id script edits that stop importing a helper require witnesses"
+          },
+          {
+            "path": "test/browser-scope-reaching.test.mjs",
+            "anchor": "a witness result is refused for a proposal that requires none"
+          },
+          {
+            "path": "test/browser-scope-reaching.test.mjs",
+            "anchor": "migration is a format change with no membership change"
+          },
+          {
+            "path": "test/browser-scope-reaching.test.mjs",
+            "anchor": "a new self-hosted check reaches every row additively"
           }
         ]
       },
@@ -6513,8 +6583,69 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "externalImports": []
+      "externalImports": [],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "scripts/verify-part-help-window.mjs",
@@ -6537,7 +6668,19 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -6555,7 +6698,20 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -6575,7 +6731,68 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -6607,7 +6824,67 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -6645,7 +6922,68 @@
         "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     }
   ],
   "experimentInputScopes": [
@@ -6920,8 +7258,21 @@
         }
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "checks": [
@@ -6985,7 +7336,6 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -7000,6 +7350,19 @@
         "scripts/browser-evidence.mjs",
         "src/application/capture-packet.mjs",
         "src/application/capture-stream.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
       ]
     },
     {
@@ -7034,8 +7397,21 @@
         }
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-recording-browser",
+        "verify-remote-playtest"
+      ]
     },
     {
       "checks": [
@@ -7107,8 +7483,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7135,6 +7510,19 @@
         "src/application/feedback-protocol.mjs",
         "src/model/blueprint.mjs",
         "src/presentation/capture-review-model.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
       ]
     },
     {
@@ -7159,8 +7547,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
+      "consumerSourceHash": "85b3d6acf6980ba64bf2b53657cca17c31607f4c79b9218f1fa25f16a56b77cd",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7238,6 +7625,69 @@
         "scripts/app-fingerprint.mjs",
         "scripts/browser-session.mjs",
         "scripts/source-identity.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
       ]
     },
     {
@@ -7262,8 +7712,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
+      "consumerSourceHash": "85b3d6acf6980ba64bf2b53657cca17c31607f4c79b9218f1fa25f16a56b77cd",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7381,6 +7830,69 @@
       "entrypoint": "scripts/app-fingerprint.mjs",
       "dependencies": [
         "scripts/module-graph.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
       ]
     },
     {
@@ -7413,8 +7925,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "19e75bd79c7488d0d9f695f1dc6673c1faaa289a1c5477086478a933960356ce",
+      "consumerSourceHash": "28679b96841592cebf0b08216e37bb65de2be3dd3b1c8607484d38af1e6f8dea",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7527,6 +8038,7 @@
         "test/browser-report.test.mjs",
         "test/browser-scope-apply.test.mjs",
         "test/browser-scope-proposal.test.mjs",
+        "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
@@ -7557,7 +8069,70 @@
       ],
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "entrypoint": "scripts/source-identity.mjs",
-      "dependencies": []
+      "dependencies": [],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -7616,8 +8191,25 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "93a7ededab1522f8b9c413c3339512813a38729fb233a3d6cf602576a801516e"
+      "consumerSourceHash": "a7054abfa04f02dec0ca8c6d2fecf36cffa279098232f8689d60c03a4829d583",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-browser",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-edit-cycles",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-motion-diagnostics",
+        "verify-part-help-window",
+        "verify-remote-playtest",
+        "verify-starter-browser",
+        "verify-workshop"
+      ]
     },
     {
       "checks": [
@@ -7633,8 +8225,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7642,7 +8233,20 @@
       ],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
       "entrypoint": "scripts/playtest/capture-fault.mjs",
-      "dependencies": []
+      "dependencies": [],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "checks": [
@@ -7698,8 +8302,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7733,6 +8336,19 @@
         "scripts/playtest/feedback-load.mjs",
         "scripts/playtest/verify-deployment.mjs",
         "src/application/feedback-protocol.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
       ]
     },
     {
@@ -7757,8 +8373,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7772,7 +8387,20 @@
       ],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
-      "dependencies": []
+      "dependencies": [],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "checks": [
@@ -7788,8 +8416,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7825,6 +8452,19 @@
       "entrypoint": "scripts/playtest/download.mjs",
       "dependencies": [
         "scripts/playtest/protocol.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
       ]
     },
     {
@@ -7929,8 +8569,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82",
+      "consumerSourceHash": "70d25b158a7014d42c92c59e05ebdbc7d1fce098e07cc0d8b928a2b8118510f4",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7962,6 +8601,67 @@
         "scripts/playtest/feedback-node.mjs",
         "scripts/playtest/protocol.mjs",
         "src/application/feedback-protocol.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
       ]
     },
     {
@@ -8018,8 +8718,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
+      "consumerSourceHash": "85b3d6acf6980ba64bf2b53657cca17c31607f4c79b9218f1fa25f16a56b77cd",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8141,6 +8840,7 @@
         "test/browser-report.test.mjs",
         "test/browser-scope-apply.test.mjs",
         "test/browser-scope-proposal.test.mjs",
+        "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
@@ -8179,9 +8879,72 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "sourceSha256": "0fa170b7b1ba96966b364c5ceb9125ae98a1a55bf591c534ea3681f8dde0fa4c",
+      "sourceSha256": "ac9e53c882d8833c520954f1b6941b80f4bd5241df3a4bd273e4391ea35acdae",
       "entrypoint": "scripts/module-graph.mjs",
-      "dependencies": []
+      "dependencies": [],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-render-lifecycle",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "checks": [
@@ -8269,8 +9032,7 @@
           ]
         }
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8307,6 +9069,19 @@
         "scripts/playtest/credential-isolation.mjs",
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
+      ],
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
       ]
     },
     {
@@ -8341,8 +9116,68 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
+      "consumerSourceHash": "156ac9a2756e7370e33377dee0901cc15f0d8f6bf505129ded531561acc512b4",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8379,8 +9214,68 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
+      "consumerSourceHash": "156ac9a2756e7370e33377dee0901cc15f0d8f6bf505129ded531561acc512b4",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -8406,8 +9301,21 @@
         }
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest",
+        "verify-workbench-content"
+      ]
     },
     {
       "entrypoint": "scripts/playtest/feedback-load.mjs",
@@ -8445,7 +9353,6 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -8457,7 +9364,20 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7"
+      "consumerSourceHash": "acb835948bcbe12382496e62c5d373baf7cf45ba3fd1f11773c8537316938a4f",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -8491,7 +9411,6 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -8527,7 +9446,68 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82"
+      "consumerSourceHash": "70d25b158a7014d42c92c59e05ebdbc7d1fce098e07cc0d8b928a2b8118510f4",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "qualify-workshop",
+        "verify-adaptive-graphics",
+        "verify-assemblies-browser",
+        "verify-assembly-library-browser",
+        "verify-assembly-ux-browser",
+        "verify-attachment-status",
+        "verify-authorable-scenes",
+        "verify-ball-browser",
+        "verify-camera-browser",
+        "verify-camera-recovery",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-connection-test-browser",
+        "verify-direct-edit-browser",
+        "verify-edit-cycles",
+        "verify-energy-browser",
+        "verify-exploded-browser",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-guide-feedback",
+        "verify-inspector-browser",
+        "verify-lamp-browser",
+        "verify-lamp-performance",
+        "verify-learning-controller",
+        "verify-learning-examples",
+        "verify-linear-actuator-browser",
+        "verify-load-cell-browser",
+        "verify-load-cell-copy-browser",
+        "verify-load-cell-force-browser",
+        "verify-manipulation-browser",
+        "verify-mechanical-audio",
+        "verify-mirror-browser",
+        "verify-motion-diagnostics",
+        "verify-part-help-browser",
+        "verify-part-help-inspectors",
+        "verify-part-help-window",
+        "verify-parts-catalog",
+        "verify-port-explanations",
+        "verify-property-focus",
+        "verify-recording-browser",
+        "verify-release-coupler",
+        "verify-remote-playtest",
+        "verify-rope-browser",
+        "verify-selection-browser",
+        "verify-shared-sensing",
+        "verify-snap-intent",
+        "verify-socket-preview",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-starter-browser",
+        "verify-surface-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-vehicle-controls",
+        "verify-workbench-content",
+        "verify-workshop"
+      ]
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8544,7 +9524,6 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8588,7 +9567,20 @@
         }
       ],
       "sourceSha256": "79069fc9a2dca8b981a87313eb7dbf37d1cdf3c0e059e2cc6150696e8561af47",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "entrypoint": "scripts/verify-feedback-lifecycle.mjs",
@@ -8605,7 +9597,6 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8641,7 +9632,20 @@
         }
       ],
       "sourceSha256": "ab9baa8c627d89c5c588a2914795a1ebadefff451e8177b33a47dd3214ce5c42",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     },
     {
       "entrypoint": "scripts/verify-feedback-recovery.mjs",
@@ -8659,7 +9663,6 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(file)",
@@ -8679,7 +9682,20 @@
         }
       ],
       "sourceSha256": "7f0d1c0126b12b6095bad6da7a48acd450e052840b0d75f0296ea4c499f796f7",
-      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reachingChecks": [
+        "measure-cameras",
+        "measure-gears",
+        "verify-cloud-playtest",
+        "verify-cloud-runtime",
+        "verify-feedback-flow",
+        "verify-feedback-lifecycle",
+        "verify-feedback-receipts",
+        "verify-feedback-recovery",
+        "verify-mechanical-audio",
+        "verify-part-help-window",
+        "verify-remote-playtest"
+      ]
     }
   ],
   "verificationResumeLeaves": [

@@ -109,17 +109,17 @@ test('local feature boundary narrows only its reviewed dependency shape; shared 
     ),
   );
   nodes.set('help', { dependencies: ['shared'], opaqueInputs: false });
+  const graph = { nodes, errors: [] };
   const scopes = [
     {
       entrypoint: 'help',
       dependencies: ['shared'],
       checks: ['help', 'integration'],
       consumers: [],
-      roots: browserScopeRoots(checks),
+      reachingChecks: browserScopeRoots(checks, graph, 'help'),
     },
   ];
-  const select = (files) =>
-    selectAffectedBrowserChecks({ checks, graph: { nodes, errors: [] }, files, scopes });
+  const select = (files) => selectAffectedBrowserChecks({ checks, graph, files, scopes });
   assert.equal(select(['help']).checks.length, 2);
   assert.equal(select(['shared']).checks.length, 3);
   assert.equal(select(['help', 'new']).checks.length, 3);
@@ -151,7 +151,7 @@ test('documentation composes with local scopes without exempting runtime data or
       dependencies: [],
       checks: ['mirror'],
       consumers: browserScopeConsumers(graph, 'scripts/mirror.mjs'),
-      roots: browserScopeRoots(checks),
+      reachingChecks: browserScopeRoots(checks, graph, 'scripts/mirror.mjs'),
     },
   ];
   const doc = 'docs/development/.reviews/README/developer-guide.json';
@@ -326,7 +326,7 @@ test('shared scopes expand for new reverse consumers and new browser roots', asy
     dependencies: [],
     checks: ['a', 'b'],
     consumers: browserScopeConsumers(graph, 'src/shared.mjs'),
-    roots: browserScopeRoots(checks),
+    reachingChecks: browserScopeRoots(checks, graph, 'src/shared.mjs'),
   };
   const select = () =>
     selectAffectedBrowserChecks({ checks, graph, files: ['src/shared.mjs'], scopes: [scope] });
@@ -334,8 +334,18 @@ test('shared scopes expand for new reverse consumers and new browser roots', asy
   nodes.get(checks[2].script).dependencies.push('src/shared.mjs');
   assert.equal(select().checks.length, 3);
   nodes.get(checks[2].script).dependencies = [];
-  checks.push({ id: 'd', script: 'scripts/d.mjs', environment: 'self' });
+  // A new workshop check that does not reach the entrypoint leaves the local contract intact.
+  checks.push({ id: 'd', script: 'scripts/d.mjs', environment: 'workshop' });
   nodes.set('scripts/d.mjs', { dependencies: [] });
+  assert.equal(select().checks.length, 2);
+  // Once the served page reaches the module, every workshop check reaches it.
+  nodes.get('index.html').dependencies.push('src/shared.mjs');
+  assert.equal(select().checks.length, 4);
+  // A self-hosted check may load any module at runtime and always invalidates the contract.
+  nodes.get('index.html').dependencies = [];
+  checks.pop();
+  checks.push({ id: 'e', script: 'scripts/e.mjs', environment: 'self' });
+  nodes.set('scripts/e.mjs', { dependencies: [] });
   assert.equal(select().checks.length, 4);
 });
 
@@ -377,7 +387,7 @@ test('read audits distinguish metadata from fixtures and reject new reads, consu
       },
     ],
     consumers: browserScopeConsumers(graph, 'scripts/read.mjs'),
-    roots: browserScopeRoots(checks),
+    reachingChecks: browserScopeRoots(checks, graph, 'scripts/read.mjs'),
     consumerSourceHash: browserConsumerSourceHash(graph, 'scripts/read.mjs', () => 'reviewed'),
   };
   const select = (files) =>
@@ -445,7 +455,7 @@ test('read audit rejects stale callers and sibling argument providers for every 
       },
     ],
     consumers: browserScopeConsumers(graph, reader),
-    roots: browserScopeRoots(checks),
+    reachingChecks: browserScopeRoots(checks, graph, reader),
     consumerSourceHash: browserConsumerSourceHash(graph, reader, (p) => source.get(p), checks),
   };
   const select = (file) =>
@@ -472,4 +482,70 @@ test('read audit rejects stale callers and sibling argument providers for every 
     assert.equal(select(file).checks.length, 1, 'changed argument provider ' + file);
     source.set(provider, 'fixture.json');
   }
+});
+
+test('audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
+  // Checks drive the served page and import no audio module, so the reader set is a text
+  // probe over check scripts — a declared heuristic, not graph evidence. A comment that
+  // names the probe surface counts (conservative on purpose).
+  const probe = /impactVoiceStarts|readAudio\(|['"]Sound (?:on|off)['"]/;
+  const readersOf = (checks, read) =>
+    checks.filter((c) => probe.test(read(c.script))).map((c) => c.id);
+  assert.deepEqual(
+    readersOf([{ id: 'commented', script: 'x' }], () => '// probe: readAudio() in a comment'),
+    ['commented'],
+  );
+  const m = readManifest(),
+    checks = browserChecks(),
+    graph = buildModuleGraph(process.cwd(), {
+      purpose: 'test-selection',
+      entrypoints: browserGraphEntrypoints(process.cwd()),
+    }),
+    readers = readersOf(checks, (script) => readFileSync(script, 'utf8')).sort();
+  assert.ok(readers.includes('verify-ball-browser') && readers.includes('verify-mechanical-audio'));
+  const entrypoints = [
+    'src/presentation/mechanical-audio.mjs',
+    'src/presentation/mechanical-audio-model.mjs',
+    'src/presentation/sound-controls.mjs',
+    'src/application/mechanical-audio-adapter.mjs',
+  ];
+  const missing = (scopes, file) => {
+    const selected = new Set(
+      selectAffectedBrowserChecks({ checks, graph, files: [file], scopes }).checks.map((c) => c.id),
+    );
+    return readers.filter((id) => !selected.has(id));
+  };
+  for (const file of entrypoints) {
+    assert.ok(graph.nodes.has(file), `${file} is in the served graph`);
+    assert.deepEqual(missing(m.browserLocalScopes, file), [], `${file} selects every audio reader`);
+  }
+  // Negative control: a local row for an audio entrypoint that declares only one reader
+  // narrows selection to that reader; the guarantee must report the omitted reader.
+  const file = entrypoints[0],
+    node = graph.nodes.get(file),
+    narrowed = [
+      ...m.browserLocalScopes,
+      {
+        entrypoint: file,
+        checks: ['verify-mechanical-audio'],
+        dependencies: [...node.dependencies].sort(),
+        externalImports: (node.imports ?? [])
+          .filter((i) => i.target === null)
+          .map((i) => i.specifier)
+          .sort(),
+        consumers: browserScopeConsumers(graph, file),
+        reachingChecks: browserScopeRoots(checks, graph, file),
+      },
+    ];
+  assert.equal(
+    selectAffectedBrowserChecks({ checks, graph, files: [file], scopes: narrowed }).scope,
+    'local-contract',
+    'the fabricated row must actually match, or the control proves nothing',
+  );
+  assert.deepEqual(missing(narrowed, file), ['verify-ball-browser']);
 });

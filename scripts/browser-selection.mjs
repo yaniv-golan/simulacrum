@@ -54,6 +54,14 @@ export function browserConsumerSourceHash(graph, path, readSource, checks) {
         delete audit.sourceSha256;
         delete audit.consumerSourceHash;
       }
+      // Reaching-check membership is derived from the graph, never read at runtime.
+      for (const row of [
+        ...(manifest.browserLocalScopes ?? []),
+        ...(manifest.browserReviewMetadataScopes ?? []),
+      ]) {
+        delete row.reachingChecks;
+        delete row.roots;
+      }
       bytes = JSON.stringify(manifest);
     }
     hash.update(input).update('\0').update(bytes).update('\0');
@@ -61,7 +69,45 @@ export function browserConsumerSourceHash(graph, path, readSource, checks) {
   return hash.digest('hex');
 }
 
-export function browserScopeRoots(checks) {
+/** Served application roots that a check environment loads besides its own script. */
+export function browserCheckRoots(check) {
+  return [
+    check.script,
+    ...(check.environment === 'workshop'
+      ? ['index.html']
+      : check.environment === 'probe'
+        ? ['test/browser/index.html']
+        : []),
+  ];
+}
+/** Full import closure of each check's script and served root over the plain graph.
+ * Opacity governs runtime reads, not import edges, so opaque nodes are traversed. */
+export function browserCheckClosures(checks, graph) {
+  const closures = new Map();
+  for (const check of checks) {
+    const reached = new Set(browserCheckRoots(check));
+    for (const path of reached)
+      for (const dependency of graph.nodes.get(path)?.dependencies ?? []) reached.add(dependency);
+    closures.set(check.id, reached);
+  }
+  return closures;
+}
+/** Sorted ids of the checks whose root chain reaches the entrypoint. Self-hosted checks serve
+ * their own pages and may load any application module at runtime, so every self check is
+ * treated as reaching every entrypoint; the static graph cannot bound them. */
+export function browserScopeRoots(
+  checks,
+  graph,
+  entrypoint,
+  closures = browserCheckClosures(checks, graph),
+) {
+  return checks
+    .filter((c) => c.environment === 'self' || closures.get(c.id)?.has(entrypoint))
+    .map((c) => c.id)
+    .sort();
+}
+/** The former whole-inventory digest; retained only to classify legacy rows during migration. */
+export function legacyBrowserScopeRoots(checks) {
   return createHash('sha256')
     .update(JSON.stringify(checks.map((c) => `${c.id}:${c.environment}:${c.script}`).sort()))
     .digest('hex');
@@ -78,14 +124,8 @@ export function selectAffectedBrowserChecks({
 }) {
   // Absence from a static graph is not evidence of isolation when a reachable
   // reader can load an unresolved input. Include served roots as well as verifiers.
-  const queue = checks.flatMap((c) => [
-    c.script,
-    ...(c.environment === 'workshop'
-      ? ['index.html']
-      : c.environment === 'probe'
-        ? ['test/browser/index.html']
-        : []),
-  ]);
+  const queue = checks.flatMap(browserCheckRoots);
+  const closures = browserCheckClosures(checks, graph);
   const seen = new Set();
   let unresolved = false,
     readKindsAudited = metadataEnvironmentSafe;
@@ -132,7 +172,8 @@ export function selectAffectedBrowserChecks({
             ['documentation', 'unit-test'].every((kind) => r.excludedInputs?.includes(kind)),
         ) ||
         JSON.stringify(audit.consumers) !== JSON.stringify(browserScopeConsumers(graph, path)) ||
-        JSON.stringify(audit.roots) !== JSON.stringify(browserScopeRoots(checks)) ||
+        JSON.stringify(audit.reachingChecks) !==
+          JSON.stringify(browserScopeRoots(checks, graph, path, closures)) ||
         audit.consumerSourceHash !== browserConsumerSourceHash(graph, path, readSource, checks)
       )
         readKindsAudited = false;
@@ -187,7 +228,8 @@ export function selectAffectedBrowserChecks({
         return (
           scope.entrypoint === file &&
           JSON.stringify(scope.consumers) === JSON.stringify(browserScopeConsumers(graph, file)) &&
-          JSON.stringify(scope.roots) === JSON.stringify(browserScopeRoots(checks)) &&
+          JSON.stringify(scope.reachingChecks) ===
+            JSON.stringify(browserScopeRoots(checks, graph, file, closures)) &&
           JSON.stringify(
             (node.imports ?? [])
               .filter((i) => i.target === null)
@@ -224,14 +266,7 @@ export function selectAffectedBrowserChecks({
   for (const check of checks) {
     let reason = fallback,
       path = null;
-    const roots = [
-      check.script,
-      ...(check.environment === 'workshop'
-        ? ['index.html']
-        : check.environment === 'probe'
-          ? ['test/browser/index.html']
-          : []),
-    ];
+    const roots = browserCheckRoots(check);
     if (!reason && check.environment === 'self') reason = 'self-hosted runtime inputs';
     const queue = roots.map((p) => [p]),
       seen = new Set();

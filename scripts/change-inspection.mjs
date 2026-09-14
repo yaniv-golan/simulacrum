@@ -163,6 +163,28 @@ export function summarizeChangeInspection({ analysis, value: report }) {
   lines.push(
     `Executable conservative browser selection: ${report.browserSelection.checks.length}/${report.browserChecks.length}. Use test:browser:affected -- --files <paths> --summary for reasons.`,
   );
+  // A waived tier still records what it skipped: every selected id, grouped by the reason
+  // that selected it. Dependency chains explain causal selections; opaque or fallback
+  // reasons apply to many checks at once and collapse into one line.
+  const groups = new Map();
+  for (const check of report.browserSelection.checks) {
+    const row = report.browserSelection.reasons?.find((r) => r.id === check.id);
+    const reason = row?.reason ?? report.browserSelection.fallback ?? 'selected';
+    const path = Array.isArray(row?.path) && row.path.length ? row.path : null;
+    // `path` is a dependency chain for causal selections and the changed-file list for a
+    // local contract; longer chains keep their last three links behind an ellipsis.
+    const chain =
+      reason === 'changed dependency' && path
+        ? ` via ${path.length > 3 ? '… → ' : ''}${path.slice(-3).join(' → ')}`
+        : reason === 'manifest local behavioral contract' && path
+          ? ` for ${path.join(', ')}`
+          : '';
+    if (!groups.has(reason)) groups.set(reason, []);
+    groups.get(reason).push(`${check.id}${chain}`);
+  }
+  if (!groups.size) lines.push('  affected: none');
+  for (const [reason, ids] of groups)
+    lines.push(`  affected (${reason}, ${ids.length}): ${ids.join(', ')}`);
   if (report.browserSelection.unknownInputs?.length)
     lines.push(`  Unknown browser inputs: ${report.browserSelection.unknownInputs.join(', ')}`);
   lines.push('Affected documentation:');

@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"9d7754e0f253e1ae76264d93cfb871fce38e8626f05932345c12f61311f47097","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"71522f5937aecb605518b1bd7867cfc7063f306cd62cd5c7be2d92c4e2751298","disposition":"still accurate","rationale":"AGENTS.md now qualifies that the wait notice names tier, branch, destination and origin only when the owner is a candidate; the guide's entry points and the developer-guidance/policy split are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8e8ddf7f09da65a82d53c557a70bbd8e7b8e98bf7694424b27d347e81a0eaba4","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"7ce1e5725793b731a8b65ae58feac81d3235d969755cabd01534e20cd79d3acc","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. AGENTS.md gained the paragraph that a waived tier must still record its affected selection by check id (test:browser:affected --summary / inspect:change enumerate without executing); the guide’s entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b7c6296bfe7ae17efcef8ef3e1766337f025d0abd52c2539957e598058046d33","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"still accurate","rationale":"The changed dependencies are main's own landings (verification-outcome, package.json, release-operations) already reviewed on main, plus my remote-setup sentence about dialog dismissal. Tiers, commands, window policy and evidence requirements described here are untouched by a presentation-only dialog header change."} -->
+<!-- doc-review {"version":1,"fingerprint":"8cd4b3f44b0034f9e852a44b5ddddec45a6b301be37d01b0218a967492047e66","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"3aeec67ef8ac0d06f23cf57f647ae884123a412a845f1961df6e2f83d123a131","disposition":"updated","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. Added the sentence that a waived tier must still record its affected browser selection by check id and the formatting note that scripts/manifest.json keeps the scope writer’s JSON.stringify layout, excluded from prettier and enforced by validateManifestText with the --canonical-layout repair. Verified against package.json scripts, inspect-change.mjs/module-graph.mjs and validate-manifest.mjs."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -100,10 +100,11 @@ because the changed feature appears unrelated.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
 - `npm run test:browser:affected -- --files <paths>` selects, explains in its report, builds once and executes conservative browser coverage. Add `--summary` for source-bound discovery without building or opening sockets.
+- A waived tier must still record its affected browser selection by check id: `npm run test:browser:affected -- --files <paths> --summary` prints the selection JSON and `npm run inspect:change -- --files <paths>` lists the ids grouped by selection reason; both run without executing checks or entering the verification window. Waiver applies to execution, never to enumeration.
 - `npm run test:browser -- --checks verify-part-help-window verify-part-help-browser` runs explicit development probes with one build and combined `artifacts/browser-suite/selected.json` evidence. This does not claim local completion or qualification. Unknown IDs/options fail rather than silently narrowing scope.
 - `npm run test:browser` builds and runs all registered browser checks; `npm run test:browser:smoke` runs construction smoke checks.
 - `npm run test:performance` runs the isolated performance checks.
-- `npm run format` applies the pinned formatter; generated validators are excluded.
+- `npm run format` applies the pinned formatter; generated validators and the machine-written `scripts/manifest.json` are excluded — the manifest keeps the scope writer's `JSON.stringify(…, null, 2)` layout, enforced by `validateManifest` (repair: `node scripts/validate-manifest.mjs --canonical-layout`).
 - `node scripts/generate-schema.mjs` refreshes generated validation after schema edits.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
 
@@ -155,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"6cfcb27eea1eb67bba4d47ff8ad45365715dbeb5f959a8b21173d1b67393c24f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb1f6b5fa31892c2a6af1946448bebaa1c6e25c9663c6d4352b57c8dc841e6c2","disposition":"still accurate","rationale":"Only the generated reference.md changed, gaining the dialog-close-consistency row in its Invariant owners table (owners createDialogClose, .dialog-header and the feedback/recording-setup close labels); the documentation workflow (prepare, review, batch, check) described here is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1cfce07c9b31409e82705b3935d7089881bad1c7ff77fad32e6522ec5e58a06d","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eab8108636439b8c2e752828111bda0f545587614de828069ba974a2f1b0b45b","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. The regenerated reference lists the new owners (reaching-check functions, affectedNotWitnessed, audio-witness-coverage invariant, validateManifestText) and module-graph now skips nested worktrees during discovery; the regenerate, section review, batch submission and exact-source closure workflow is unchanged and no review was accepted automatically."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -296,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"060a0d85a97b09fd1673e870d4d598bced422dd7928b995bb21ebb1b1a1f9182","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"beef06df6ca28af841b0eb5b63c5415b318a6872a07cf2bf2e482926a862bfd0","disposition":"still accurate","rationale":"browser:scopes apply regenerated the manifest rows for the remote-playtest local scope (dependency shape now includes src/presentation/dialog-close.mjs) and the reviewed metadata hashes of the four feedback fixture servers, the workbench journey and their consumer closures, after the witnesses passed. The proposal/review/apply flow, exclusion rules and local-contract semantics described here are exactly what was exercised; no text change needed."} -->
+<!-- doc-review {"version":1,"fingerprint":"94c38dd2cc1608b05987bcd2177738e586e6ba5a6fdaca7dd141cb1bef2d189b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8fb8081999b725ee21cc54536eee3be3d184e4e10038d5995944990b10b9d8fd","disposition":"updated","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. The section now describes scope rows binding the reaching checks instead of one root-inventory digest (self checks reaching every entrypoint; reachingNotDeclared with the undeclared-or-declare review contract; NOT_REQUIRED applications for additive or format-only rows) and --base on prepare/scope proposals recording affectedNotWitnessed as enumeration only. Browser execution concurrency text is unchanged from main (two workers, exclusive classes). Verified against browser-selection.mjs, browser-scope-proposal/apply.mjs, browser-registry.mjs and the migrated manifest rows."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -304,8 +305,12 @@ opaque file/subprocess inputs conservatively expand selection. In the current ap
 shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
-All local scopes also bind the transitive reverse-consumer set and browser-root inventory.
-New consumers and roots restore broad coverage; outgoing imports alone are insufficient.
+All local scopes also bind the transitive reverse-consumer set and the reaching checks: the
+browser checks whose script or served page reaches the entrypoint through the import graph.
+New consumers and new reaching checks restore broad coverage until reviewed; outgoing imports
+alone are insufficient, and a check that does not reach the entrypoint never affects its row.
+Self-environment checks serve their own pages and may load any application module, so every
+self check counts as reaching every entrypoint.
 Part-help presentation edits select the registered help and lifecycle checks; its standalone verifier retains its audited scope.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
 Known documentation and unit-test files can be excluded from browser execution only
@@ -341,12 +346,25 @@ New opaque reads remain blocked until explicitly classified. Optional
 `{kind: "metadata", entrypoint, reads, checks}` (or `kind: "local"` without reads).
 Each read supplies `expression`, `purpose` and `excludedInputs`; computed hashes are
 not accepted as declarations. Existing classifications carry forward visibly.
+Optional `--base <commit>` (also on `verify:prepare`) names the candidate delta; the
+proposal, its summary and the apply report then carry `affectedNotWitnessed` — the
+checks that delta would select which no witness of this proposal executes. It is
+enumeration only (NOT_EXECUTED), never blocks or changes application, and reads
+"not computed" without a base; a waived or partial run is accountable to that list. The
+review digest binds the basis, so `verify:prepare -- --scope-review` must repeat the same
+`--base`.
 
 Write a review JSON with `proposalDigest` and separate `decisions` containing each
 changed `key`, `accept: true` and a specific `rationale`. Then run
 `npm run browser:scopes -- apply artifacts/scope-proposal.json --review artifacts/scope-review.json`.
 Apply captures an isolated candidate, installs dependencies and runs the union of old
-and proposed witnesses under the shared verification window. Metadata invariant controls
+and proposed witnesses under the shared verification window. A row that gains reaching checks not
+in its declared checks lists them as `reachingNotDeclared`; its review row must carry
+`undeclared: "acknowledged"` or, for local rows, `declare: [ids]`, and declared ids join the
+row's checks and its witnesses before anything is trusted. Rows whose only change is added
+reaching checks or the membership format apply on that review alone and record witnesses
+`NOT_REQUIRED`; removals, a legacy digest recorded against a different inventory, and every
+other field change execute witnesses as before. Metadata invariant controls
 execute their actual tests; imported pass reports cannot authorize application. Exact
 request, successful receipts and candidate identity must agree. Only then is the manifest
 replaced; source/index drift rejects. Run one writer on this worktree: observed drift
@@ -513,7 +531,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"77e0c1ebc5ab953a1ea0f3883aaaed4cfb044a1c81bb2491cb4bdd55f8e31c76","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"87913b8cdf24841f10f1785fc5fa9e56a6450381977b9d40394e688c74bf6b2c","disposition":"still accurate","rationale":"The runner's failure-path snapshot now times its enumeration and attribute lookup separately and matches Gatekeeper daemons case-insensitively; window serialization, inheritance, wait limits, intent publication and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b903aef28eeaa1f2b692142da8b6c03de65b671e14129460f426d3c18f133de3","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"ac0d2e67b359ef2a23c6a86daedcfec53e65da1ece6849724313ed42ac35d097","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. The window’s admission classes, wait limits, owner metadata publication, recovery attestation and cooperative-scheduling caveats are unchanged; verification-window.mjs is untouched on this branch and the dependency drift is the verify-a-change section text and package.json scripts."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -562,7 +580,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a5dada95c0a04594bafa6ff2a77a38f983dbda7f1026df4997e513d253896603","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"766c82da12af8d92353c56621463b530ac0eb3c42093ab095cbcb200220f1f8a","disposition":"still accurate","rationale":"Only scope digest rows in scripts/manifest.json changed through the reviewed apply; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"c55ec28e0bb87634d86693afb5eedf17ec33edf8d37b94cb6fd720657da930bb","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9db10a6f629630786538150c69ebcf3106d22b175fd0526c53df27e5c12a25e9","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. Candidate capture, dependency validation, exact source/index checks, resume of audited pure leaves, priority hints and tier ownership are unchanged. Scope preparation applies additive reaching-check and format-only rows without witnesses and records affectedNotWitnessed when --base is given; none of that changes what a candidate report certifies."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

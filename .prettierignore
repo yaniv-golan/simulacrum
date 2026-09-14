@@ -2,3 +2,4 @@ src/model/generated/
 artifacts/
 dist/
 node_modules/
+scripts/manifest.json

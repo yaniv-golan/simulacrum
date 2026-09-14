@@ -3,7 +3,7 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { prepareVerification, assertVerificationReady } from './verification-preparation.mjs';
 const usage =
-  'verify:prepare [--check] [--declarations file] [--scope-review file] [--documentation-review file] [--out artifacts/verification-preparation.json]';
+  'verify:prepare [--check] [--base commit] [--declarations file] [--scope-review file] [--documentation-review file] [--out artifacts/verification-preparation.json]';
 try {
   const args = process.argv.slice(2),
     options = {},
@@ -20,11 +20,13 @@ try {
       '--scope-review': 'scopeReview',
       '--documentation-review': 'documentationReview',
       '--out': 'out',
+      '--base': 'base',
     }[args[i]];
     if (!key || !args[i + 1] || args[i + 1].startsWith('--') || seen.has(key)) throw Error(usage);
     seen.add(key);
     const value = args[++i];
     if (key === 'out') out = value;
+    else if (key === 'base') options.base = value;
     else options[key] = JSON.parse(readFileSync(value, 'utf8'));
   }
   if (check && Object.keys(options).length) throw Error(usage);

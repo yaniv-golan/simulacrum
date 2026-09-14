@@ -1,5 +1,24 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { validateInvariantCoverage } from './invariant-coverage.mjs';
+/** Sorted, unique, registered ids of the checks whose root chain reaches the row's entrypoint.
+ * The former whole-inventory `roots` digest is rejected; migrate through a scope proposal. */
+function reachingChecksOK(scope, browser) {
+  const ids = scope.reachingChecks;
+  return (
+    scope.roots === undefined &&
+    Array.isArray(ids) &&
+    ids.every((id, i) => typeof id === 'string' && (i === 0 || ids[i - 1] < id)) &&
+    ids.every((id) => browser.some((c) => c.id === id))
+  );
+}
+/** Structural admission of the scope rows alone, for applications that execute no witnesses. */
+export function validateScopeRows(m) {
+  const browser = m.browserChecks ?? [];
+  for (const scope of [...(m.browserLocalScopes ?? []), ...(m.browserReviewMetadataScopes ?? [])])
+    if (!reachingChecksOK(scope, browser)) throw Error('invalid browser scope reaching checks');
+  return m;
+}
 export function validateManifest(m) {
   const unique = (values, what) => {
     if (new Set(values).size !== values.length) throw new Error(`duplicate ${what}`);
@@ -111,7 +130,7 @@ export function validateManifest(m) {
       ) ||
       !Array.isArray(scope.consumers) ||
       !scope.consumers.every((p) => typeof p === 'string') ||
-      !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
+      !reachingChecksOK(scope, browser) ||
       !Array.isArray(scope.externalImports ?? []) ||
       !(scope.externalImports ?? []).every((p) => typeof p === 'string') ||
       !Array.isArray(scope.dependencies) ||
@@ -185,13 +204,32 @@ export function validateManifest(m) {
             r.excludedInputs.every((k) => ['documentation', 'unit-test'].includes(k)),
         ) ||
         !Array.isArray(scope.consumers) ||
-        !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
+        !reachingChecksOK(scope, browser) ||
         !/^[a-f0-9]{64}$/.test(scope.consumerSourceHash ?? ''))
     )
       throw Error('invalid audited browser reads');
   }
   return m;
 }
+export const CANONICAL_LAYOUT_MESSAGE =
+  "manifest layout is not canonical JSON.stringify(manifest, null, 2) plus a trailing newline (the scope writer's layout; prettier is not applied to this file). Repair: node scripts/validate-manifest.mjs --canonical-layout";
+/** The manifest is machine-written (browser:scopes apply) and excluded from prettier; its
+ * bytes must equal the writer's layout so hosted format checks and byte-level exemptions agree. */
+export function validateManifestText(text) {
+  if (typeof text !== 'string') throw new TypeError('manifest text must be a utf8 string');
+  const m = JSON.parse(text);
+  if (text !== JSON.stringify(m, null, 2) + '\n') throw new Error(CANONICAL_LAYOUT_MESSAGE);
+  return validateManifest(m);
+}
 export function readManifest() {
-  return validateManifest(JSON.parse(readFileSync(new URL('./manifest.json', import.meta.url))));
+  return validateManifestText(readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'));
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const path = new URL('./manifest.json', import.meta.url);
+  if (process.argv[2] === '--canonical-layout') {
+    // Rewrite the manifest in the writer's layout without touching its content.
+    const text = readFileSync(path, 'utf8');
+    writeFileSync(path, JSON.stringify(JSON.parse(text), null, 2) + '\n');
+    console.log('scripts/manifest.json rewritten in the canonical layout');
+  } else readManifest();
 }

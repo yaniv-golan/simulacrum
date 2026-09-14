@@ -9,7 +9,7 @@ import {
 } from './browser-scope-apply.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 export const scopeUsage =
-  'Use browser:scopes -- prepare [--declarations file.json] --out artifacts/proposal.json, or browser:scopes -- apply artifacts/proposal.json --review artifacts/review.json';
+  'Use browser:scopes -- prepare [--declarations file.json] [--base commit] --out artifacts/proposal.json, or browser:scopes -- apply artifacts/proposal.json --review artifacts/review.json';
 export async function scopeCLI(args, root = process.cwd()) {
   assertRuntime();
   assertScopeEnvironment();
@@ -20,7 +20,7 @@ export async function scopeCLI(args, root = process.cwd()) {
     if (rest[i].startsWith('--')) {
       const key = rest[i].slice(2);
       if (
-        !['declarations', 'out', 'review'].includes(key) ||
+        !['declarations', 'out', 'review', 'base'].includes(key) ||
         options[key] ||
         !rest[i + 1] ||
         rest[i + 1].startsWith('--')
@@ -35,6 +35,7 @@ export async function scopeCLI(args, root = process.cwd()) {
     const proposal = prepareScopeProposal(
       root,
       options.declarations ? read(options.declarations) : [],
+      { base: options.base ?? null },
     );
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, JSON.stringify(proposal, null, 2) + '\n');
@@ -47,7 +48,8 @@ export async function scopeCLI(args, root = process.cwd()) {
     positional.length === 1 &&
     options.review &&
     !options.out &&
-    !options.declarations
+    !options.declarations &&
+    !options.base
   ) {
     const report = await applyScopeProposal(root, read(positional[0]), read(options.review));
     console.log(

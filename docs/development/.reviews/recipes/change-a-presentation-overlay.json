@@ -51,7 +51,7 @@
     "scripts/browser-evidence.mjs": "7c7a2c6107430f9a335cb61a2b977109f2245e74b756f83f3c2da7f8577477a5",
     "scripts/browser-session.mjs": "6bbf0460ff187b13c775cacbd2496aa9ad45972067f2d7ec0ae7c864c6f9be0e",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
-    "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
+    "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-rope-browser.mjs": "cba89c75238f31129d5699b0629c140e33065b4b2aee5e7c05ee75fbc61b9e20",

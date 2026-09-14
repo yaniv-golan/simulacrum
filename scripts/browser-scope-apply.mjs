@@ -20,9 +20,11 @@ import {
   validateScopeWitnessResult,
 } from './browser-scope-witness-contract.mjs';
 import { assertRuntime, assertLocalServerAccess } from './runtime-preflight.mjs';
+import { validateScopeRows } from './validate-manifest.mjs';
 import {
   prepareScopeProposal,
-  validateScopeReview,
+  inspectScopeInputs,
+  resolveScopeReview,
   same,
   digest,
 } from './browser-scope-proposal.mjs';
@@ -99,15 +101,33 @@ export async function applyScopeProposal(
 ) {
   assertRuntime();
   assertScopeEnvironment();
-  validateScopeReview(proposal, review);
+  // Declared reaching checks join their rows before the witness request is derived, so a
+  // declaration is always executed before it is trusted. `proposal` stays the reviewed identity.
+  const resolved = resolveScopeReview(proposal, review, inspectScopeInputs(root));
   const current = candidateIdentity(root);
-  if (same(current, proposal.expected))
-    return { status: 'already-current', witnesses: 'NOT_EVALUATED', changed: false };
-  const rebuilt = prepareScopeProposal(root, proposal.declarations);
+  const skipped = resolved.affectedNotWitnessed ?? { basis: null, checks: null };
+  const skippedLine = `Affected but not witnessed (NOT_EXECUTED; enumeration only): ${
+    skipped.checks
+      ? skipped.checks.join(', ') || 'none'
+      : `not computed${skipped.error ? ` (${skipped.error})` : ''}`
+  }`;
+  if (same(current, resolved.expected)) {
+    console.log(skippedLine);
+    return {
+      status: 'already-current',
+      witnesses: 'NOT_EVALUATED',
+      changed: false,
+      affectedNotWitnessed: skipped,
+    };
+  }
+  const rebuilt = prepareScopeProposal(root, proposal.declarations, {
+    base: proposal.affectedNotWitnessed?.basis?.base ?? null,
+  });
   if (!same(rebuilt, proposal))
     throw Error(
       'Stale proposal: source, graph, declarations or manifest changed; prepare and review again',
     );
+  const required = scopeWitnessRequest(resolved).scopes.length > 0;
   const directory = scopeArtifact(root, `artifacts/browser-scopes/apply-${randomUUID()}`);
   mkdirSync(directory, { recursive: true });
   const reportPath = join(directory, 'report.json');
@@ -116,12 +136,18 @@ export async function applyScopeProposal(
     ok: false,
     proposalDigest: proposal.digest,
     review,
+    declared: Object.fromEntries(
+      resolved.changes.filter((c) => c.declared).map((c) => [c.key, c.declared]),
+    ),
     source: proposal.source,
-    proposedManifestSha256: digest(proposal.proposedManifest),
+    // Enumeration only: what the candidate delta selects that this application does not run.
+    affectedNotWitnessed: skipped,
+    proposedManifestSha256: digest(resolved.proposedManifest),
     reportPath,
   };
   const publish = () => writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
   publish();
+  console.log(skippedLine);
   try {
     await withWindow(async () => {
       const destination = join(mkdtempSync(join(tmpdir(), 'simulacrum-scope-')), 'source');
@@ -134,13 +160,26 @@ export async function applyScopeProposal(
         )
       )
         throw Error('Origin changed before scope capture');
-      writeFileSync(join(destination, 'scripts/manifest.json'), proposal.proposedManifest);
-      if (!same(candidateIdentity(destination), proposal.expected))
+      writeFileSync(join(destination, 'scripts/manifest.json'), resolved.proposedManifest);
+      if (!same(candidateIdentity(destination), resolved.expected))
         throw Error('Proposed candidate identity mismatch');
       publish();
-      report.witnesses = await runWitnesses(destination, proposal, directory);
-      if (!report.witnesses?.ok) throw Error('Scope witnesses did not pass');
-      if (!same(candidateIdentity(destination), proposal.expected))
+      if (required) {
+        report.installed = 'npm ci';
+        report.witnesses = await runWitnesses(destination, resolved, directory);
+        if (!report.witnesses?.ok) throw Error('Scope witnesses did not pass');
+      } else {
+        // Added reaching checks and membership format changes were reviewed explicitly; no
+        // source byte changed, so no witness executes and no dependency install occurs.
+        validateScopeRows(JSON.parse(resolved.proposedManifest));
+        report.witnesses = {
+          status: 'NOT_REQUIRED',
+          ok: true,
+          reason: 'only added reaching checks or membership format changed',
+        };
+        report.installed = 'skipped';
+      }
+      if (!same(candidateIdentity(destination), resolved.expected))
         throw Error('Candidate changed during scope witnesses');
       if (!same(candidateIdentity(root), proposal.source))
         throw Error('Origin changed during scope witnesses; manifest not applied');
@@ -149,13 +188,13 @@ export async function applyScopeProposal(
       report.beforeManifest = readFileSync(target, 'utf8');
       publish();
       try {
-        writeFileSync(temporary, proposal.proposedManifest, { flag: 'wx' });
+        writeFileSync(temporary, resolved.proposedManifest, { flag: 'wx' });
         chmodSync(temporary, proposal.source.files['scripts/manifest.json'].mode);
         renameSync(temporary, target);
       } finally {
         if (existsSync(temporary)) unlinkSync(temporary);
       }
-      if (!same(candidateIdentity(root), proposal.expected))
+      if (!same(candidateIdentity(root), resolved.expected))
         throw Error(
           'Post-application source mismatch; preserve changes and inspect retained report; no automatic rollback',
         );

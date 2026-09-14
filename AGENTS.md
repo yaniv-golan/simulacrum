@@ -58,7 +58,11 @@ Before choosing an implementation owner, use the [developer guide](docs/developm
 test selection, registered browser checks and affected explanations without executing them
 (use `--json` for full detail);
 `npm run test:unit -- --files <paths> --summary` explains checks without running them.
-Remove `--summary` to execute. Reuse the existing boundary and invariant test contracts;
+Remove `--summary` to execute. A waived tier must still record its affected selection
+by check id; waiver applies to execution, never to enumeration.
+`npm run test:browser:affected -- --files <paths> --summary` and `inspect:change` list
+that selection without executing or entering the verification window.
+Reuse the existing boundary and invariant test contracts;
 register new guarantees in the manifest rather than another hand-maintained inventory.
 
 For player-facing changes, read the [UI and content policy](docs/development/ui-ux.md)

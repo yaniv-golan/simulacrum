@@ -1,11 +1,16 @@
 import { same } from './browser-scope-proposal.mjs';
+/** Rows whose only change is added reaching checks or the membership format carry no witnesses. */
 export function scopeWitnessRequest(proposal) {
   return {
     proposalDigest: proposal.digest,
-    scopes: proposal.changes.map((c) => ({ kind: c.kind, witnesses: c.witnesses })),
+    scopes: proposal.changes
+      .filter((c) => c.witnesses.length)
+      .map((c) => ({ kind: c.kind, witnesses: c.witnesses })),
   };
 }
 export function validateScopeWitnessResult(proposal, result) {
+  if (!scopeWitnessRequest(proposal).scopes.length)
+    throw Error('Scope witness result offered for a proposal that requires none');
   if (
     !result?.ok ||
     !same(result.requested, scopeWitnessRequest(proposal)) ||
