@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8955f1b2dbb204c8bcf8472977bd219e868ef2f78348005f2595a847d2b0a8b9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59d9c07aeafed285d0733c2af679103c95d474b3c6af855c296e7d77df3404df","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scheduler, timing registration, profile literals, liveness windows) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"b161b6b818f8c7a746141b1ab23238ba0f1dff28323f4bc3d4adcc1db27944fd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d6a5c49a532f6dfd0ab26d4c76715501085cf07e5c3ac88d857dbd1db2dff0c0","disposition":"still accurate","rationale":"Changed dependencies reached through this section's evidence scripts: ci.yml routing and job budgets, ci-verification and ci-release dispatch-only release runs, ci.mjs budget, merge-comparison's NOT_EVALUATED listing, AGENTS.md and the two developer-doc sentences. No physics law, fixture, evidence script or reset policy changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
