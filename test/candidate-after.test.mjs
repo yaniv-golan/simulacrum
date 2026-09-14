@@ -14,6 +14,7 @@ import {
   reusableLeaf,
   requiredReexecution,
   withRequiredChecks,
+  resolveRetrySelection,
 } from '../scripts/candidate-after.mjs';
 
 const manifest = {
@@ -303,6 +304,67 @@ test('required browser checks widen a selection from the registry and never narr
   assert.throws(() => withRequiredChecks(selection, ['ghost'], checks), /unregistered/);
 });
 
+test('a source-only delta selects the fresh policy minus covered checks the delta does not reach, plus required', () => {
+  const checks = manifest.browserChecks;
+  const row = (id) => checks.find((c) => c.id === id);
+  const fresh = {
+    scope: 'local-contract',
+    checks: [row('ball'), row('mirror'), row('audio')],
+    reasons: [{ id: 'ball' }, { id: 'mirror' }, { id: 'audio' }],
+  };
+  const narrow = { scope: 'documentation', checks: [], reasons: [] };
+  // Counterexample from review: a parent with no browser coverage covers nothing, so the
+  // delta's empty scope never narrows the fresh policy.
+  const uncovered = resolveRetrySelection({ fresh, narrow, required: [], covered: [], checks });
+  assert.deepEqual(
+    uncovered.checks.map((c) => c.id),
+    ['ball', 'mirror', 'audio'],
+  );
+  assert.deepEqual(uncovered.skippedByDelta, []);
+  assert.deepEqual(uncovered.fresh, {
+    scope: 'local-contract',
+    fallback: null,
+    checks: ['ball', 'mirror', 'audio'],
+  });
+  // A covered check the delta does not reach is skipped and named; a covered check the delta
+  // reaches, or that is required, runs.
+  const covered = resolveRetrySelection({
+    fresh,
+    narrow: { ...narrow, checks: [row('audio')], reasons: [{ id: 'audio' }] },
+    required: ['mirror'],
+    covered: ['mirror', 'audio', 'ball'],
+    checks,
+  });
+  assert.deepEqual(
+    covered.checks.map((c) => c.id),
+    ['mirror', 'audio'],
+  );
+  assert.deepEqual(covered.skippedByDelta, ['ball']);
+  assert.deepEqual(covered.covered, ['audio', 'ball', 'mirror']);
+  // A check the delta reaches but the fresh policy did not select still runs (the union never
+  // narrows), and required checks outside both are added from the registry.
+  const widened = resolveRetrySelection({
+    fresh: { ...fresh, checks: [row('ball')], reasons: [{ id: 'ball' }] },
+    narrow: { ...narrow, checks: [row('mirror')], reasons: [{ id: 'mirror' }] },
+    required: ['smoke'],
+    covered: ['ball'],
+    checks,
+  });
+  assert.deepEqual(
+    widened.checks.map((c) => c.id),
+    ['mirror', 'smoke'],
+  );
+  assert.deepEqual(widened.skippedByDelta, ['ball']);
+  assert.deepEqual(widened.required, ['smoke']);
+  assert.ok(widened.reasons.some((r) => r.id === 'smoke' && /required/.test(r.reason)));
+  // No covered set and no required set: exactly the fresh policy.
+  const plain = resolveRetrySelection({ fresh, narrow, checks });
+  assert.deepEqual(
+    plain.checks.map((c) => c.id),
+    ['ball', 'mirror', 'audio'],
+  );
+});
+
 test('mode is same-bytes only when source, installed dependencies and relevant identity all match', () => {
   assert.equal(
     afterMode({ sameSource: true, sameDependencies: true, sameIdentity: true }),
@@ -553,4 +615,17 @@ test('an after report is admitted only when its block is consistent with the chi
   const overlap = structuredClone(report);
   overlap.after.skippedByDelta = [{ id: 'browser:ball', parentAttempt: p.attempt }];
   assert.throws(() => validateAfterReport(overlap), /both re-executed and skipped/);
+  // A skipped leaf must be one the parent covered, and must not have run in the child.
+  const uncovered = structuredClone(report);
+  uncovered.after.skippedByDelta = [{ id: 'browser:audio', parentAttempt: p.attempt }];
+  uncovered.after.covered = ['browser:mirror'];
+  assert.throws(() => validateAfterReport(uncovered), /without parent coverage/);
+  const ran = structuredClone(report);
+  ran.after.skippedByDelta = [{ id: 'browser:mirror', parentAttempt: p.attempt }];
+  ran.after.covered = ['browser:mirror'];
+  assert.throws(() => validateAfterReport(ran), /has a child receipt/);
+  const coveredSkip = structuredClone(report);
+  coveredSkip.after.skippedByDelta = [{ id: 'browser:audio', parentAttempt: p.attempt }];
+  coveredSkip.after.covered = ['browser:audio', 'browser:mirror'];
+  assert.doesNotThrow(() => validateAfterReport(coveredSkip));
 });

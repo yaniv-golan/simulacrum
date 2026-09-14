@@ -9,7 +9,11 @@ for (const scenario of ['pass', 'ci-fail', 'browser-fail', 'retry-required'])
       [fileURLToPath(new URL('./fixtures/merge-runner.mjs', import.meta.url)), scenario],
       { encoding: 'utf8' },
     );
-    assert.equal(p.status, ['pass', 'retry-required'].includes(scenario) ? 0 : 1, p.stderr + p.stdout);
+    assert.equal(
+      p.status,
+      ['pass', 'retry-required'].includes(scenario) ? 0 : 1,
+      p.stderr + p.stdout,
+    );
     const report = JSON.parse(
       p.stdout
         .split('\n')

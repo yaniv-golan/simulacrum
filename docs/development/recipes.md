@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8955f1b2dbb204c8bcf8472977bd219e868ef2f78348005f2595a847d2b0a8b9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59d9c07aeafed285d0733c2af679103c95d474b3c6af855c296e7d77df3404df","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scheduler, timing registration, profile literals, liveness windows) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"b7a1433b60161ae03b1bfc93f8b5eac59a48f95b43cce55b31f7ef9e9ce6838c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"137b9c41469080145e26fe8a0b35295a1f0a731c2775e9b8de02d5ff3aa64a60","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (coverage-bounded delta retry, signed-descriptor identity, browserChannel registration, receipt configuration) and the documentation/AGENTS rows describing it. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

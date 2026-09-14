@@ -5,7 +5,7 @@ import { affectedBrowserChecks } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { mergeChanges, mergeSelection } from './merge-selection.mjs';
-import { withRequiredChecks } from './candidate-after.mjs';
+import { withRequiredChecks, resolveRetrySelection } from './candidate-after.mjs';
 import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
 const started = performance.now();
 const report = {
@@ -24,16 +24,17 @@ write();
 try {
   const options = parseCompletionArgs('merge', process.argv.slice(2));
   const context = createVerificationContext();
-  // A diagnosed retry's byte delta arrives through the attempt ledger, never as an argument.
-  const scope = {
-    ...options,
-    ...(context.selection?.changedFiles ? { changedFiles: context.selection.changedFiles } : {}),
-  };
-  const changes = mergeChanges(scope);
+  // The integration scope is always the real git scope; a diagnosed retry's byte delta arrives
+  // through the attempt ledger only and yields a second, narrower scope for coverage reasoning.
+  const changes = mergeChanges(options);
+  const retry = context.selection;
+  const narrowScope = retry?.changedFiles ? { ...options, changedFiles: retry.changedFiles } : null;
+  const narrowChanges = narrowScope ? mergeChanges(narrowScope) : null;
   Object.assign(report, context.identity, {
     integration: changes,
     priority: options,
-    retry: context.selection,
+    retry,
+    ...(narrowChanges ? { retryIntegration: narrowChanges } : {}),
   });
   let selection;
   const results = await runVerificationPhases(
@@ -43,44 +44,57 @@ try {
         'selection',
         () =>
           context.check('selection:merge', { refs: changes.refs, files: changes.files }, () => {
-            if (JSON.stringify(mergeChanges(scope)) !== JSON.stringify(changes))
+            if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
               throw Error('Integration scope changed during verification');
-            const merged = mergeSelection({
-              checks: browserChecks(),
-              selection: affectedBrowserChecks(
-                changes.files.filter((path) => !changes.metadataOnlyFiles?.includes(path)),
-              ),
-              files: changes.files,
-              reviewOnlyFiles: changes.reviewOnlyFiles,
-              metadataOnlyFiles: changes.metadataOnlyFiles,
-            });
-            const widened = withRequiredChecks(
-              merged,
-              context.selection?.required ?? [],
-              browserChecks(),
-            );
-            // Widening only adds rows: the merge selection's selected/omitted split follows.
-            const added = widened.checks.filter(
-              (check) => !merged.checks.some((c) => c.id === check.id),
-            );
-            selection = {
-              ...widened,
-              ...(added.length
-                ? {
-                    selected: [
-                      ...(merged.selected ?? []),
-                      ...added.map((check) => ({
+            const registry = browserChecks();
+            const select = (scope) =>
+              mergeSelection({
+                checks: registry,
+                selection: affectedBrowserChecks(
+                  scope.files.filter((path) => !scope.metadataOnlyFiles?.includes(path)),
+                ),
+                files: scope.files,
+                reviewOnlyFiles: scope.reviewOnlyFiles,
+                metadataOnlyFiles: scope.metadataOnlyFiles,
+              });
+            const merged = select(changes);
+            const resolved = narrowChanges
+              ? resolveRetrySelection({
+                  fresh: merged,
+                  narrow: select(narrowChanges),
+                  required: retry.required,
+                  covered: retry.covered,
+                  checks: registry,
+                })
+              : withRequiredChecks(merged, retry?.required ?? [], registry);
+            // The merge selection's selected/omitted split follows the resolved checks: rows the
+            // fresh policy chose keep their reason, added rows name the retry, skipped rows say so.
+            const chosen = new Set(resolved.checks.map((c) => c.id));
+            const reasonOf = (id) =>
+              merged.selected?.find((c) => c.id === id)?.reason ??
+              'diagnosed retry: required re-execution';
+            const skipped = new Set(resolved.skippedByDelta ?? []);
+            selection =
+              resolved === merged
+                ? { ...merged, source: context.identity.source }
+                : {
+                    ...resolved,
+                    selected: resolved.checks.map((check) => ({
+                      ...check,
+                      reason: reasonOf(check.id),
+                    })),
+                    omitted: registry
+                      .filter((check) => !chosen.has(check.id))
+                      .map((check) => ({
                         ...check,
-                        reason: 'diagnosed retry: required re-execution',
+                        reason: skipped.has(check.id)
+                          ? 'covered by a parent attempt receipt the byte delta does not reach'
+                          : (merged.omitted?.find((c) => c.id === check.id)?.reason ??
+                            `outside audited ${merged.scope} selection and registered merge smoke`),
+                        coverage: 'NOT_EXECUTED',
                       })),
-                    ],
-                    omitted: (merged.omitted ?? []).filter(
-                      (check) => !added.some((c) => c.id === check.id),
-                    ),
-                  }
-                : {}),
-              source: context.identity.source,
-            };
+                    source: context.identity.source,
+                  };
             report.selection = selection;
             console.log(
               `Merge browser selection: ${selection.checks.length}; ${selection.fullReason ?? 'audited affected checks plus integration smoke'}`,
@@ -99,7 +113,7 @@ try {
       [
         'scope-stability',
         () => {
-          if (JSON.stringify(mergeChanges(scope)) !== JSON.stringify(changes))
+          if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
             throw Error('Integration scope changed during verification');
           return { ok: true };
         },

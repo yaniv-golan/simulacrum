@@ -20,6 +20,25 @@ import { appFingerprint } from './app-fingerprint.mjs';
 import { selectChecks, validateBrowserCoverage, parseBrowserArgs } from './browser-registry.mjs';
 import { runProcess } from './run-check.mjs';
 import { systemBrowserVersion } from './verification-environment.mjs';
+/** What a browser receipt is bound to: the registered row, not the run. The worker count is a
+ * scheduling condition recorded on the row (measurementConditions), never part of identity, or
+ * a parent's receipts would never match a child scheduled with a different pool size. A system
+ * browser channel is not pinned by installed dependencies; its version is part of that check's
+ * configuration so a browser update refuses reuse of this receipt and nothing else. */
+export function browserReceiptConfiguration(check) {
+  return {
+    script: check.script,
+    timeoutMs: check.timeoutMs,
+    environment: check.environment ?? 'workshop',
+    execution: check.execution ?? 'exclusive',
+    ...(check.browserChannel
+      ? {
+          browserChannel: check.browserChannel,
+          browserVersion: systemBrowserVersion(check.browserChannel),
+        }
+      : {}),
+  };
+}
 import { checkBreadth } from './check-breadth.mjs';
 import {
   createVerificationContext,
@@ -356,22 +375,7 @@ async function executeBrowserSuite(
           try {
             const result = await context.check(
               `browser:${check.id}`,
-              {
-                script: check.script,
-                timeoutMs: check.timeoutMs,
-                environment: check.environment ?? 'workshop',
-                workers,
-                execution: check.execution ?? 'exclusive',
-                // A system browser channel is not pinned by installed dependencies; its
-                // version is part of this check's configuration so a browser update refuses
-                // reuse of this receipt and nothing else.
-                ...(check.browserChannel
-                  ? {
-                      browserChannel: check.browserChannel,
-                      browserVersion: systemBrowserVersion(check.browserChannel),
-                    }
-                  : {}),
-              },
+              browserReceiptConfiguration(check),
               async () => {
                 const origin = {
                   runId: report.runId,

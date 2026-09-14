@@ -136,6 +136,14 @@ test('every environment variable read in the tree binds identity or is exempted 
     }
   };
   for (const dir of ['scripts', 'src', 'test']) visit(join(root, dir));
+  // Root-level configuration the verification runtime loads (vite/wrangler) counts as a read too.
+  for (const name of readdirSync(root))
+    if (/^[\w.-]+\.(mjs|js)$/.test(name) && statSync(join(root, name)).isFile())
+      for (const m of readFileSync(join(root, name), 'utf8').matchAll(
+        /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[['"]([A-Za-z_][A-Za-z0-9_]*)['"]\])/g,
+      ))
+        names.add(m[1] ?? m[2]);
+  assert.ok(names.has('SIMULACRUM_VITE_CACHE_DIR'), 'root vite config scanned');
   assert.ok(names.has('NODE_ENV') && names.has('POWER_BASELINE_SOURCE'), 'scan found reads');
   const exempt = new Set(Object.values(ENVIRONMENT_EXEMPTIONS).flat());
   const unaccounted = [...names].filter((n) => !isRelevantEnvironmentName(n) && !exempt.has(n));
@@ -143,6 +151,42 @@ test('every environment variable read in the tree binds identity or is exempted 
   const both = [...exempt].filter((n) => isRelevantEnvironmentName(n));
   assert.deepEqual(both, [], 'an exempted name cannot also be relevant');
   for (const reason of Object.keys(ENVIRONMENT_EXEMPTIONS)) assert.ok(reason.length > 20, reason);
+});
+
+test('a ledger retry selection is admitted only in its declared shape and for its own attempt', async () => {
+  const { readRetrySelection } = await import('../scripts/verification-run.mjs');
+  const origin = { attempt: 'a1', report: '/r' };
+  assert.equal(readRetrySelection(undefined, { origin, attempt: 'a1' }), null);
+  assert.equal(readRetrySelection(null, { origin, attempt: 'a1' }), null);
+  assert.deepEqual(
+    readRetrySelection(
+      { changedFiles: ['b.mjs', 'a.mjs', 'a.mjs'], required: ['x'], covered: ['y'] },
+      { origin, attempt: 'a1' },
+    ),
+    { changedFiles: ['a.mjs', 'b.mjs'], required: ['x'], covered: ['y'] },
+  );
+  assert.deepEqual(readRetrySelection({}, { origin, attempt: 'a1' }), {
+    changedFiles: null,
+    required: [],
+    covered: [],
+  });
+  // A configuration written for another attempt, or read outside any attempt, is refused: a
+  // hand-written ledger file cannot narrow a direct tier.
+  assert.throws(() => readRetrySelection({}, { origin, attempt: 'a2' }), /bound to the attempt/);
+  assert.throws(() => readRetrySelection({}, { origin: null, attempt: 'a1' }), /bound/);
+  assert.throws(() => readRetrySelection({}, { origin, attempt: undefined }), /bound/);
+  for (const bad of [
+    [],
+    'x',
+    { changedFiles: 'a.mjs' },
+    { required: [''] },
+    { covered: [1] },
+    { unknown: [] },
+  ])
+    assert.throws(
+      () => readRetrySelection(bad, { origin, attempt: 'a1' }),
+      /invalid retry selection/,
+    );
 });
 
 test('a system browser channel is bound per check through its version, never assumed equal', async () => {

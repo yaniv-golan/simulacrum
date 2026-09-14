@@ -111,16 +111,8 @@ export function validateManifest(m) {
   }
   if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
     throw Error('invalid merge smoke metadata');
-  // Timing-asserting checks are a registered fact (optional boolean, default false): they never
-  // reuse a receipt across attempts and never share the host with a parallel worker.
-  if (
-    browser.some((x) => x.timingSensitive !== undefined && typeof x.timingSensitive !== 'boolean')
-  )
-    throw Error('invalid timingSensitive metadata');
-  if (
-    browser.some((x) => x.timingSensitive === true && (x.execution ?? 'exclusive') !== 'exclusive')
-  )
-    throw Error('timing-sensitive checks run exclusively');
+  // The registered timingSensitive fact (validated per row above) also excludes a check from
+  // receipt reuse across attempts; every performance-tier check carries it.
   if (browser.some((x) => x.tier === 'performance' && x.timingSensitive !== true))
     throw Error('performance-tier checks must be registered timingSensitive');
   // A check that launches a system browser channel says so; the channel's version is bound

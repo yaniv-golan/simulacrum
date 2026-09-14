@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"c8e49cfbc57ef54af9b88ace5f59f89e3e36a819064e1f423647f7a1eeab067e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"a791093b3fef35fdac3e85d22cb8ee038787858ccf93303d252929aa374385b7","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): AGENTS.md changed by one verification sentence (tiers schedule the suite in phases, one worker per two idle cores, at most four, with test:browser:serial and the seed as nightly controls); the guide's entry points, layer pointers and working loop are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"aeb38c030b691bd4e4e839f7f920df9c1200f6987351d8c1fb0eed1caee3e451","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"c70c9fd0fee077eb1e303356855f10504f51fbcc3132a717cb06bde0f6e27103","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. AGENTS.md changed only in the verification-table row naming the diagnosed retry of a failed local/merge candidate (the scheduler landing's own AGENTS changes were reviewed with it); the guide's entry points, layer table pointers and the working loop it summarises are unchanged, and the retry is documented where the guide already sends readers for isolated completion."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"0f8e1d76b7e468068a11688556b11849bfde1a9aea9fc5417a8b186ef5c70314","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea9066920fcd1d3be32d9f20d31a2e731f107fd3e441889a5bf7bdf870686110","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): reference.md gained one generated command row (test:browser:serial); the regenerate, section review, batch submission and exact-source closure workflow described here is unchanged and no review was accepted automatically."} -->
+<!-- doc-review {"version":1,"fingerprint":"2392c88827e3c26b7f64ac6a01f982d845976e801c74b643e1c78feaa3f11165","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e705774b9275ef69234f31d76c48411ffe68fc791ba803c83d0be707e3839e09","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. The regenerated reference lists the candidate-after.mjs owners (reexecutionSet, resolveRetrySelection) under candidate-resume-integrity next to the scheduler landing's owners; the regenerate, section-specific review, batch submission and exact-source closure workflow described here is unchanged and no review was accepted automatically."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"df6bcb07daa76f4fdef2e434219a24f25b16c8b7b5728b6c0191afd2e68f092e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"75ad4e0622c8e6d1c247231a2f7a4f7b39720713cabb8b34140167369be37486","disposition":"updated","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): the section now describes the three phases, derived workers (one per two idle cores, at most four, recorded as workersBasis) and quiet-host admission with its not-evaluated refusal, no-context runs keeping two workers and unconditional timing execution, explicit --workers semantics, the timingSensitive registration and source guard, the relaxed self-row rule with its isolation conditions (port 0, browserArtifactPath, no Vite dev server), and the shared launch boundary; the watchdog paragraph was adjusted for the pooled rows. Verified against verify-browser-suite.mjs, check-sequence.mjs, browser-registry.mjs, validate-manifest.mjs and browser-session.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"17a3e83f184c7c9e7bb190c0755a9d4f99ffa8c024b796611eb4bfe6a4f373d9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8207b5fcf281f57fb23d35d9104d31b45086faf8923ce71089753c1765a167d6","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. Selection, reaching-check scope rows, proposal/apply, witnesses and the phased scheduler are unchanged. A diagnosed retry resolves its selection from the tier's own fresh policy: it may widen it (required checks from the registry) or leave out only checks a parent receipt covers that the byte delta does not reach; both are read from the attempt ledger, bound to the attempt, never from an argument. Browser receipts are keyed on the registered row (script, timeout, environment, execution, browser channel version), not the derived worker count. The manifest gains browserChannel on the six system-Chrome rows (incl. the transitive cloud-playtest launcher) and the performance ⇒ timingSensitive rule on top of the scheduler's timingSensitive validation."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -587,7 +587,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"8cf4e125f9613c083105c3b640d766c6913f3a339389a8c2f272af625a02a9e8","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"78fdbe87aa414e59e5c67430cc08551e55a8e25e04519850e58352f409b7c333","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): the registry, manifest, validate-manifest and browser-session changes alter how a tier schedules and launches browser checks, not candidate capture, dependency validation, resume, priority hints or what a candidate report certifies; a tier's report gains schedule/workersBasis/timingAdmission fields alongside the unchanged candidate contract."} -->
+<!-- doc-review {"version":1,"fingerprint":"28c753c334980dba46504b6ee305fd370e8655d4ff5fd045e70fd07b12773c49","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"13bace5a21ae5376bf62a19005ccdb9c0a2efa68ef8df847b6d1b639c1550716","disposition":"updated","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. The retry paragraph now states: a source-only delta never selects less than the tier's fresh policy over the candidate base diff except checks a parent-chain receipt covers (`covered`) that the byte delta does not reach, recorded as skippedByDelta and validated (covered, not run); a parent whose browser phase never ran covers nothing; scope refs are compared as the commits they name now; identity and installed dependencies come from the signed descriptor; plain resume of a retry report is refused; browserChannel covers transitive launches; the exemption list is scoped to the project's own reads incl. root configuration; aggregate-phase causes accompany failed leaves only. Verified against candidate-after.mjs (resolveRetrySelection), verify-local.mjs, verify-merge.mjs, verify-candidate.mjs, verification-run.mjs (readRetrySelection bound to the attempt) and verify-browser-suite.mjs (browserReceiptConfiguration without workers)."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -645,19 +645,25 @@ parent must be a `failed` report that completed its tier; an attempt that failed
 (window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
 its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
-`ci:budget`) covers exactly those files, and a cause on an aborted phase (`ci`, `browser`)
-records that the leaves beneath it never ran. The parent's bytes are read from its signed
-candidate descriptor, never from the report. On identical source bytes, installed dependencies
+`ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
+(`ci`, `browser`) may record that the leaves beneath it never ran. A plain `resume` of a retry
+report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
+parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused
+rather than re-pinned — and the parent's bytes, identity and installed dependencies are read
+from its signed candidate descriptor, never from the report. On identical source bytes, installed dependencies
 and relevant identity (runtime, platform and the declared relevant environment — `NODE_ENV`
 defaulting to `production` as the tier does, `NODE_OPTIONS`, `POWER_BASELINE_SOURCE`,
 `FEEDBACK_*`, `LOAD_CELL_MATRIX_*`, `PLAYWRIGHT_*` including `PLAYWRIGHT_BROWSERS_PATH`,
-`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable read in the tree is listed with its
-reason in `ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound, which also lets a plain
-`resume` accept a different terminal) the retry reuses the parent directory and the parent's
+`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable the project's own code reads under
+`scripts`, `src`, `test` and the root configuration is listed with its reason in
+`ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound — variables consumed only by
+libraries, such as `CI`, `TZ`, `DEBUG` or `NODE_TLS_*`, are forensic too — which also lets a
+plain `resume` accept a different terminal) the retry reuses the parent directory and the parent's
 passing unit and browser leaves through the signed ledger, each naming its origin attempt and
 bounded to three chained attempts. Installed dependencies pin only the bundled Playwright
-browsers; checks registered `browserChannel: "chrome"` launch the system browser, whose version
-is bound into that check's configuration so a browser update refuses those receipts alone.
+browsers; checks registered `browserChannel: "chrome"` launch the system browser, directly or
+through a module they load, and its version is bound into that check's configuration so a
+browser update refuses those receipts alone.
 Non-pass leaves, the registered controls of their invariants, the checks of invariants a failed
 control guards (together the `required` set), checks registered `timingSensitive` or
 `mergeSmoke` in the manifest, structural gates, builds and aggregates always execute; the
@@ -666,9 +672,13 @@ the attempt's private ledger configuration. When bytes, dependencies or identity
 retry captures a fresh candidate and loads no receipt. If only source bytes differ
 (`deltaSelection: source-only`), the byte delta between the two candidates reaches the tier
 through the same ledger configuration — never as a command-line flag; `--changed-files` is
-refused everywhere — and the tier's own selection policy classifies it exactly as it would a git
-diff (risky paths and unknown inputs still select everything); leaves omitted that way are
-recorded as `skippedByDelta`, reasoning rather than evidence. If the runtime, platform, relevant
+refused everywhere — together with the browser checks the parent chain already passed
+(`covered`). The tier still applies its own policy to the candidate's base diff and runs
+everything that selects, except a covered check the byte delta does not reach (classified by
+the same policy; risky paths and unknown inputs still select everything): those are recorded as
+`skippedByDelta`, reasoning rather than evidence, and validation refuses a skipped check that
+is not covered or that ran. A parent whose browser phase never ran covers nothing, so its retry
+runs the full fresh selection. If the runtime, platform, relevant
 environment or installed dependencies changed (`deltaSelection: fresh-policy`), every parent
 browser pass is stale and the tier runs its ordinary selection with nothing skipped. A retry
 that reused a receipt or skipped a leaf by delta reports `passed after failure`, never plain
@@ -677,9 +687,9 @@ a resumed receipt without an origin attempt fails the report. Either way every r
 must appear in the child as an executed passing receipt, and nothing re-executed may also be
 skipped, or the retry fails. Tampered or oversized receipts fail closed. The `after` block
 carries the causes, the chain (recorded before capture, three attempts at most), reused
-origins with their attempt and depth, the required and re-executed leaves, the controls they
-pulled in and the always-fresh leaves. This is the diagnosed retry the norm above requires,
-not a retry-to-green.
+origins with their attempt and depth, the covered and skipped checks, the required and
+re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
+diagnosed retry the norm above requires, not a retry-to-green.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested

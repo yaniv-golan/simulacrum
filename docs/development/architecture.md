@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"bb016bf3e3b586a08d216a70d4aed256dfb12c9ec89737833c4fd7a47d261302","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"af4d9235e28a3bb78d52623b9cd445bde7c8bf367c28f3033ce520cee216bd03","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): validate-manifest.mjs additionally admits the timingSensitive boolean (true ⇒ exclusive) and AGENTS.md adds one verification sentence; layer ownership and the registry reader's role are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ae2f0c4fbe339487466f0184c0975a6e5d7fd154494a918ab96ff70d6e720774","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"5463bbf554a6880b760baa30fc8a62666827dfa8499ee7308c7af0ee2a19593f","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. validate-manifest.mjs still loads and validates the canonical manifest for milestone allocation and check metadata; on top of the scheduler's timingSensitive rules it admits browserChannel (\"chrome\") and requires performance-tier checks to be timingSensitive. AGENTS.md changes one verification-table row. Layer ownership and the registry reader's role are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

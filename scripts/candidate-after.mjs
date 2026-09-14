@@ -100,7 +100,7 @@ export function validateCauses(
       );
     if (!candidateFailure)
       throw Error(
-        'the parent attempt reports no failed leaf and no candidate failure; nothing to retry',
+        'the parent attempt reports no failed leaf and no candidate failure; nothing to retry (a cause on an aborted phase only accompanies failed leaves)',
       );
     return coverage;
   }
@@ -187,6 +187,45 @@ export function deltaSelection({ sameDependencies, sameIdentity }) {
   return sameDependencies && sameIdentity ? 'source-only' : 'fresh-policy';
 }
 
+/** A source-only delta retry never runs less than the tier's fresh policy would, except for checks
+ * the parent attempt already passed (`covered`) that the delta does not reach: those are skipped
+ * by reasoning and named. `fresh` is the tier's own selection for the candidate's base diff,
+ * `narrow` the same policy applied to the byte delta between the two candidates, `required` the
+ * re-execution the retry must observe. Anything the fresh policy selects that the parent never
+ * passed executes; fallbacks (unknown inputs, risky paths) in either selection select everything. */
+export function resolveRetrySelection({ fresh, narrow, required = [], covered = [], checks }) {
+  const registry = new Map(checks.map((c) => [c.id, c]));
+  const freshIds = fresh.checks.map((c) => c.id);
+  const narrowIds = new Set(narrow.checks.map((c) => c.id));
+  const coveredIds = new Set(covered),
+    requiredIds = new Set(required);
+  const keep = (id) => narrowIds.has(id) || requiredIds.has(id) || !coveredIds.has(id);
+  const skippedByDelta = freshIds.filter((id) => !keep(id)).sort();
+  const ids = [...freshIds.filter(keep), ...[...narrowIds].filter((id) => !freshIds.includes(id))];
+  const rows = ids.map(
+    (id) => registry.get(id) ?? [...fresh.checks, ...narrow.checks].find((c) => c.id === id),
+  );
+  const widened = withRequiredChecks(
+    {
+      ...narrow,
+      fresh: { scope: fresh.scope, fallback: fresh.fallback ?? null, checks: freshIds },
+      checks: rows,
+    },
+    required,
+    checks,
+  );
+  return {
+    ...widened,
+    reasons: [
+      ...(fresh.reasons ?? []).filter((r) => keep(r.id)),
+      ...(narrow.reasons ?? []).filter((r) => !freshIds.includes(r.id)),
+      ...(widened.reasons ?? []).filter((r) => /required re-execution/.test(r.reason)),
+    ],
+    skippedByDelta,
+    covered: [...coveredIds].sort(),
+  };
+}
+
 /** Browser check ids the tier must add to its own selection: required re-execution is a widening
  * of the tier's policy, never a narrowing. Rows are the registered checks. */
 export function withRequiredChecks(selection, required, checks) {
@@ -220,6 +259,7 @@ export function afterSummary({
   required,
   child,
   skippedByDelta = [],
+  covered = [],
   deltaSelection: deltaKind = null,
 }) {
   const chain = [...(parent.after?.chain ?? []), parent.attempt];
@@ -264,6 +304,7 @@ export function afterSummary({
     reused,
     noReceipt,
     skippedByDelta,
+    covered: [...covered].sort(),
     chain,
   };
   const status =
@@ -313,6 +354,13 @@ function observeReexecution(after, receipts) {
   const skipped = new Set((after.skippedByDelta ?? []).map((row) => row.id));
   for (const id of after.reexecuted ?? [])
     if (skipped.has(id)) throw Error(`leaf ${id} is both re-executed and skipped by delta`);
+  // A skipped leaf is reasoning on a parent receipt: it must be one the parent covered, and
+  // the child must not have run it.
+  const covered = new Set(after.covered ?? []);
+  for (const id of skipped) {
+    if (!covered.has(id)) throw Error(`leaf ${id} was skipped by delta without parent coverage`);
+    if (receipts.has(id)) throw Error(`leaf ${id} was skipped by delta but has a child receipt`);
+  }
   for (const id of Object.keys(after.causes ?? {}))
     if (!after.coverage?.[id]) throw Error(`cause ${id} has no recorded coverage`);
   const mustRun = new Set([

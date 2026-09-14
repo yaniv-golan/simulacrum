@@ -7,7 +7,7 @@ import {
 import { runCI } from './ci.mjs';
 import { affectedBrowserChecks } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
-import { withRequiredChecks } from './candidate-after.mjs';
+import { withRequiredChecks, resolveRetrySelection } from './candidate-after.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
 const started = performance.now();
@@ -34,7 +34,7 @@ try {
     { encoding: 'utf8' },
   ).trim();
   const context = createVerificationContext();
-  Object.assign(report, context.identity, { base });
+  Object.assign(report, context.identity, { base, retry: context.selection });
   let selection;
   const results = await runVerificationPhases(
     [
@@ -43,7 +43,10 @@ try {
         'selection',
         () =>
           context.check('selection:browser', { base, retry: context.selection }, () => {
-            const files = context.selection?.changedFiles ?? [
+            // The tier's own policy over the candidate's base diff always applies; a diagnosed
+            // retry may only widen it (required checks) or skip checks the parent already
+            // passed that its byte delta does not reach.
+            const files = [
               ...new Set(
                 [
                   ...execFileSync('git', ['diff', '--name-only', '-z', base, '--'], {
@@ -55,11 +58,18 @@ try {
                 ].filter(Boolean),
               ),
             ];
-            selection = withRequiredChecks(
-              affectedBrowserChecks(files),
-              context.selection?.required ?? [],
-              browserChecks(),
-            );
+            const fresh = affectedBrowserChecks(files);
+            const retry = context.selection;
+            selection = retry?.changedFiles
+              ? resolveRetrySelection({
+                  fresh,
+                  narrow: affectedBrowserChecks(retry.changedFiles),
+                  required: retry.required,
+                  covered: retry.covered,
+                  checks: browserChecks(),
+                })
+              : withRequiredChecks(fresh, retry?.required ?? [], browserChecks());
+            report.selection = selection;
             console.log(
               `Browser selection: ${selection.checks.length} checks; ${selection.fallback ?? 'see recorded dependency reasons'}`,
             );

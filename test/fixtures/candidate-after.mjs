@@ -1,7 +1,9 @@
 // One candidate attempt per process: `first` fails browser:x; `after` retries with --after/--cause;
+// `resume` resumes a report;
 // arguments: <mode> <origin root or "new"> [attemptReport] [flags...]
-// flags: x=fail|pass, omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the
-// candidate itself fails), cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
+// flags: x=fail|pass, unit=fail (unit:test/a.test.mjs fails inside ci:budget so the browser phase
+// never runs), omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the candidate
+// itself fails), tier=<tier>, cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
 // Stubs keep capture, preflight and processes local; the tier is emulated with a real
 // verification context and leaf ledger so receipts, reuse and origins are the production ones.
 import { registerHooks } from 'node:module';
@@ -79,7 +81,7 @@ globalThis.candidateTransport = {
     return {
       origin,
       destination,
-      base: `resolved-${options.base}`,
+      base: options.base.startsWith('resolved-') ? options.base : `resolved-${options.base}`,
       head: 'fixture-head',
       index: 'fixture-index',
       files: filesOf(origin),
@@ -101,6 +103,8 @@ globalThis.candidateTransport = {
     // Unit leaves inside the emulated tier: record the execution, never spawn.
     if (args[0] === '--test') {
       unitRuns.push(`unit:${args[1]}`);
+      if (flag('unit') === 'fail' && args[1] === 'test/a.test.mjs')
+        throw Object.assign(Error('unit failed'), { code: 1, output: 'boom' });
       return { code: 0, output: `ran ${args[1]}` };
     }
     const tier = args[1].match(/verify-(\w+)\.mjs/)[1];
@@ -115,15 +119,32 @@ globalThis.candidateTransport = {
       const { initializeVerificationEnvironment, createVerificationContext } = await import(
         '../../scripts/verification-run.mjs'
       );
+      const { resolveRetrySelection, withRequiredChecks } = await import(
+        '../../scripts/candidate-after.mjs'
+      );
       initializeVerificationEnvironment();
       const context = createVerificationContext();
-      // The retry selection reaches the tier through the ledger only: a byte delta narrows the
-      // browser checks to the scripts it names plus the required ids; no argument carries it.
+      // The retry selection reaches the tier through the ledger only and is resolved by the
+      // production resolver: the emulated fresh policy selects every check (no git scope here),
+      // the byte delta reaches the checks whose script it names.
       const retrySelection = context.selection;
-      const selected = (check) =>
-        !retrySelection?.changedFiles ||
-        retrySelection.changedFiles.includes(check.script) ||
-        retrySelection.required.includes(check.id);
+      const fresh = { scope: 'full', checks: manifest.browserChecks, reasons: [] };
+      const resolved = retrySelection?.changedFiles
+        ? resolveRetrySelection({
+            fresh,
+            narrow: {
+              scope: 'delta',
+              checks: manifest.browserChecks.filter((c) =>
+                retrySelection.changedFiles.includes(c.script),
+              ),
+              reasons: [],
+            },
+            required: retrySelection.required,
+            covered: retrySelection.covered,
+            checks: manifest.browserChecks,
+          })
+        : withRequiredChecks(fresh, retrySelection?.required ?? [], manifest.browserChecks);
+      const selected = (check) => resolved.checks.some((c) => c.id === check.id);
       const executed = [];
       const leaf = (id, value) => () => {
         executed.push(id);
@@ -181,6 +202,10 @@ globalThis.candidateTransport = {
           checks: context.receipts(),
           executed: [...executed, ...unitRuns],
           retrySelection,
+          selection: {
+            checks: resolved.checks.map((c) => c.id),
+            skippedByDelta: resolved.skippedByDelta ?? [],
+          },
           argv: args.slice(2),
           outcome: {
             automation: { status: code ? 'FAIL' : 'PASS' },
@@ -207,7 +232,7 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch";';
+        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch"; export const resolveCandidateBase=(root,base)=>base.startsWith("resolved-")?base:"resolved-"+base;';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
@@ -231,8 +256,9 @@ if (mode === 'first')
 process.argv = [
   process.execPath,
   `${repo}/scripts/verify-candidate.mjs`,
-  flag('tier') ?? 'local',
-  ...(flag('tier') === 'final' ? [] : ['--base', 'HEAD~1']),
+  ...(mode === 'resume'
+    ? ['resume', parentReport]
+    : [flag('tier') ?? 'local', ...(flag('tier') === 'final' ? [] : ['--base', 'HEAD~1'])]),
   ...(mode === 'after' ? ['--after', parentReport] : []),
   ...flags.filter((f) => f.startsWith('--cause=')).flatMap((f) => ['--cause', f.slice(8)]),
   ...flags.filter((f) => f.startsWith('--arg=')).map((f) => f.slice(6)),

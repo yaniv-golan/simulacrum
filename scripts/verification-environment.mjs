@@ -22,6 +22,9 @@ export const RELEVANT_ENVIRONMENT = Object.freeze({
 });
 /** Variables read in the tree that deliberately do not bind receipt identity. */
 export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
+  'scheduling admission for timing-sensitive rows, which never reuse a receipt': [
+    'SIMULACRUM_TIMING_LOAD_BOUND',
+  ],
   'attempt coordination, set per attempt or per candidate by the candidate command or the window': [
     'SIMULACRUM_VERIFICATION_WINDOW',
     'SIMULACRUM_LEAF_LEDGER',
@@ -29,7 +32,11 @@ export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
     'SIMULACRUM_VERIFICATION_INTENT',
     'SIMULACRUM_CANDIDATE_INSTALLED_AT',
   ],
-  'host plumbing: binary lookup only, recorded forensically': ['PATH'],
+  'host plumbing: binary lookup and per-candidate cache locations, recorded forensically': [
+    'PATH',
+    'SIMULACRUM_VITE_CACHE_DIR',
+    'MINIFLARE_CACHE_DIR',
+  ],
   'release pipeline inputs and secrets; never read by a verification leaf': [
     'GITHUB_ACTIONS',
     'GITHUB_EVENT_NAME',

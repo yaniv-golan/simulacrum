@@ -810,7 +810,8 @@
       "smoke": false,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-cloud-runtime",
@@ -4790,7 +4791,7 @@
       "id": "candidate-resume-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, timing-sensitive checks, aggregates and unknown leaves execute and are observed as executed passing receipts, every non-pass leaf carries a diagnosed cause, tampered or oversized receipts fail closed, and a report that reused a receipt says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports.",
+      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, timing-sensitive checks, merge smoke, aggregates and unknown leaves execute and are observed as executed passing receipts, a source-only delta retry never selects less than the tier's fresh policy except checks a parent receipt covers and the delta does not reach, every non-pass leaf carries a diagnosed cause, tampered or oversized receipts fail closed, and a report that reused a receipt says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports.",
       "owners": [
         {
           "path": "scripts/verification-resume.mjs",
@@ -4845,6 +4846,14 @@
           {
             "path": "test/candidate-after.test.mjs",
             "anchor": "required browser checks widen a selection from the registry and never narrow it"
+          },
+          {
+            "path": "test/local-runner.test.mjs",
+            "anchor": "a retry only widens it or skips covered checks its delta does not reach"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a source-only delta selects the fresh policy minus covered checks the delta does not reach, plus required"
           }
         ],
         "negative": [
@@ -4875,6 +4884,14 @@
           {
             "path": "test/verification-tiers.test.mjs",
             "anchor": "refuses --changed-files"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a source-only delta after a parent with no browser coverage runs every check the fresh policy selects"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "a ledger retry selection is admitted only in its declared shape and for its own attempt"
           }
         ]
       },

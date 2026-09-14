@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { withBrowserReport } from '../scripts/verify-browser-suite.mjs';
+import {
+  withBrowserReport,
+  browserReceiptConfiguration,
+} from '../scripts/verify-browser-suite.mjs';
+import { createLeafLedger } from '../scripts/verification-resume.mjs';
 test('every attempt replaces old green reports, including build and server failures', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'suite-report-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -489,4 +493,53 @@ test('history uses one snapshot and accepts last-writer-wins hint loss', async (
   // A competing writer can lose a hint; hints cannot admit or skip a check.
   writeFileSync(path, JSON.stringify({ runs: [{ id: 'check', ok: true, observedAt: 5 }] }));
   assert.equal(readBrowserHistory(path).get('check').ok, true);
+});
+
+test('a browser receipt is bound to its registered row, not the worker count of the run that took it', (t) => {
+  // The scheduler derives workers per run; a receipt taken under a three-worker pool must be
+  // offered to a two-worker run, so the worker count is a measurement condition on the row and
+  // never part of receipt identity. The channel version is part of it for system browsers only.
+  const check = {
+    id: 'ball',
+    script: 'scripts/verify-ball-browser.mjs',
+    timeoutMs: 90000,
+    environment: 'workshop',
+    execution: 'parallel',
+  };
+  const configuration = browserReceiptConfiguration(check);
+  assert.deepEqual(configuration, {
+    script: check.script,
+    timeoutMs: 90000,
+    environment: 'workshop',
+    execution: 'parallel',
+  });
+  assert.equal('workers' in configuration, false);
+  const chrome = browserReceiptConfiguration({ ...check, browserChannel: 'chrome' });
+  assert.equal(chrome.browserChannel, 'chrome');
+  assert.equal(typeof chrome.browserVersion, 'string');
+  // Round trip through the signed ledger: saved by an attempt at workers 3, loaded at workers 2.
+  const dir = mkdtempSync(join(tmpdir(), 'receipt-workers-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const identity = { source: 'fixed', environmentDigest: 'same' };
+  const ledger = (workers) =>
+    createLeafLedger({
+      directory: dir,
+      key: Buffer.alloc(32, 4),
+      identity,
+      eligible: ['browser:ball'],
+      saveEligible: null,
+      origin: { attempt: `attempt-at-${workers}`, report: '/r' },
+    });
+  ledger(3).save('browser:ball', browserReceiptConfiguration(check), { code: 0 }, 10);
+  const offered = ledger(2).load('browser:ball', browserReceiptConfiguration(check));
+  assert.ok(offered, 'receipt offered across worker counts');
+  assert.equal(offered.origin.attempt, 'attempt-at-3');
+  assert.equal(
+    ledger(2).load('browser:ball', {
+      ...browserReceiptConfiguration(check),
+      execution: 'exclusive',
+    }),
+    null,
+    'a changed execution class still refuses reuse',
+  );
 });

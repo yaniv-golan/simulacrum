@@ -15,6 +15,7 @@ import {
   candidateMatchesOrigin,
   destinationStillMatches,
   currentBranch,
+  resolveCandidateBase,
 } from './candidate.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
@@ -76,6 +77,10 @@ try {
   argv = afterArgs.rest;
   previous =
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
+  if (previous?.after)
+    throw Error(
+      'resume cannot continue a diagnosed retry; retry from its report with --after so the chain is kept',
+    );
   if (afterArgs.after) {
     // A diagnosed retry: every non-pass leaf of the parent needs a cause before anything runs.
     const parent = JSON.parse(readFileSync(afterArgs.after, 'utf8'));
@@ -103,28 +108,9 @@ try {
     const parentDescriptor = readResumeDescriptor(parentDirectory, parentKey);
     if (parentDescriptor.tier !== tier || parent.tier !== tier)
       throw Error('--after tier differs from the parent attempt tier');
-    // The frozen clone was captured for one scope; a retry may not change it.
-    for (const key of ['base', 'incoming', 'destination'])
-      if ((parentDescriptor.options?.[key] ?? null) !== (options[key] ?? null))
-        throw Error(`--after must repeat the parent attempt's --${key}`);
-    const identity = processIdentity(),
-      parentIdentity = parent.verification;
-    const sameIdentity = ['runtime', 'platform', 'arch', 'environmentDigest'].every(
-      (k) => identity[k] === parentIdentity?.[k],
-    );
-    const sameSource = await candidateMatchesOrigin(origin, parentDescriptor.candidate);
-    let sameDependencies = false;
-    try {
-      sameDependencies =
-        sameSource &&
-        dependencyDigest(join(parentDirectory, 'source')) === parent.installedDependencies;
-    } catch {
-      sameDependencies = false;
-    }
-    retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
-    report.after.mode = retry.mode;
-    report.after.sameBytes = { sameSource, sameDependencies, sameIdentity };
-    report.after.environment = environmentForensics();
+    // The frozen clone was captured for one scope; a retry may not change it. Refs are compared
+    // as the commits they name now, so a moved base or destination is refused, not silently
+    // re-pinned.
     if (tier === 'merge') {
       const scope = mergeChanges(options);
       options.base = scope.refs.base;
@@ -133,7 +119,35 @@ try {
         options.destination = scope.refs.destination;
         options.destinationName = scope.refs.destinationName;
       }
+    } else options.base = resolveCandidateBase(origin, options.base);
+    if ((parentDescriptor.candidate?.base ?? null) !== options.base)
+      throw Error(
+        "--after must repeat the parent attempt's --base (the ref now names another commit)",
+      );
+    for (const key of ['incoming', 'destination'])
+      if ((parentDescriptor.options?.[key] ?? null) !== (options[key] ?? null))
+        throw Error(`--after must repeat the parent attempt's --${key}`);
+    // Identity and installed dependencies are read from the signed descriptor, never the report.
+    const identity = processIdentity(),
+      parentIdentity = parentDescriptor.identity;
+    const sameIdentity =
+      !!parentIdentity &&
+      ['runtime', 'platform', 'arch', 'environmentDigest'].every(
+        (k) => identity[k] === parentIdentity[k],
+      );
+    const sameSource = await candidateMatchesOrigin(origin, parentDescriptor.candidate);
+    let sameDependencies = false;
+    try {
+      sameDependencies =
+        sameSource &&
+        dependencyDigest(join(parentDirectory, 'source')) === parentDescriptor.installed;
+    } catch {
+      sameDependencies = false;
     }
+    retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
+    report.after.mode = retry.mode;
+    report.after.sameBytes = { sameSource, sameDependencies, sameIdentity };
+    report.after.environment = environmentForensics();
     if (retry.mode === 'same-bytes') {
       directory = parentDirectory;
       key = parentKey;
@@ -187,7 +201,7 @@ try {
       );
       // Whether the delta narrows selection is decided on what was actually installed: the
       // new candidate's dependencies against the parent's, and the identity compared above.
-      const sameInstalled = installed === parent.installedDependencies;
+      const sameInstalled = installed === parentDescriptor.installed;
       report.after.sameBytes.sameInstalledDependencies = sameInstalled;
       retry.deltaSelection = deltaSelection({ sameDependencies: sameInstalled, sameIdentity });
       report.after.deltaSelection = retry.deltaSelection;
@@ -197,7 +211,11 @@ try {
       installedAt = new Date().toISOString();
       key = randomBytes(32);
       writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
-      writeResumeDescriptor(directory, { candidate, options, tier, installed, installedAt }, key);
+      writeResumeDescriptor(
+        directory,
+        { candidate, options, tier, installed, installedAt, identity: processIdentity() },
+        key,
+      );
     }
   } else if (previous) {
     directory = resolve(previous.directory);
@@ -256,7 +274,11 @@ try {
     installedAt = new Date().toISOString();
     key = randomBytes(32);
     writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
-    writeResumeDescriptor(directory, { candidate, options, tier, installed, installedAt }, key);
+    writeResumeDescriptor(
+      directory,
+      { candidate, options, tier, installed, installedAt, identity: processIdentity() },
+      key,
+    );
   }
   lock = acquireCandidateAttempt(directory);
   const attempt = lock.attempt;
@@ -270,6 +292,16 @@ try {
   if (retry) {
     retry.reexecute = reexecutionSet({ classification: retry.classification, manifest });
     retry.required = requiredReexecution({ classification: retry.classification, manifest });
+    // Browser checks the parent chain passed or already skipped on receipts; a source-only delta
+    // may skip these when its byte delta does not reach them, and nothing else.
+    retry.covered = [
+      ...new Set([
+        ...retry.classification.passing
+          .map((r) => r.id)
+          .filter((id) => id.startsWith('browser:') && reusableLeaf(id, manifest)),
+        ...(retry.parent.after?.skippedByDelta ?? []).map((row) => row.id),
+      ]),
+    ].sort();
     retry.reuse =
       retry.mode === 'same-bytes'
         ? retry.classification.passing
@@ -297,6 +329,7 @@ try {
               required: [...retry.required]
                 .filter((id) => id.startsWith('browser:'))
                 .map((id) => id.slice('browser:'.length)),
+              covered: retry.covered.map((id) => id.slice('browser:'.length)),
             },
           }
         : {}),
@@ -423,19 +456,15 @@ try {
       : 'NOT_EVALUATED';
   report.status = report.verification.status;
   if (retry) {
-    // Δ-skipped leaves are reasoning under the tier's policy, never receipts; name them. A
-    // leaf the retry had to re-execute is never skipped; validation refuses the overlap.
+    // Δ-skipped leaves are what the tier's selection left out on the strength of a parent
+    // receipt the delta does not reach: reasoning, never receipts. Validation refuses any entry
+    // outside the covered set, any that ran, and any overlap with re-execution.
     const skippedByDelta =
       retry.mode === 'delta' && retry.deltaSelection === 'source-only'
-        ? retry.classification.passing
-            .filter(
-              (r) =>
-                r.id.startsWith('browser:') &&
-                reusableLeaf(r.id, manifest) &&
-                !retry.reexecute.has(r.id) &&
-                !report.verification.checks.some((x) => x.id === r.id),
-            )
-            .map((r) => ({ id: r.id, parentAttempt: retry.parent.attempt }))
+        ? (report.verification.selection?.skippedByDelta ?? []).map((id) => ({
+            id: `browser:${id}`,
+            parentAttempt: retry.parent.attempt,
+          }))
         : [];
     const summary = afterSummary({
       parent: retry.parent,
@@ -447,6 +476,7 @@ try {
       required: retry.required,
       child: report.verification,
       skippedByDelta,
+      covered: retry.covered,
     });
     report.status = summary.status;
     report.after = { ...report.after, ...summary.after };

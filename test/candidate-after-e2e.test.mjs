@@ -116,6 +116,7 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   assert.deepEqual(retry.report.verification.retrySelection, {
     changedFiles: null,
     required: ['x'],
+    covered: ['y'],
   });
   assert.equal(retry.report.verification.argv.includes('--changed-files'), false);
   assert.ok(retry.report.after.reexecuted.includes('browser:x'));
@@ -150,8 +151,9 @@ test('a source-only delta narrows through the ledger and records what it skipped
   const parent = first.report.attemptReport;
 
   // Only source differs: fresh capture, no receipt loads, the byte delta reaches the tier's
-  // selection through the ledger (never argv), the required failure re-executes, and the
-  // reusable browser pass the delta left unselected is named as skipped, not evidence.
+  // selection through the ledger (never argv), the required failure re-executes, every check
+  // the fresh policy selects and the parent never passed runs, and the one reusable browser
+  // pass the delta does not reach is named as skipped, not evidence.
   const delta = run([
     'after',
     first.root,
@@ -170,6 +172,11 @@ test('a source-only delta narrows through the ledger and records what it skipped
   assert.deepEqual(delta.report.verification.retrySelection, {
     changedFiles: ['src.mjs'],
     required: ['x'],
+    covered: ['y'],
+  });
+  assert.deepEqual(delta.report.verification.selection, {
+    checks: ['x', 'perf'],
+    skippedByDelta: ['y'],
   });
   assert.equal(delta.report.verification.argv.includes('--changed-files'), false);
   assert.equal(
@@ -181,11 +188,12 @@ test('a source-only delta narrows through the ledger and records what it skipped
     { id: 'browser:y', parentAttempt: first.report.attempt },
   ]);
   assert.ok(delta.report.after.reexecuted.includes('browser:x'));
-  // perf never ran in the parent (the suite aborted at x), so it is neither planned nor skipped;
-  // the narrowed selection simply does not reach it.
+  assert.deepEqual(delta.report.after.covered, ['browser:y']);
   assert.deepEqual(delta.report.after.notSelected, []);
-  for (const id of ['browser:y', 'browser:perf'])
-    assert.equal(delta.report.verification.executed.includes(id), false, `${id} not selected`);
+  // perf never ran in the parent (the suite aborted at x): no receipt covers it, so the fresh
+  // policy's selection of it stands even though the delta does not reach it.
+  assert.ok(delta.report.verification.executed.includes('browser:perf'), 'perf executed');
+  assert.equal(delta.report.verification.executed.includes('browser:y'), false, 'y skipped');
 
   // Counterexample from review: the developer edits one file and also changes the relevant
   // environment (a runtime upgrade behaves the same). Every parent browser pass is stale, so
@@ -203,11 +211,58 @@ test('a source-only delta narrows through the ledger and records what it skipped
   assert.deepEqual(fresh.report.verification.retrySelection, {
     changedFiles: null,
     required: ['x'],
+    covered: ['y'],
   });
   assert.deepEqual(fresh.report.after.skippedByDelta, []);
   assert.deepEqual(fresh.report.after.reused, []);
   for (const id of ['browser:y', 'browser:x', 'browser:perf'])
     assert.ok(fresh.report.verification.executed.includes(id), `${id} executed under fresh policy`);
+});
+
+test('a source-only delta after a parent with no browser coverage runs every check the fresh policy selects', (t) => {
+  // Blocker from the third review: the parent failed in CI, its browser phase never ran, the
+  // developer fixed the test only. Nothing is covered, so nothing may be skipped and the retry
+  // must run the full fresh browser selection rather than the delta's empty scope.
+  const first = run(['first', 'new', '', 'x=pass', 'unit=fail']);
+  cleanup(t, first);
+  assert.equal(first.status, 1);
+  assert.equal(first.report.status, 'failed');
+  assert.equal(receipt(first.report, 'unit:test/a.test.mjs').ok, false);
+  assert.equal(receipt(first.report, 'ci:budget').ok, false);
+  assert.equal(
+    first.report.verification.checks.some((r) => r.id.startsWith('browser:')),
+    false,
+    'no browser receipt in the parent',
+  );
+  const retry = run([
+    'after',
+    first.root,
+    first.report.attemptReport,
+    'x=pass',
+    'touch=src.mjs',
+    '--cause=unit:test/a.test.mjs=the assertion was wrong',
+    '--cause=ci:budget=aborted by the unit failure',
+  ]);
+  cleanup(t, retry);
+  assert.equal(retry.status, 0, retry.stderr);
+  assert.equal(retry.report.after.mode, 'delta');
+  assert.equal(retry.report.after.deltaSelection, 'source-only');
+  assert.deepEqual(retry.report.after.delta, ['src.mjs']);
+  assert.deepEqual(retry.report.verification.retrySelection, {
+    changedFiles: ['src.mjs'],
+    required: [],
+    covered: [],
+  });
+  assert.deepEqual(retry.report.verification.selection, {
+    checks: ['y', 'x', 'perf'],
+    skippedByDelta: [],
+  });
+  for (const id of ['browser:y', 'browser:x', 'browser:perf', 'unit:test/a.test.mjs', 'ci:budget'])
+    assert.ok(retry.report.verification.executed.includes(id), `${id} executed`);
+  assert.deepEqual(retry.report.after.skippedByDelta, []);
+  assert.deepEqual(retry.report.after.covered, []);
+  assert.deepEqual(retry.report.after.reused, []);
+  assert.equal(retry.report.status, 'passed');
 });
 
 test('an attempt that failed around a green tier needs the candidate cause, and a retry that dies after capture keeps its chain', (t) => {
@@ -268,4 +323,12 @@ test('an attempt that failed around a green tier needs the candidate cause, and 
   ]);
   assert.equal(third.status, 0, third.stderr);
   assert.deepEqual(third.report.after.chain, [drifted.report.attempt, dying.report.attempt]);
+  // A plain resume of a retry report would drop the chain; it is refused in favour of --after.
+  const resumed = run(['resume', drifted.root, dying.report.attemptReport]);
+  assert.equal(resumed.status, 1);
+  assert.match(resumed.report.error, /resume cannot continue a diagnosed retry/);
+  assert.equal(
+    resumed.calls.some((c) => c.kind === 'process' || c.kind === 'capture'),
+    false,
+  );
 });

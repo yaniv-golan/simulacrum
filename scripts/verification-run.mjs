@@ -102,10 +102,14 @@ export function createVerificationRun({
     },
   };
 }
-/** Shape of the retry selection a ledger configuration may carry; anything else is refused. */
-export function readRetrySelection(value) {
+/** Shape of the retry selection a ledger configuration may carry; anything else is refused. The
+ * configuration is honoured only for the attempt it was written for: its origin attempt must be
+ * the one the tier was launched under. */
+export function readRetrySelection(value, { origin, attempt } = {}) {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'object' || Array.isArray(value)) throw Error('invalid retry selection');
+  if (!attempt || origin?.attempt !== attempt)
+    throw Error('retry selection is bound to the attempt that wrote the ledger configuration');
   const list = (name) => {
     const rows = value[name];
     if (rows === undefined) return undefined;
@@ -113,7 +117,14 @@ export function readRetrySelection(value) {
       throw Error(`invalid retry selection ${name}`);
     return [...new Set(rows)].sort();
   };
-  return { changedFiles: list('changedFiles') ?? null, required: list('required') ?? [] };
+  for (const key of Object.keys(value))
+    if (!['changedFiles', 'required', 'covered'].includes(key))
+      throw Error(`invalid retry selection field ${key}`);
+  return {
+    changedFiles: list('changedFiles') ?? null,
+    required: list('required') ?? [],
+    covered: list('covered') ?? [],
+  };
 }
 export function initializeVerificationEnvironment() {
   assertRuntime();
@@ -128,7 +139,10 @@ export function createVerificationContext(options) {
     // A diagnosed retry hands its selection through this private, attempt-scoped file only:
     // the byte delta the tier's policy classifies in place of the git diff, and the browser
     // checks it must add to whatever it selects. No command-line flag carries either.
-    selection = readRetrySelection(config.selection);
+    selection = readRetrySelection(config.selection, {
+      origin: config.origin,
+      attempt: process.env.SIMULACRUM_VERIFICATION_ATTEMPT,
+    });
     const manifest = JSON.parse(readFileSync('scripts/manifest.json', 'utf8'));
     const identity = verificationIdentity();
     const shared = { key: Buffer.from(config.key, 'hex'), identity };
