@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"537a4512a1f711b0ba89f42f4c8fc2fc6de7665becddbb2220d9bf21a989f715","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"40ca5ce155fb021b392efc12d88e7caa68dd949ac25f29ec9ce40a572e1eb8f4","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (admission, selection by measured scope, sleep attribution, launch assertions) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected; a physics delta still selects every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"00881b4b9aad8659e4fcbda8ac70a60888b8e52d0af8b35bc51d2aa8e3f63060","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef79ef18a6c46f6a244f9402a75ee2bc12cae389c8165d8f2e4b7524d1d23c39","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): the drift is the pressure policy default (enforce), its test, the README scheduling paragraph and a hosted measurement-run record in the manifest; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still selects every timing-budget check."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
