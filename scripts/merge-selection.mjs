@@ -75,9 +75,14 @@ export function mergeSelection({
 
 /** Pin refs and include staged, unstaged, deleted, rename endpoints and untracked inputs. */
 export function mergeChanges(
-  { base, incoming, destination },
+  { base, incoming, destination, changedFiles },
   git = (args) => execFileSync('git', args, { encoding: 'utf8' }),
 ) {
+  // A diagnosed retry supplies the byte delta between two captured candidates in place of the
+  // git diff; refs, ancestry checks and the risk classification below stay exactly the same.
+  if (changedFiles !== undefined && !Array.isArray(changedFiles))
+    throw Error('changed files must be a list');
+  const explicit = changedFiles === undefined ? null : [...new Set(changedFiles)].sort();
   const resolve = (name, ref) => {
     if (typeof ref !== 'string' || !ref || ref.startsWith('-'))
       throw Error(`Explicit ${name} commit required`);
@@ -99,20 +104,25 @@ export function mergeChanges(
     // Keep the destination as supplied: a ref name lets completion detect drift.
     return {
       ...changes,
+      ...(explicit ? { files: explicit, filesProvenance: 'candidate delta' } : {}),
       refs: { ...changes.refs, destinationName: destination },
       scopeKind: 'branch-pair',
       reviewOnlyFiles: [],
       metadataOnlyFiles: [],
     };
   }
-  const lists = [
-    git(['diff', '--no-renames', '--name-only', '-z', refs.base, '--']),
-    git(['ls-files', '--others', '--exclude-standard', '-z']),
-  ];
-  const files = [...new Set(lists.flatMap((list) => list.split('\0')).filter(Boolean))].sort();
+  const lists = explicit
+    ? []
+    : [
+        git(['diff', '--no-renames', '--name-only', '-z', refs.base, '--']),
+        git(['ls-files', '--others', '--exclude-standard', '-z']),
+      ];
+  const files =
+    explicit ?? [...new Set(lists.flatMap((list) => list.split('\0')).filter(Boolean))].sort();
   return {
     refs,
     scopeKind: 'explicit-base',
+    ...(explicit ? { filesProvenance: 'candidate delta' } : {}),
     files,
     metadataOnlyFiles: metadataOnlyPolicyFiles(files, refs.base, (path) =>
       git(['show', `${refs.base}:${path}`]),

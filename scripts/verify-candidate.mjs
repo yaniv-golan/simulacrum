@@ -30,6 +30,17 @@ import {
 } from './candidate-attempt.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { runProcess } from './run-check.mjs';
+import {
+  parseAfterArgs,
+  classifyParentLeaves,
+  validateCauses,
+  reexecutionSet,
+  reusableLeaf,
+  afterMode,
+  afterSummary,
+  validateAfterReport,
+} from './candidate-after.mjs';
+import { environmentForensics, processIdentity } from './verification-environment.mjs';
 const origin = process.cwd(),
   originBranch = currentBranch(origin),
   started = performance.now();
@@ -54,15 +65,109 @@ const timing = createTiming({
   },
 });
 // Read selected prior report before overwriting the ordinary latest pointer.
-const argv = process.argv.slice(2);
-let previous;
+const afterArgs = parseAfterArgs(process.argv.slice(2));
+const argv = afterArgs.rest;
+let previous,
+  retry = null;
 try {
   previous =
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
+  if (afterArgs.after) {
+    // A diagnosed retry: every non-pass leaf of the parent needs a cause before anything runs.
+    const parent = JSON.parse(readFileSync(afterArgs.after, 'utf8'));
+    const classification = classifyParentLeaves(parent);
+    const coverage = validateCauses(classification, afterArgs.causes);
+    retry = { parent, classification, coverage, causes: afterArgs.causes };
+    report.after = { parentAttempt: parent.attempt, causes: Object.fromEntries(afterArgs.causes) };
+  }
   write();
   assertRuntime();
   let directory, candidate, options, tier, key, installed, installedAt;
-  if (previous) {
+  if (retry) {
+    [tier] = argv;
+    options = parseCompletionArgs(tier, argv.slice(1));
+    if (options.changedFiles) throw Error('--changed-files is supplied by --after, not by hand');
+    const { parent } = retry;
+    const parentDirectory = resolve(parent.directory);
+    const identity = processIdentity(),
+      parentIdentity = parent.verification;
+    const sameIdentity = ['runtime', 'platform', 'arch', 'environmentDigest'].every(
+      (k) => identity[k] === parentIdentity?.[k],
+    );
+    const sameSource = await candidateMatchesOrigin(origin, parent.candidate);
+    let sameDependencies = false;
+    try {
+      sameDependencies =
+        sameSource &&
+        dependencyDigest(join(parentDirectory, 'source')) === parent.installedDependencies;
+    } catch {
+      sameDependencies = false;
+    }
+    retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
+    report.after.mode = retry.mode;
+    report.after.environment = environmentForensics();
+    if (tier === 'merge') {
+      const scope = mergeChanges(options);
+      options.base = scope.refs.base;
+      if (options.incoming) {
+        options.incoming = scope.refs.incoming;
+        options.destination = scope.refs.destination;
+        options.destinationName = scope.refs.destinationName;
+      }
+    }
+    if (retry.mode === 'same-bytes') {
+      directory = parentDirectory;
+      key = readFileSync(join(directory, 'resume-key'));
+      const descriptor = readResumeDescriptor(directory, key);
+      ({ candidate, installed, installedAt } = descriptor);
+      if (descriptor.tier !== tier)
+        throw Error('--after tier differs from the parent attempt tier');
+      if (resolve(candidate.destination) !== join(directory, 'source'))
+        throw Error('candidate location mismatch');
+      report.parentAttempt = parent.attempt;
+      await timing.measure('preflight', () => assertVerificationReady(candidate.destination));
+      if (
+        (await timing.measure('dependency-validation', () =>
+          dependencyDigest(candidate.destination),
+        )) !== installed
+      )
+        throw Error('parent installed dependencies changed');
+    } else {
+      await timing.measure('preflight', () => assertVerificationReady(origin));
+      directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
+      report.directory = directory;
+      write();
+      candidate = await timing.measure('capture', () =>
+        captureCandidate(origin, join(directory, 'source'), { base: options.base }),
+      );
+      report.candidate = candidate;
+      // The byte delta between the two captured candidates drives selection under the tier's policy.
+      const before = parent.candidate?.files ?? {},
+        after = candidate.files ?? {};
+      options.changedFiles = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+        .filter((path) => before[path]?.sha256 !== after[path]?.sha256)
+        .sort();
+      report.after.delta = options.changedFiles;
+      write();
+      await timing.measure('install', () =>
+        runProcess('npm', ['ci', '--prefer-offline'], {
+          cwd: candidate.destination,
+          timeoutMs: 300000,
+          inheritOutput: true,
+        }),
+      );
+      for (const path of ['.vite-temp', '.cache/prettier'])
+        mkdirSync(join(candidate.destination, 'node_modules', path), { recursive: true });
+      installed = await timing.measure('dependency-validation', () =>
+        dependencyDigest(candidate.destination),
+      );
+      // Retained in the descriptor so a resume reproduces the same tier environment.
+      installedAt = new Date().toISOString();
+      key = randomBytes(32);
+      writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
+      writeResumeDescriptor(directory, { candidate, options, tier, installed, installedAt }, key);
+    }
+  } else if (previous) {
     directory = resolve(previous.directory);
     key = readFileSync(join(directory, 'resume-key'));
     const descriptor = readResumeDescriptor(directory, key);
@@ -127,12 +232,28 @@ try {
   mkdirSync(attemptDirectory, { recursive: true, mode: 0o700 });
   attemptOutput = join(attemptDirectory, 'report.json');
   const ledger = join(attemptDirectory, 'ledger.json');
+  const manifest = retry ? JSON.parse(readFileSync('scripts/manifest.json', 'utf8')) : null;
+  if (retry) {
+    retry.reexecute = reexecutionSet({ classification: retry.classification, manifest });
+    retry.reuse =
+      retry.mode === 'same-bytes'
+        ? retry.classification.passing
+            .map((r) => r.id)
+            .filter((id) => !retry.reexecute.has(id) && reusableLeaf(id, manifest))
+        : [];
+  }
   writeFileSync(
     ledger,
     JSON.stringify({
       key: key.toString('hex'),
       output: join(attemptDirectory, 'leaves'),
-      previous: previous ? join(directory, 'attempts', previous.attempt, 'leaves') : null,
+      previous: previous
+        ? join(directory, 'attempts', previous.attempt, 'leaves')
+        : retry?.mode === 'same-bytes'
+          ? join(directory, 'attempts', retry.parent.attempt, 'leaves')
+          : null,
+      ...(retry?.mode === 'same-bytes' ? { reuse: retry.reuse } : {}),
+      origin: { attempt, report: attemptOutput },
     }),
     { mode: 0o600 },
   );
@@ -180,6 +301,7 @@ try {
             ? ['--incoming', options.incoming, '--destination', options.destination]
             : []),
           ...(options.priorityFiles.length ? ['--priority-files', ...options.priorityFiles] : []),
+          ...(options.changedFiles ? ['--changed-files', ...options.changedFiles] : []),
         ],
         {
           cwd: candidate.destination,
@@ -254,6 +376,32 @@ try {
         })
       : 'NOT_EVALUATED';
   report.status = report.verification.status;
+  if (retry) {
+    // Δ-skipped leaves are reasoning under the tier's policy, never receipts; name them.
+    const skippedByDelta =
+      retry.mode === 'delta'
+        ? retry.classification.passing
+            .filter(
+              (r) =>
+                r.id.startsWith('browser:') &&
+                reusableLeaf(r.id, manifest) &&
+                !report.verification.checks.some((x) => x.id === r.id),
+            )
+            .map((r) => ({ id: r.id, parentAttempt: retry.parent.attempt }))
+        : [];
+    const summary = afterSummary({
+      parent: retry.parent,
+      mode: retry.mode,
+      causes: retry.causes,
+      coverage: retry.coverage,
+      reexecute: retry.reexecute,
+      child: report.verification,
+      skippedByDelta,
+    });
+    report.status = summary.status;
+    report.after = { ...report.after, ...summary.after };
+    validateAfterReport(report);
+  }
   report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
   process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
 } catch (error) {

@@ -304,12 +304,21 @@ test('an explicit changed-file list replaces the git diff but never the pinned r
   const plain = mergeChanges({ base: 'c0ffee' }, git);
   assert.deepEqual(plain.files, ['notes.txt', 'src/core/workshop.mjs']);
   const explicit = mergeChanges(
-    { base: 'c0ffee', changedFiles: ['scripts/verify-ball-browser.mjs', 'docs/development/README.md'] },
+    {
+      base: 'c0ffee',
+      changedFiles: ['scripts/verify-ball-browser.mjs', 'docs/development/README.md'],
+    },
     git,
   );
-  assert.deepEqual(explicit.files, ['docs/development/README.md', 'scripts/verify-ball-browser.mjs']);
+  assert.deepEqual(explicit.files, [
+    'docs/development/README.md',
+    'scripts/verify-ball-browser.mjs',
+  ]);
   assert.equal(explicit.scopeKind, 'explicit-base');
   assert.deepEqual(explicit.refs, plain.refs);
-  assert.ok(!calls.slice(calls.length / 2).some((c) => c.startsWith('diff')), 'no diff for explicit files');
+  assert.ok(
+    !calls.slice(calls.length / 2).some((c) => c.startsWith('diff')),
+    'no diff for explicit files',
+  );
   assert.throws(() => mergeChanges({ base: 'c0ffee', changedFiles: 'not-a-list' }, git), /changed/);
 });

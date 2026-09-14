@@ -111,6 +111,16 @@ export function validateManifest(m) {
   }
   if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
     throw Error('invalid merge smoke metadata');
+  // Timing-asserting checks are a registered fact (optional boolean, default false): they never
+  // reuse a receipt across attempts and never share the host with a parallel worker.
+  if (
+    browser.some((x) => x.timingSensitive !== undefined && typeof x.timingSensitive !== 'boolean')
+  )
+    throw Error('invalid timingSensitive metadata');
+  if (
+    browser.some((x) => x.timingSensitive === true && (x.execution ?? 'exclusive') !== 'exclusive')
+  )
+    throw Error('timing-sensitive checks run exclusively');
   const mergeSmoke = browser
     .filter((x) => x.mergeSmoke)
     .map((x) => x.id)

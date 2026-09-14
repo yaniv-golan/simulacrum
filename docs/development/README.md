@@ -638,6 +638,26 @@ duration and report lookup duration separately; resumed CI does not qualify a fr
 full-CI duration. A candidate ownership lock refuses concurrent attempts and is never
 expired automatically: establish the prior process tree has stopped before recovery.
 
+A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
+--after <attempt-report.json> --cause <checkId>=<diagnosed cause>`. Every failed or
+unexecuted leaf of the parent needs its own cause; one cause on an aborted aggregate (for
+example `ci`) covers the leaves that never ran beneath it. On identical source bytes,
+installed dependencies and relevant identity (runtime, platform, browser runtime and the
+declared relevant environment — `NODE_ENV`, `FEEDBACK_SOURCE`, `PLAYWRIGHT_*`,
+`SIMULACRUM_BROWSER_*`; other variables are recorded forensically, not bound) the retry
+reuses the parent directory and the parent's passing unit and browser leaves through the
+signed ledger, each naming its origin attempt and bounded to three chained attempts. Non-pass
+leaves, the registered controls of their invariants, the checks of invariants a failed control
+guards, checks registered `timingSensitive` in the manifest, structural gates, builds and
+aggregates always execute. When bytes, dependencies or identity differ, the retry captures a
+fresh candidate, loads no receipt, and passes the byte delta between the two candidates to the
+tier as `--changed-files`, which the tier's own selection policy classifies exactly as it would
+a git diff (risky paths and unknown inputs still select everything); leaves omitted that way are
+recorded as `skippedByDelta`, reasoning rather than evidence. A passing retry reports
+`passed after failure`, never plain `passed`, with the causes, reused origins, re-executed and
+always-fresh leaves in its `after` block; readers that admit candidate reports decide about that
+status explicitly. This is the diagnosed retry the norm above requires, not a retry-to-green.
+
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested
 intervals overlap and must not be summed as wall time. Tier results are published as

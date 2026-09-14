@@ -4785,11 +4785,15 @@
       "id": "candidate-resume-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Only registered successful pure leaves resume with matching signed identity/configuration; failures, aggregates and unknown leaves execute. Candidate attempts require ownership and current terminal reports.",
+      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, always-fresh checks, aggregates and unknown leaves execute, every non-pass leaf carries a diagnosed cause, and the report says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports.",
       "owners": [
         {
           "path": "scripts/verification-resume.mjs",
           "anchor": "createLeafLedger"
+        },
+        {
+          "path": "scripts/candidate-after.mjs",
+          "anchor": "reexecutionSet"
         },
         {
           "path": "scripts/candidate-resume.mjs",
@@ -4812,6 +4816,22 @@
           {
             "path": "test/candidate-resume.test.mjs",
             "anchor": "dependency records are framed"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "receipts record their origin attempt, carry it through resumed saves and expire by chain depth"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "identity binds the declared relevant environment only; the whole environment is forensic"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "the summary names reused origins, re-executed leaves and maps a passing tier to passed after failure"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "reexecution covers non-pass leaves, their registered controls and every always-fresh class"
           }
         ],
         "negative": [
@@ -4826,6 +4846,18 @@
           {
             "path": "test/verification-run.test.mjs",
             "anchor": "a watchdog shortened by the shared budget reports budget exhaustion, not a hung test"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "every failed or unexecuted leaf needs its own cause; an aborted aggregate covers absent leaves"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "an after report is admitted only when its block is consistent with the child receipts"
+          },
+          {
+            "path": "test/verification-resume-controls.test.mjs",
+            "anchor": "aggregate and unaudited checks run on every attempt and never enter the ledger"
           }
         ]
       },

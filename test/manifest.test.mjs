@@ -74,19 +74,29 @@ test('the manifest stays out of prettier so hosted format checks see the writer 
     '.prettierignore must list scripts/manifest.json; validateManifest owns its layout',
   );
 });
-test('always-fresh browser checks are registered booleans and cover every timing-asserting check', () => {
+test('timing-sensitive browser checks are registered, exclusive, and cover every budget-asserting script', () => {
   const m = structuredClone(manifest);
-  const fresh = m.browserChecks.filter((c) => c.alwaysFresh === true).map((c) => c.id);
+  const sensitive = m.browserChecks.filter((c) => c.timingSensitive === true).map((c) => c.id);
   for (const id of [
     'verify-spring-performance',
     'verify-lamp-performance',
+    'verify-adaptive-graphics',
     'qualify-workshop',
     'measure-gears',
     'measure-cameras',
     'verify-mechanical-audio',
+    'verify-camera-browser',
   ])
-    assert.ok(fresh.includes(id), `${id} must never reuse a receipt`);
-  assert.ok(m.browserChecks.filter((c) => c.tier === 'performance').every((c) => c.alwaysFresh === true));
-  m.browserChecks[0].alwaysFresh = 'yes';
-  assert.throws(() => validateManifest(m), /alwaysFresh/);
+    assert.ok(sensitive.includes(id), `${id} must be registered timing-sensitive`);
+  // Source guard: a script that asserts a timing budget must be registered (assertion ⇒ declared).
+  const guard =
+    /\b(p95|quantile|renderP95Ms|cadenceP95Ms|tickP95Ms|realTimeRatio|frameCpuMs|audioCpuMs)\b/;
+  for (const c of m.browserChecks)
+    if (guard.test(readFileSync(new URL(`../${c.script}`, import.meta.url), 'utf8')))
+      assert.equal(c.timingSensitive, true, `${c.id} asserts timing but is not registered`);
+  m.browserChecks[0].timingSensitive = 'yes';
+  assert.throws(() => validateManifest(m), /timingSensitive/);
+  const parallel = structuredClone(manifest);
+  parallel.browserChecks.find((c) => c.timingSensitive === true).execution = 'parallel';
+  assert.throws(() => validateManifest(parallel), /exclusively|browser check/);
 });

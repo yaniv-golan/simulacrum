@@ -15,8 +15,8 @@ import {
 const manifest = {
   browserChecks: [
     { id: 'ball', script: 'scripts/ball.mjs', tier: 'browser' },
-    { id: 'spring-perf', script: 'scripts/spring.mjs', tier: 'performance', alwaysFresh: true },
-    { id: 'audio', script: 'scripts/audio.mjs', tier: 'browser', alwaysFresh: true },
+    { id: 'spring-perf', script: 'scripts/spring.mjs', tier: 'performance', timingSensitive: true },
+    { id: 'audio', script: 'scripts/audio.mjs', tier: 'browser', timingSensitive: true },
     { id: 'mirror', script: 'scripts/mirror.mjs', tier: 'browser' },
   ],
   checks: [{ id: 'layers' }, { id: 'invariant-controls' }],
@@ -204,7 +204,10 @@ test('reexecution covers non-pass leaves, their registered controls and every al
 });
 
 test('mode is same-bytes only when source, installed dependencies and relevant identity all match', () => {
-  assert.equal(afterMode({ sameSource: true, sameDependencies: true, sameIdentity: true }), 'same-bytes');
+  assert.equal(
+    afterMode({ sameSource: true, sameDependencies: true, sameIdentity: true }),
+    'same-bytes',
+  );
   for (const flip of ['sameSource', 'sameDependencies', 'sameIdentity'])
     assert.equal(
       afterMode({ sameSource: true, sameDependencies: true, sameIdentity: true, [flip]: false }),
@@ -269,17 +272,38 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
   assert.deepEqual(summary.after.chain, [p.attempt]);
   assert.equal(summary.after.causes['browser:ball'], 'late pause');
   // A failing child stays failed; a passing child without any reuse or delta skip is plain passed.
-  assert.equal(afterSummary({ parent: p, mode: 'same-bytes', causes, coverage, reexecute, child: { ...child, status: 'failed' } }).status, 'failed');
-  const fresh = { ...child, checks: child.checks.map((r) => ({ ...r, resumed: undefined, origin: undefined })) };
-  assert.equal(afterSummary({ parent: p, mode: 'same-bytes', causes, coverage, reexecute, child: fresh }).status, 'passed');
+  assert.equal(
+    afterSummary({
+      parent: p,
+      mode: 'same-bytes',
+      causes,
+      coverage,
+      reexecute,
+      child: { ...child, status: 'failed' },
+    }).status,
+    'failed',
+  );
+  const fresh = {
+    ...child,
+    checks: child.checks.map((r) => ({ ...r, resumed: undefined, origin: undefined })),
+  };
+  assert.equal(
+    afterSummary({ parent: p, mode: 'same-bytes', causes, coverage, reexecute, child: fresh })
+      .status,
+    'passed',
+  );
   // Chains accumulate and are bounded.
   const grand = { ...p, after: { chain: ['00000000-0000-4000-8000-000000000000'] } };
   assert.deepEqual(
-    afterSummary({ parent: grand, mode: 'same-bytes', causes, coverage, reexecute, child }).after.chain,
+    afterSummary({ parent: grand, mode: 'same-bytes', causes, coverage, reexecute, child }).after
+      .chain,
     ['00000000-0000-4000-8000-000000000000', p.attempt],
   );
   const deep = { ...p, after: { chain: Array(CHAIN_DEPTH_LIMIT).fill(p.attempt) } };
-  assert.throws(() => afterSummary({ parent: deep, mode: 'same-bytes', causes, coverage, reexecute, child }), /chain/);
+  assert.throws(
+    () => afterSummary({ parent: deep, mode: 'same-bytes', causes, coverage, reexecute, child }),
+    /chain/,
+  );
 });
 
 test('an after report is admitted only when its block is consistent with the child receipts', () => {
@@ -295,10 +319,20 @@ test('an after report is admitted only when its block is consistent with the chi
     status: 'passed',
     checks: [
       receipt('browser:ball', true),
-      receipt('browser:mirror', true, { resumed: true, origin: { attempt: p.attempt, report: 'r', depth: 1 } }),
+      receipt('browser:mirror', true, {
+        resumed: true,
+        origin: { attempt: p.attempt, report: 'r', depth: 1 },
+      }),
     ],
   };
-  const summary = afterSummary({ parent: p, mode: 'same-bytes', causes, coverage, reexecute, child });
+  const summary = afterSummary({
+    parent: p,
+    mode: 'same-bytes',
+    causes,
+    coverage,
+    reexecute,
+    child,
+  });
   const report = { status: summary.status, after: summary.after, verification: child };
   validateAfterReport(report);
   assert.throws(() => validateAfterReport({ ...report, after: undefined }), /after/);

@@ -40,8 +40,8 @@ try {
       [
         'selection',
         () =>
-          context.check('selection:browser', { base }, () => {
-            const files = [
+          context.check('selection:browser', { base, changedFiles: options.changedFiles }, () => {
+            const files = options.changedFiles ?? [
               ...new Set(
                 [
                   ...execFileSync('git', ['diff', '--name-only', '-z', base, '--'], {

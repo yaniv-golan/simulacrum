@@ -90,16 +90,21 @@ test('receipts record their origin attempt, carry it through resumed saves and e
       { script: 'x' },
       () => ({ code: 0, output: 'first' }),
     );
-    const loaded = createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: [id] }).load(
-      id,
-      { script: 'x' },
-    );
+    const loaded = createLeafLedger({
+      directory: join(dir, 'a'),
+      key,
+      identity,
+      eligible: [id],
+    }).load(id, { script: 'x' });
     assert.deepEqual(loaded.origin, { attempt: 'attempt-a', report: '/a/report.json', depth: 0 });
     // A plain resume ledger still ignores the browser leaf.
     assert.equal(
-      createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: ['unit:x'] }).load(id, {
-        script: 'x',
-      }),
+      createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: ['unit:x'] }).load(
+        id,
+        {
+          script: 'x',
+        },
+      ),
       null,
     );
     // Resumed saves keep the original origin and count depth.
@@ -116,13 +121,21 @@ test('receipts record their origin attempt, carry it through resumed saves and e
       resumeLedger: createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: [id] }),
       writeLedger: second,
     });
-    assert.equal((await run.check(id, { script: 'x' }, () => assert.fail('reexecuted'))).output, 'first');
+    assert.equal(
+      (await run.check(id, { script: 'x' }, () => assert.fail('reexecuted'))).output,
+      'first',
+    );
     assert.deepEqual(run.receipts()[0].origin, {
       attempt: 'attempt-a',
       report: '/a/report.json',
       depth: 1,
     });
-    const chained = createLeafLedger({ directory: join(dir, 'b'), key, identity, eligible: [id] }).load(id, {
+    const chained = createLeafLedger({
+      directory: join(dir, 'b'),
+      key,
+      identity,
+      eligible: [id],
+    }).load(id, {
       script: 'x',
     });
     assert.equal(chained.origin.attempt, 'attempt-a');
