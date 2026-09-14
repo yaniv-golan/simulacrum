@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"572996f66c824d1c1cac10cf8537126c236736d89c0a2ed4ee061a77cd754f70","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"aad00d26de2fd56bb30c70e5b8c717e21e3f3c7b5bf61df011bb5e75bd26605b","disposition":"still accurate","rationale":"scripts/manifest.json changed only by the re-reviewed metadata-scope hashes after verify-feedback-recovery's capacity scenario gained its untick step; scope rows, exclusion rules, the phased schedule and the proposal/apply flow described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c362cbb1cebb8e246af782a802e4e547149945947b66ac005fdaf5f1eb7ef8e1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d40284d3bb8719cdac051bfb72f6774cc40c37c68d9e2c1555a1fb9e701a7add","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): only the mechanical-audio-truth invariant's guarantee text and a control anchor changed in scripts/manifest.json; browser selection, scope rows, scheduling and admission are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -591,7 +591,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"8f79f01705278e35be936abf8dc1447c5b95204efbed68a207e074b81196a40a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d861da52b8545d07e71d487d6664c2f52a2674c2b10983c706a40846fe89f907","disposition":"still accurate","rationale":"Only reviewed scope hashes moved in the manifest; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"0ec7bf41caf82a15875ae230c07c9220ede3245878a6e15d0d4b42db49a4a32b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"357c8e627cfee24a15cf70365162fa58d031faa838580820694d4710ef65cbd9","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): manifest changes are an invariant guarantee and control anchor; candidate capture, dependency validation, resume and what a report certifies are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

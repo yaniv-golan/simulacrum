@@ -6453,7 +6453,7 @@
       "id": "mechanical-audio-truth",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded. Human listening remains separate.",
+      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded, and one nominal voice renders inside the registered audibility band (AUDIO_POLICY.nominalRms, measured at the destination against a calibration tone through the same output chain) with its fundamental above the small-speaker floor. Human listening remains separate.",
       "owners": [
         {
           "path": "src/application/mechanical-audio-adapter.mjs",
@@ -6493,6 +6493,10 @@
           {
             "path": "test/mechanical-audio.test.mjs",
             "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "layer gains are derived from the registered level and what the layer renders, not raw literals"
           },
           {
             "path": "test/mechanical-audio.test.mjs",
@@ -7650,7 +7654,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
+      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7815,7 +7819,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
+      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8028,7 +8032,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f63c05819d2b0b56112909aa109f2e49620fb68b6c178c1f962f1555db6d6193",
+      "consumerSourceHash": "3c6604f2a6419f3bae46bc9cbe0e4facc51ebeaec72c562f9628e18f91a800a4",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8672,7 +8676,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a289137d585e672aa065d43038f9d1c619ede94a4115fdd138a3315b8dde84ec",
+      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -8822,7 +8826,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
+      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9221,7 +9225,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "2f73597589b718b2b6f82a6235ce02236107fde9cfca5e40851f3276ebe3aabf",
+      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9320,7 +9324,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "2f73597589b718b2b6f82a6235ce02236107fde9cfca5e40851f3276ebe3aabf",
+      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9553,7 +9557,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "a289137d585e672aa065d43038f9d1c619ede94a4115fdd138a3315b8dde84ec",
+      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",

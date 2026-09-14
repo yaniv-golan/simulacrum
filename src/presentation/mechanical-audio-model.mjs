@@ -11,10 +11,55 @@ export const AUDIO_POLICY = Object.freeze({
   maxAge: 0.1,
   horizon: 0.05,
   deadband: 0.01,
+  // Level policy. One nominal voice — a motor at 20 rad/s, an actuator at 0.08 m/s, a sliding
+  // contact under full load — renders at this RMS on the master bus at unit spatial gain; the
+  // output chain adds about +5 dB (0.9·tanh(2x)). Every layer gain below is derived from it
+  // and from what the layer's waveform and lowpass leave, so the families come out at the
+  // registered level instead of at whatever a raw gain literal happens to render.
+  nominalRms: 0.06,
+  // Every voice lowpass runs at this Q (Web Audio's dB-valued Q); the RMS factors derive from it.
+  filterQDb: 0.5,
+  // The noise buffer is generated at this rate so its bandwidth is the same on any device.
+  noiseSampleRate: 48000,
+  noiseNyquistHz: 24000,
+  // Rotation lowpass sits at four times the fundamental so the harmonics that carry a motor's
+  // pitch on small speakers survive; the drive floor keeps a slow motor above the speaker roll-off.
+  driveCutoffRatio: 4,
+  driveTextureCutoffHz: 280,
+  contactTextureCutoffHz: 400,
+  // Impact gain per log-impulse and its cap; held at four times the original gain until the
+  // rolling episode classifier is judged (a rolling wheel renews patches ~40 times a second).
+  impactGainPerLogImpulse: 0.032,
+  impactGainCap: 0.16,
 });
 const finite = Number.isFinite;
 const vector = (v) => Array.isArray(v) && v.length === 3 && v.every(finite);
 const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+const filterQ = () => 10 ** (AUDIO_POLICY.filterQDb / 20);
+/** Magnitude of a second-order lowpass at `ratio` = f / fc. */
+export function lowpassMagnitude(ratio, q = filterQ()) {
+  return 1 / Math.hypot(1 - ratio * ratio, ratio / q);
+}
+/** RMS a unit triangle leaves through a lowpass at `cutoffRatio` times its fundamental: odd
+ * harmonics of amplitude 8/(π²n²), each RMS 1/√2 of that, through the filter's response. */
+export function triangleRms(cutoffRatio, harmonics = 64) {
+  let sum = 0;
+  for (let n = 1; n < 2 * harmonics; n += 2) {
+    const amplitude = (8 / (Math.PI * Math.PI) / (n * n)) * lowpassMagnitude(n / cutoffRatio);
+    sum += (amplitude * amplitude) / 2;
+  }
+  return Math.sqrt(sum);
+}
+export const TRIANGLE_RMS = triangleRms(AUDIO_POLICY.driveCutoffRatio);
+/** RMS uniform noise (1/√3) leaves through a second-order lowpass whose noise-equivalent
+ * bandwidth is (π/2)·Q·fc, against the noise buffer's Nyquist. */
+export function noiseRms(cutoffHz, nyquistHz = AUDIO_POLICY.noiseNyquistHz) {
+  return Math.sqrt(1 / 3) * Math.sqrt(clamp(((Math.PI / 2) * filterQ() * cutoffHz) / nyquistHz));
+}
+/** The gain that renders `weight` × the nominal level for a layer with the given RMS factor. */
+export function layerGain(weight, rmsFactor) {
+  return (AUDIO_POLICY.nominalRms * clamp(weight)) / rmsFactor;
+}
 export function driveVoice(row) {
   const rotation = row.coordinate === 'rotation';
   if (!rotation && row.coordinate !== 'linear') return null;
@@ -28,14 +73,21 @@ export function driveVoice(row) {
   )
     return null;
   const rate = Math.abs(speed ?? 0),
-    load = clamp(Math.abs(row.currentA) / row.currentScaleA);
+    load = clamp(Math.abs(row.currentA) / row.currentScaleA),
+    frequency = rotation ? clamp(110 + rate * 4, 110, 2400) : clamp(160 + rate * 350, 160, 700);
   return {
     ...row,
     key: `drive:${row.emitterKey}`,
     wave: rotation ? 'triangle' : 'noise',
-    frequency: rotation ? clamp(60 + rate * 4, 60, 2400) : clamp(160 + rate * 350, 160, 700),
-    motionGain: (rotation ? 0.014 : 0.009) * clamp(rate / (rotation ? 20 : 0.08)),
-    loadGain: 0.004 * load,
+    frequency,
+    // Rendered level of the voice in nominal units; voice selection ranks by this, never by
+    // the raw gains, which differ per waveform.
+    level: clamp(rate / (rotation ? 20 : 0.08)) + 0.5 * load,
+    motionGain: rotation
+      ? layerGain(clamp(rate / 20), TRIANGLE_RMS)
+      : layerGain(clamp(rate / 0.08), noiseRms(frequency * 2)),
+    // A straining motor's texture at half the level of its motion.
+    loadGain: layerGain(0.5 * load, noiseRms(AUDIO_POLICY.driveTextureCutoffHz)),
   };
 }
 function validContact(row) {
@@ -54,15 +106,18 @@ export function contactVoice(row) {
   const slip = row.slipSpeedMS,
     roll = Math.max(0, row.rollingSpeedMS ?? 0),
     load = clamp(Math.log1p(row.normalLoadN) / 6);
-  const blend = 1 - clamp(slip / Math.max(0.01, roll));
+  const blend = 1 - clamp(slip / Math.max(0.01, roll)),
+    frequency = 180 + Math.min(1200, slip * 300),
+    scrape = row.frictionEligibility === 'positive' && slip > 0.01 ? load * clamp(slip) : 0,
+    // Rolling texture at seven tenths of a scrape: present, never the loudest thing.
+    rolling = row.geometryClass === 'curved' && roll > 0.01 ? 0.7 * load * blend * clamp(roll) : 0;
   return {
     ...row,
     key: `contact:${row.pairKey}`,
-    frequency: 180 + Math.min(1200, slip * 300),
-    scrapeGain:
-      row.frictionEligibility === 'positive' && slip > 0.01 ? 0.012 * load * clamp(slip) : 0,
-    rollGain:
-      row.geometryClass === 'curved' && roll > 0.01 ? 0.008 * load * blend * clamp(roll) : 0,
+    frequency,
+    level: scrape + rolling,
+    scrapeGain: layerGain(scrape, noiseRms(frequency * 2)),
+    rollGain: layerGain(rolling, noiseRms(AUDIO_POLICY.contactTextureCutoffHz)),
   };
 }
 export function spatialMix(position, listener) {

@@ -195,6 +195,78 @@ test('drive and friction envelopes follow measured coordinates, never requested 
   assert.equal(contactVoice(contact()).rollGain, 0);
 });
 
+test('layer gains are derived from the registered level and what the layer renders, not raw literals', async () => {
+  const { AUDIO_POLICY, layerGain, noiseRms, TRIANGLE_RMS, triangleRms, lowpassMagnitude } =
+    await import('../src/presentation/mechanical-audio-model.mjs');
+  // Independent derivation of the triangle factor: a unit triangle sampled in time, its
+  // spectrum scaled by the analytic second-order response written out here, summed as power.
+  const q = 10 ** (AUDIO_POLICY.filterQDb / 20),
+    n = 4096,
+    wave = Float64Array.from({ length: n }, (_, i) => {
+      const phase = (i / n) % 1;
+      return phase < 0.5 ? 4 * phase - 1 : 3 - 4 * phase;
+    });
+  let power = 0;
+  for (let k = 1; k < 200; k++) {
+    let re = 0,
+      im = 0;
+    for (let i = 0; i < n; i++) {
+      re += wave[i] * Math.cos((2 * Math.PI * k * i) / n);
+      im -= wave[i] * Math.sin((2 * Math.PI * k * i) / n);
+    }
+    const amplitude = (2 * Math.hypot(re, im)) / n,
+      ratio = k / 4,
+      response = 1 / Math.sqrt((1 - ratio * ratio) ** 2 + (ratio / q) ** 2);
+    power += (amplitude * response) ** 2 / 2;
+  }
+  const independent = Math.sqrt(power);
+  assert.ok(
+    Math.abs(TRIANGLE_RMS - independent) / independent < 0.02,
+    `triangle factor ${TRIANGLE_RMS} vs independent ${independent}`,
+  );
+  assert.ok(TRIANGLE_RMS > 0.55 && TRIANGLE_RMS < 0.65, 'a filtered triangle is ≈ 0.6, not 0.8');
+  assert.ok(Math.abs(lowpassMagnitude(0) - 1) < 1e-12 && lowpassMagnitude(4) < 0.1);
+  // Far above its cutoff the filter passes everything: the factor tends to a triangle's own RMS
+  // (1/√3). Near the cutoff the second-order peak (Q ≈ 1.06) lifts the fundamental, so the
+  // factor is not monotonic in the cutoff ratio — 2f renders slightly hotter than 4f.
+  assert.ok(Math.abs(triangleRms(1000) - 1 / Math.sqrt(3)) < 0.005);
+  assert.ok(triangleRms(2) > triangleRms(4) && triangleRms(4) > triangleRms(0.5));
+  // A narrower lowpass leaves less noise, so the gain that renders the same level is larger.
+  assert.ok(noiseRms(100) < noiseRms(400) && noiseRms(400) < noiseRms(1600));
+  assert.ok(Math.abs(noiseRms(400) / noiseRms(100) - 2) < 1e-9, 'noise RMS grows with √bandwidth');
+  assert.ok(layerGain(1, noiseRms(100)) > layerGain(1, noiseRms(400)));
+  assert.ok(
+    Math.abs(layerGain(1, noiseRms(400)) * noiseRms(400) - AUDIO_POLICY.nominalRms) < 1e-12,
+  );
+  assert.ok(Math.abs(layerGain(1, TRIANGLE_RMS) * TRIANGLE_RMS - AUDIO_POLICY.nominalRms) < 1e-12);
+  // Weight is clamped: no layer renders above the nominal level or below silence.
+  assert.equal(layerGain(2, TRIANGLE_RMS), layerGain(1, TRIANGLE_RMS));
+  assert.equal(layerGain(-1, TRIANGLE_RMS), 0);
+  // A nominal motor and a nominal actuator render the same level despite different waveforms.
+  const rotation = driveVoice({
+      emitterKey: '0',
+      position: [0, 0, 0],
+      coordinate: 'rotation',
+      speedRadS: 20,
+      currentA: 0,
+      torqueNm: 0,
+      currentScaleA: 2,
+    }),
+    linear = driveVoice({
+      emitterKey: '1',
+      position: [0, 0, 0],
+      coordinate: 'linear',
+      speedMS: 0.08,
+      currentA: 0,
+      forceN: 0,
+      currentScaleA: 2,
+    });
+  assert.ok(Math.abs(rotation.motionGain * TRIANGLE_RMS - AUDIO_POLICY.nominalRms) < 1e-12);
+  assert.ok(
+    Math.abs(linear.motionGain * noiseRms(linear.frequency * 2) - AUDIO_POLICY.nominalRms) < 1e-12,
+  );
+});
+
 test('spatial mix and voice selection are bounded and keep audible incumbents', () => {
   const listener = { position: [0, 0, 0], right: [1, 0, 0] };
   assert.ok(spatialMix([1, 0, 0], listener).pan > 0);
