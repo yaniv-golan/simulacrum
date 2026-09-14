@@ -739,7 +739,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 90000,
+      "timeoutMs": 120000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },

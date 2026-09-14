@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"49f53982fd84191f262dec0b9f7382d244fd9b81677d7e44479977f39db2668a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"34d39de2d0dabf6414c673367aebfd734ebc397006225f5dcc0be59b23931129","disposition":"updated","rationale":"Documented the split timing fields (enumerationMs for ps, snapshotMs for ranking, hintMs for the macOS attribute lookup), the first-exec hint and msSinceInstall on failed rows, the assertive live-region inclusion and the assertion-message convention; selection, scheduling, exclusivity and scope-audit rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"93fe8e7e5b4eea9843519372b12365060be22e7658f261847bdf0f51fde6a626","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f17dcbc007ac637a2081ff00e67833f2c5d46bfb0547b88542fe4ded294bf49e","disposition":"still accurate","rationale":"scripts/manifest.json changed only the verify-assembly-ux-browser row's timeoutMs (90000 → 120000): twelve retained passes ran 71–89 s against the 90 s cap and two merge tiers today killed the check during teardown after it had printed its pass; no check inventory, selection rule, scope row, invariant or ownership described by this section changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -580,7 +580,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a7021dd131baef5038b1e8bde79635fede1e842e7ac9d6f5fb218eb64e5e2a05","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"a33e55072501217ec36a4f702b986840a9338b1d93ac8683571e6ba11623f63e","disposition":"still accurate","rationale":"verify-candidate records installedAt, carries it through the resume descriptor and publishes it to the tier so failed rows can report msSinceInstall with an identical resume environment; capture, isolation, attempt ownership, origin matching and which checks run are unchanged. Receipts carry the runner snapshot; appStatus lives on browser rows only."} -->
+<!-- doc-review {"version":1,"fingerprint":"4cbc1cd09ae8fa0e5d2efa83d8e7e94e0ad1c76aaebca0f967bdbd8344a2d89b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"850560993de12e294f33092b0cb164aab2d2089ed9c4f86b963ee507d4382d11","disposition":"still accurate","rationale":"scripts/manifest.json changed only the verify-assembly-ux-browser row's timeoutMs (90000 → 120000): twelve retained passes ran 71–89 s against the 90 s cap and two merge tiers today killed the check during teardown after it had printed its pass; no check inventory, selection rule, scope row, invariant or ownership described by this section changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

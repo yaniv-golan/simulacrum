@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"6b9ee5fa49215e7fa46d3bef38c48e48bc309d5cc981bcd1263b63c1bec3f491","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"13a0521b4e55395a100d0837abec24be133e2f793a97af45bff5da6b00b30343","disposition":"still accurate","rationale":"The browser-suite fixture now pins SIMULACRUM_CANDIDATE_INSTALLED_AT and its test asserts the install age positively; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f793ce970b9bb75e4f567dfc2aff12a86f95ce2d1a8b8d8f4af116b018680ad","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"a015bd2916f2459df2b34e5135c5c9cc82fb5d853d9b6c5283804c91be36ef89","disposition":"still accurate","rationale":"scripts/manifest.json changed only the verify-assembly-ux-browser row's timeoutMs (90000 → 120000): twelve retained passes ran 71–89 s against the 90 s cap and two merge tiers today killed the check during teardown after it had printed its pass; no check inventory, selection rule, scope row, invariant or ownership described by this section changed. No physics owner or control changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

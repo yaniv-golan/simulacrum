@@ -120,7 +120,7 @@
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
     "scripts/load-cell-browser-actions.mjs": "299e75aad2c509d68092d0eb3948efd14102acc0069f6e81b0ddadd6ce9b10d6",
     "scripts/load-cell-browser-fixtures.mjs": "ace19b768bc1d3fc2b8a5a92dcc47e08408591be24c5bab6f1401ce70818c3f7",
-    "scripts/manifest.json": "d8fc5302c317b94e2e0733568218b2941bfac1f925ad38034e5ea7ac9b1e6802",
+    "scripts/manifest.json": "28fc469f7631eaba434b463e960fb43df352cb15fdf525ee2ffa3a2da630547f",
     "scripts/measure-cameras.mjs": "585c2660ca866953812d26d644114d1f20654f5666b9779e07dccc9b62f3edf6",
     "scripts/measure-gears.mjs": "04b5c1482dda35421e47e71736c92a183beed32801165d6dafc8555e5e33fab0",
     "scripts/measure-ropes.mjs": "5299636a07c3bd75da9068ac5b08e8d1632f45a8a9b6cd5e252aa5b6e4b950b6",
