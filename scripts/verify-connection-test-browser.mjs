@@ -39,19 +39,36 @@ const visibleElectrical = async () => {
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
 // A duty flip is the app reflecting a key or pointer hold; it is not a timing assertion, so
 // the wait's budget is the check's watchdog, and a starved renderer fails as such.
-async function duty(value) {
-  await liveWait(
-    page,
-    (value) => {
-      const frame = window.workshopProbe.observe().frames[0];
-      const index = frame.metadata.blueprint.parts.findIndex(
-        (part) => part.type === 'commandReceiver',
-      );
-      return frame.power.sources.find((source) => source.node === index)?.duty === value;
-    },
-    value,
-    { label: `commandReceiver duty ${value}` },
-  );
+const dutyIs = (value) => {
+  const frame = window.workshopProbe.observe().frames[0];
+  const index = frame.metadata.blueprint.parts.findIndex((part) => part.type === 'commandReceiver');
+  return frame.power.sources.find((source) => source.node === index)?.duty === value;
+};
+async function duty(value, options = {}) {
+  await liveWait(page, dutyIs, value, { label: `commandReceiver duty ${value}`, ...options });
+}
+// Press and hold a drive button with the real pointer, aimed at the element at press time.
+// The inspector's live readout above this section changes height with the drive command
+// (explainReason's zero-command line is one line taller than the powered line), so the
+// section jumps 17 px whenever duty flips; a press aimed at a box read moments earlier can
+// land beside the button under load. Hovering the element aims at its current position, and
+// a press the app did not register is released and re-aimed. The app-side fix — a readout of
+// stable height — removes the jump itself; this keeps the check honest until then.
+async function pressAndHold(button, value) {
+  for (let attempt = 1; ; attempt++) {
+    await button.hover();
+    await page.mouse.down();
+    try {
+      await duty(value, {
+        maxMs: 2000,
+        label: `commandReceiver duty ${value} after press ${attempt}`,
+      });
+      return;
+    } catch (error) {
+      if (attempt >= 3 || !/stayed false/.test(error.message)) throw error;
+      await page.mouse.up();
+    }
+  }
 }
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
@@ -187,26 +204,18 @@ try {
     /A · shaft .*rad\/s/,
   ]);
   await page.screenshot({ path: `${out}/tested.png` });
-  const box = await plus.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await duty(1);
+  await pressAndHold(plus, 1);
   await page.mouse.up();
   await duty(0);
   await page.keyboard.down('w');
   await duty(1);
   const minus = section.getByRole('button', { name: /Hold − through/ });
-  const minusBox = await minus.boundingBox();
-  await page.mouse.move(minusBox.x + minusBox.width / 2, minusBox.y + minusBox.height / 2);
-  await page.mouse.down();
-  await duty(-1);
+  await pressAndHold(minus, -1);
   await page.mouse.up();
   await duty(1);
   await page.keyboard.up('w');
   await duty(0);
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await duty(1);
+  await pressAndHold(plus, 1);
   await page.keyboard.down('w');
   const beforeKeyRelease = (await read()).tick;
   await page.keyboard.up('w');
@@ -225,8 +234,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event('blur')));
   await page.keyboard.up('Enter');
   await duty(0);
-  await page.mouse.down();
-  await duty(1);
+  await pressAndHold(plus, 1);
   await plus.dispatchEvent('pointercancel');
   await page.mouse.up();
   await duty(0);
