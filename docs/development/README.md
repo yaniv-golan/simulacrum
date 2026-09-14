@@ -592,6 +592,9 @@ window does not make source installation atomic or authorize a merge.
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
+Every candidate copy (and the frozen release snapshot) carries a `.metadata_never_index`
+marker at its root so Spotlight does not index the fresh tree while the tier runs; the
+marker sits above `source` and never enters the candidate's identity.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional

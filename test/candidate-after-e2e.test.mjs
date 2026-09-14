@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -45,6 +45,12 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   cleanup(t, first);
   assert.equal(first.status, 1);
   assert.equal(first.report.status, 'failed');
+  // Every candidate copy is kept out of Spotlight from the moment it exists.
+  assert.ok(
+    existsSync(join(first.report.directory, '.metadata_never_index')),
+    'candidate root carries the never-index marker',
+  );
+  assert.equal(existsSync(join(first.report.directory, 'source/.metadata_never_index')), false);
   assert.equal(receipt(first.report, 'browser:x').ok, false);
   assert.equal(receipt(first.report, 'browser:y').ok, true);
   assert.equal(receipt(first.report, 'unit:test/a.test.mjs').ok, true);

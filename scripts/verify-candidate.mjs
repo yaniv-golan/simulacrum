@@ -56,6 +56,11 @@ import {
   verifyAttestation,
 } from './candidate-after.mjs';
 import { environmentForensics, processIdentity } from './verification-environment.mjs';
+/** Spotlight indexes every fresh copy under /var/folders (three mdworker_shared workers per
+ * candidate, observed tripping 30 s unit watchdogs); the marker at the candidate root, above
+ * `source`, keeps the tree out of the index without entering the candidate's identity. */
+const excludeFromIndexing = (root) =>
+  writeFileSync(join(root, '.metadata_never_index'), '', { mode: 0o600, flag: 'wx' });
 const origin = process.cwd(),
   originBranch = currentBranch(origin),
   started = performance.now();
@@ -212,6 +217,7 @@ try {
     } else {
       await timing.measure('preflight', () => assertVerificationReady(origin));
       directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
+      excludeFromIndexing(directory);
       report.directory = directory;
       write();
       candidate = await timing.measure('capture', () =>
@@ -309,6 +315,7 @@ try {
     }
     await timing.measure('preflight', () => assertVerificationReady(origin));
     directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
+    excludeFromIndexing(directory);
     report.directory = directory;
     write();
     candidate = await timing.measure('capture', () =>
