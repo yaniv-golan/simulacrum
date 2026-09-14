@@ -741,10 +741,13 @@ test('goto and reload wait for the workshop probe under the startup budget, inde
     readSource: () => ({}),
     startupMs: 200,
   });
+  const started = Date.now();
   assert.equal(
     await evidence.goto(startupPage({ probeAfterMs: 60 }), 'http://fixture/'),
     'app-current',
   );
+  // It waited for the probe rather than returning at navigation end.
+  assert.ok(Date.now() - started >= 60);
   assert.equal(await evidence.reload(startupPage({ probeAfterMs: 60 })), 'app-current');
   // A page that is not the workshop (no `#app` root) is served the moment navigation ends.
   assert.equal(
@@ -773,6 +776,18 @@ test('the startup budget scales with the hosted wait scale', async (t) => {
   assert.equal(
     await evidence.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'),
     'app-current',
+  );
+  // Positive control: the same page under no scale is refused as a startup failure, so the
+  // pass above is the scale's doing and not a goto that never waited.
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: undefined });
+  const unscaled = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    startupMs: 100,
+  });
+  await assert.rejects(
+    unscaled.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'),
+    (error) => error.failureKind === 'startup',
   );
 });
 test('a failed action records its target geometry over the next frames and says whether it moved or starved', async () => {
