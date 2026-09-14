@@ -117,6 +117,18 @@ export function sampleTargetGeometry(element, { frames: maxFrames, budgetMs }) {
     setTimeout(finish, budgetMs + 500);
   });
 }
+/** Where Playwright's own call log says the action stopped: before the target was stable
+ * (`waiting`), after stability while dispatching (`performing`), or after the click while
+ * waiting for navigations (`navigations`) — a stalled main thread and a moving box leave
+ * different trails. */
+export function actionStage(message) {
+  const log = String(message ?? '');
+  if (/waiting for scheduled navigations/.test(log)) return 'navigations';
+  if (/performing click action|performing [a-z]+ action/.test(log)) return 'performing';
+  if (/element is not stable/.test(log)) return 'not-stable';
+  if (/waiting for element to be/.test(log)) return 'waiting';
+  return null;
+}
 /** 'starved' when fewer than two frames arrived; 'moved' on the first frame pair whose target
  * box differs, naming the first differing ancestor (nearest first); else 'stable'. */
 export function geometryVerdict(frames) {
@@ -353,9 +365,18 @@ export function attachBrowserSession(
         const frames = await lastTarget.evaluate(sampleTargetGeometry, GEOMETRY_SAMPLE, {
           timeout: GEOMETRY_SAMPLE.budgetMs * 2,
         });
-        targetGeometry = { action: copy(lastAction), ...geometryVerdict(frames) };
+        targetGeometry = {
+          action: copy(lastAction),
+          actionStage: actionStage(error?.message),
+          ...geometryVerdict(frames),
+        };
       } catch (e) {
-        targetGeometry = { action: copy(lastAction), verdict: 'unsampled', error: e.message };
+        targetGeometry = {
+          action: copy(lastAction),
+          actionStage: actionStage(error?.message),
+          verdict: 'unsampled',
+          error: e.message,
+        };
       }
     try {
       const status = pageRecords.flatMap((record) => record.state?.status ?? []);
