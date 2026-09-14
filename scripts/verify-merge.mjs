@@ -59,17 +59,26 @@ try {
               context.selection?.required ?? [],
               browserChecks(),
             );
+            // Widening only adds rows: the merge selection's selected/omitted split follows.
+            const added = widened.checks.filter(
+              (check) => !merged.checks.some((c) => c.id === check.id),
+            );
             selection = {
               ...widened,
-              selected: [
-                ...merged.selected,
-                ...widened.checks
-                  .filter((check) => !merged.checks.some((c) => c.id === check.id))
-                  .map((check) => ({ ...check, reason: 'diagnosed retry: required re-execution' })),
-              ],
-              omitted: merged.omitted.filter(
-                (check) => !widened.checks.some((c) => c.id === check.id),
-              ),
+              ...(added.length
+                ? {
+                    selected: [
+                      ...(merged.selected ?? []),
+                      ...added.map((check) => ({
+                        ...check,
+                        reason: 'diagnosed retry: required re-execution',
+                      })),
+                    ],
+                    omitted: (merged.omitted ?? []).filter(
+                      (check) => !added.some((c) => c.id === check.id),
+                    ),
+                  }
+                : {}),
               source: context.identity.source,
             };
             report.selection = selection;
