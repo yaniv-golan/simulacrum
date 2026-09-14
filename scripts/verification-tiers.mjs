@@ -1,5 +1,33 @@
 import { normalizeSelectedFiles } from './test-selection.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
+import { cpus, loadavg } from 'node:os';
+import { admitQuietHost } from './check-sequence.mjs';
+import { samplePressure } from './host-pressure.mjs';
+
+/** The structural gates run first, at t = 0, against 5 s deadlines; an updater or indexer that
+ * fires at launch fails them before anything was measured. One short admission — the same
+ * load/pressure rule as the timing phase, inside the window, immediately before the CI
+ * phase — waits that out or refuses by name. A refusal is a failed attempt whose only row is
+ * `launch-admission`, not evaluated: nothing ran, nothing is a defect. CPU pressure sees only
+ * part of a disk-bound burst; that limit is recorded, not hidden. */
+export async function launchAdmission({
+  admit = admitQuietHost,
+  host = { cores: cpus().length, load1: () => loadavg()[0], pressure: () => samplePressure() },
+  waitMs = 60000,
+  trendMs = 20000,
+} = {}) {
+  const admission = await admit({
+    cores: host.cores,
+    waitMs,
+    trendMs,
+    load1: host.load1,
+    pressure: host.pressure ?? null,
+  });
+  return admission.admitted
+    ? { ok: true, admission }
+    : { ok: false, notEvaluated: true, reason: admission.reason, admission };
+}
+export const LAUNCH_ADMISSION_ID = 'launch-admission';
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(
   phases,
@@ -25,6 +53,17 @@ export async function runVerificationPhases(
     if (!row.ok) break;
   }
   return rows;
+}
+/** Leaves the host slept through, by receipt: named in the tier's summary so a sleep never reads
+ * as a set of timeouts. */
+export function sleptSummary(checks = []) {
+  const slept = checks.filter((row) => row.notEvaluated && row.hostSleptMs > 0);
+  const unexecuted = checks.reduce(
+    (n, row) => n + (row.failureKind === 'host-slept' ? (row.unexecuted?.length ?? 0) : 0),
+    0,
+  );
+  if (!slept.length) return '';
+  return ` host slept: ${slept.length} leaves not evaluated${unexecuted ? `, ${unexecuted} not executed after the sleep` : ''}.`;
 }
 export function localOutcome(results, checks) {
   const complete = ['ci', 'browser'].every((id) => results.some((r) => r.id === id && r.ok));

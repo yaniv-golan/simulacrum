@@ -98,6 +98,12 @@ export function createVerificationRun({
           for (const field of ['code', 'signal', 'failureKind', 'unexecuted', 'processDiagnostics'])
             if (error[field] !== undefined) receipt[field] = error[field];
           if (error.elapsedMs !== undefined) receipt.processElapsedMs = error.elapsedMs;
+          // A leaf the host slept through was not evaluated: the failure names the sleep, the
+          // leaf is neither a pass nor a defect, and no receipt is saved (save runs on success).
+          if (error.failureKind === 'host-slept') {
+            receipt.notEvaluated = true;
+            receipt.hostSleptMs = error.hostSleptMs;
+          }
           throw error;
         })
         .finally(() => {
@@ -150,6 +156,7 @@ export function createVerificationContext(options) {
     try {
       return await execute(timeoutMs);
     } catch (error) {
+      // A sleep-spanning leaf keeps its own name even under the shared deadline.
       if (timeoutMs < limit && error.failureKind === 'watchdog') {
         error.message = `iteration-budget: shared deadline expired; ${error.message}`;
         error.summary = `iteration-budget: shared deadline expired; ${error.summary ?? ''}`;
@@ -182,7 +189,11 @@ export function createVerificationContext(options) {
     node(id, args, timeoutMs = 30000) {
       return run.check(id, { args, timeoutMs }, () =>
         boundedProcess(timeoutMs, (limit) =>
-          runProcess(process.execPath, args, { timeoutMs: limit, env: childEnvironment() }),
+          runProcess(process.execPath, args, {
+            timeoutMs: limit,
+            env: childEnvironment(),
+            ...(options?.processOptions ?? {}),
+          }),
         ),
       );
     },
@@ -197,7 +208,8 @@ export function createVerificationContext(options) {
     async unit(files) {
       const queue = [...new Set(files)].sort(),
         failures = [],
-        unexecuted = [];
+        unexecuted = [],
+        slept = [];
       await Promise.all(
         Array.from({ length: Math.min(hostProfile?.unitWorkers ?? 4, queue.length) }, async () => {
           while (queue.length) {
@@ -216,13 +228,29 @@ export function createVerificationContext(options) {
                 profileDeadline(hostProfile, 'unitTimeoutMs', 30000),
               );
             } catch (error) {
-              if (error.code === 'ITERATION_BUDGET_EXHAUSTED' && !error.processDiagnostics)
+              if (error.failureKind === 'host-slept') slept.push({ file, error });
+              else if (error.code === 'ITERATION_BUDGET_EXHAUSTED' && !error.processDiagnostics)
                 unexecuted.push(file);
               else failures.push({ file, error });
             }
           }
         }),
       );
+      // A host sleep leads the report: the files that slept were not evaluated, the files the
+      // spent budget left unexecuted were not executed after the sleep — neither is a defect.
+      if (slept.length)
+        throw Object.assign(
+          new AggregateError(
+            [...slept, ...failures].map((x) => x.error),
+            `host slept: ${slept.length} unit tests not evaluated (${slept.map((x) => x.file).join(', ')})${unexecuted.length ? `; ${unexecuted.length} not executed after host sleep` : ''}${failures.length ? `\nunit tests failed: ${failures.map((x) => x.file).join(', ')}\n${failures.map((x) => x.error.message).join('\n')}` : ''}`,
+          ),
+          {
+            failureKind: 'host-slept',
+            hostSleptMs: Math.max(...slept.map((x) => x.error.hostSleptMs ?? 0)),
+            notEvaluated: slept.map((x) => x.file).sort(),
+            unexecuted: unexecuted.sort(),
+          },
+        );
       if (failures.length || unexecuted.length)
         throw Object.assign(
           new AggregateError(

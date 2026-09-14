@@ -266,3 +266,66 @@ test('an unavailable ps records snapshotError and leaves the failure outcome unc
     rmSync(empty, { recursive: true, force: true });
   }
 });
+
+test('a host sleep during a check is named as such, not reported as a timeout or a failure', async () => {
+  // A wall clock that jumps 15 minutes between two heartbeats: the host slept. Every platform
+  // sees this (Date.now counts sleep; the monotonic clock may or may not).
+  const sleepingClock = (jumpAfterBeats, jumpMs) => {
+    let beats = 0,
+      base = Date.now();
+    return () => (++beats === jumpAfterBeats ? (base += jumpMs) : base);
+  };
+  // The child dies on its own after the "sleep" (exit 3): failure branch → host-slept.
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'setTimeout(()=>process.exit(3),150)'], {
+      timeoutMs: 3000,
+      heartbeatMs: 20,
+      sleepGapMs: 60_000,
+      wallClock: sleepingClock(2, 900_000),
+    }),
+    (error) => {
+      assert.equal(error.failureKind, 'host-slept');
+      assert.equal(error.hostSleptMs, 900_000);
+      assert.match(error.summary, /^host slept 900 s during the check \(exit 3\): not evaluated/);
+      assert.ok(error.processDiagnostics.events.some((e) => e.type === 'host-slept'));
+      return true;
+    },
+  );
+  // A watchdog that fires after a sleep is also the sleep's, not a hung check.
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'while(true){}'], {
+      timeoutMs: 150,
+      heartbeatMs: 20,
+      sleepGapMs: 60_000,
+      wallClock: sleepingClock(2, 900_000),
+    }),
+    (error) => {
+      assert.equal(error.failureKind, 'host-slept');
+      assert.match(error.summary, /host slept 900 s during the check \(watchdog after 150 ms\)/);
+      return true;
+    },
+  );
+  // A pass that spanned a sleep records it and stays a pass.
+  const passed = await runProcess(process.execPath, ['-e', 'setTimeout(()=>0,150)'], {
+    timeoutMs: 3000,
+    heartbeatMs: 20,
+    sleepGapMs: 60_000,
+    wallClock: sleepingClock(2, 900_000),
+  });
+  assert.equal(passed.hostSleptMs, 900_000);
+  assert.equal(passed.processDiagnostics.hostSleptMs, 900_000);
+  // Control: ordinary timer lateness (a 2 s gap) is not a sleep; a timeout stays a timeout.
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'while(true){}'], {
+      timeoutMs: 150,
+      heartbeatMs: 20,
+      sleepGapMs: 60_000,
+      wallClock: sleepingClock(2, 2000),
+    }),
+    (error) => {
+      assert.equal(error.failureKind, 'watchdog');
+      assert.match(error.summary, /^timed out after 150 ms/);
+      return true;
+    },
+  );
+});

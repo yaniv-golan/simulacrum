@@ -154,3 +154,29 @@ test('a watchdog shortened by the shared budget reports budget exhaustion, not a
     return true;
   });
 });
+
+test('unit files the host slept through are not evaluated and lead the aggregate, never counted as failures', async () => {
+  const { createVerificationContext } = await import('../scripts/verification-run.mjs');
+  let beats = 0,
+    base = Date.now();
+  const run = createVerificationContext({
+    readIdentity: () => ({ source: 'a' }),
+    processOptions: {
+      heartbeatMs: 20,
+      sleepGapMs: 60_000,
+      // The first child spans a 15-minute "sleep"; later children see an ordinary clock.
+      wallClock: () => (++beats === 2 ? (base += 900_000) : base),
+    },
+  });
+  await assert.rejects(run.unit(['missing-a.test.mjs']), (error) => {
+    assert.equal(error.failureKind, 'host-slept');
+    assert.match(error.message, /^host slept: 1 unit tests not evaluated \(missing-a.test.mjs\)/);
+    assert.deepEqual(error.notEvaluated, ['missing-a.test.mjs']);
+    return true;
+  });
+  const [receipt] = run.receipts();
+  assert.equal(receipt.ok, false);
+  assert.equal(receipt.notEvaluated, true);
+  assert.equal(receipt.failureKind, 'host-slept');
+  assert.equal(receipt.hostSleptMs, 900_000);
+});
