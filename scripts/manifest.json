@@ -2830,7 +2830,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. The physics door keys travel admission on stiffness: elastic rows keep 0.08–0.40 m, zero-stiffness rows admit 0.01–1.0 m. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2897,6 +2897,10 @@
       ],
       "controls": {
         "positive": [
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "zero-stiffness spring rows admit 0.01–1.0 m travel while elastic rows keep 0.08–0.40 m"
+          },
           {
             "path": "test/powered-hinge.test.mjs",
             "anchor": "power allocation includes spring-induced motor speed before actuator work"
@@ -3239,6 +3243,10 @@
           }
         ],
         "negative": [
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "spring travel outside the stiffness-keyed domain rejects before the world exists"
+          },
           {
             "path": "test/powered-hinge.test.mjs",
             "anchor": "prepared spring allocations reject intervening impulses before state changes"
