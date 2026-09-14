@@ -59,6 +59,26 @@ export const RELEASE_NOTES = Object.freeze(
       feature: 'beam',
     },
     {
+      id: '2026-09-14-feedback-context-default',
+      date: '2026-09-14',
+      name: 'Feedback includes your project by default',
+      summary:
+        'Give feedback now attaches your saved project and workshop state unless you untick them.',
+    },
+    {
+      id: '2026-09-14-feedback-attachment-steady',
+      date: '2026-09-14',
+      name: 'Feedback attachments stay steady',
+      summary: 'The attachment checkbox no longer flickers while your feedback draft is being saved.',
+    },
+    {
+      id: '2026-09-14-motor-readout-steady',
+      date: '2026-09-14',
+      name: 'Connect & test holds still while you drive',
+      summary:
+        'The motor readout keeps its height as you drive, so Connect & test no longer jumps under your pointer.',
+    },
+    {
       id: '2026-09-13-dialog-close',
       date: '2026-09-13',
       name: 'One close control for every dialog',
