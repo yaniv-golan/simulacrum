@@ -370,7 +370,7 @@ test('an attempt that failed around a green tier needs the candidate cause, and 
 });
 
 test('a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes; everything else executes and final is refused', (t) => {
-  const first = run(['first', 'new', '']);
+  const first = run(['first', 'new', '', 'extra=yes']);
   const directories = [];
   t.after(() => {
     rmSync(first.root, { recursive: true, force: true });
@@ -384,7 +384,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
 
   // Same bytes, a different tier and a different base: only the workshop journeys (x, y) are
   // offered and reused; smoke, hosted and timing-sensitive rows execute.
-  const child = run(['after', first.root, parent, 'tier=merge', 'base=main']);
+  const child = run(['after', first.root, parent, 'tier=merge', 'base=main', 'extra=yes']);
   directories.push(child.report?.directory);
   assert.equal(child.status, 0, child.stderr);
   assert.equal(child.report.status, 'passed with reused receipts');
@@ -438,7 +438,13 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   assert.deepEqual(ledger.reuse, ['browser:x', 'browser:y']);
 
   // A child of the child: the reused receipt is depth 1 in it, so a further child executes browser:x.
-  const grandchild = run(['after', first.root, child.report.attemptReport, 'tier=local']);
+  const grandchild = run([
+    'after',
+    first.root,
+    child.report.attemptReport,
+    'tier=local',
+    'extra=yes',
+  ]);
   directories.push(grandchild.report?.directory);
   assert.equal(grandchild.status, 0, grandchild.stderr);
   assert.equal(grandchild.report.status, 'passed', 'nothing offered');
@@ -446,7 +452,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   assert.ok(grandchild.report.verification.executed.includes('browser:x'));
 
   // Final is refused on either side.
-  const toFinal = run(['after', first.root, parent, 'tier=final']);
+  const toFinal = run(['after', first.root, parent, 'tier=final', 'extra=yes']);
   directories.push(toFinal.report?.directory);
   assert.equal(toFinal.status, 1);
   assert.match(toFinal.report.error, /final/);
@@ -457,7 +463,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   );
 
   // A byte delta: fresh candidate, nothing reused, no --changed-files, plain passed.
-  const delta = run(['after', first.root, parent, 'tier=merge', 'touch=src.mjs']);
+  const delta = run(['after', first.root, parent, 'tier=merge', 'touch=src.mjs', 'extra=yes']);
   directories.push(delta.report?.directory);
   assert.equal(delta.status, 0, delta.stderr);
   assert.equal(delta.report.status, 'passed');
@@ -481,7 +487,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   );
   const bytes = readFileSync(witness, 'utf8');
   writeFileSync(witness, bytes.replace('"id"', '"ID"'));
-  const tampered = run(['after', first.root, parent, 'tier=merge']);
+  const tampered = run(['after', first.root, parent, 'tier=merge', 'extra=yes']);
   directories.push(tampered.report?.directory);
   assert.equal(tampered.status, 1);
   assert.equal(tampered.report.status, 'failed');
@@ -489,7 +495,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
     join(first.report.directory, 'source/artifacts/browser-suite/runs', first.report.attempt, 'x'),
     { recursive: true },
   );
-  const purged = run(['after', first.root, parent, 'tier=merge']);
+  const purged = run(['after', first.root, parent, 'tier=merge', 'extra=yes']);
   directories.push(purged.report?.directory);
   assert.equal(purged.status, 0, purged.stderr);
   assert.equal(purged.report.status, 'passed with reused receipts', 'y is still intact');
@@ -498,7 +504,14 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   assert.deepEqual(purged.report.after.reused, [{ id: 'browser:y', origin }]);
 
   // A failed parent needs a cause; a passed parent takes none.
-  const caused = run(['after', first.root, parent, 'tier=merge', '--cause=browser:x=nothing']);
+  const caused = run([
+    'after',
+    first.root,
+    parent,
+    'tier=merge',
+    '--cause=browser:x=nothing',
+    'extra=yes',
+  ]);
   assert.equal(caused.status, 1);
   assert.match(caused.report.error, /nothing failed/);
 });

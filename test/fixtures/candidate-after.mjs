@@ -36,8 +36,6 @@ const manifest = {
     { id: 'y', script: 'scripts/y.mjs', tier: 'browser' },
     { id: 'x', script: 'scripts/x.mjs', tier: 'browser' },
     { id: 'perf', script: 'scripts/perf.mjs', tier: 'browser', timingSensitive: true },
-    { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
-    { id: 'hosted', script: 'scripts/hosted.mjs', tier: 'browser', environment: 'self' },
   ],
   checks: [{ id: 'layers' }],
   invariants: [
@@ -49,6 +47,12 @@ const manifest = {
   ],
   verificationResumeLeaves: [],
 };
+// Always-fresh rows for the receipt-reuse scenarios: merge smoke and a hosted (self) check.
+if (flag('extra') === 'yes')
+  manifest.browserChecks.push(
+    { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
+    { id: 'hosted', script: 'scripts/hosted.mjs', tier: 'browser', environment: 'self' },
+  );
 const filesOf = (dir) => {
   const out = {};
   const visit = (d) => {
