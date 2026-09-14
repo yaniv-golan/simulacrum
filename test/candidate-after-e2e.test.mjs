@@ -362,3 +362,95 @@ test('an attempt that failed around a green tier needs the candidate cause, and 
     false,
   );
 });
+
+test('a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes; everything else executes and final is refused', (t) => {
+  const first = run('first', 'new', '');
+  const directories = [];
+  t.after(() => {
+    rmSync(first.root, { recursive: true, force: true });
+    for (const d of [first.report?.directory, ...directories]) if (d) rmSync(d, { recursive: true, force: true });
+  });
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(first.report.status, 'passed');
+  const parent = first.report.attemptReport;
+  const parentLeaves = join(first.report.directory, 'attempts', first.report.attempt, 'leaves');
+
+  // Same bytes, a different tier and a different base: only the workshop journeys (x, y) are
+  // offered and reused; smoke, hosted and timing-sensitive rows execute.
+  const child = run('after', first.root, parent, 'tier=merge', 'base=main');
+  directories.push(child.report?.directory);
+  assert.equal(child.status, 0, child.stderr);
+  assert.equal(child.report.status, 'passed with reused receipts');
+  assert.equal(child.report.tier, 'merge');
+  assert.notEqual(child.report.directory, first.report.directory, 'its own candidate');
+  assert.equal(child.report.after.kind, 'reuse');
+  assert.equal(child.report.after.mode, 'same-bytes');
+  assert.equal(child.report.after.parentTier, 'local');
+  assert.deepEqual(child.report.after.offered, ['browser:x', 'browser:y']);
+  const origin = { attempt: first.report.attempt, report: parent, depth: 1 };
+  assert.deepEqual(child.report.after.reused, [
+    { id: 'browser:x', origin },
+    { id: 'browser:y', origin },
+  ]);
+  assert.equal(child.report.after.causes && Object.keys(child.report.after.causes).length, 0);
+  assert.equal(child.report.verification.changedFiles, null, 'the tier keeps its own selection');
+  assert.equal(child.report.priority.base, 'resolved-main');
+  const executed = child.report.verification.executed;
+  for (const id of ['browser:perf', 'browser:smoke', 'browser:hosted', 'build:browser', 'check:layers', 'ci:budget'])
+    assert.ok(executed.includes(id), `${id} executed`);
+  assert.equal(executed.includes('browser:x'), false);
+  assert.equal(executed.includes('browser:y'), false);
+  assert.equal(receipt(child.report, 'unit:test/a.test.mjs').resumed, undefined, 'unit leaves are the child\'s own');
+  const ledger = JSON.parse(readFileSync(join(child.report.directory, 'attempts', child.report.attempt, 'ledger.json'), 'utf8'));
+  assert.equal(ledger.previous, parentLeaves);
+  assert.equal(ledger.previousKey, readFileSync(join(first.report.directory, 'resume-key')).toString('hex'));
+  assert.deepEqual(ledger.reuse, ['browser:x', 'browser:y']);
+
+  // A child of the child: the reused receipt is depth 1 in it, so a further child executes browser:x.
+  const grandchild = run('after', first.root, child.report.attemptReport, 'tier=local');
+  directories.push(grandchild.report?.directory);
+  assert.equal(grandchild.status, 0, grandchild.stderr);
+  assert.equal(grandchild.report.status, 'passed', 'nothing offered');
+  assert.deepEqual(grandchild.report.after.offered, []);
+  assert.ok(grandchild.report.verification.executed.includes('browser:x'));
+
+  // Final is refused on either side.
+  const toFinal = run('after', first.root, parent, 'tier=final');
+  directories.push(toFinal.report?.directory);
+  assert.equal(toFinal.status, 1);
+  assert.match(toFinal.report.error, /final/);
+  assert.equal(toFinal.calls.some((c) => c.kind === 'process'), false, 'no process ran');
+
+  // A byte delta: fresh candidate, nothing reused, no --changed-files, plain passed.
+  const delta = run('after', first.root, parent, 'tier=merge', 'touch=src.mjs');
+  directories.push(delta.report?.directory);
+  assert.equal(delta.status, 0, delta.stderr);
+  assert.equal(delta.report.status, 'passed');
+  assert.equal(delta.report.after.mode, 'delta');
+  assert.deepEqual(delta.report.after.reused, []);
+  assert.equal(delta.report.verification.changedFiles, null);
+  assert.ok(delta.report.verification.executed.includes('browser:x'));
+  writeFileSync(join(first.root, 'src.mjs'), 'export const v = 1;');
+
+  // Tampered parent evidence fails closed; purged parent evidence executes the leaf again.
+  const witness = join(first.report.directory, 'source/artifacts/browser-suite/runs', first.report.attempt, 'x/witness.json');
+  const bytes = readFileSync(witness, 'utf8');
+  writeFileSync(witness, bytes.replace('"id"', '"ID"'));
+  const tampered = run('after', first.root, parent, 'tier=merge');
+  directories.push(tampered.report?.directory);
+  assert.equal(tampered.status, 1);
+  assert.equal(tampered.report.status, 'failed');
+  rmSync(join(first.report.directory, 'source/artifacts/browser-suite/runs', first.report.attempt, 'x'), { recursive: true });
+  const purged = run('after', first.root, parent, 'tier=merge');
+  directories.push(purged.report?.directory);
+  assert.equal(purged.status, 0, purged.stderr);
+  assert.equal(purged.report.status, 'passed with reused receipts', 'y is still intact');
+  assert.ok(purged.report.verification.executed.includes('browser:x'), 'executed again');
+  assert.deepEqual(purged.report.after.offered, ['browser:x', 'browser:y']);
+  assert.deepEqual(purged.report.after.reused, [{ id: 'browser:y', origin }]);
+
+  // A failed parent needs a cause; a passed parent takes none.
+  const caused = run('after', first.root, parent, 'tier=merge', '--cause=browser:x=nothing');
+  assert.equal(caused.status, 1);
+  assert.match(caused.report.error, /nothing failed/);
+});

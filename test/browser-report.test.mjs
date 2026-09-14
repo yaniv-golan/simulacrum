@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -284,6 +285,18 @@ test('same-context suite reuse references retained original evidence for success
     assert.equal(reused.runs[0].evidenceOrigin.reportPath, original.reportPath);
     assert.equal(reused.runs[0].evidenceDirectory, original.runs[0].evidenceDirectory);
     assert.equal(reused.runs[0].log, original.runs[0].log);
+    // A passing receipt's value names the evidence a later candidate must find intact.
+    const saved = row.savedValues.filter((s) => s.id === 'browser:verify-browser');
+    if (!row.childFailed) {
+      assert.equal(saved.length, 1, 'saved once, reused once');
+      const checksums = saved[0].value.evidenceChecksums;
+      assert.deepEqual(checksums[0], { path: original.runs[0].evidenceDirectory, directory: true });
+      const witness = checksums.find((c) => c.path.endsWith('/witness.json'));
+      assert.equal(witness.bytes, Buffer.byteLength(row.originalBytes));
+      assert.equal(witness.sha256, createHash('sha256').update(row.originalBytes).digest('hex'));
+      const log = checksums.find((c) => c.path === original.runs[0].log);
+      assert.equal(log.sha256, createHash('sha256').update(row.originalLog).digest('hex'));
+    } else assert.equal(saved.length, 0, 'a failed leaf is never saved');
     assert.equal(original.runs[0].ok, !(row.childFailed || row.cleanupFailed));
     assert.equal(reused.runs[0].ok, original.runs[0].ok);
     assert.equal(row.retainedBytes, row.originalBytes);

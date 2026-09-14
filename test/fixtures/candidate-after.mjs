@@ -26,6 +26,7 @@ const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, ''
 const [mode, rootArg, parentReport, ...flags] = process.argv.slice(2);
 const root = rootArg === 'new' ? mkdtempSync('/tmp/candidate-after-') : rootArg;
 const flag = (name) => flags.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1);
+const tier = flag('tier') ?? 'local';
 const calls = [],
   unitRuns = [];
 let tierRan = false;
@@ -35,6 +36,8 @@ const manifest = {
     { id: 'y', script: 'scripts/y.mjs', tier: 'browser' },
     { id: 'x', script: 'scripts/x.mjs', tier: 'browser' },
     { id: 'perf', script: 'scripts/perf.mjs', tier: 'browser', timingSensitive: true },
+    { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
+    { id: 'hosted', script: 'scripts/hosted.mjs', tier: 'browser', environment: 'self' },
   ],
   checks: [{ id: 'layers' }],
   invariants: [
@@ -190,7 +193,25 @@ globalThis.candidateTransport = {
               executed.push(id);
               if (id === 'browser:x' && flag('x') === 'fail')
                 throw Object.assign(Error('assertion failed'), { code: 1, output: 'boom' });
-              return { code: 0, output: 'ok' };
+              // Retained evidence as the suite leaves it: a directory, a witness and a log.
+              const attempt = options.env.SIMULACRUM_VERIFICATION_ATTEMPT;
+              const directory = join(options.cwd, 'artifacts/browser-suite/runs', attempt, id.slice(8));
+              mkdirSync(directory, { recursive: true });
+              const witness = join(directory, 'witness.json'),
+                log = `${directory}.log`;
+              writeFileSync(witness, JSON.stringify({ id, attempt }));
+              writeFileSync(log, `ok ${id}`);
+              const sum = (path) => ({
+                path,
+                sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
+                bytes: statSync(path).size,
+              });
+              return {
+                code: 0,
+                output: 'ok',
+                evidenceOrigin: { evidenceDirectory: directory, log },
+                evidenceChecksums: [{ path: directory, directory: true }, sum(witness), sum(log)],
+              };
             });
           }
         });
@@ -198,7 +219,7 @@ globalThis.candidateTransport = {
         code = 1;
       }
       writeFileSync(
-        'artifacts/verification-local.json',
+        `artifacts/verification-${tier}.json`,
         JSON.stringify({
           status: code ? 'failed' : 'passed',
           attempt: options.env.SIMULACRUM_VERIFICATION_ATTEMPT,
@@ -252,6 +273,9 @@ registerHooks({
         'export function sourceIdentity() { return { head: "fixture", workingTreeDigest: "fixture" }; }';
     if (url === `file://${repo}/scripts/app-fingerprint.mjs`)
       source = 'export function appFingerprint() { return "fixture-build"; }';
+    if (url === `file://${repo}/scripts/merge-selection.mjs`)
+      source =
+        'export function mergeChanges(options) { return { refs: { base: `resolved-${options.base}`, incoming: null, destination: null, destinationName: null } }; }';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
   },
 });
@@ -264,10 +288,7 @@ process.argv = [
   `${repo}/scripts/verify-candidate.mjs`,
   ...(mode === 'resume'
     ? ['resume', parentReport]
-    : [
-        flag('tier') ?? 'local',
-        ...(flag('tier') === 'final' ? [] : ['--base', flag('base') ?? 'HEAD~1']),
-      ]),
+    : [tier, ...(tier === 'final' ? [] : ['--base', flag('base') ?? 'HEAD~1'])]),
   ...(mode === 'after' ? ['--after', parentReport] : []),
   ...flags.filter((f) => f.startsWith('--cause=')).flatMap((f) => ['--cause', f.slice(8)]),
   ...flags.filter((f) => f.startsWith('--arg=')).map((f) => f.slice(6)),
