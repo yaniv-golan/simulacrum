@@ -34,7 +34,7 @@
     "scripts/validate-manifest.mjs": "ad4ec4b9d78bce53a0a646a3cf71c767431eba7f11750ee3b9f12d4bc8e68316",
     "scripts/verification-environment.mjs": "c159c60b5f0eefc518f0a88714a839cd72c140bb36a13f51eccdd6cb017d10d1",
     "scripts/verification-preparation.mjs": "1080956f000008e3f52f2b004a139bfa426627941a8b0ec33270fd1a1659f341",
-    "scripts/verification-tiers.mjs": "ae236fabaee1b1c002901c5c04af4b5409e3f338755ae1eabbe3c6fbfbf298c9",
+    "scripts/verification-tiers.mjs": "6aa90dd9e5a6eb96626ada161b951b9f9f3bc6192f8b912e14db2b5ada22d004",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verification-window.mjs": "732dc8da11bc5ebd9e780b25cd04bd6333ba097a5de5fbdc22433959bdf15df8",
     "scripts/verify-candidate.mjs": "39fd4064697ffcd954bab9d3c4bfaea2052404184f03d03340714f26c6bb72fe",

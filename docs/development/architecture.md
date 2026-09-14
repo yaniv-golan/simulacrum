@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"3cf1f7b9f5a00f1f8d384b036cea478de5d9c2920d6641d46f82c7e02e8b3794","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"57d8ae540c6960399928bfb60966140112959cec98bdb9613252b9f2ea163cb3","disposition":"still accurate","rationale":"AGENTS.md changed only by the verification-table row for receipt reuse; no layer, owner or import rule in the overview changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e927567487d47103ec84a24a9a9ba651f039b6503055da54fd118204f473d21","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"4ae3ce3df4f910777695dfada1d2803d8a1873b56d38e66fd6a9f35c3577de55","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): AGENTS.md changed by one scheduling clause about the launch admission; layer ownership, the registry reader's role and the module map are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
