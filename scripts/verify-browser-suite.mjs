@@ -12,14 +12,16 @@ import {
   existsSync,
   renameSync,
   readdirSync,
+  statSync,
 } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { selectChecks, validateBrowserCoverage, parseBrowserArgs } from './browser-registry.mjs';
 import { runProcess } from './run-check.mjs';
+import { systemBrowserVersion } from './verification-environment.mjs';
 import { checkBreadth } from './check-breadth.mjs';
 import {
   createVerificationContext,
@@ -39,6 +41,47 @@ import {
   finalSuiteRuns,
   hostedReportFields,
 } from './host-profile.mjs';
+/** What a browser receipt is bound to: the registered row and its budget under the host
+ * profile, not the run. The worker count is a scheduling condition recorded on the row
+ * (measurementConditions), never part of identity, or a parent's receipts would never match a
+ * child scheduled with a different pool size. A system browser channel is not pinned by
+ * installed dependencies; its version is part of that check's configuration so a browser
+ * update refuses reuse of this receipt and nothing else. */
+/** The status of a row the suite never evaluated (refused admission, host sleep, fail-fast). */
+export const NOT_EVALUATED_STATUS = 'not evaluated';
+/** The suite's failure names both classes of non-pass row: rows that ran and failed, and rows
+ * refused before they ran (an admission refusal leaves no receipt at all), so a diagnosed retry
+ * can require the refused rows without a receipt to read. */
+export function browserSuiteFailure(outcomes, runs) {
+  const failures = outcomes.filter((outcome) => outcome.ok === false);
+  const error = new AggregateError(
+    failures.map((outcome) => outcome.error),
+    `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
+  );
+  error.notEvaluated = failures
+    .filter((outcome) => runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS)
+    .map((outcome) => outcome.id)
+    .sort();
+  error.failedChecks = failures
+    .map((outcome) => outcome.id)
+    .filter((id) => !error.notEvaluated.includes(id))
+    .sort();
+  return error;
+}
+export function browserReceiptConfiguration(check, budget = { timeoutMs: check.timeoutMs }) {
+  return {
+    script: check.script,
+    ...budget,
+    environment: check.environment ?? 'workshop',
+    execution: check.execution ?? 'exclusive',
+    ...(check.browserChannel
+      ? {
+          browserChannel: check.browserChannel,
+          browserVersion: systemBrowserVersion(check.browserChannel),
+        }
+      : {}),
+  };
+}
 const stamp = 'dist/.verification-source.json';
 export async function prepareBrowserBuild(context) {
   initializeVerificationEnvironment();
@@ -119,14 +162,14 @@ export async function withBrowserReport(
   } finally {
     for (const row of report.runs)
       if (row.status === 'queued' || row.status === 'running') {
-        row.status = 'not evaluated';
+        row.status = NOT_EVALUATED_STATUS;
         row.reason = report.failure ?? 'Execution interrupted';
       }
     report.finishedAt = new Date().toISOString();
     try {
       writeBrowserHistory(
         historyPath,
-        report.runs.filter((row) => !row.reused && row.status !== 'not evaluated'),
+        report.runs.filter((row) => !row.reused && row.status !== NOT_EVALUATED_STATUS),
       );
     } catch (error) {
       report.historyWarning = `Scheduling hints could not be saved: ${error.message}`;
@@ -192,6 +235,27 @@ export async function verifyBrowserSuite(mode = 'all', options = {}) {
   return withBrowserReport(mode, options, (report, publish) =>
     executeBrowserSuite(mode, options, report, publish),
   );
+}
+/** What a later candidate must find intact before it may cite this run's evidence: the evidence
+ * directory, every file beneath it and the log, each with its digest and size. */
+function retainedEvidence(origin) {
+  const entries = [{ path: origin.evidenceDirectory, directory: true }];
+  const file = (path, bytes) => ({
+    path,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    bytes: bytes.length,
+  });
+  const visit = (directory) => {
+    for (const name of readdirSync(directory).sort()) {
+      const path = join(directory, name),
+        stat = statSync(path);
+      if (stat.isDirectory()) visit(path);
+      else if (stat.isFile()) entries.push(file(path, readFileSync(path)));
+    }
+  };
+  visit(origin.evidenceDirectory);
+  entries.push(file(origin.log, readFileSync(origin.log)));
+  return entries;
 }
 async function executeBrowserSuite(
   mode,
@@ -392,13 +456,7 @@ async function executeBrowserSuite(
             const budget = browserBudget(hostProfile, check);
             const result = await context.check(
               `browser:${check.id}`,
-              {
-                script: check.script,
-                ...budget,
-                environment: check.environment ?? 'workshop',
-                workers,
-                execution: check.execution ?? 'exclusive',
-              },
+              browserReceiptConfiguration(check, budget),
               async () => {
                 const origin = {
                   runId: report.runId,
@@ -438,7 +496,11 @@ async function executeBrowserSuite(
                     () => probe?.close(),
                   );
                   writeFileSync(origin.log, result.output);
-                  return { ...result, evidenceOrigin: origin };
+                  return {
+                    ...result,
+                    evidenceOrigin: origin,
+                    evidenceChecksums: retainedEvidence(origin),
+                  };
                 } catch (error) {
                   error.evidenceOrigin = origin;
                   try {
@@ -484,7 +546,7 @@ async function executeBrowserSuite(
             const slept = (error.failureKind ?? runnerError?.failureKind) === 'host-slept';
             const notEvaluated = error.notEvaluated || slept;
             Object.assign(row, {
-              status: notEvaluated ? 'not evaluated' : 'failed',
+              status: notEvaluated ? NOT_EVALUATED_STATUS : 'failed',
               ...(notEvaluated ? { reason: runnerError?.summary ?? error.message } : {}),
               ...(slept ? { hostSleptMs: runnerError?.hostSleptMs ?? error.hostSleptMs } : {}),
               ok: false,
@@ -511,12 +573,8 @@ async function executeBrowserSuite(
         },
         { workers, failFast },
       );
-      const failures = outcomes.filter((outcome) => outcome.ok === false);
-      if (failures.length)
-        throw new AggregateError(
-          failures.map((outcome) => outcome.error),
-          `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
-        );
+      if (outcomes.some((outcome) => outcome.ok === false))
+        throw browserSuiteFailure(outcomes, runs);
     },
     async () => {
       report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);

@@ -6,7 +6,14 @@ import {
 } from './browser-history.mjs';
 import { mergeChanges } from './merge-selection.mjs';
 import { parseCompletionArgs } from './verification-tiers.mjs';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir, getPriority } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -15,6 +22,7 @@ import {
   candidateMatchesOrigin,
   destinationStillMatches,
   currentBranch,
+  resolveCandidateBase,
 } from './candidate.mjs';
 import { assertRuntime, assertUnnicedLaunch, assertAwake } from './runtime-preflight.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
@@ -31,6 +39,29 @@ import {
 } from './candidate-attempt.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { runProcess } from './run-check.mjs';
+import {
+  parseAfterArgs,
+  classifyParentLeaves,
+  validateCauses,
+  reexecutionSet,
+  requiredReexecution,
+  reusableLeaf,
+  reuseSet,
+  REUSE_TIERS,
+  afterMode,
+  deltaSelection,
+  afterSummary,
+  reuseSummary,
+  validateAfterReport,
+  attestReport,
+  verifyAttestation,
+} from './candidate-after.mjs';
+import { environmentForensics, processIdentity } from './verification-environment.mjs';
+/** Spotlight indexes every fresh copy under /var/folders (three mdworker_shared workers per
+ * candidate, observed tripping 30 s unit watchdogs); the marker at the candidate root, above
+ * `source`, keeps the tree out of the index without entering the candidate's identity. */
+const excludeFromIndexing = (root) =>
+  writeFileSync(join(root, '.metadata_never_index'), '', { mode: 0o600, flag: 'wx' });
 const origin = process.cwd(),
   originBranch = currentBranch(origin),
   started = performance.now();
@@ -42,9 +73,16 @@ const report = {
 };
 const output = 'artifacts/verification-candidate.json';
 let attemptOutput, lock;
+// Once the candidate's resume key exists, every published report is attested under it so a
+// later --after trusts classification and coverage only from a report this candidate wrote.
+// Same-UID trust class as the descriptor and receipts: an edited or re-pointed report is
+// refused unless the editor holds this candidate's 0600 key.
+let attestKey = null;
 const write = () => {
   report.elapsedMs = performance.now() - started;
   mkdirSync('artifacts', { recursive: true });
+  if (attestKey) report.attestation = attestReport(report, attestKey);
+  else delete report.attestation;
   const text = JSON.stringify(report, null, 2) + '\n';
   writeFileSync(output, text);
   if (attemptOutput) writeFileSync(attemptOutput, text);
@@ -56,19 +94,204 @@ const timing = createTiming({
   },
 });
 // Read selected prior report before overwriting the ordinary latest pointer.
-const argv = process.argv.slice(2);
-let previous;
+let argv = process.argv.slice(2),
+  previous,
+  retry = null;
 try {
+  // Argument errors must still publish a failed report rather than leave a stale green one.
+  const afterArgs = parseAfterArgs(argv);
+  argv = afterArgs.rest;
   previous =
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
+  if (previous?.after)
+    throw Error(
+      'resume cannot continue a diagnosed retry; retry from its report with --after so the chain is kept',
+    );
+  if (afterArgs.after) {
+    // A diagnosed retry: every non-pass leaf of the parent needs a cause before anything runs.
+    const parent = JSON.parse(readFileSync(afterArgs.after, 'utf8'));
+    // The parent report is trusted only when its own candidate key attests it: the receipts
+    // it classifies and the coverage it claims are then this candidate's own record.
+    verifyAttestation(parent, () => readFileSync(join(resolve(parent.directory), 'resume-key')));
+    // The chain is recorded before anything is validated or run, so a refused or dying retry
+    // still carries it; a later --after on this report cannot restart the count.
+    report.after = {
+      parentAttempt: parent.attempt ?? null,
+      causes: Object.fromEntries(afterArgs.causes),
+      chain: [...(parent.after?.chain ?? []), parent.attempt ?? null],
+    };
+    const classification = classifyParentLeaves(parent);
+    const coverage = validateCauses(classification, afterArgs.causes);
+    retry = { parent, classification, coverage, causes: afterArgs.causes };
+    report.after.kind = classification.kind;
+    if (classification.kind === 'reuse') {
+      // A passed parent offers receipts only from a terminal, owned, current attempt.
+      requireAttemptReport(parent.verification, parent.attempt);
+      if (
+        typeof parent.directory !== 'string' ||
+        existsSync(join(parent.directory, 'active-attempt'))
+      )
+        throw Error(
+          'parent candidate has an active attempt; receipts are offered only by a finished one',
+        );
+    }
+  }
   write();
   assertRuntime();
   report.launchNiceness = assertUnnicedLaunch({ priority: getPriority() });
   report.sleepAssertion = assertAwake();
   let directory, candidate, options, tier, key, installed, installedAt;
-  if (previous) {
+  if (retry) {
+    [tier] = argv;
+    options = parseCompletionArgs(tier, argv.slice(1));
+    const { parent } = retry,
+      reuse = retry.classification.kind === 'reuse';
+    const parentDirectory = resolve(parent.directory);
+    // The parent's bytes come from its signed descriptor, never from the unsigned report.
+    const parentKey = readFileSync(join(parentDirectory, 'resume-key'));
+    const parentDescriptor = readResumeDescriptor(parentDirectory, parentKey);
+    if (reuse) {
+      // Receipts cross tiers (an author's local into a reviewer's merge) but never into final;
+      // the child selects its own scope, so the parent's --base/--incoming are not repeated.
+      if (!REUSE_TIERS.includes(parentDescriptor.tier) || !REUSE_TIERS.includes(tier))
+        throw Error(
+          'receipt reuse needs local or merge tiers on both sides; final always executes',
+        );
+    } else if (parentDescriptor.tier !== tier || parent.tier !== tier)
+      throw Error('--after tier differs from the parent attempt tier');
+    // The frozen clone was captured for one scope; a retry may not change it. Refs are compared
+    // as the commits they name now, so a moved base or destination is refused, not silently
+    // re-pinned.
+    if (tier === 'merge') {
+      const scope = mergeChanges(options);
+      options.base = scope.refs.base;
+      if (options.incoming) {
+        options.incoming = scope.refs.incoming;
+        options.destination = scope.refs.destination;
+        options.destinationName = scope.refs.destinationName;
+      }
+    } else options.base = resolveCandidateBase(origin, options.base);
+    if (!reuse) {
+      if ((parentDescriptor.candidate?.base ?? null) !== options.base)
+        throw Error(
+          "--after must repeat the parent attempt's --base (the ref now names another commit)",
+        );
+      for (const key of ['incoming', 'destination'])
+        if ((parentDescriptor.options?.[key] ?? null) !== (options[key] ?? null))
+          throw Error(`--after must repeat the parent attempt's --${key}`);
+    }
+    // Identity and installed dependencies are read from the signed descriptor, never the report.
+    const identity = processIdentity(),
+      parentIdentity = parentDescriptor.identity;
+    const sameIdentity =
+      !!parentIdentity &&
+      ['runtime', 'platform', 'arch', 'environmentDigest'].every(
+        (k) => identity[k] === parentIdentity[k],
+      );
+    const sameSource = await candidateMatchesOrigin(origin, parentDescriptor.candidate);
+    let sameDependencies = false;
+    try {
+      sameDependencies =
+        sameSource &&
+        dependencyDigest(join(parentDirectory, 'source')) === parentDescriptor.installed;
+    } catch {
+      sameDependencies = false;
+    }
+    retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
+    report.after.mode = retry.mode;
+    report.after.sameBytes = { sameSource, sameDependencies, sameIdentity };
+    report.after.environment = environmentForensics();
+    // A reuse child is its own candidate: fresh capture and install, its own descriptor and key,
+    // so a later resume of it reconstructs this tier and scope, not the parent's.
+    if (retry.mode === 'same-bytes' && !reuse) {
+      directory = parentDirectory;
+      key = parentKey;
+      attestKey = key;
+      ({ candidate, installed, installedAt } = parentDescriptor);
+      if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
+        throw Error('parent candidate bytes changed');
+      if (resolve(candidate.destination) !== join(directory, 'source'))
+        throw Error('candidate location mismatch');
+      report.parentAttempt = parent.attempt;
+      await timing.measure('preflight', () => assertVerificationReady(candidate.destination));
+      if (
+        (await timing.measure('dependency-validation', () =>
+          dependencyDigest(candidate.destination),
+        )) !== installed
+      )
+        throw Error('parent installed dependencies changed');
+    } else {
+      await timing.measure('preflight', () => assertVerificationReady(origin));
+      directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
+      excludeFromIndexing(directory);
+      report.directory = directory;
+      write();
+      candidate = await timing.measure('capture', () =>
+        captureCandidate(origin, join(directory, 'source'), { base: options.base }),
+      );
+      report.candidate = candidate;
+      // The byte delta between the two captured candidates drives selection under the tier's
+      // policy, but only while identity and dependencies still match; otherwise every parent
+      // browser pass is stale and the tier applies its ordinary fresh policy.
+      const before = parentDescriptor.candidate?.files ?? {},
+        after = candidate.files ?? {};
+      const delta = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+        .filter(
+          (path) =>
+            before[path]?.sha256 !== after[path]?.sha256 ||
+            before[path]?.mode !== after[path]?.mode,
+        )
+        .sort();
+      report.after.delta = delta;
+      write();
+      await timing.measure('install', () =>
+        runProcess('npm', ['ci', '--prefer-offline'], {
+          cwd: candidate.destination,
+          timeoutMs: 300000,
+          inheritOutput: true,
+        }),
+      );
+      for (const path of ['.vite-temp', '.cache/prettier'])
+        mkdirSync(join(candidate.destination, 'node_modules', path), { recursive: true });
+      installed = await timing.measure('dependency-validation', () =>
+        dependencyDigest(candidate.destination),
+      );
+      // Whether the delta narrows selection is decided on what was actually installed: the
+      // new candidate's dependencies against the parent's, and the identity compared above.
+      const sameInstalled = installed === parentDescriptor.installed;
+      report.after.sameBytes.sameInstalledDependencies = sameInstalled;
+      retry.deltaSelection = deltaSelection({ sameDependencies: sameInstalled, sameIdentity });
+      report.after.deltaSelection = retry.deltaSelection;
+      retry.changedFiles = retry.deltaSelection === 'source-only' ? delta : null;
+      // A reuse child keeps the tier's own selection: a delta only means nothing is reused.
+      if (reuse) retry.changedFiles = null;
+      write();
+      // Retained in the descriptor so a resume reproduces the same tier environment.
+      installedAt = new Date().toISOString();
+      key = randomBytes(32);
+      attestKey = key;
+      writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
+      writeResumeDescriptor(
+        directory,
+        { candidate, options, tier, installed, installedAt, identity: processIdentity() },
+        key,
+      );
+      if (reuse) {
+        // The child's own install decides dependency identity; the parent's tree is not consulted.
+        const sameDependencies = sameSource && installed === parentDescriptor.installed;
+        retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
+        report.after.mode = retry.mode;
+        report.after.sameBytes = { sameSource, sameDependencies, sameIdentity };
+        if (retry.mode === 'same-bytes') {
+          retry.previous = join(parentDirectory, 'attempts', parent.attempt, 'leaves');
+          retry.previousKey = parentKey.toString('hex');
+        }
+      }
+    }
+  } else if (previous) {
     directory = resolve(previous.directory);
     key = readFileSync(join(directory, 'resume-key'));
+    attestKey = key;
     const descriptor = readResumeDescriptor(directory, key);
     ({ candidate, options, tier, installed, installedAt } = descriptor);
     if (resolve(candidate.destination) !== join(directory, 'source'))
@@ -98,6 +321,7 @@ try {
     }
     await timing.measure('preflight', () => assertVerificationReady(origin));
     directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
+    excludeFromIndexing(directory);
     report.directory = directory;
     write();
     candidate = await timing.measure('capture', () =>
@@ -122,8 +346,13 @@ try {
     // Retained in the descriptor so a resume reproduces the same tier environment.
     installedAt = new Date().toISOString();
     key = randomBytes(32);
+    attestKey = key;
     writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
-    writeResumeDescriptor(directory, { candidate, options, tier, installed, installedAt }, key);
+    writeResumeDescriptor(
+      directory,
+      { candidate, options, tier, installed, installedAt, identity: processIdentity() },
+      key,
+    );
   }
   lock = acquireCandidateAttempt(directory);
   const attempt = lock.attempt;
@@ -131,12 +360,66 @@ try {
   mkdirSync(attemptDirectory, { recursive: true, mode: 0o700 });
   attemptOutput = join(attemptDirectory, 'report.json');
   const ledger = join(attemptDirectory, 'ledger.json');
+  const manifest = retry
+    ? JSON.parse(readFileSync(join(candidate.destination, 'scripts/manifest.json'), 'utf8'))
+    : null;
+  if (retry?.classification.kind === 'reuse') {
+    const set = reuseSet({ classification: retry.classification, manifest });
+    retry.offered = retry.mode === 'same-bytes' ? set.offered : [];
+    // A reuse child never narrows the tier's selection: nothing is required or covered by delta.
+    retry.required = new Set();
+    retry.covered = [];
+    report.after.offered = retry.offered;
+  } else if (retry) {
+    retry.reexecute = reexecutionSet({ classification: retry.classification, manifest });
+    retry.required = requiredReexecution({ classification: retry.classification, manifest });
+    // Browser checks the parent chain passed or already skipped on receipts; a source-only delta
+    // may skip these when its byte delta does not reach them, and nothing else.
+    // Coverage names the attempt whose receipt stands behind each id; inherited skips are
+    // re-admitted through this candidate's manifest so a row that stopped being reusable drops out.
+    retry.coveringAttempt = new Map();
+    for (const row of retry.parent.after?.skippedByDelta ?? [])
+      if (reusableLeaf(row.id, manifest)) retry.coveringAttempt.set(row.id, row.parentAttempt);
+    for (const r of retry.classification.passing)
+      if (r.id.startsWith('browser:') && reusableLeaf(r.id, manifest))
+        retry.coveringAttempt.set(r.id, retry.parent.attempt);
+    retry.covered = [...retry.coveringAttempt.keys()].sort();
+    retry.reuse =
+      retry.mode === 'same-bytes'
+        ? retry.classification.passing
+            .map((r) => r.id)
+            .filter((id) => !retry.reexecute.has(id) && reusableLeaf(id, manifest))
+        : [];
+  }
   writeFileSync(
     ledger,
     JSON.stringify({
       key: key.toString('hex'),
       output: join(attemptDirectory, 'leaves'),
-      previous: previous ? join(directory, 'attempts', previous.attempt, 'leaves') : null,
+      previous: previous
+        ? join(directory, 'attempts', previous.attempt, 'leaves')
+        : retry?.previous
+          ? retry.previous
+          : retry?.mode === 'same-bytes'
+            ? join(directory, 'attempts', retry.parent.attempt, 'leaves')
+            : null,
+      // Another candidate's receipts were signed with its key; the offered ids are the reuse list.
+      ...(retry?.previousKey ? { previousKey: retry.previousKey, reuse: retry.offered } : {}),
+      ...(retry?.reuse && retry.mode === 'same-bytes' ? { reuse: retry.reuse } : {}),
+      // The tier reads its retry selection here and nowhere else: the byte delta (source-only
+      // delta retries) and the browser checks it must add to its own selection.
+      ...(retry
+        ? {
+            selection: {
+              ...(retry.changedFiles ? { changedFiles: retry.changedFiles } : {}),
+              required: [...retry.required]
+                .filter((id) => id.startsWith('browser:'))
+                .map((id) => id.slice('browser:'.length)),
+              covered: retry.covered.map((id) => id.slice('browser:'.length)),
+            },
+          }
+        : {}),
+      origin: { attempt, report: attemptOutput },
     }),
     { mode: 0o600 },
   );
@@ -258,6 +541,44 @@ try {
         })
       : 'NOT_EVALUATED';
   report.status = report.verification.status;
+  if (retry) {
+    // Δ-skipped leaves are what the tier's selection left out on the strength of a parent
+    // receipt the delta does not reach: reasoning, never receipts. Validation refuses any entry
+    // outside the covered set, any that ran, and any overlap with re-execution.
+    const skippedByDelta =
+      retry.mode === 'delta' &&
+      retry.deltaSelection === 'source-only' &&
+      retry.classification.kind === 'retry'
+        ? (report.verification.selection?.skippedByDelta ?? []).map((id) => ({
+            id: `browser:${id}`,
+            parentAttempt: retry.coveringAttempt.get(`browser:${id}`) ?? retry.parent.attempt,
+          }))
+        : [];
+    const summary =
+      retry.classification.kind === 'reuse'
+        ? reuseSummary({
+            parent: retry.parent,
+            mode: retry.mode,
+            sameBytes: report.after.sameBytes,
+            offered: retry.offered,
+            child: report.verification,
+          })
+        : afterSummary({
+            parent: retry.parent,
+            mode: retry.mode,
+            deltaSelection: retry.deltaSelection ?? null,
+            causes: retry.causes,
+            coverage: retry.coverage,
+            reexecute: retry.reexecute,
+            required: retry.required,
+            child: report.verification,
+            skippedByDelta,
+            covered: retry.covered,
+          });
+    report.status = summary.status;
+    report.after = { ...report.after, ...summary.after };
+    validateAfterReport(report);
+  }
   report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
   process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
 } catch (error) {

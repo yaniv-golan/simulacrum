@@ -15,7 +15,7 @@
     "scripts/playtest/feedback-load.mjs": "22e6927bd02c3386decfd46957f0a3225238ee9beac24fc8c6796db87e1d948a",
     "scripts/playtest/load.mjs": "6de2a068228692ddc8094f3602aeb24be3db5df5d751bc39e5c228d0ee1d70e8",
     "scripts/playtest/package-verification.mjs": "eb3709bae627573831a507f8037be4eb9aa6fd2549d7a5d55f06093c64c5a452",
-    "scripts/playtest/prepare-release.mjs": "4d3f5ee4ad1aa4bcfb2b3fd341bd6af065bd78ec9002c01afdeff4ddd8e3064c",
+    "scripts/playtest/prepare-release.mjs": "e6ad20c24479cccc248aeae6cfa6433f719f6fa835ad48cfe07135b78d1fd139",
     "scripts/playtest/protocol.mjs": "30279b9083f6c0f27a85fea472a1ed6edaaa525f331f316916a8d78585296a10",
     "scripts/playtest/release-config.mjs": "f02e25f7b16f970c662b54467c1e716fadb0810b39003a88123af3c9d4798bff",
     "scripts/playtest/release-policy.mjs": "2407a7d42927703f8d3b1c565dff94932404e0dd54b9bd2cd1aad8339788aedb",
