@@ -118,6 +118,8 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | Local completion | `npm run verify:candidate -- local` |
 | Routine merge readiness | `npm run verify:candidate -- merge --base <commit>` |
 | Release or milestone qualification | `npm run verify:candidate -- final` |
+| Diagnosed retry of a failed local/merge candidate | `npm run verify:candidate -- <tier> --after <report> --cause <id>=<cause>` |
+| Receipt reuse from a passed local/merge candidate on identical bytes | `npm run verify:candidate -- <tier> --after <passed report>` |
 | Authorized experimental publication | Existing release preparation and exception policy |
 
 Direct tiers remain for already frozen CI/release copies. Complete source-writing

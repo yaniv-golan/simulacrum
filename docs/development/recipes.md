@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"00881b4b9aad8659e4fcbda8ac70a60888b8e52d0af8b35bc51d2aa8e3f63060","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef79ef18a6c46f6a244f9402a75ee2bc12cae389c8165d8f2e4b7524d1d23c39","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): the drift is the pressure policy default (enforce), its test, the README scheduling paragraph and a hosted measurement-run record in the manifest; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still selects every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"8bfe48e9064812d976ef958208afcf3a6b1e281690c84780a705e61500ba8a44","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"dcbaa058416ba9af206cd88318966f2dcc43ce449ec8a2be6cf59edd96873a75","disposition":"still accurate","rationale":"test/process-runner.test.mjs now tolerates the sub-millisecond skew between the timer's loop clock and performance.now() when asserting the watchdog fired at its due time (2 ms), a harness test detail; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

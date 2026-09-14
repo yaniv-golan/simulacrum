@@ -74,6 +74,56 @@ test('completion priority arguments preserve tier and normalized provenance', as
     /inside project/,
   );
   assert.throws(() => parseCompletionArgs('final', ['--priority-files']), /Usage/);
+  // No tier accepts a hand-supplied file list: a diagnosed retry's byte delta reaches selection
+  // through the attempt ledger only, so nothing typed on a command line can narrow coverage.
+  for (const tier of ['local', 'merge', 'final'])
+    assert.throws(
+      () =>
+        parseCompletionArgs(tier, [
+          ...(tier === 'merge' ? ['--base', 'HEAD'] : []),
+          '--changed-files',
+          'README.md',
+        ]),
+      /Usage/,
+      `${tier} refuses --changed-files`,
+    );
+});
+
+test('a phase that refused rows before running them records their ids on its row', async () => {
+  const { runVerificationPhases } = await import('../scripts/verification-tiers.mjs');
+  const refused = Object.assign(Error('Browser checks failed: perf, audio'), {
+    notEvaluated: ['perf', 'audio'],
+    failedChecks: [],
+  });
+  const rows = await runVerificationPhases(
+    [
+      ['ci', async () => ({ ok: true })],
+      [
+        'browser',
+        async () => {
+          throw refused;
+        },
+      ],
+    ],
+    { onProgress: () => {} },
+  );
+  const browser = rows.find((r) => r.id === 'browser');
+  assert.equal(browser.status, 'failed');
+  assert.deepEqual(browser.notEvaluated, ['perf', 'audio']);
+  assert.equal(rows.find((r) => r.id === 'ci').notEvaluated, undefined);
+  // A plain failure carries no list.
+  const plain = await runVerificationPhases(
+    [
+      [
+        'browser',
+        async () => {
+          throw Error('boom');
+        },
+      ],
+    ],
+    { onProgress: () => {} },
+  );
+  assert.equal(plain[0].notEvaluated, undefined);
 });
 
 test('phase reporting publishes start and finish with elapsed time even on failure', async () => {

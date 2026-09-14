@@ -5,14 +5,25 @@ const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, ''
 const root = mkdtempSync('/tmp/merge-runner-');
 const behavior = process.argv[2];
 const replacements = {
-  'verification-run.mjs': `export function createVerificationContext(){return {identity:{source:{head:'h',workingTreeDigest:'d'}},check:async(id,c,fn)=>fn(),receipts:()=>[]}}`,
+  // retry-required: the context carries a diagnosed retry's selection as the attempt ledger would.
+  // retry-required / retry-delta: the context carries a diagnosed retry's selection as the
+  // attempt ledger would.
+  'verification-run.mjs': `export function createVerificationContext(){return {identity:{source:{head:'h',workingTreeDigest:'d'}},check:async(id,c,fn)=>fn(),receipts:()=>[],selection:${
+    behavior === 'retry-required'
+      ? "{changedFiles:null,required:['mirror'],covered:[]}"
+      : behavior === 'retry-delta'
+        ? "{changedFiles:['docs/x.md'],required:[],covered:['bar']}"
+        : 'null'
+  }}}`,
   'ci.mjs': `export async function runCI(){return {ok:${behavior !== 'ci-fail'}}}`,
   'browser-selection.mjs': `export function affectedBrowserChecks(){return {checks:[]}}`,
-  'browser-registry.mjs': `export function browserChecks(){return []}`,
+  'browser-registry.mjs': `export function browserChecks(){return [{id:'smoke',mergeSmoke:true},{id:'foo'},{id:'bar'},{id:'mirror'}]}`,
+  // The fresh scope (src/foo.mjs changed) selects foo and bar beside the smoke row; a docs-only
+  // byte delta selects the smoke row alone.
+  'merge-selection.mjs': `export function mergeChanges(o){return {refs:{base:'h'},files:o.changedFiles??['README.md','src/foo.mjs'],...(o.changedFiles?{filesProvenance:'candidate delta'}:{})}};export function mergeSelection({files}){const runtime=files.includes('src/foo.mjs');const ids=runtime?['smoke','foo','bar']:['smoke'];return {scope:runtime?'local-contract':'documentation',checks:ids.map(id=>({id})),selected:ids.map(id=>({id,reason:id==='smoke'?'registered merge smoke':'existing audited affected selection'})),omitted:['foo','bar','mirror'].filter(id=>!ids.includes(id)).map(id=>({id,reason:'outside audited selection and registered merge smoke',coverage:'NOT_EXECUTED'}))}}`,
   // The launch admission never reads the live host from a unit fixture.
   'check-sequence.mjs': `export async function admitQuietHost(){return {admitted:true,load1:1,waitedMs:0,samples:[1],trend:null,pressure:null}};export function pressureHolds(){return null};export const PRESSURE_POLICY={mode:'observe',idleBound:80,foreignBound:40}`,
   'host-pressure.mjs': `export async function samplePressure(){return {method:'fixture',idlePercent:99,foreign:[]}}`,
-  'merge-selection.mjs': `export function mergeChanges(){return {refs:{base:'h'},files:['README.md']}};export function mergeSelection(){return {checks:[{id:'smoke'}]}}`,
   'verify-browser-suite.mjs': `export async function verifyBrowserSuite(ids,{selection}){if(JSON.stringify(selection.source)!==JSON.stringify({head:'h',workingTreeDigest:'d'}))throw Error('browser selection does not match current source');${behavior === 'browser-fail' ? "throw Error('deliberate browser failure')" : 'return []'}}`,
 };
 registerHooks({

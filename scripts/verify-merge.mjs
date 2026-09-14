@@ -5,6 +5,7 @@ import { affectedBrowserChecks } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { mergeChanges, mergeSelection } from './merge-selection.mjs';
+import { withRequiredChecks, resolveRetrySelection } from './candidate-after.mjs';
 import {
   runVerificationPhases,
   localOutcome,
@@ -29,9 +30,19 @@ const write = () => {
 write();
 try {
   const options = parseCompletionArgs('merge', process.argv.slice(2));
-  const changes = mergeChanges(options);
   const context = createVerificationContext();
-  Object.assign(report, context.identity, { integration: changes, priority: options });
+  // The integration scope is always the real git scope; a diagnosed retry's byte delta arrives
+  // through the attempt ledger only and yields a second, narrower scope for coverage reasoning.
+  const changes = mergeChanges(options);
+  const retry = context.selection;
+  const narrowScope = retry?.changedFiles ? { ...options, changedFiles: retry.changedFiles } : null;
+  const narrowChanges = narrowScope ? mergeChanges(narrowScope) : null;
+  Object.assign(report, context.identity, {
+    integration: changes,
+    priority: options,
+    retry,
+    ...(narrowChanges ? { retryIntegration: narrowChanges } : {}),
+  });
   let selection;
   const results = await runVerificationPhases(
     [
@@ -43,18 +54,59 @@ try {
           context.check('selection:merge', { refs: changes.refs, files: changes.files }, () => {
             if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
               throw Error('Integration scope changed during verification');
-            selection = {
-              ...mergeSelection({
-                checks: browserChecks(),
+            const registry = browserChecks();
+            const select = (scope) =>
+              mergeSelection({
+                checks: registry,
                 selection: affectedBrowserChecks(
-                  changes.files.filter((path) => !changes.metadataOnlyFiles?.includes(path)),
+                  scope.files.filter((path) => !scope.metadataOnlyFiles?.includes(path)),
                 ),
-                files: changes.files,
-                reviewOnlyFiles: changes.reviewOnlyFiles,
-                metadataOnlyFiles: changes.metadataOnlyFiles,
-              }),
-              source: context.identity.source,
-            };
+                files: scope.files,
+                reviewOnlyFiles: scope.reviewOnlyFiles,
+                metadataOnlyFiles: scope.metadataOnlyFiles,
+              });
+            const merged = select(changes);
+            const narrow = narrowChanges ? select(narrowChanges) : null;
+            const resolved = narrow
+              ? resolveRetrySelection({
+                  fresh: merged,
+                  narrow,
+                  required: retry.required,
+                  covered: retry.covered,
+                  checks: registry,
+                })
+              : withRequiredChecks(merged, retry?.required ?? [], registry);
+            // The merge selection's selected/omitted split follows the resolved checks: rows the
+            // fresh policy chose keep their reason, rows only the delta reached carry the delta's
+            // reason, added rows name the retry, skipped rows say so.
+            const chosen = new Set(resolved.checks.map((c) => c.id));
+            const reasonOf = (id) =>
+              merged.selected?.find((c) => c.id === id)?.reason ??
+              (narrow?.selected?.find((c) => c.id === id)
+                ? `byte delta: ${narrow.selected.find((c) => c.id === id).reason}`
+                : 'diagnosed retry: required re-execution');
+            const skipped = new Set(resolved.skippedByDelta ?? []);
+            selection =
+              resolved === merged
+                ? { ...merged, source: context.identity.source }
+                : {
+                    ...resolved,
+                    selected: resolved.checks.map((check) => ({
+                      ...check,
+                      reason: reasonOf(check.id),
+                    })),
+                    omitted: registry
+                      .filter((check) => !chosen.has(check.id))
+                      .map((check) => ({
+                        ...check,
+                        reason: skipped.has(check.id)
+                          ? 'covered by a parent attempt receipt the byte delta does not reach'
+                          : (merged.omitted?.find((c) => c.id === check.id)?.reason ??
+                            `outside audited ${merged.scope} selection and registered merge smoke`),
+                        coverage: 'NOT_EXECUTED',
+                      })),
+                    source: context.identity.source,
+                  };
             report.selection = selection;
             console.log(
               `Merge browser selection: ${selection.checks.length}; ${selection.fullReason ?? 'audited affected checks plus integration smoke'}`,

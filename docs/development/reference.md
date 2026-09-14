@@ -77,6 +77,7 @@ These are registered commands and checks, not evidence that they passed.
 | boundary-types | runtime-contract | M3b | [scripts/check-boundary-types.mjs](../../scripts/check-boundary-types.mjs) |
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
+| format | gate-integrity | M0 | [scripts/check-format.mjs](../../scripts/check-format.mjs) |
 | verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
 | verification-scope-configuration | gate-integrity | M3b | [scripts/verification-window.mjs](../../scripts/verification-window.mjs) |
 
@@ -131,7 +132,7 @@ These are registered commands and checks, not evidence that they passed.
 | powered-shared-sensing | [SENSOR_DEFINITIONS](../../src/model/sensors.mjs), [sampleSensor](../../src/simulation/sensors.mjs), [createPowerNetwork](../../src/simulation/power.mjs) | invariant-controls |
 | bounded-controller-programs | [compileController](../../src/scripting/controller-program.mjs), [createWorkshop](../../src/core/workshop.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [controllerDecision](../../src/model/controller-decision.mjs), [createControllerHistory](../../src/application/controller-history.mjs) | invariant-controls |
 | learning-feature-identity | [admitLearningModel](../../src/model/learning-model.mjs), [admitLearningBindings](../../src/model/learning-bindings.mjs) | invariant-controls |
-| candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs) | verification-scope-configuration |
+| candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [reexecutionSet](../../scripts/candidate-after.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs), [reusableAcrossCandidates](../../scripts/candidate-after.mjs), [acceptRetainedEvidence](../../scripts/verification-run.mjs) | verification-scope-configuration |
 | ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
 | verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |
 | bounded-process-ownership | [runProcess](../../scripts/run-check.mjs) | verification-scope-configuration |
