@@ -134,6 +134,11 @@ document and run actions in the header; parts in the left catalogue; separate ed
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+The selected part's header carries one summary line from
+[inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
+type, the primary compiled connection (shaft before gear, power, signal, slide, rope and
+mount) with its peer's name, and the count of compiled connections — a rejected connection
+is not wired. It absorbs the former type line and never collapses a section.
 
 The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
 Recent and locally saved Favorites. Essentials are the six parts a first machine needs

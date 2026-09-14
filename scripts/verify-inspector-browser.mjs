@@ -69,6 +69,11 @@ try {
   }
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
   await selectPart('Motor');
+  browserEvidence.assert('equal', [
+    await page.locator('.selected-part-header .part-summary').textContent(),
+    'Powered Motor · Shaft to Drive wheel · 3 wired',
+    'the header says what the part is and what it turns before any section is opened',
+  ]);
   const duty = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
   browserEvidence.assert('equal', [
     await duty.isVisible(),

@@ -62,6 +62,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { UI_FEATURES } from '../model/features.mjs';
 import { CATALOG, MATERIALS } from '../model/catalog.mjs';
 import { diagnoseMotion, motorShaftSpeed, readinessLine } from '../model/motion-diagnostics.mjs';
+import { CONNECTION_LABELS, inspectorSummary } from './inspector-summary.mjs';
 import { explainReason, explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
 import {
@@ -97,14 +98,7 @@ const parameterHelp = {
   defaultDuty: '−1 reverse · 0 off · 1 forward. Sets drive strength, not a guaranteed speed.',
   capacityJ: 'More stored energy supports a longer run.',
 };
-const labels = {
-  spring: 'Slide',
-  power: 'Power',
-  shaft: 'Shaft',
-  gear: 'Gear mesh',
-  fixed: 'Mount',
-  signal: 'Signal',
-};
+const labels = CONNECTION_LABELS;
 
 const format = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
 function element(tag, className, text) {
@@ -2187,8 +2181,14 @@ export function createWorkshopView(
     aboutPart.title = 'About this part';
     aboutPart.replaceChildren(icon, element('span', 'help-badge', 'ⓘ'));
     identity.append(aboutPart, element('h2', '', part.name));
-    if (part.name !== definition.name)
-      identity.append(element('span', 'part-kind', definition.name));
+    // Type and primary connection at a glance; the Connections list below owns the detail.
+    identity.append(
+      element(
+        'span',
+        'part-kind part-summary',
+        inspectorSummary(part, frame.metadata.blueprint, frame.metadata.connections),
+      ),
+    );
     const actions = element('div', 'part-actions'),
       duplicate = button('Copy · C', () => copySelected(), 'quiet'),
       remove = button('Delete · X', () => send({ type: 'delete', id: part.id }), 'danger quiet');
