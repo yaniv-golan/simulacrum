@@ -1,3 +1,4 @@
+import { liveWait } from './browser-idle.mjs';
 import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
@@ -36,14 +37,21 @@ const visibleElectrical = async () => {
     .sort();
 };
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
+// A duty flip is the app reflecting a key or pointer hold; it is not a timing assertion, so
+// the wait's budget is the check's watchdog, and a starved renderer fails as such.
 async function duty(value) {
-  await page.waitForFunction((value) => {
-    const frame = window.workshopProbe.observe().frames[0];
-    const index = frame.metadata.blueprint.parts.findIndex(
-      (part) => part.type === 'commandReceiver',
-    );
-    return frame.power.sources.find((source) => source.node === index)?.duty === value;
-  }, value);
+  await liveWait(
+    page,
+    (value) => {
+      const frame = window.workshopProbe.observe().frames[0];
+      const index = frame.metadata.blueprint.parts.findIndex(
+        (part) => part.type === 'commandReceiver',
+      );
+      return frame.power.sources.find((source) => source.node === index)?.duty === value;
+    },
+    value,
+    { label: `commandReceiver duty ${value}` },
+  );
 }
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');

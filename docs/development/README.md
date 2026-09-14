@@ -392,7 +392,10 @@ run in three phases: the headless pool (checks declared `execution: parallel`), 
 serialized lane (exclusive checks that are not timing-sensitive), then timing-sensitive
 checks last. A completion tier derives its pool workers from the host at start — one per
 two idle cores (a GPU-backed headless check is about two runnable threads), at most four,
-recorded as `workersBasis` — and admits the timing phase only on a
+recorded as `workersBasis` with the launch niceness; a tier that derives workers refuses a
+niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an already-niced
+parent), because a niced tier loses to every other process regardless of idle cores. It
+admits the timing phase only on a
 quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
@@ -594,7 +597,9 @@ Concurrent implementations use separate Git worktrees. Start one with
 pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
-(or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
+(or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
 replace local base selection or final required coverage. Candidate browser runs also read
