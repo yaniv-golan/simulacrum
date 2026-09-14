@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runVerificationPhases, localOutcome } from '../scripts/verification-tiers.mjs';
+import {
+  runVerificationPhases,
+  localOutcome,
+  launchAdmission,
+  LAUNCH_ADMISSION_ID,
+} from '../scripts/verification-tiers.mjs';
 test('failed preflight stops expensive phases and cannot claim local completion', async () => {
   const seen = [];
   const rows = await runVerificationPhases([
@@ -120,4 +125,61 @@ test('merge tier requires explicit base and paired integration provenance', asyn
   ]);
   assert.equal(args.incoming, 'def');
   assert.equal(args.destination, 'ghi');
+});
+
+test('launch admission runs before the CI phase, waits out a launch burst, and refuses as not evaluated', async () => {
+  // The same rule as the timing phase, one short bound, sampler injected — never the live host.
+  let admitted = false;
+  const admit = async (options) => {
+    assert.equal(options.waitMs, 60000);
+    assert.equal(options.trendMs, 20000);
+    assert.equal(typeof options.pressure, 'function');
+    return admitted
+      ? { admitted: true, load1: 2.1, waitedMs: 15000, samples: [9, 4, 2.1] }
+      : {
+          admitted: false,
+          load1: 8.2,
+          waitedMs: 60000,
+          reason:
+            'host pressure: GoogleUpdater 65 %, Microsoft AutoUpdate 41 % (foreign ≥ 40 %) after 60000 ms',
+        };
+  };
+  const host = {
+    cores: 14,
+    load1: () => 8.2,
+    pressure: async () => ({ method: 'cpus+ps', idlePercent: 70, foreign: [] }),
+  };
+  const refused = await launchAdmission({ admit, host });
+  assert.deepEqual(
+    { ok: refused.ok, notEvaluated: refused.notEvaluated, reason: refused.reason },
+    {
+      ok: false,
+      notEvaluated: true,
+      reason:
+        'host pressure: GoogleUpdater 65 %, Microsoft AutoUpdate 41 % (foreign ≥ 40 %) after 60000 ms',
+    },
+  );
+  // As the first phase: a refusal stops the tier before CI ran — a failed attempt whose only
+  // row is the admission, and no completion claim.
+  let ciRan = 0;
+  const results = await runVerificationPhases([
+    [LAUNCH_ADMISSION_ID, () => launchAdmission({ admit, host })],
+    ['ci', async () => ++ciRan],
+  ]);
+  assert.equal(ciRan, 0);
+  assert.deepEqual(
+    results.map((row) => [row.id, row.status]),
+    [[LAUNCH_ADMISSION_ID, 'failed']],
+  );
+  assert.equal(results[0].result.notEvaluated, true);
+  assert.equal(localOutcome(results, []).automation.status, 'FAIL');
+  // Admitted after a wait: the phase passes with the samples recorded and CI runs.
+  admitted = true;
+  const passed = await runVerificationPhases([
+    [LAUNCH_ADMISSION_ID, () => launchAdmission({ admit, host })],
+    ['ci', async () => ++ciRan],
+  ]);
+  assert.equal(ciRan, 1);
+  assert.equal(passed[0].status, 'passed');
+  assert.deepEqual(passed[0].result.admission.samples, [9, 4, 2.1]);
 });
