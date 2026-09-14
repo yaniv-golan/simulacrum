@@ -14,7 +14,8 @@ const policy = JSON.parse(
   await readFile(new URL('./release-policy.json', import.meta.url), 'utf8'),
 );
 export function latestReleaseRun(query, repository, branch) {
-  const candidates = ['push', 'workflow_dispatch'].flatMap((event) => {
+  // Main pushes verify; only dispatched runs produce a release package.
+  const candidates = ['workflow_dispatch'].flatMap((event) => {
     const response = query(
       `repos/${repository}/actions/workflows/ci.yml/runs?branch=${encodeURIComponent(branch)}&event=${event}&status=success&per_page=1`,
     );
@@ -107,7 +108,7 @@ async function main() {
           throw Error('Previously successful production run required');
       } else {
         if (
-          !['push', 'workflow_dispatch'].includes(run.event) ||
+          run.event !== 'workflow_dispatch' ||
           run.head_branch !== policy.releaseBranch ||
           run.head_sha !== manifest.head ||
           run.path !== '.github/workflows/ci.yml'

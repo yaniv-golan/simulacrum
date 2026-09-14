@@ -1,4 +1,5 @@
 import { normalizeSelectedFiles } from './test-selection.mjs';
+import { assertNoHostProfile } from './host-profile.mjs';
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(
   phases,
@@ -68,6 +69,7 @@ export async function checkVerificationTiers() {
 
 /** Priority is scheduling metadata, never a verification selector. */
 export function parseCompletionArgs(tier, args) {
+  assertNoHostProfile();
   const result = {
     base: 'HEAD',
     priorityFiles: [],

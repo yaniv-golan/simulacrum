@@ -25,6 +25,7 @@ import {
   resolveCandidateBase,
 } from './candidate.mjs';
 import { assertRuntime, assertUnnicedLaunch } from './runtime-preflight.mjs';
+import { assertNoHostProfile } from './host-profile.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
   dependencyDigest,
@@ -64,6 +65,7 @@ const excludeFromIndexing = (root) =>
 const origin = process.cwd(),
   originBranch = currentBranch(origin),
   started = performance.now();
+assertNoHostProfile();
 const report = {
   status: 'running',
   qualification: 'NOT_EVALUATED',
