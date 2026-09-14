@@ -41,12 +41,17 @@ export function createBrowserEvidence({
       async awaitStartup(page) {
         const workshop = (await page.evaluate(() => document.getElementById('app') !== null)) === true;
         if (!workshop) return;
-        const budgetMs = this.waitBudget ? this.waitBudget(startupMs) : startupMs;
+        const budgetMs = this.waitBudget(startupMs);
+        const measure = this.measure ?? ((name, execute) => execute());
         try {
-          const ready = await page.waitForFunction(() => window.workshopProbe !== undefined, undefined, {
-            timeout: budgetMs,
+          await measure('startup', async () => {
+            const ready = await page.waitForFunction(
+              () => window.workshopProbe !== undefined,
+              undefined,
+              { timeout: budgetMs },
+            );
+            await ready.dispose?.();
           });
-          await ready.dispose?.();
         } catch (error) {
           if (error?.name !== 'TimeoutError') throw error;
           const startup = Error(`workshop startup: no probe within ${budgetMs} ms after navigation`);

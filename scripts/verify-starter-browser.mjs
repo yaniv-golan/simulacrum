@@ -73,7 +73,7 @@ try {
   await page.locator('[data-command=run]').click();
   for (const tick of [1200, ...Array.from({ length: 11 }, (_, i) => 2400 + i * 120)]) {
     await page.waitForFunction((t) => window.workshopProbe.observe().cursor.tick >= t, tick, {
-      timeout: 45000,
+      timeout: evidence.waitBudget(45000),
     });
     samples.push(await frame());
   }

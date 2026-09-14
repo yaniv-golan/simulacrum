@@ -1,4 +1,4 @@
-import { waitScaleFromEnvironment, liveSliceFromEnvironment } from './host-profile.mjs';
+import { scaledWait, liveSliceFromEnvironment, waitScaleFromEnvironment } from './host-profile.mjs';
 /** A settled window that can prove the renderer was alive while nothing changed.
  * "Nothing changed" is the assertion; "no animation frame ran" is starvation, and a starved
  * window would pass every nothing-changed assertion for the wrong reason. Alive means the
@@ -22,8 +22,7 @@ export async function liveWait(
 ) {
   // Patience scales with the platform (a slow runner is slower everywhere); the slice is the
   // platform's own registered fact — starvation is "no frame in a slice" on any host.
-  const scale = waitScaleFromEnvironment();
-  const budgetMs = maxMs * scale;
+  const budgetMs = Math.max(sliceMs, scaledWait(maxMs));
   const ticks = () =>
     page.evaluate(() => window.workshopProbe.readInteractionState().rendering.loopTicks);
   const first = await ticks();
@@ -31,9 +30,35 @@ export async function liveWait(
   const record = (outcome) => {
     sample.outcome = outcome;
     sample.slices = sample.ticksPerSlice.length;
-    for (const sink of sinks) sink({ ...sample, ticksPerSlice: [...sample.ticksPerSlice] });
+    for (const sink of sinks)
+      sink({ ...sample, ticksPerSlice: [...sample.ticksPerSlice], gapsMs: [...gaps] });
   };
+  // Frame gaps at 500 ms resolution while the wait is pending: the platform's cadence, so the
+  // registered slice can be set from a distribution instead of a guess.
+  const gaps = [];
+  let lastChange = Date.now(),
+    lastSeen = first,
+    polling = false;
+  const poll = async () => {
+    if (polling) return;
+    polling = true;
+    try {
+      const now = await ticks();
+      if (now !== lastSeen) {
+        gaps.push(Date.now() - lastChange);
+        lastChange = Date.now();
+        lastSeen = now;
+      }
+    } catch {
+      /* the slice wait reports the page's state; a failed poll is not evidence */
+    } finally {
+      polling = false;
+    }
+  };
+  const poller = setInterval(poll, GAP_POLL_MS);
+  sample.gapsMs = gaps;
   let before = first;
+  try {
   for (let slices = 1; slices * sliceMs <= budgetMs; slices++) {
     try {
       const result = await page.waitForFunction(predicate, argument, { timeout: sliceMs });
@@ -59,7 +84,11 @@ export async function liveWait(
   throw Error(
     `${label} stayed false for ${budgetMs} ms (${Math.floor(budgetMs / sliceMs)} slices) while the presentation loop ticked ${before - first} times`,
   );
+  } finally {
+    clearInterval(poller);
+  }
 }
+const GAP_POLL_MS = 500;
 /** Every live wait reports its slices and per-slice loop ticks to registered sinks: the
  * browser session writes them into its timing record so a hosted run measures the renderer
  * cadence its `liveSliceMs` is later registered from. Returns the unregister function. */
@@ -68,7 +97,14 @@ export function recordLiveWaits(sink) {
   sinks.add(sink);
   return () => sinks.delete(sink);
 }
-export async function settledWindow(page, ms, { wait = (t) => page.waitForTimeout(t) } = {}) {
+export async function settledWindow(
+  page,
+  requestedMs,
+  { wait = (t) => page.waitForTimeout(t) } = {},
+) {
+  // A longer nothing-changed window on a slow platform is a stricter assertion, not a looser
+  // one; the thirds must still each see a frame at the platform's cadence.
+  const ms = Math.round(requestedMs * waitScaleFromEnvironment());
   const ticks = () =>
     page.evaluate(() => window.workshopProbe.readInteractionState().rendering.loopTicks);
   const segment = Math.floor(ms / SEGMENTS);

@@ -492,7 +492,9 @@ async function executeBrowserSuite(
                           // The child sees the platform's patience as numbers and never the
                           // profile id (or a scale the parent shell exported).
                           env: {
-                            ...checkWaitEnvironment(process.env, hostProfile),
+                            ...checkWaitEnvironment(process.env, hostProfile, {
+                              rowBudgetMs: budget.timeoutMs,
+                            }),
                             SIMULACRUM_BROWSER_ARTIFACT_ROOT: origin.evidenceDirectory,
                             SIMULACRUM_BROWSER_EXECUTION: check.execution ?? 'exclusive',
                           },

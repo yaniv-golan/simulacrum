@@ -23,6 +23,11 @@ const CI_LIMIT_MS = 180000;
 /** Check children learn the platform's patience as numbers, never the profile id. */
 export const WAIT_SCALE_VARIABLE = 'SIMULACRUM_BROWSER_WAIT_SCALE';
 export const LIVE_SLICE_VARIABLE = 'SIMULACRUM_BROWSER_LIVE_SLICE_MS';
+/** The row's process budget, so no scaled wait can outlive the watchdog that would destroy the
+ * failure artifacts the wait exists to produce. */
+export const ROW_BUDGET_VARIABLE = 'SIMULACRUM_BROWSER_ROW_BUDGET_MS';
+/** A scaled wait never takes more than this share of the row budget. */
+export const ROW_BUDGET_SHARE = 0.6;
 const LOCAL_LIVE_SLICE_MS = 2000;
 export function readHostProfile(manifest, env = process.env) {
   const id = env.SIMULACRUM_HOST_PROFILE;
@@ -84,23 +89,37 @@ export function childEnvironment(env = process.env) {
     SIMULACRUM_HOST_PROFILE,
     [WAIT_SCALE_VARIABLE]: scale,
     [LIVE_SLICE_VARIABLE]: slice,
+    [ROW_BUDGET_VARIABLE]: budget,
     ...rest
   } = env;
   void SIMULACRUM_HOST_PROFILE;
   void scale;
   void slice;
+  void budget;
   return rest;
 }
 /** A browser check child under a profile gets the registered wait scale and live slice as
  * numbers; a local child gets neither, whatever the parent shell exported. */
-export function checkWaitEnvironment(env, profile) {
+export function checkWaitEnvironment(env, profile, { rowBudgetMs } = {}) {
   const rest = childEnvironment(env);
   if (!profile) return rest;
   return {
     ...rest,
     [WAIT_SCALE_VARIABLE]: String(profile.waitScale),
     [LIVE_SLICE_VARIABLE]: String(profile.liveSliceMs),
+    ...(Number.isFinite(rowBudgetMs) ? { [ROW_BUDGET_VARIABLE]: String(rowBudgetMs) } : {}),
   };
+}
+/** `ms × scale`, clamped to the row budget's share when the suite passed one: a wait longer
+ * than the watchdog would end as a bare kill with no evidence. Local (scale 1, no budget)
+ * returns `ms` unchanged. */
+export function scaledWait(ms, env = process.env) {
+  const scaled = ms * waitScaleFromEnvironment(env);
+  const raw = env[ROW_BUDGET_VARIABLE];
+  if (raw === undefined) return scaled;
+  const budget = Number(raw);
+  if (!Number.isFinite(budget) || budget <= 0) throw Error(`invalid ${ROW_BUDGET_VARIABLE}: ${raw}`);
+  return Math.min(scaled, Math.floor(budget * ROW_BUDGET_SHARE));
 }
 /** The scale a check process runs under: 1 unless the suite passed a registered one. */
 export function waitScaleFromEnvironment(env = process.env) {
@@ -134,7 +153,7 @@ export function assertNoHostProfile(env = process.env) {
     throw Error(
       `completion tiers never run under a hosted profile (SIMULACRUM_HOST_PROFILE=${env.SIMULACRUM_HOST_PROFILE}); unset it`,
     );
-  for (const key of [WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE])
+  for (const key of [WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE, ROW_BUDGET_VARIABLE])
     if (env[key] !== undefined)
       throw Error(
         `completion tiers never run under a hosted wait scale (${key}=${env[key]}); unset it`,

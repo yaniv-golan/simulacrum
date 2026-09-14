@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
-import { drivenTicks } from './browser-idle.mjs';
+import { drivenTicks, liveWait } from './browser-idle.mjs';
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/linear-actuator-browser');
 mkdirSync(out, { recursive: true });
@@ -139,10 +139,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('[data-command=run]').click();
   await page.keyboard.down('KeyS');
-  await page.waitForFunction(
-    (t) => JSON.parse(window.render_game_to_text()).tick >= t,
-    extended.tick + 120,
-  );
+  await drivenTicks(page, 120, { label: 'retract KeyS' });
   await page.keyboard.up('KeyS');
   await page.locator('[data-command=pause]').click();
   assert.ok((await read()).springs[0].length < 0.1, 'reverse key retracts');
@@ -192,11 +189,13 @@ try {
   await select(gateDrive);
   await page.locator('[data-command=run]').click();
   await page.keyboard.down('KeyW');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick >= 180);
+  await drivenTicks(page, 180, { label: 'gate KeyW against the blocker' });
   const pressing = await read();
-  await page.waitForFunction(
+  await liveWait(
+    page,
     (t) => JSON.parse(window.render_game_to_text()).tick >= t,
     pressing.tick + 60,
+    { label: 'gate held 60 more ticks' },
   );
   const pressed = await read();
   const partIndex = (id) => pressed.metadata.blueprint.parts.findIndex((p) => p.id === id),

@@ -492,7 +492,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       // Running replaces the readiness line with the first blocker's own title.
       await p
         .locator('.machine-health', { hasNotText: /ready to run/ })
-        .waitFor({ state: 'visible', timeout: 6000 });
+        .waitFor({ state: 'visible', timeout: evidence.waitBudget(6000) });
       const health = await p.locator('.machine-health').boundingBox(),
         follow = await p
           .getByRole('checkbox', { name: 'Follow motion' })

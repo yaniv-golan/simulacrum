@@ -1,6 +1,12 @@
 import { createTiming } from './verification-timing.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
-import { waitScaleFromEnvironment, WAIT_SCALE_VARIABLE } from './host-profile.mjs';
+import {
+  waitScaleFromEnvironment,
+  scaledWait,
+  WAIT_SCALE_VARIABLE,
+  LIVE_SLICE_VARIABLE,
+  ROW_BUDGET_VARIABLE,
+} from './host-profile.mjs';
 import { recordLiveWaits } from './browser-idle.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -278,7 +284,7 @@ export function attachBrowserSession(
         if (key === 'goto')
           return (...args) => timing.measure('navigation', () => target.goto(...args));
         if (key === 'setDefaultTimeout' || key === 'setDefaultNavigationTimeout')
-          return (ms) => target[key](ms * waitScale);
+          return (ms) => target[key](scaledWait(ms));
         if (key === 'evaluate')
           return async (...args) => {
             const result = await target.evaluate(...args);
@@ -295,8 +301,8 @@ export function attachBrowserSession(
     // only under a profile so a local page is untouched (a context-level default, if one ever
     // exists, keeps precedence there).
     if (waitScale !== 1) {
-      page.setDefaultTimeout?.(30000 * waitScale);
-      page.setDefaultNavigationTimeout?.(30000 * waitScale);
+      page.setDefaultTimeout?.(scaledWait(30000));
+      page.setDefaultNavigationTimeout?.(scaledWait(30000));
     }
     pages.push({ raw: page, proxy });
     return proxy;
@@ -362,9 +368,19 @@ export function attachBrowserSession(
     let targetGeometry = null;
     if (lastTarget)
       try {
-        const frames = await lastTarget.evaluate(sampleTargetGeometry, GEOMETRY_SAMPLE, {
-          timeout: GEOMETRY_SAMPLE.budgetMs * 2,
-        });
+        // Bounded twice: in-page by the sample's own budget, and here in case the page's
+        // thread never yields to run even the fallback timer.
+        const frames = await Promise.race([
+          lastTarget.evaluate(sampleTargetGeometry, GEOMETRY_SAMPLE, {
+            timeout: GEOMETRY_SAMPLE.budgetMs * 2,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(Error('geometry sampling timed out: the page never yielded')),
+              GEOMETRY_SAMPLE.budgetMs * 3,
+            ).unref?.(),
+          ),
+        ]);
         targetGeometry = {
           action: copy(lastAction),
           actionStage: actionStage(error?.message),
@@ -445,8 +461,9 @@ export function attachBrowserSession(
   Object.assign(evidence, {
     errors: [],
     waitScale,
-    /** A literal deadline a check must keep visible, scaled once for the platform. */
-    waitBudget: (ms) => ms * waitScale,
+    /** A literal deadline a check must keep visible, scaled once for the platform and never
+     * past the row budget's share. */
+    waitBudget: (ms) => scaledWait(ms),
     measure: (name, execute) => timing.measure(name, execute),
     assert(method, args, description = {}) {
       const { frame, ...details } = description;
@@ -502,10 +519,11 @@ export function attachBrowserSession(
       const execution = process.env.SIMULACRUM_BROWSER_EXECUTION;
       if (execution && !['parallel', 'exclusive'].includes(execution))
         throw Error(`unknown browser execution policy: ${execution}`);
-      if (waitScale !== 1 && !execution)
-        throw Error(
-          `a wait scale (${WAIT_SCALE_VARIABLE}=${waitScale}) is accepted from only the browser suite, which also sets the execution policy; unset it for a development probe`,
-        );
+      for (const key of [WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE, ROW_BUDGET_VARIABLE])
+        if (process.env[key] !== undefined && !execution)
+          throw Error(
+            `a wait scale (${key}=${process.env[key]}) is accepted from only the browser suite, which also sets the execution policy; unset it for a development probe`,
+          );
       if (execution === 'parallel' && (selected !== 'ui' || configuration.headless !== true))
         throw Error('this browser configuration requires exclusive execution');
       const launch =
