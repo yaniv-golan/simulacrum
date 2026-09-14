@@ -452,6 +452,20 @@ dismissal where persistence exists; local resets are not proof that someone want
 another tour. Errors and consequential state are never dismissed by a teaching
 preference.
 
+Simulacrum is open source, so the header's document/help cluster carries a "Source on
+GitHub" icon link beside Help (the GitHub mark; `aria-label` and tooltip "Source on
+GitHub"; opens the repository in a new tab; in the filebar's tab order), and Help's About
+line, placed before Build information, reads "Simulacrum <version> · open source (MIT)
+· github.com/…". `<version>` is the semver release tag on the built commit, injected at
+build time as the `app-version` meta — the only version wired into the app; package.json's
+version is not — or, for an untagged or shallow build, the build id. Release tags are
+applied after serving, so a package built before tagging names its build id. Player task:
+find the project's source and licence and say which release they are on. Owning region:
+the header cluster and Help. Why visible: attribution and discoverability of the source
+are a maintainer's convention for an open-source project, not a frequent action; the link
+costs one icon's width. Lifecycle: visible whenever the header is (the narrow-screen
+placement mode hides the whole header); nothing to dismiss. Displaced UI: none.
+
 The [motion panel](../../src/presentation/motion-readout.mjs#source) separates requested
 measurements from boundary warnings. Stopping preserves the last run for inspection.
 Measurements describe the actual quantity and scope: whole-machine displacement is

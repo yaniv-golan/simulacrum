@@ -71,6 +71,7 @@ import {
 } from '../model/environment.mjs';
 import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 import { createWhatsNew } from './whats-new.mjs';
+import { REPOSITORY_URL } from '../model/features.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -1411,7 +1412,24 @@ export function createWorkshopView(
     }),
     copyStatus,
   );
-  help.append(buildInfo);
+  // About: the release tag on the built commit when there is one, else the build id.
+  const appVersion = document.querySelector('meta[name=app-version]')?.content ?? '';
+  const about = element('p', 'help-about');
+  const repositoryLink = () => {
+    const link = element('a', '', REPOSITORY_URL.replace(/^https?:\/\//, ''));
+    link.href = REPOSITORY_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    return link;
+  };
+  about.append(
+    appVersion
+      ? `Simulacrum ${appVersion}`
+      : `Simulacrum · build ${buildId.textContent || 'unidentified'}`,
+    ' · open source (MIT) · ',
+    repositoryLink(),
+  );
+  help.append(about, buildInfo);
   root.append(help);
   // One opener for the button and the ? shortcut: opening Help counts as seeing the notes.
   function openHelp() {
@@ -1419,7 +1437,28 @@ export function createWorkshopView(
     help.showModal();
   }
   const helpButton = button('Help', openHelp);
-  filebar.append(helpButton);
+  const sourceLink = element('a', 'github-link');
+  sourceLink.href = REPOSITORY_URL;
+  sourceLink.target = '_blank';
+  sourceLink.rel = 'noopener noreferrer';
+  sourceLink.setAttribute('aria-label', 'Source on GitHub');
+  sourceLink.title = 'Source on GitHub';
+  // GitHub mark from Primer Octicons, Copyright (c) GitHub Inc., MIT licence.
+  const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mark.setAttribute('viewBox', '0 0 16 16');
+  mark.setAttribute('width', '16');
+  mark.setAttribute('height', '16');
+  mark.setAttribute('aria-hidden', 'true');
+  mark.setAttribute('focusable', 'false');
+  const markPath = document.createElementNS(mark.namespaceURI, 'path');
+  markPath.setAttribute('fill', 'currentColor');
+  markPath.setAttribute(
+    'd',
+    'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z',
+  );
+  mark.append(markPath);
+  sourceLink.append(mark);
+  filebar.append(helpButton, sourceLink);
   const whatsNew = createWhatsNew({
     root,
     helpButton,
@@ -4186,7 +4225,10 @@ export function createWorkshopView(
       return;
     }
     // Let focused controls activate natively without also running workshop shortcuts.
-    if (['BUTTON', 'SUMMARY'].includes(event.target.tagName) && ['Enter', ' '].includes(event.key))
+    if (
+      ['BUTTON', 'SUMMARY', 'A'].includes(event.target.tagName) &&
+      ['Enter', ' '].includes(event.key)
+    )
       return;
     if (event.key === 'Escape') {
       event.preventDefault();

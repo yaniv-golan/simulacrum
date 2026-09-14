@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { sourceIdentity } from './scripts/source-identity.mjs';
+import { releaseVersion, sourceIdentity } from './scripts/source-identity.mjs';
 import { appFingerprint } from './scripts/app-fingerprint.mjs';
 export default defineConfig({
   cacheDir: process.env.SIMULACRUM_VITE_CACHE_DIR,
@@ -14,6 +14,7 @@ export default defineConfig({
           ['build-id', appFingerprint()],
           ['source-head', source.head],
           ['source-digest', source.workingTreeDigest],
+          ['app-version', releaseVersion() ?? ''],
         ].map(([name, content]) => ({
           tag: 'meta',
           attrs: { name, content },

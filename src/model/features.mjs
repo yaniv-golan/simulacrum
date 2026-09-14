@@ -1,3 +1,5 @@
+/** The public source repository; the header link and Help's About line share it. */
+export const REPOSITORY_URL = 'https://github.com/yaniv-golan/simulacrum';
 export const UI_FEATURES = Object.freeze({
   authorableScenes: Object.freeze({
     milestone: 'M3b',

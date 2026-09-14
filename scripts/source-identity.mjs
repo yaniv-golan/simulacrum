@@ -26,3 +26,23 @@ export function sourceIdentity() {
     workingTreeDigest: hash.digest('hex'),
   };
 }
+/** The semver release tag on HEAD itself (`v0.2.1`), the only version wired into the
+ * served app; null for an untagged commit or a shallow checkout, in which case the app
+ * names its build id instead. Release tags are applied after a build is served, so a
+ * package built before tagging carries no version. Tag state is not part of the build
+ * id (which hashes files, not refs), so tagged and untagged builds of one tree share it
+ * while their served index.html differs by this meta tag. package.json's version is not
+ * wired to the app. */
+export function releaseVersion(cwd = process.cwd()) {
+  try {
+    return (
+      execFileSync(
+        'git',
+        ['describe', '--tags', '--exact-match', '--match', 'v[0-9]*.[0-9]*.[0-9]*'],
+        { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim() || null
+    );
+  } catch {
+    return null;
+  }
+}

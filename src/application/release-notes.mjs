@@ -16,6 +16,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-15-source-on-github',
+      date: '2026-09-15',
+      name: 'Find the source on GitHub',
+      summary:
+        'A GitHub icon beside Help opens the open-source repository; Help now says which release you are on.',
+    },
+    {
       id: '2026-09-14-motor-connections',
       date: '2026-09-14',
       name: 'New motors show what to connect',
