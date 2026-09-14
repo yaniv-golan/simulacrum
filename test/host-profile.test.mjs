@@ -76,6 +76,37 @@ test('hosted runs report excluded tiers as NOT_EVALUATED with a registered reaso
         'hosted profile github-ubuntu-2cpu: performance tier is not evaluated on this platform',
     },
   ]);
+  // Timing-sensitive checks need the quiet-host admission that only a tier context provides;
+  // the hosted route has none, so they are not evaluated there whatever their tier.
+  const timed = partitionHostedChecks(
+    [
+      { id: 't', tier: 'browser', timingSensitive: true },
+      { id: 'u', tier: 'browser' },
+    ],
+    p,
+  );
+  assert.deepEqual(
+    timed.run.map((c) => c.id),
+    ['u'],
+  );
+  assert.deepEqual(timed.notEvaluated, [
+    {
+      id: 't',
+      status: 'NOT_EVALUATED',
+      reason:
+        'hosted profile github-ubuntu-2cpu: timing-sensitive check has no quiet-host admission on this platform',
+    },
+  ]);
+  const real = partitionHostedChecks(
+    manifest.browserChecks,
+    readHostProfile(manifest, { SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu' }),
+  );
+  assert.ok(real.run.every((c) => c.timingSensitive !== true && c.tier !== 'performance'));
+  assert.equal(
+    real.notEvaluated.length,
+    manifest.browserChecks.filter((c) => c.timingSensitive === true || c.tier === 'performance')
+      .length,
+  );
   assert.deepEqual(rotateSchedule(['a', 'b', 'c'], 0), ['a', 'b', 'c']);
   assert.deepEqual(rotateSchedule(['a', 'b', 'c'], 4), ['b', 'c', 'a']);
   assert.deepEqual(rotateSchedule([], 7), []);
