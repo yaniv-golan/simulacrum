@@ -7,6 +7,31 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 `nvm install && nvm use && npm ci` (with nvm installed). The checked `.nvmrc` pins a version inside the package-owned range. `npm run dev` serves the workshop; `npm run build` and `npm run preview`
 serve a stable build. The page displays its build identity.
 
+## Milestone status
+
+The current construction loop includes motors, cells, keyboard receivers, surface
+mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
+Player-authored rules and a restricted TypeScript subset execute through bounded WASM
+programs. Shared sensing, gears, springs, rope, reusable assemblies, powered cameras
+and lamps extend the construction loop.
+
+Implementation is distinct from qualification. Focused automated checks cover these
+capabilities, but only source-bound completion evidence establishes verification for
+a particular build. The manifest currently declares M3b; designated-player F1 acceptance
+remains pending. The broader hostile-program S1 qualification, physical feasibility
+probe, rover Course and legged Course qualification remain incomplete. The
+[manifest](../../scripts/manifest.json) owns current allocation and registered checks;
+`npm run gate` evaluates it rather than inferring progress from available features.
+[AGENTS.md](../../AGENTS.md), the [runtime contract](../contracts/runtime-v1.md),
+[Course contract](../contracts/course-v1.md) and the manifest own architecture and
+qualification. A green smoke test is not Course or human acceptance. The `main` branch
+contains the v2 workshop; the previous implementation is retained at the
+[`v1-final-2026-09-11` tag](https://github.com/yaniv-golan/simulacrum/tree/v1-final-2026-09-11)
+and `archive/v1` branch for reference, and legacy v1 machine files are not a supported
+import format for v2 (keep their originals and use v1 to open them). Published
+[releases](https://github.com/yaniv-golan/simulacrum/releases) are experimental until the
+milestones above are met; each v2 release's notes name its deferred checks.
+
 ## Working loop
 
 <!-- doc-review {"version":1,"fingerprint":"364e2ae29312e97672580ca12471edcd7dce06abbbeb940e42265f8c4cb50a64","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The complete loop still matches current navigation, inspection, red-before-green and candidate owners. This integration adds a registered coupled physical regression and preserves the same completion tiers; source preparation and semantic review precede capture, and merged source requires its own merge candidate. No workflow command or human-evidence boundary changed. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
