@@ -767,3 +767,50 @@ test('parallel self-hosted checks prove isolation from source: port 0, per-check
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('live measured-scope reach: a timing row is reached by its own import closure, and a physics row never imports a browser', async () => {
+  const { affectedBrowserChecks, browserCheckClosures, MEASURED_SCOPE, measuredScopeReached } =
+    await import('../scripts/browser-selection.mjs');
+  const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
+  const { browserGraphEntrypoints } = await import('../scripts/browser-selection.mjs');
+  // The affected walk cannot say which timing row a harness module reaches (it stops at the
+  // first opaque hit); the closure can — computed with the real graph in affectedBrowserChecks.
+  const springs = affectedBrowserChecks(['scripts/measure-springs.mjs']).closureReached;
+  for (const id of [
+    'verify-spring-performance',
+    'verify-adaptive-graphics',
+    'verify-camera-browser',
+  ])
+    assert.equal(springs[id], true, `${id} imports measure-springs`);
+  assert.equal(
+    springs['measure-gears'],
+    false,
+    'a browser harness module does not reach the node row',
+  );
+  const gears = affectedBrowserChecks(['test/fixtures/gear-capacity.mjs']).closureReached;
+  assert.equal(gears['measure-gears'], true);
+  assert.equal(gears['verify-spring-performance'], false);
+  // Path classes: a presentation file reaches render rows only; a simulation file reaches all.
+  const rows = browserChecks().filter((c) => c.timingSensitive);
+  for (const row of rows) {
+    assert.equal(
+      measuredScopeReached(row, ['src/presentation/workshop.css']),
+      row.measures === 'render',
+    );
+    assert.equal(measuredScopeReached(row, ['src/simulation/session.mjs']), true);
+    assert.equal(measuredScopeReached(row, ['scripts/check-sequence.mjs']), false);
+  }
+  assert.ok(MEASURED_SCOPE.physics.length < MEASURED_SCOPE.render.length);
+  // Structural half of `physics`: the row's whole closure carries no browser session, so no
+  // presentation change can move it — enforced on the closure, not on the row's own text.
+  const graph = buildModuleGraph(process.cwd(), {
+    purpose: 'test-selection',
+    entrypoints: browserGraphEntrypoints(process.cwd()),
+  });
+  const closures = browserCheckClosures(rows, graph);
+  for (const row of rows) {
+    const closure = closures.get(row.id);
+    const launchesBrowser = closure.has('scripts/browser-session.mjs');
+    assert.equal(launchesBrowser, row.measures === 'render', `${row.id}: measures ${row.measures}`);
+  }
+});

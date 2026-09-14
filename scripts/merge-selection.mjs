@@ -46,9 +46,10 @@ export function mergeSelection({
   const affected = new Set(selection.checks.map((check) => check.id));
   // A timing-budget row runs in a merge tier when the delta can reach what it measures: its
   // own import closure, or the runtime files of its class. Otherwise it is omitted with the
-  // reason — nightly and final run every row regardless.
+  // reason — final and a local all-checks run execute every row regardless.
   const outOfMeasuredScope = (check) =>
     check.timingSensitive === true &&
+    Boolean(files?.length) && // an unknown delta cannot be said to miss anything
     !measuredScopeReached(check, files, selection.closureReached ?? {});
   const chosen = checks.filter(
     (check) =>
@@ -77,7 +78,7 @@ export function mergeSelection({
       .map((check) => ({
         ...check,
         reason: outOfMeasuredScope(check)
-          ? `timing budget (${check.measures}): its measured scope is not in the delta; nightly and final run it`
+          ? `timing budget (${check.measures}): its measured scope is not in the delta; final and a local all-checks run execute it`
           : `outside audited ${selection.scope} selection and registered merge smoke`,
         coverage: 'NOT_EXECUTED',
       })),

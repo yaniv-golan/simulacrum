@@ -1,4 +1,5 @@
 import { spawn, execFileSync } from 'node:child_process';
+import { listProcesses, descendantsOf } from './process-inventory.mjs';
 import { pathToFileURL } from 'node:url';
 import { loadavg } from 'node:os';
 import { basename } from 'node:path';
@@ -14,37 +15,6 @@ const SNAPSHOT_LIST_ROWS = 32;
 // busy scheduler (timer lateness on a loaded host is measured in seconds).
 const HEARTBEAT_MS = 1000;
 const SLEEP_GAP_MS = 60_000;
-/** Bounded host inventory at a failure. `comm` is the executable name only; no
- * arguments or environment values are read. Diagnostics, never attribution. */
-export function listProcesses() {
-  return execFileSync(
-    'ps',
-    ['-A', '-o', 'pid=,ppid=,pgid=,uid=,stat=,pcpu=,rss=,time=,etime=,comm='],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1000 },
-  )
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      // comm is last because macOS prints the executable path, which may contain spaces.
-      const [pid, ppid, pgid, uid, stat, pcpu, rss, time, etime, ...comm] = line
-        .trim()
-        .split(/\s+/);
-      return {
-        pid: Number(pid),
-        ppid: Number(ppid),
-        pgid: Number(pgid),
-        uid: Number(uid),
-        stat,
-        pcpu: Number(pcpu),
-        rssKb: Number(rss),
-        time,
-        etime,
-        comm: basename(comm.join(' ')),
-        executable: comm.join(' '),
-      };
-    });
-}
 /** H1 signal (unverified hypothesis): a freshly installed binary still carrying
  * quarantine/provenance attributes is a candidate for a first-exec assessment stall.
  * macOS only; bounded; never throws. */
@@ -70,15 +40,6 @@ function timedHint(executable) {
   const started = performance.now();
   const firstExec = firstExecHint(executable);
   return { firstExecHint: firstExec, hintMs: performance.now() - started };
-}
-/** The root and every process reachable from it through ppid. */
-export function descendantsOf(rows, rootPid) {
-  const tree = [];
-  const root = rows.find((row) => row.pid === rootPid);
-  if (root) tree.push(root);
-  for (let i = 0; i < tree.length; i++)
-    for (const row of rows) if (row.ppid === tree[i].pid && !tree.includes(row)) tree.push(row);
-  return tree;
 }
 function processSnapshot(rows, rootPid, at) {
   const brief = ({ pid, ppid, stat, pcpu, rssKb, time, etime, comm }) => ({
@@ -244,6 +205,7 @@ export function runProcess(
     } catch (error) {
       if (firstChild && activeChildren.size === 0) process.off('SIGTERM', propagateTermination);
       observe('spawn-error', { errno: error.code });
+      clearInterval(heartbeat);
       reject(Object.assign(error, { processDiagnostics }));
       return;
     }

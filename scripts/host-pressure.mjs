@@ -1,5 +1,5 @@
 import { cpus } from 'node:os';
-import { listProcesses, descendantsOf } from './run-check.mjs';
+import { listProcesses, descendantsOf } from './process-inventory.mjs';
 
 /** What the one-minute load average cannot see: a video call, the window server compositing,
  * an indexer — one or two busy cores on a fourteen-core host barely move load1, yet they are
@@ -34,7 +34,7 @@ export async function samplePressure({
     const own = new Set(descendantsOf(rows, ownPid).map((row) => row.pid));
     own.add(ownPid);
     const foreign = rows
-      .filter((row) => !own.has(row.pid) && row.pcpu > 0)
+      .filter((row) => !own.has(row.pid) && row.pcpu >= 1)
       .sort((a, b) => b.pcpu - a.pcpu)
       .slice(0, top)
       .map(({ comm, pcpu, pid }) => ({ comm, pcpu, pid }));

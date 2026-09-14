@@ -57,7 +57,10 @@ export async function runVerificationPhases(
 /** Leaves the host slept through, by receipt: named in the tier's summary so a sleep never reads
  * as a set of timeouts. */
 export function sleptSummary(checks = []) {
-  const slept = checks.filter((row) => row.notEvaluated && row.hostSleptMs > 0);
+  // Leaf receipts only: the unit aggregate carries the same fields for the whole batch.
+  const slept = checks.filter(
+    (row) => row.notEvaluated === true && row.hostSleptMs > 0 && !Array.isArray(row.unexecuted),
+  );
   const unexecuted = checks.reduce(
     (n, row) => n + (row.failureKind === 'host-slept' ? (row.unexecuted?.length ?? 0) : 0),
     0,

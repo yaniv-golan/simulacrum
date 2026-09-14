@@ -28,7 +28,11 @@ export function assertUnnicedLaunch({ priority = getPriority() } = {}) {
 export function assertAwake({
   pid = process.pid,
   platform = process.platform,
-  launch = (command, args) => spawn(command, args, { detached: true, stdio: 'ignore' }).unref(),
+  launch = (command, args) => {
+    const child = spawn(command, args, { detached: true, stdio: 'ignore' });
+    child.once('error', () => {}); // a missing binary is recorded below, never an uncaught exception
+    child.unref();
+  },
 } = {}) {
   if (platform !== 'darwin') return { method: 'unavailable', platform };
   try {

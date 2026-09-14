@@ -310,7 +310,7 @@ test('a timing-budget row runs in a merge tier only when the delta can reach wha
   assert.deepEqual(omittedTiming(tooling), ids(timing));
   assert.match(
     tooling.omitted.find((row) => row.id === 'measure-gears').reason,
-    /timing budget \(physics\): its measured scope is not in the delta; nightly and final run it/,
+    /timing budget \(physics\): its measured scope is not in the delta; final and a local all-checks run execute it/,
   );
   // Presentation-only delta: the physics stopwatches are omitted, the render budgets run.
   const css = run(['src/presentation/workshop.css']);

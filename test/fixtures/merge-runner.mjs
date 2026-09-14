@@ -9,6 +9,9 @@ const replacements = {
   'ci.mjs': `export async function runCI(){return {ok:${behavior !== 'ci-fail'}}}`,
   'browser-selection.mjs': `export function affectedBrowserChecks(){return {checks:[]}}`,
   'browser-registry.mjs': `export function browserChecks(){return []}`,
+  // The launch admission never reads the live host from a unit fixture.
+  'check-sequence.mjs': `export async function admitQuietHost(){return {admitted:true,load1:1,waitedMs:0,samples:[1],trend:null,pressure:null}};export function pressureHolds(){return null};export const PRESSURE_POLICY={mode:'observe',idleBound:80,foreignBound:40}`,
+  'host-pressure.mjs': `export async function samplePressure(){return {method:'fixture',idlePercent:99,foreign:[]}}`,
   'merge-selection.mjs': `export function mergeChanges(){return {refs:{base:'h'},files:['README.md']}};export function mergeSelection(){return {checks:[{id:'smoke'}]}}`,
   'verify-browser-suite.mjs': `export async function verifyBrowserSuite(ids,{selection}){if(JSON.stringify(selection.source)!==JSON.stringify({head:'h',workingTreeDigest:'d'}))throw Error('browser selection does not match current source');${behavior === 'browser-fail' ? "throw Error('deliberate browser failure')" : 'return []'}}`,
 };

@@ -410,8 +410,9 @@ through (a wall-clock gap of more than a minute between the runner's heartbeats)
 `host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
 tier a timing-budget check runs only when the delta can reach what it measures (its manifest
 `measures` class — `physics` for the two node-only engine budgets, `render` for the six that
-drive the app — or its own import closure); the omitted rows carry the reason, and nightly and
-final run every row. A run without a tier context (the hosted CI route,
+drive the app — or its own import closure); the omitted rows carry the reason; `final` and a local all-checks run execute every row (the
+hosted nightly reports timing rows NOT_EVALUATED under its profile). The hosted merge route
+uses the same selection, so it omits them too. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
 admission and records that it did. Missing metadata, performance checks, headed (focus) and recording profiles,
