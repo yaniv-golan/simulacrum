@@ -630,25 +630,21 @@ test('timing-sensitive checks are a registered fact: declared rows run exclusive
 test('checks moved into the headless pool launch the ui profile and stay registered parallel', async () => {
   const { readFileSync } = await import('node:fs');
   const m = readManifest();
-  // Re-registered 2026-09-14 after an assertion-level audit: neither asserts on window focus,
-  // tab capture or a timing budget; their exclusivity was only the profile literal. The six
-  // headed (focus) checks audited alongside them stay headed: on the first phased run the same
-  // scripts under the headless shell took 4.1x their headed duration (33.8 s → 138 s, not
-  // load-correlated) while pooled rows paid 1.18x for contention; 33.8 s of lane beats 138 s
-  // of pool CPU, and the headless rendering cost is the real lever for every pooled row.
-  const moved = ['verify-property-focus', 'verify-recording-browser'];
-  for (const id of [
+  // Re-registered 2026-09-14 after an assertion-level audit: none of these asserts on window
+  // focus, tab capture or a timing budget; their exclusivity was only the profile literal. On
+  // the first phased run the six former focus checks took 4.1x their headed duration under the
+  // headless shell — SwiftShader, not contention (the duration audit found the shell renders
+  // on Metal when asked); the ui profile now asks, so they pool.
+  const moved = [
+    'verify-property-focus',
+    'verify-recording-browser',
     'verify-rope-browser',
     'verify-load-cell-browser',
     'verify-load-cell-force-browser',
     'verify-load-cell-copy-browser',
     'verify-mirror-browser',
     'verify-authorable-scenes',
-  ]) {
-    const row = m.browserChecks.find((c) => c.id === id);
-    assert.equal(row?.execution, 'exclusive', `${id} stays in the lane`);
-    assert.match(readFileSync(row.script, 'utf8'), /profile:\s*'focus'/, `${id} stays headed`);
-  }
+  ];
   for (const id of moved) {
     const row = m.browserChecks.find((c) => c.id === id);
     assert.equal(row?.execution, 'parallel', `${id} is registered parallel`);

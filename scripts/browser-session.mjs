@@ -28,8 +28,15 @@ export function readLiveStatus() {
   }
   return out;
 }
+/** The headless shell renders WebGL through SwiftShader unless ANGLE is pointed at the GPU;
+ * on macOS that costs a workshop check about four times its headed duration (measured on
+ * the first phased tier: six checks 33.8 s headed → 138 s headless) and several renderer
+ * threads per worker. The ui profile asks for Metal where it exists; per-check args are
+ * appended, so a check that names its own backend (adaptive-graphics' SwiftShader arm) wins
+ * by Chromium's last-flag rule. Linux has no Metal and keeps SwiftShader. */
+export const GPU_ARGS = Object.freeze(process.platform === 'darwin' ? ['--use-angle=metal'] : []);
 export const BROWSER_PROFILES = Object.freeze({
-  ui: { headless: true },
+  ui: { headless: true, args: GPU_ARGS },
   focus: {
     headless: false,
     ignoreDefaultArgs: [
@@ -347,7 +354,11 @@ export function attachBrowserSession(
       if (selected === 'focus' && options.headless === true)
         throw Error('focus profile requires a visible browser');
       profile = selected;
-      configuration = { ...BROWSER_PROFILES[selected], ...options };
+      configuration = {
+        ...BROWSER_PROFILES[selected],
+        ...options,
+        args: [...(BROWSER_PROFILES[selected].args ?? []), ...(options.args ?? [])],
+      };
       const execution = process.env.SIMULACRUM_BROWSER_EXECUTION;
       if (execution && !['parallel', 'exclusive'].includes(execution))
         throw Error(`unknown browser execution policy: ${execution}`);

@@ -8,7 +8,7 @@ import { createDrivingMachine } from '../src/model/fixtures/driving-machine.mjs'
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/authorable-scenes');
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'focus' }),
+const browser = await evidence.launch({ profile: 'ui' }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));

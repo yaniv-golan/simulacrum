@@ -725,7 +725,7 @@
     {
       "id": "verify-mirror-browser",
       "script": "scripts/verify-mirror-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -948,7 +948,7 @@
     {
       "id": "verify-rope-browser",
       "script": "scripts/verify-rope-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -1061,7 +1061,7 @@
     {
       "id": "verify-load-cell-browser",
       "script": "scripts/verify-load-cell-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -1072,7 +1072,7 @@
     {
       "id": "verify-load-cell-force-browser",
       "script": "scripts/verify-load-cell-force-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -1083,7 +1083,7 @@
     {
       "id": "verify-load-cell-copy-browser",
       "script": "scripts/verify-load-cell-copy-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -1094,7 +1094,7 @@
     {
       "id": "verify-authorable-scenes",
       "script": "scripts/verify-authorable-scenes.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,

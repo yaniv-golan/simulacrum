@@ -13,7 +13,7 @@ const evidence = createBrowserEvidence(),
   provisional = process.argv.includes('--provisional');
 const out = browserArtifactPath('artifacts/mirror-browser', process.argv[3]);
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'focus', ...{ headless: false } });
+const browser = await evidence.launch({ profile: 'ui' });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 const page = await context.newPage(),
   errors = evidence.errors,

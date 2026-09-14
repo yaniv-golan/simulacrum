@@ -6,7 +6,7 @@ import { browserArtifactPath } from './browser-artifacts.mjs';
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/rope-browser');
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'focus' }),
+const browser = await evidence.launch({ profile: 'ui' }),
   context = await browser.newContext({ viewport: { width: 1280, height: 900 } }),
   page = await context.newPage();
 try {

@@ -13,7 +13,7 @@ import {
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/load-cell-copy-browser');
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'focus' });
+const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 try {
   const stand = mechanicalLoadCellStand();

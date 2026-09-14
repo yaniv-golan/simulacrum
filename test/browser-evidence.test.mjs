@@ -153,6 +153,36 @@ test('readLiveStatus keeps visible, unique, polite announcements only, whitespac
     else globalThis.document = saved;
   }
 });
+test('the ui profile asks the headless shell for the GPU and per-check args append to it', async () => {
+  const { GPU_ARGS, BROWSER_PROFILES } = await import('../scripts/browser-session.mjs');
+  assert.deepEqual([...GPU_ARGS], process.platform === 'darwin' ? ['--use-angle=metal'] : []);
+  assert.deepEqual(BROWSER_PROFILES.ui.args, GPU_ARGS);
+  assert.equal(
+    BROWSER_PROFILES.performance.args,
+    undefined,
+    'performance checks choose their backend',
+  );
+  const launches = [];
+  const launch = async (options) => {
+    launches.push(options);
+    return fakeBrowser().browser;
+  };
+  for (const options of [
+    { profile: 'ui' },
+    { profile: 'ui', args: ['--use-angle=swiftshader-webgl'] },
+  ])
+    await createBrowserEvidence({
+      readBuild: () => 'app-current',
+      readSource: () => ({ digest: 'source' }),
+      launchBrowser: launch,
+      writeArtifact: () => {},
+    }).launch(options);
+  assert.deepEqual(launches[0].args, [...GPU_ARGS]);
+  // A check naming its own backend keeps it: Chromium honours the last --use-angle flag.
+  assert.deepEqual(launches[1].args, [...GPU_ARGS, '--use-angle=swiftshader-webgl']);
+  assert.equal(launches[1].headless, true);
+});
+
 test('browser profiles reject fake focus mode and cleanup context setup failure', async () => {
   const f = fakeBrowser();
   const evidence = createBrowserEvidence({
