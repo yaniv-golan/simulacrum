@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"00b56ddaacfe4fa3a72bd76c5c5ae9927ddc619a06046f7e76f8dcc9c0473e92","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3de3bffe9205d9cfa3d5cb39ddfa7263e1524f8d4a1c0bc8ad831d954c22b8aa","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no player-facing surface changed: workshop-view.mjs's loopTicks is an internal probe and browser-session.mjs is verifier tooling; the surface inventory and lifecycle text remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"e95fc2eddcb0f8378b3d6a4843e6a371f462f052d78258b4b6dd9409d7dac70a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3de3bffe9205d9cfa3d5cb39ddfa7263e1524f8d4a1c0bc8ad831d954c22b8aa","disposition":"updated","rationale":"The feedback paragraph now describes the default-on attachments (captured at open, shown ticked in an open disclosure with previews and a disclosure sentence naming programs; untick kept while the draft has text or voice; defaults-only drafts dropped on close; text-only browsers attach nothing) and the pending-choice rendering that removed the checkbox flicker under a slow store. Player task, footer ownership, receipt semantics and the no-entry learning decision are unchanged."} -->
 
 
 
@@ -458,7 +458,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"d9aba086c226353ae4ff49e3037f356bde2b3b3bcb42ef1d64eff0db2f44a5de","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"fcf77946b7c8a884faa9d45dd104c98f2f90eb3403ace60212eb86fb950185f1","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-authorable-scenes.mjs changed only its launch profile literal (headless ui on Metal); the UI verification order (rendered/simulated agreement, text state, pixels) and review steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"076b15726ac7c2341253a3f2f3e617f8e9aff4bfa51bdc0fd1ccd93fe227daf1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"f3fbd6474ea000eb6001173dccc89a76c3c692351482fe68dcc4dd1e027804eb","disposition":"still accurate","rationale":"Only the linked playtesting remote-setup explanation changed; the verification guidance in this section (scope discovery, journeys, separation of automation from player evidence) does not describe feedback attachment defaults."} -->
 
 
 
