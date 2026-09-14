@@ -718,6 +718,29 @@ origins with their attempt and depth, the covered and skipped checks, the requir
 re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
 diagnosed retry the norm above requires, not a retry-to-green.
 
+The same `--after <attempt-report.json>` with a **passed** parent (status `passed` or
+`passed with reused receipts`; no `--cause`) is receipt reuse across candidates: an author's
+`local` attempt lending its workshop browser receipts to the reviewer's `merge` (or `local`)
+candidate on identical bytes. The child is its own candidate with its own capture, install,
+descriptor and key; it admits the parent only after its attestation verifies, it is a finished
+attempt (no `active-attempt` lock, a terminal tier report) on a `local` or `merge` tier, and it
+is not a hosted-profile or measurement report; `final` refuses reuse on either side. Reuse
+happens only when the child's frozen source, its installed dependencies and its relevant
+identity equal the parent's signed descriptor; otherwise the child runs plainly with nothing
+reused and no delta narrowing. The offered set is derived from manifest facts, never a list:
+browser rows of tier `browser` and environment `workshop` that are neither `mergeSmoke` nor
+`timingSensitive`, and only receipts the parent executed itself (depth 0 — a receipt is never
+cited twice). The child selects its own checks; CI, unit leaves, smoke, timing-sensitive,
+hosted and probe checks always execute. The ledger names the parent's leaves and key
+(`previous`, `previousKey`, `reuse`), and a browser receipt is offered only while the
+evidence it points at is intact: its value records the evidence directory, every file and the
+log with digests and sizes, an absent path executes the check again, altered bytes fail
+closed. A child that reused anything reports `passed with reused receipts` with an `after`
+block naming the offered, reused (with origin attempt and depth) and executed leaves;
+validation refuses a resumed receipt the parent did not offer or that is not depth 1 from
+that parent. Nothing here changes what a landing needs: candidate evidence still applies only
+to its recorded bytes.
+
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested
 intervals overlap and must not be summed as wall time. Tier results are published as
