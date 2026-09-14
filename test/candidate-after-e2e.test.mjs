@@ -295,6 +295,55 @@ test('a source-only delta after a parent with no browser coverage runs every che
   assert.equal(retry.report.status, 'passed');
 });
 
+test('a phase refused before its rows ran is retried through the phase cause and every refused row must be observed', (t) => {
+  // Real case: timing admission refused the whole timing phase; no timing row reached the ledger.
+  const first = run(['first', 'new', '', 'x=pass', 'refuse=timing']);
+  cleanup(t, first);
+  assert.equal(first.status, 1);
+  assert.equal(first.report.status, 'failed');
+  assert.equal(receipt(first.report, 'browser:perf'), undefined, 'no receipt for the refused row');
+  assert.deepEqual(first.report.verification.results.find((r) => r.id === 'browser').notEvaluated, [
+    'perf',
+  ]);
+  const parent = first.report.attemptReport;
+  // Without a cause the refused row is named as the missing non-pass leaf, not "nothing to retry".
+  const silent = run(['after', first.root, parent, 'x=pass']);
+  assert.equal(silent.status, 1);
+  assert.match(silent.report.error, /browser:perf/);
+  // The phase cause covers it; the retry re-executes it and passes after failure on reuse.
+  const retry = run([
+    'after',
+    first.root,
+    parent,
+    'x=pass',
+    '--cause=browser=timing admission refused: WindowServer 45.9 % from desktop apps drawing',
+  ]);
+  assert.equal(retry.status, 0, retry.stderr);
+  assert.equal(retry.report.status, 'passed after failure');
+  assert.deepEqual(retry.report.after.coverage.browser, {
+    aggregate: true,
+    covers: ['browser:perf'],
+  });
+  assert.ok(retry.report.after.required.includes('browser:perf'));
+  assert.ok(retry.report.verification.executed.includes('browser:perf'), 'refused row executed');
+  assert.equal(receipt(retry.report, 'browser:perf').ok, true);
+  assert.ok(
+    retry.report.after.reused.some((r) => r.id === 'browser:x'),
+    'the passing row reused',
+  );
+  // Refused again in the child: the observation fails the retry rather than passing on the plan.
+  const again = run([
+    'after',
+    first.root,
+    parent,
+    'x=pass',
+    'refuse=timing',
+    '--cause=browser=timing admission refused again',
+  ]);
+  assert.equal(again.status, 1);
+  assert.equal(again.report.status, 'failed');
+});
+
 test('an attempt that failed around a green tier needs the candidate cause, and a retry that dies after capture keeps its chain', (t) => {
   // The tier passes, then the frozen clone drifts: a candidate-level failure with no failed leaf.
   const drifted = run(['first', 'new', '', 'x=pass', 'drift=yes']);

@@ -91,6 +91,16 @@ export function classifyParentLeaves(parent) {
   for (const r of verification.checks)
     if (Array.isArray(r.unexecuted) && r.unexecuted.length)
       unexecutedBy[r.id] = r.unexecuted.map((file) => `unit:${file}`).sort();
+  // Rows a phase refused before they ran (timing admission, a sleeping host) have no receipt;
+  // the phase row names them, and they count as unexecuted leaves beneath that phase.
+  for (const row of verification.results)
+    if (row.status === 'failed' && Array.isArray(row.notEvaluated) && row.notEvaluated.length)
+      unexecutedBy[row.id] = [
+        ...new Set([
+          ...(unexecutedBy[row.id] ?? []),
+          ...row.notEvaluated.map((id) => `browser:${id}`),
+        ]),
+      ].sort();
   const unexecuted = [...new Set(Object.values(unexecutedBy).flat())].sort();
   const abortedAggregates = verification.results
     .filter((row) => row.status === 'failed')
@@ -149,7 +159,8 @@ export function validateCauses(
         ? { aggregate: true, covers: unexecutedBy[id] }
         : { aggregate: false, covers: [id] };
     else if (unexecuted.includes(id)) coverage[id] = { aggregate: false, covers: [id] };
-    else if (abortedAggregates.includes(id)) coverage[id] = { aggregate: true, covers: [] };
+    else if (abortedAggregates.includes(id))
+      coverage[id] = { aggregate: true, covers: unexecutedBy[id] ?? [] };
     else
       throw Error(`--cause ${id} names a leaf that passed or does not exist in the parent attempt`);
   }

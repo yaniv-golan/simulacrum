@@ -232,6 +232,47 @@ test('every failed or unexecuted leaf needs its own cause; an aborted aggregate 
   assert.throws(() => classifyParentLeaves(deep), /chain/);
 });
 
+test('rows a phase refused before they ran are unexecuted leaves beneath that phase, covered by its cause and required of the retry', () => {
+  // Real case (2026-09-15, candidate 4DsIoB attempt 88b0e2f3): the timing phase was refused by
+  // admission, no timing row reached the ledger, and the only record was the browser phase row.
+  const p = parent();
+  p.verification.checks = p.verification.checks.filter((r) => !r.id.startsWith('browser:'));
+  p.verification.results[2] = {
+    id: 'browser',
+    status: 'failed',
+    error: 'Browser checks failed: spring-perf, audio',
+    notEvaluated: ['spring-perf', 'audio'],
+  };
+  const c = classifyParentLeaves(p);
+  assert.deepEqual(c.failed, []);
+  assert.deepEqual(c.unexecuted, ['browser:audio', 'browser:spring-perf']);
+  assert.deepEqual(c.unexecutedBy, { browser: ['browser:audio', 'browser:spring-perf'] });
+  // Without the fix this parent was "nothing to retry"; now the phase cause covers its rows.
+  assert.throws(() => validateCauses(c, new Map()), /browser:audio, browser:spring-perf/);
+  assert.deepEqual(validateCauses(c, new Map([['browser', 'timing admission refused']])), {
+    browser: { aggregate: true, covers: ['browser:audio', 'browser:spring-perf'] },
+  });
+  assert.deepEqual(
+    validateCauses(
+      c,
+      new Map([
+        ['browser:spring-perf', 'x'],
+        ['browser:audio', 'y'],
+      ]),
+    ),
+    {
+      'browser:spring-perf': { aggregate: false, covers: ['browser:spring-perf'] },
+      'browser:audio': { aggregate: false, covers: ['browser:audio'] },
+    },
+  );
+  const required = requiredReexecution({ classification: c, manifest });
+  assert.ok(required.has('browser:spring-perf') && required.has('browser:audio'));
+  // A phase row without the list still records only an aborted aggregate.
+  const bare = parent();
+  bare.verification.results[2] = { id: 'browser', status: 'failed', error: 'x' };
+  assert.deepEqual(classifyParentLeaves(bare).unexecutedBy, {});
+});
+
 test('reexecution covers non-pass leaves, their registered controls and every always-fresh class', () => {
   const p = parent();
   const c = classifyParentLeaves(p);

@@ -527,11 +527,25 @@ async function executeBrowserSuite(
         { workers, failFast },
       );
       const failures = outcomes.filter((outcome) => outcome.ok === false);
-      if (failures.length)
-        throw new AggregateError(
+      if (failures.length) {
+        const error = new AggregateError(
           failures.map((outcome) => outcome.error),
           `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
         );
+        // A row refused before it ran (timing admission, a sleeping host) leaves no receipt; the
+        // phase names those rows so a diagnosed retry can see them as unexecuted leaves.
+        error.notEvaluated = failures
+          .filter(
+            (outcome) => runs.find((row) => row.id === outcome.id)?.status === 'not evaluated',
+          )
+          .map((outcome) => outcome.id)
+          .sort();
+        error.failedChecks = failures
+          .map((outcome) => outcome.id)
+          .filter((id) => !error.notEvaluated.includes(id))
+          .sort();
+        throw error;
+      }
     },
     async () => {
       report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);

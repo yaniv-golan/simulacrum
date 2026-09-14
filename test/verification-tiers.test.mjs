@@ -89,6 +89,43 @@ test('completion priority arguments preserve tier and normalized provenance', as
     );
 });
 
+test('a phase that refused rows before running them records their ids on its row', async () => {
+  const { runVerificationPhases } = await import('../scripts/verification-tiers.mjs');
+  const refused = Object.assign(Error('Browser checks failed: perf, audio'), {
+    notEvaluated: ['perf', 'audio'],
+    failedChecks: [],
+  });
+  const rows = await runVerificationPhases(
+    [
+      ['ci', async () => ({ ok: true })],
+      [
+        'browser',
+        async () => {
+          throw refused;
+        },
+      ],
+    ],
+    { onProgress: () => {} },
+  );
+  const browser = rows.find((r) => r.id === 'browser');
+  assert.equal(browser.status, 'failed');
+  assert.deepEqual(browser.notEvaluated, ['perf', 'audio']);
+  assert.equal(rows.find((r) => r.id === 'ci').notEvaluated, undefined);
+  // A plain failure carries no list.
+  const plain = await runVerificationPhases(
+    [
+      [
+        'browser',
+        async () => {
+          throw Error('boom');
+        },
+      ],
+    ],
+    { onProgress: () => {} },
+  );
+  assert.equal(plain[0].notEvaluated, undefined);
+});
+
 test('phase reporting publishes start and finish with elapsed time even on failure', async () => {
   let now = 0;
   const snapshots = [];

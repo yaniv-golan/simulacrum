@@ -506,7 +506,10 @@ comparisons. This reduces repeated parsing without removing byte-based drift che
 
 CI completes structural prerequisites, then admits invariant-control and remaining unit
 files through one four-worker pool. The standalone structural gate still runs its invariant
-unit controls. The 180-second CI obligation is unchanged.
+unit controls. The structural prerequisites include the `format` gate — the same
+`prettier --check` over `src`, `scripts` and `test` that the hosted `format:check` job runs,
+cached under `artifacts/format-gate` (never under `node_modules`, whose bytes the candidate
+digests) — so a layout defect cannot reach `main` through a local tier. The 180-second CI obligation is unchanged.
 
 The unit runner stops admitting queued tests when the iteration budget expires and
 reports their paths as `unexecuted`; they are not failed test executions. A started child
@@ -668,7 +671,11 @@ parent must be a `failed` report that completed its tier; an attempt that failed
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
 its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
 `ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
-(`ci`, `browser`) may record that the leaves beneath it never ran. A plain `resume` of a retry
+(`ci`, `browser`) may record that the leaves beneath it never ran. Rows a phase refused before
+they ran — timing rows under a refused admission, rows a sleeping host skipped — leave no
+receipt; the phase row names them (`notEvaluated`) and they count as unexecuted leaves beneath
+that phase, so a cause on the phase covers them and the retry must observe each one executed and
+passing. A plain `resume` of a retry
 report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
 parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused
 rather than re-pinned — and the parent's bytes, identity and installed dependencies are read

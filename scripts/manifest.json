@@ -192,6 +192,16 @@
       "timeoutMs": 1000
     },
     {
+      "id": "format",
+      "dueAt": "M0",
+      "description": "src, scripts and test in prettier layout (the hosted format:check, run on every commit)",
+      "ruleId": "gate-integrity",
+      "module": "scripts/check-format.mjs",
+      "export": "checkFormat",
+      "args": [],
+      "timeoutMs": 60000
+    },
+    {
       "id": "verification-workflow",
       "dueAt": "M3b",
       "description": "local success never qualifies; failed prerequisites stop downstream work",
