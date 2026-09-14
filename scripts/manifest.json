@@ -6359,7 +6359,7 @@
       "id": "mechanical-audio-truth",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded. Human listening remains separate.",
+      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded, and one nominal voice renders inside the registered audibility band (AUDIO_POLICY.nominalRms, measured at the destination against a calibration tone through the same output chain) with its fundamental above the small-speaker floor. Human listening remains separate.",
       "owners": [
         {
           "path": "src/application/mechanical-audio-adapter.mjs",
@@ -6399,6 +6399,10 @@
           {
             "path": "test/mechanical-audio.test.mjs",
             "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "layer gains are derived from the registered level and what the layer renders, not raw literals"
           },
           {
             "path": "test/mechanical-audio.test.mjs",

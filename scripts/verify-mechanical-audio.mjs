@@ -53,9 +53,45 @@ try {
   await deniedPage.close();
   const waveforms = await page.evaluate(async () => {
     const { createMechanicalAudio } = await import('/src/presentation/mechanical-audio.mjs');
-    const { driveVoice, contactVoice } = await import(
+    const { driveVoice, contactVoice, AUDIO_POLICY } = await import(
       '/src/presentation/mechanical-audio-model.mjs'
     );
+    // Spectral centroid of a slice (Hz): a radix-2 FFT over its first 4096 samples.
+    const centroid = (slice, rate) => {
+      const n = 4096,
+        re = Float64Array.from(slice.subarray(0, n)),
+        im = new Float64Array(n);
+      for (let i = 1, j = 0; i < n; i++) {
+        let bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) [re[i], re[j], im[i], im[j]] = [re[j], re[i], im[j], im[i]];
+      }
+      for (let len = 2; len <= n; len <<= 1) {
+        const ang = (-2 * Math.PI) / len;
+        for (let i = 0; i < n; i += len)
+          for (let k = 0; k < len / 2; k++) {
+            const wr = Math.cos(ang * k),
+              wi = Math.sin(ang * k),
+              a = i + k,
+              b = a + len / 2,
+              tr = re[b] * wr - im[b] * wi,
+              ti = re[b] * wi + im[b] * wr;
+            re[b] = re[a] - tr;
+            im[b] = im[a] - ti;
+            re[a] += tr;
+            im[a] += ti;
+          }
+      }
+      let weighted = 0,
+        total = 0;
+      for (let k = 1; k < n / 2; k++) {
+        const power = re[k] * re[k] + im[k] * im[k];
+        weighted += ((k * rate) / n) * power;
+        total += power;
+      }
+      return total > 0 ? weighted / total : 0;
+    };
     const drive = (speed, current = 0, coordinate = 'rotation') =>
       driveVoice({
         emitterKey: '0',
@@ -79,9 +115,15 @@ try {
         geometryClass: 'curved',
         frictionEligibility: friction,
       });
-    const results = {};
+    const results = { policy: { nominalRms: AUDIO_POLICY.nominalRms } };
     for (const [name, d, c, impact, mute] of [
+      // A 0.1 sine pushed into the master bus measures the output chain (compressor, ceiling)
+      // and the meter itself; the level bands below are read against it, not against a
+      // hand-copied chain gain.
+      ['calibration', null, null, false, false],
       ['idle', drive(0), null, false, false],
+      // The driving example's motors: ~10 rad/s, half the nominal rate, ~150 Hz.
+      ['slow', drive(10), null, false, false],
       ['coast', drive(100), null, false, false],
       ['retarget', drive(100), null, false, false],
       ['fast', drive(200), null, false, false],
@@ -96,20 +138,40 @@ try {
       ['rest', null, contact(0, 0), false, false],
       ['impact', null, null, true, false],
       ['mixed', drive(200, 2), contact(1, 1), true, false],
+      // Plausible-wrong trace for the level band: the nominal drive at a tenth of the volume.
+      ['attenuated', drive(200), null, false, false],
       ['mute', drive(100), contact(1, 1), true, true],
     ]) {
       const raw = new OfflineAudioContext(2, 24000, 48000);
+      let master = null;
       const context = new Proxy(raw, {
         get(target, key) {
           if (key === 'resume') return async () => {};
           if (key === 'state') return 'running';
           const value = Reflect.get(target, key, target);
+          if (key === 'createGain')
+            return (...args) => {
+              const node = value.apply(target, args);
+              master ??= node; // graph() creates the master bus before any voice
+              return node;
+            };
           return typeof value === 'function' ? value.bind(target) : value;
         },
       });
       const engine = createMechanicalAudio({ createContext: () => context });
       await engine.enable(true);
-      engine.setVolume(mute ? 0 : 1);
+      engine.setVolume(mute ? 0 : name === 'attenuated' ? 0.1 : 1);
+      if (name === 'calibration') {
+        engine.play({ tick: 10, interval: 1 / 120, drives: [], contacts: [], impacts: [] });
+        const osc = raw.createOscillator(),
+          gain = raw.createGain();
+        osc.frequency.value = 440;
+        gain.gain.value = 0.1;
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(0);
+        osc.stop(0.25);
+      }
       const batch = {
         tick: 10,
         interval: 1 / 120,
@@ -155,18 +217,21 @@ try {
       let crossings = 0;
       for (let i = 1; i < slice.length; i++) if (slice[i] >= 0 && slice[i - 1] < 0) crossings++;
       results[name] = {
+        level: d?.level ?? c?.level ?? null,
         rms: rms(slice),
         retargetRms: rms(samples.slice(7680, 9600)),
         tailRms: rms(tail),
         peak: Math.max(...samples.map(Math.abs)),
         finite: [...samples].every(Number.isFinite),
         frequency: crossings / (slice.length / 48000),
+        centroid: centroid(slice, 48000),
         voices: engine.read(),
       };
     }
     return results;
   });
   for (const name of [
+    'slow',
     'coast',
     'fast',
     'reverse',
@@ -178,6 +243,58 @@ try {
     'mixed',
   ])
     assert.ok(waveforms[name].rms > 1e-5, `${name}: real output must be nonzero`);
+  // Audibility: one nominal voice lands at the registered level at the destination. The
+  // chain gain comes from the calibration render (a 0.1 sine into the master bus), so the
+  // bands track the compressor/ceiling as built, not a copied constant. Weights are the
+  // model's level weights; the band is −8/+4 dB around the expectation.
+  const { policy, calibration } = waveforms,
+    chainGain = calibration.rms / (0.1 / Math.SQRT2),
+    dB = (v) => 20 * Math.log10(v);
+  assert.ok(
+    Number.isFinite(policy.nominalRms) && policy.nominalRms > 0,
+    'the model registers a nominal level',
+  );
+  assert.ok(
+    chainGain > 1.5 && chainGain < 2.2,
+    `output chain gain ${chainGain.toFixed(2)} (waveshaper 0.9·tanh(2x) ≈ 1.8, compressor idle)`,
+  );
+  // Each row carries its rendered level in nominal units (the model's weights); the band is
+  // read from that, never from a copied list.
+  const level = (weight) => dB(policy.nominalRms * weight * chainGain);
+  for (const name of ['slow', 'coast', 'fast', 'reverse', 'linear', 'stall', 'scrape', 'roll']) {
+    assert.ok(
+      Number.isFinite(waveforms[name].level) && waveforms[name].level > 0,
+      `${name}: the voice row carries a rendered level`,
+    );
+    const measured = dB(waveforms[name].rms),
+      expected = level(waveforms[name].level);
+    assert.ok(
+      measured >= expected - 8 && measured <= expected + 4,
+      `${name}: ${measured.toFixed(1)} dBFS is not within −8/+4 dB of ${expected.toFixed(1)} dBFS at the registered level`,
+    );
+  }
+  assert.ok(
+    dB(waveforms.attenuated.rms) < level(1) - 8,
+    'the level band rejects a nominal voice rendered 20 dB down',
+  );
+  // Impacts are held at four times the original gain until the rolling episode classifier is
+  // judged; a single impact's windowed RMS sits about 12 dB under a continuous nominal voice.
+  assert.ok(
+    dB(waveforms.impact.rms) >= level(0.25) - 8,
+    `impact: ${dB(waveforms.impact.rms).toFixed(1)} dBFS is under the held level`,
+  );
+  assert.ok(dB(waveforms.mixed.rms) <= -6, 'a full mix stays under −6 dBFS RMS');
+  // Spectral placement: a slow motor's fundamental and a rolling texture's energy stay above
+  // the region small speakers do not reproduce (the deployed 60 Hz floor put the driving
+  // example at ~100 Hz through a 100–200 Hz lowpass).
+  assert.ok(
+    waveforms.slow.frequency >= 140,
+    `slow: fundamental ${waveforms.slow.frequency.toFixed(0)} Hz sits under 140 Hz`,
+  );
+  assert.ok(
+    waveforms.roll.centroid >= 200,
+    `roll: spectral centroid ${waveforms.roll.centroid.toFixed(0)} Hz sits under 200 Hz`,
+  );
   for (const name of ['idle', 'missing', 'frictionless', 'unknown', 'rest', 'mute'])
     assert.equal(waveforms[name].rms, 0, `${name}: forbidden waveform must be silent`);
   assert.ok(
@@ -190,6 +307,7 @@ try {
   );
   assert.ok(Math.abs(waveforms.reverse.frequency - waveforms.coast.frequency) < 10);
   for (const [name, wave] of Object.entries(waveforms)) {
+    if (name === 'policy') continue;
     assert.ok(wave.finite && wave.peak <= 0.95, `${name}: bounded finite waveform`);
     assert.equal(wave.tailRms, 0, `${name}: release terminates actual output`);
   }

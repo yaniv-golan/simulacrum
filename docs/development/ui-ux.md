@@ -409,7 +409,12 @@ on preference. Sound starts off on each mount and requires a gesture. Build, ret
 replacement retain preference; pause, hidden visibility, gaps and disposal silence existing
 voices. Unavailable audio stays off with a retry message. Volume and button keyboard input
 cannot drive receivers. Measured motor/travel and contact textures are illustrative; material
-impact timbres combine both surfaces symmetrically. Visual motion remains readable without
+impact timbres combine both surfaces symmetrically. Their levels derive from one registered
+nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 %
+default, less with distance; textures and actuators are weighted against it), measured by the
+audio check against a calibration tone through the same output chain; a slow motor keeps
+harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Visual
+motion remains readable without
 sound. Learning admission: **no entry**; the existing motor and Ball experiments already provide
 the activity. Missing contact history establishes a new silent baseline. File opening and retry
 exclude one another before asynchronous reading or reset; rejected actions retain
