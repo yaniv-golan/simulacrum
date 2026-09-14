@@ -7,6 +7,7 @@ import { createBrowserEvidence, createFixtureEvidence } from '../scripts/browser
 
 const page = (build) => ({
   async goto() {},
+  evaluate: async () => false,
   locator: () => ({
     async getAttribute() {
       return build;
@@ -632,4 +633,166 @@ test('load helper propagates startup timeout without reading or submitting a sav
     locator: () => assert.fail('cannot submit before startup readiness'),
   };
   await assert.rejects(evidence.loadAndWait(fake, file), (error) => error === timeout);
+});
+
+const withEnvironment = (t, values) => {
+  const previous = Object.fromEntries(Object.keys(values).map((k) => [k, process.env[k]]));
+  for (const [key, value] of Object.entries(values))
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous))
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+  });
+};
+test('the session scales page deadlines by the hosted wait scale and records the scale it ran under', async (t) => {
+  const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: '4', SIMULACRUM_BROWSER_EXECUTION: 'parallel' });
+  const f = fakeBrowser(),
+    defaults = [],
+    records = [];
+  f.page.setDefaultTimeout = (ms) => defaults.push(['action', ms]);
+  f.page.setDefaultNavigationTimeout = (ms) => defaults.push(['navigation', ms]);
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const browser = await evidence.launch({ profile: 'ui' }),
+    p = await browser.newPage();
+  // A page that never sets its own deadline gets Playwright's default, scaled, at instrument.
+  assert.deepEqual(defaults, [
+    ['action', 120000],
+    ['navigation', 120000],
+  ]);
+  p.setDefaultTimeout(2500);
+  p.setDefaultNavigationTimeout(15000);
+  assert.deepEqual(defaults.slice(2), [
+    ['action', 10000],
+    ['navigation', 60000],
+  ]);
+  // Literal deadlines go through the same scale; local callers get their number back unchanged.
+  assert.equal(evidence.waitBudget(15000), 60000);
+  assert.equal(evidence.waitScale, 4);
+  await browser.close();
+  const timing = records.find((r) => r.name === 'timing.json').value;
+  assert.equal(timing.waitScale, 4);
+});
+test('without a hosted scale the session leaves every deadline exactly as the check wrote it', async (t) => {
+  const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: undefined, SIMULACRUM_BROWSER_EXECUTION: undefined });
+  const f = fakeBrowser(),
+    defaults = [],
+    records = [];
+  f.page.setDefaultTimeout = (ms) => defaults.push(ms);
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const browser = await evidence.launch({ profile: 'ui' }),
+    p = await browser.newPage();
+  p.setDefaultTimeout(2500);
+  assert.deepEqual(defaults, [2500]);
+  assert.equal(evidence.waitBudget(15000), 15000);
+  assert.equal(evidence.waitScale, 1);
+  await browser.close();
+  assert.equal(records.find((r) => r.name === 'timing.json').value.waitScale, 1);
+});
+test('a wait scale is only accepted from the suite, never from a shell export', async (t) => {
+  const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: '4', SIMULACRUM_BROWSER_EXECUTION: undefined });
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    launchBrowser: async () => fakeBrowser().browser,
+    writeArtifact: () => {},
+  });
+  await assert.rejects(evidence.launch({ profile: 'ui' }), /wait scale .* only the browser suite/);
+});
+// A workshop page (static `#app` root) is ready when its probe exists; the startup budget is the
+// session's, not whatever interaction deadline the check has set.
+const startupPage = ({ probeAfterMs, app = true }) => {
+  const started = Date.now();
+  return {
+    async goto() {},
+    async reload() {},
+    locator: () => ({ getAttribute: async () => 'app-current' }),
+    evaluate: async (fn) =>
+      String(fn).includes('getElementById') ? app : Date.now() - started >= probeAfterMs,
+    waitForFunction: async (predicate, argument, options) => {
+      const deadline = Date.now() + options.timeout;
+      while (Date.now() < deadline) {
+        if (Date.now() - started >= probeAfterMs) return { dispose: async () => {} };
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      throw Object.assign(Error(`Timeout ${options.timeout}ms exceeded`), { name: 'TimeoutError' });
+    },
+  };
+};
+test('goto and reload wait for the workshop probe under the startup budget, independent of the interaction deadline', async (t) => {
+  const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: undefined, SIMULACRUM_BROWSER_EXECUTION: undefined });
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    startupMs: 200,
+  });
+  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 60 }), 'http://fixture/'), 'app-current');
+  assert.equal(await evidence.reload(startupPage({ probeAfterMs: 60 })), 'app-current');
+  // A page that is not the workshop (no `#app` root) is served the moment navigation ends.
+  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 1e9, app: false }), 'http://f/'), 'app-current');
+  // A workshop whose probe never appears fails as a startup failure, named as such.
+  await assert.rejects(evidence.goto(startupPage({ probeAfterMs: 1e9 }), 'http://fixture/'), (error) => {
+    assert.equal(error.failureKind, 'startup');
+    assert.match(error.message, /workshop startup: no probe within 200 ms/);
+    return true;
+  });
+});
+test('the startup budget scales with the hosted wait scale', async (t) => {
+  const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: '3', SIMULACRUM_BROWSER_EXECUTION: 'parallel' });
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    startupMs: 100,
+  });
+  // 100 ms locally would miss a 200 ms startup; ×3 = 300 ms admits it.
+  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'), 'app-current');
+});
+test('a failed action records its target box across frames so a never-stable control names its moving geometry', async () => {
+  const f = fakeBrowser(),
+    records = [];
+  let frame = 0;
+  f.page.evaluate = async (fn) =>
+    String(fn).includes('requestAnimationFrame') ? ++frame : { frame: null, cursor: null };
+  f.page.locator = () => ({
+    boundingBox: async () => ({ x: 10, y: 100 + frame * 17, width: 80, height: 24 }),
+    click: async () => {
+      throw Object.assign(Error('locator.click: Timeout 6000ms exceeded.'), {
+        name: 'TimeoutError',
+      });
+    },
+  });
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({}),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const browser = await evidence.launch({ profile: 'ui' }),
+    p = await browser.newPage();
+  await assert.rejects(p.locator('[data-command=pause]').click(), /Timeout 6000ms/);
+  await evidence.captureFailure(Error('check failed'));
+  const geometry = records.find((r) => r.name === 'failure.json').value.targetGeometry;
+  assert.equal(geometry.action.method, 'locator([data-command=pause]).click');
+  assert.equal(geometry.boxes.length, 5);
+  assert.equal(geometry.moved, true);
+  assert.deepEqual(
+    geometry.boxes.map((b) => b.y),
+    [100, 117, 134, 151, 168],
+  );
 });
