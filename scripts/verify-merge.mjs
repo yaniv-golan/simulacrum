@@ -58,21 +58,25 @@ try {
                 metadataOnlyFiles: scope.metadataOnlyFiles,
               });
             const merged = select(changes);
-            const resolved = narrowChanges
+            const narrow = narrowChanges ? select(narrowChanges) : null;
+            const resolved = narrow
               ? resolveRetrySelection({
                   fresh: merged,
-                  narrow: select(narrowChanges),
+                  narrow,
                   required: retry.required,
                   covered: retry.covered,
                   checks: registry,
                 })
               : withRequiredChecks(merged, retry?.required ?? [], registry);
             // The merge selection's selected/omitted split follows the resolved checks: rows the
-            // fresh policy chose keep their reason, added rows name the retry, skipped rows say so.
+            // fresh policy chose keep their reason, rows only the delta reached carry the delta's
+            // reason, added rows name the retry, skipped rows say so.
             const chosen = new Set(resolved.checks.map((c) => c.id));
             const reasonOf = (id) =>
               merged.selected?.find((c) => c.id === id)?.reason ??
-              'diagnosed retry: required re-execution';
+              (narrow?.selected?.find((c) => c.id === id)
+                ? `byte delta: ${narrow.selected.find((c) => c.id === id).reason}`
+                : 'diagnosed retry: required re-execution');
             const skipped = new Set(resolved.skippedByDelta ?? []);
             selection =
               resolved === merged

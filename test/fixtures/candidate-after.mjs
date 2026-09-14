@@ -3,7 +3,8 @@
 // arguments: <mode> <origin root or "new"> [attemptReport] [flags...]
 // flags: x=fail|pass, unit=fail (unit:test/a.test.mjs fails inside ci:budget so the browser phase
 // never runs), omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the candidate
-// itself fails), tier=<tier>, cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
+// itself fails), tier=<tier>, base=<ref>, moved=yes (the base ref now names another commit),
+// cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
 // Stubs keep capture, preflight and processes local; the tier is emulated with a real
 // verification context and leaf ledger so receipts, reuse and origins are the production ones.
 import { registerHooks } from 'node:module';
@@ -72,6 +73,11 @@ if (mode === 'first') {
 }
 if (flag('touch')) writeFileSync(join(root, flag('touch')), `changed ${Date.now()}`);
 globalThis.candidateTransport = {
+  // Refs resolve by name; moved=yes models the same name now pointing at another commit.
+  resolveBase(base) {
+    const resolved = base.startsWith('resolved-') ? base : `resolved-${base}`;
+    return flag('moved') === 'yes' ? `${resolved}-moved` : resolved;
+  },
   async capture(origin, destination, options) {
     mkdirSync(join(destination, 'artifacts/verification-windows'), { recursive: true });
     mkdirSync(join(destination, 'node_modules'), { recursive: true });
@@ -232,7 +238,7 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch"; export const resolveCandidateBase=(root,base)=>base.startsWith("resolved-")?base:"resolved-"+base;';
+        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch"; export const resolveCandidateBase=(root,base)=>globalThis.candidateTransport.resolveBase(base);';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
@@ -258,7 +264,10 @@ process.argv = [
   `${repo}/scripts/verify-candidate.mjs`,
   ...(mode === 'resume'
     ? ['resume', parentReport]
-    : [flag('tier') ?? 'local', ...(flag('tier') === 'final' ? [] : ['--base', 'HEAD~1'])]),
+    : [
+        flag('tier') ?? 'local',
+        ...(flag('tier') === 'final' ? [] : ['--base', flag('base') ?? 'HEAD~1']),
+      ]),
   ...(mode === 'after' ? ['--after', parentReport] : []),
   ...flags.filter((f) => f.startsWith('--cause=')).flatMap((f) => ['--cause', f.slice(8)]),
   ...flags.filter((f) => f.startsWith('--arg=')).map((f) => f.slice(6)),

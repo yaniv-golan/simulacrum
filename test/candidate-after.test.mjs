@@ -15,6 +15,8 @@ import {
   requiredReexecution,
   withRequiredChecks,
   resolveRetrySelection,
+  attestReport,
+  verifyAttestation,
 } from '../scripts/candidate-after.mjs';
 
 const manifest = {
@@ -628,4 +630,41 @@ test('an after report is admitted only when its block is consistent with the chi
   coveredSkip.after.skippedByDelta = [{ id: 'browser:audio', parentAttempt: p.attempt }];
   coveredSkip.after.covered = ['browser:audio', 'browser:mirror'];
   assert.doesNotThrow(() => validateAfterReport(coveredSkip));
+});
+
+test('a parent report is trusted only under the attestation of its own candidate key', () => {
+  const key = Buffer.alloc(32, 5),
+    other = Buffer.alloc(32, 6);
+  const report = { status: 'failed', directory: '/tmp/c', verification: { checks: [] } };
+  const attested = { ...report, attestation: attestReport(report, key) };
+  assert.equal(
+    verifyAttestation(attested, () => key),
+    true,
+  );
+  // Re-attesting an attested report ignores the previous attestation field.
+  assert.equal(attestReport(attested, key), attested.attestation);
+  assert.throws(() => verifyAttestation(report, () => key), /not attested/);
+  assert.throws(() => verifyAttestation(attested, () => other), /does not match/);
+  assert.throws(
+    () => verifyAttestation({ ...attested, status: 'passed' }, () => key),
+    /does not match/,
+  );
+  assert.throws(
+    () =>
+      verifyAttestation(
+        {
+          ...attested,
+          verification: { checks: [{ id: 'browser:x', ok: true }] },
+        },
+        () => key,
+      ),
+    /does not match/,
+  );
+  assert.throws(
+    () =>
+      verifyAttestation(attested, () => {
+        throw Error('ENOENT');
+      }),
+    /unavailable/,
+  );
 });

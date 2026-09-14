@@ -4,7 +4,32 @@
  * leaves that passed on identical bytes and relevant identity are reused, each naming its origin.
  * When bytes differ, the tier's selection sees the byte delta only if identity and dependencies
  * still match; otherwise it runs its fresh policy. */
+import { createHmac, timingSafeEqual } from 'node:crypto';
 export const CHAIN_DEPTH_LIMIT = 3;
+const attestationOf = (report, key) => {
+  const { attestation, ...rest } = report;
+  return createHmac('sha256', key).update(JSON.stringify(rest)).digest('hex');
+};
+/** HMAC of the report under the candidate's resume key; the report is published with it. */
+export function attestReport(report, key) {
+  return attestationOf(report, key);
+}
+/** A parent report is admitted only when the key in its own candidate directory attests it. */
+export function verifyAttestation(parent, readKey) {
+  if (typeof parent?.attestation !== 'string' || typeof parent.directory !== 'string')
+    throw Error('parent attempt report is not attested by its candidate; run a fresh candidate');
+  let key;
+  try {
+    key = readKey();
+  } catch {
+    throw Error('parent candidate directory or resume key is unavailable; run a fresh candidate');
+  }
+  const expected = Buffer.from(attestationOf(parent, key), 'hex'),
+    given = Buffer.from(parent.attestation, 'hex');
+  if (expected.length !== given.length || !timingSafeEqual(expected, given))
+    throw Error('parent attempt report attestation does not match its candidate key');
+  return true;
+}
 export const CANDIDATE_CAUSE = 'candidate';
 const usage =
   'Usage: verify:candidate -- <tier> [tier options] --after <attemptReport.json> --cause <checkId>=<diagnosed cause> [--cause ...]';
@@ -205,10 +230,18 @@ export function resolveRetrySelection({ fresh, narrow, required = [], covered = 
   const rows = ids.map(
     (id) => registry.get(id) ?? [...fresh.checks, ...narrow.checks].find((c) => c.id === id),
   );
+  // The resolved selection keeps the fresh policy's own metadata (scope, files, fallback); the
+  // delta's is reported under `delta` so nothing downstream mistakes Δ for the base scope.
   const widened = withRequiredChecks(
     {
-      ...narrow,
+      ...fresh,
       fresh: { scope: fresh.scope, fallback: fresh.fallback ?? null, checks: freshIds },
+      delta: {
+        scope: narrow.scope ?? null,
+        fallback: narrow.fallback ?? null,
+        files: narrow.files ?? null,
+        checks: [...narrowIds].sort(),
+      },
       checks: rows,
     },
     required,

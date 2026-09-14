@@ -42,6 +42,8 @@ import {
   deltaSelection,
   afterSummary,
   validateAfterReport,
+  attestReport,
+  verifyAttestation,
 } from './candidate-after.mjs';
 import { environmentForensics, processIdentity } from './verification-environment.mjs';
 const origin = process.cwd(),
@@ -54,9 +56,14 @@ const report = {
 };
 const output = 'artifacts/verification-candidate.json';
 let attemptOutput, lock;
+// Once the candidate's resume key exists, every published report is attested under it so a
+// later --after trusts classification and coverage only from a report this candidate wrote.
+let attestKey = null;
 const write = () => {
   report.elapsedMs = performance.now() - started;
   mkdirSync('artifacts', { recursive: true });
+  if (attestKey) report.attestation = attestReport(report, attestKey);
+  else delete report.attestation;
   const text = JSON.stringify(report, null, 2) + '\n';
   writeFileSync(output, text);
   if (attemptOutput) writeFileSync(attemptOutput, text);
@@ -84,6 +91,9 @@ try {
   if (afterArgs.after) {
     // A diagnosed retry: every non-pass leaf of the parent needs a cause before anything runs.
     const parent = JSON.parse(readFileSync(afterArgs.after, 'utf8'));
+    // The parent report is trusted only when its own candidate key attests it: the receipts
+    // it classifies and the coverage it claims are then this candidate's own record.
+    verifyAttestation(parent, () => readFileSync(join(resolve(parent.directory), 'resume-key')));
     // The chain is recorded before anything is validated or run, so a refused or dying retry
     // still carries it; a later --after on this report cannot restart the count.
     report.after = {
@@ -151,6 +161,7 @@ try {
     if (retry.mode === 'same-bytes') {
       directory = parentDirectory;
       key = parentKey;
+      attestKey = key;
       ({ candidate, installed, installedAt } = parentDescriptor);
       if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
         throw Error('parent candidate bytes changed');
@@ -210,6 +221,7 @@ try {
       // Retained in the descriptor so a resume reproduces the same tier environment.
       installedAt = new Date().toISOString();
       key = randomBytes(32);
+      attestKey = key;
       writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
       writeResumeDescriptor(
         directory,
@@ -220,6 +232,7 @@ try {
   } else if (previous) {
     directory = resolve(previous.directory);
     key = readFileSync(join(directory, 'resume-key'));
+    attestKey = key;
     const descriptor = readResumeDescriptor(directory, key);
     ({ candidate, options, tier, installed, installedAt } = descriptor);
     if (resolve(candidate.destination) !== join(directory, 'source'))
@@ -273,6 +286,7 @@ try {
     // Retained in the descriptor so a resume reproduces the same tier environment.
     installedAt = new Date().toISOString();
     key = randomBytes(32);
+    attestKey = key;
     writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
     writeResumeDescriptor(
       directory,
@@ -294,14 +308,15 @@ try {
     retry.required = requiredReexecution({ classification: retry.classification, manifest });
     // Browser checks the parent chain passed or already skipped on receipts; a source-only delta
     // may skip these when its byte delta does not reach them, and nothing else.
-    retry.covered = [
-      ...new Set([
-        ...retry.classification.passing
-          .map((r) => r.id)
-          .filter((id) => id.startsWith('browser:') && reusableLeaf(id, manifest)),
-        ...(retry.parent.after?.skippedByDelta ?? []).map((row) => row.id),
-      ]),
-    ].sort();
+    // Coverage names the attempt whose receipt stands behind each id; inherited skips are
+    // re-admitted through this candidate's manifest so a row that stopped being reusable drops out.
+    retry.coveringAttempt = new Map();
+    for (const row of retry.parent.after?.skippedByDelta ?? [])
+      if (reusableLeaf(row.id, manifest)) retry.coveringAttempt.set(row.id, row.parentAttempt);
+    for (const r of retry.classification.passing)
+      if (r.id.startsWith('browser:') && reusableLeaf(r.id, manifest))
+        retry.coveringAttempt.set(r.id, retry.parent.attempt);
+    retry.covered = [...retry.coveringAttempt.keys()].sort();
     retry.reuse =
       retry.mode === 'same-bytes'
         ? retry.classification.passing
@@ -463,7 +478,7 @@ try {
       retry.mode === 'delta' && retry.deltaSelection === 'source-only'
         ? (report.verification.selection?.skippedByDelta ?? []).map((id) => ({
             id: `browser:${id}`,
-            parentAttempt: retry.parent.attempt,
+            parentAttempt: retry.coveringAttempt.get(`browser:${id}`) ?? retry.parent.attempt,
           }))
         : [];
     const summary = afterSummary({

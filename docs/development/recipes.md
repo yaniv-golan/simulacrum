@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"b7a1433b60161ae03b1bfc93f8b5eac59a48f95b43cce55b31f7ef9e9ce6838c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"137b9c41469080145e26fe8a0b35295a1f0a731c2775e9b8de02d5ff3aa64a60","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (coverage-bounded delta retry, signed-descriptor identity, browserChannel registration, receipt configuration) and the documentation/AGENTS rows describing it. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"e2c04e86d03301c379bb8f718e5c85cdcdc13a38fbad9f5ed9683dbe144b8985","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9470255b4d5de68d246cd424743c77bd305467704d1b0079af054d535876fd44","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its fourth adversarial review (same main 421a2b1). No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (report attestation, retry selection metadata, moved-ref tests) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

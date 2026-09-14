@@ -20,6 +20,18 @@ import { appFingerprint } from './app-fingerprint.mjs';
 import { selectChecks, validateBrowserCoverage, parseBrowserArgs } from './browser-registry.mjs';
 import { runProcess } from './run-check.mjs';
 import { systemBrowserVersion } from './verification-environment.mjs';
+import { checkBreadth } from './check-breadth.mjs';
+import {
+  createVerificationContext,
+  initializeVerificationEnvironment,
+} from './verification-run.mjs';
+import {
+  runCheckSequence,
+  planBrowserPhases,
+  admitQuietHost,
+  tierWorkers,
+} from './check-sequence.mjs';
+import { errorMessages, withCleanup } from './verification-cleanup.mjs';
 /** What a browser receipt is bound to: the registered row, not the run. The worker count is a
  * scheduling condition recorded on the row (measurementConditions), never part of identity, or
  * a parent's receipts would never match a child scheduled with a different pool size. A system
@@ -39,18 +51,6 @@ export function browserReceiptConfiguration(check) {
       : {}),
   };
 }
-import { checkBreadth } from './check-breadth.mjs';
-import {
-  createVerificationContext,
-  initializeVerificationEnvironment,
-} from './verification-run.mjs';
-import {
-  runCheckSequence,
-  planBrowserPhases,
-  admitQuietHost,
-  tierWorkers,
-} from './check-sequence.mjs';
-import { errorMessages, withCleanup } from './verification-cleanup.mjs';
 const stamp = 'dist/.verification-source.json';
 export async function prepareBrowserBuild(context) {
   initializeVerificationEnvironment();

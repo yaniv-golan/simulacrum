@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const fixture = fileURLToPath(new URL('./fixtures/candidate-after.mjs', import.meta.url));
@@ -61,6 +62,35 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   );
   // The chain is on the report before capture, so even a refused retry names its parent.
   assert.deepEqual(bad.report.after.chain, [first.report.attempt]);
+
+  // A parent report edited after the candidate wrote it is refused before anything is read
+  // from it: the coverage and classification a retry trusts come only from attested reports.
+  const forged = JSON.parse(readFileSync(parent, 'utf8'));
+  forged.verification.checks.push({ id: 'browser:perf', configuration: {}, ok: true });
+  // (written beside the candidate, not into the origin tree, so the source bytes stay equal)
+  const forgedPath = join(first.report.directory, 'forged-report.json');
+  writeFileSync(forgedPath, JSON.stringify(forged, null, 2));
+  const tampered = run(['after', first.root, forgedPath, 'x=pass', '--cause=browser:x=late']);
+  assert.equal(tampered.status, 1);
+  assert.match(tampered.report.error, /attestation does not match/);
+  assert.equal(
+    tampered.calls.some((c) => c.kind === 'process'),
+    false,
+  );
+  assert.equal(typeof first.report.attestation, 'string');
+
+  // The retry must repeat the parent's scope as the commits its refs name now: another ref, or
+  // the same ref after it moved, is refused before capture rather than silently re-pinned.
+  for (const flags of [['base=HEAD~2'], ['moved=yes']]) {
+    const scoped = run(['after', first.root, parent, 'x=pass', ...flags, '--cause=browser:x=late']);
+    assert.equal(scoped.status, 1, flags.join());
+    assert.match(scoped.report.error, /must repeat the parent attempt's --base/);
+    assert.equal(
+      scoped.calls.some((c) => c.kind === 'capture' || c.kind === 'process'),
+      false,
+      flags.join(),
+    );
+  }
 
   // Qualification never retries.
   const final = run([
