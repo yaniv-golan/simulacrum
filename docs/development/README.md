@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"927cc61d7590f1fcfe7ce6fbeb17071a3a1a04cd8e42971b9f68edc1b55b8670","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e9f096473e607a39d41b78461a173bb8796bb30ad2a8a6268fc27b320ac8d945","disposition":"still accurate","rationale":"AGENTS.md's verification paragraph now states that every browser check is executed, or reported NOT_EVALUATED with a registered platform reason, on a registered platform daily (the hosted nightly under hostProfiles) beside the phased-scheduler sentence; entry commands, layer table and ownership map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"62e473f146ef25ed2b58c28912ab708ff543caa0da39aa32b975edc6da81635d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b51347d6c15bb3f29f9876c1dd3efd59f0c8bcab3d135eb7710423f88fdc5153","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): AGENTS.md's verification paragraph was rewritten (timing-budget checks run in a merge tier only when the delta reaches what they measure); the guide's entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"75e32a00b62ee8afa69cb65adad1af9688a4a1b3c908136306cb4f8afe8b1ca8","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"56709387ad9170aa5e23bcf77210c811edfc1e7fbf9be36a56edaa96be3340bf","disposition":"still accurate","rationale":"The changed dependency is the playtesting remote-setup explanation rewritten for default-on feedback attachments; tiers, commands, window policy and evidence requirements here are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"ec7bab10b72ba33ef238dfb5c2babc761263b8afcb66e7c144d697cb866bc00e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"1a9b2b5c3a1aeb189f618fe16440ebf2a076177c129f6f8c8002d8590e9cad6e","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): runtime-preflight.mjs gained assertAwake (the tier keeps the host awake itself); the commands this section names and their semantics are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c362cbb1cebb8e246af782a802e4e547149945947b66ac005fdaf5f1eb7ef8e1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d40284d3bb8719cdac051bfb72f6774cc40c37c68d9e2c1555a1fb9e701a7add","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): only the mechanical-audio-truth invariant's guarantee text and a control anchor changed in scripts/manifest.json; browser selection, scope rows, scheduling and admission are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ff104ce57e7b8799e668880ec8ffad881b0f5b2697ad2bf64f4dc041c7c8a047","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"307b982839439b3cc5cd1e2fbec74c7482042f2557b7146046774714458e06b7","disposition":"updated","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): PRESSURE_POLICY now defaults to enforce with SIMULACRUM_TIMING_PRESSURE=observe as the opt-out, the bounds (idle 80 %, foreign 40 %) read from the local tier's resting records (idle 86.5–88 %, busiest foreign 16 %); the scheduling paragraph now states the bounds and the opt-out instead of an enforce switch. The manifest change records the first hosted measurement run under hostProfiles and changes no selection or scheduling fact."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -397,8 +397,24 @@ niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an alrea
 parent), because a niced tier loses to every other process regardless of idle cores. It
 admits the timing phase only on a
 quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
-refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
-and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
+`SIMULACRUM_TIMING_WAIT_MS` for nightly; refusing early when the load is not falling) and
+samples what load1 cannot see — host CPU idle over one second and the busiest processes outside
+the tier's own tree, recorded in `timingAdmission.pressure`, holding the wait and refusing by
+process name (idle below 80 % or a foreign process at 40 %+ of a core; bounds read from a
+resting desktop's own records; `SIMULACRUM_TIMING_PRESSURE=observe` records without
+refusing) — then the
+remaining timing rows are recorded `not evaluated`
+and the run fails; nothing is retried. Every tier also runs that admission once at launch,
+inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
+deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
+is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
+`host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
+tier a timing-budget check runs only when the delta can reach what it measures (its manifest
+`measures` class — `physics` for the two node-only engine budgets, `render` for the six that
+drive the app — or its own import closure); the omitted rows carry the reason; `final` and a local all-checks run execute every row (the
+hosted nightly reports timing rows NOT_EVALUATED under its profile). The hosted merge route
+uses the same selection, so it omits them too. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
 admission and records that it did. Missing metadata, performance checks, headed (focus) and recording profiles,
@@ -542,7 +558,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6d41390ab605cb158779c3a325c5bc1d010e8a6f309b904e4371ade167b3e615","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4ee661668f8a134cc4cdc01a6b39570d78c574158974a885f3616d18d1dde0fc","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): run-check's process inventory moved to process-inventory.mjs and the runner gained a sleep heartbeat; the launch admission waits inside the window (≤ 60 s) — window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -591,7 +607,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0ec7bf41caf82a15875ae230c07c9220ede3245878a6e15d0d4b42db49a4a32b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"357c8e627cfee24a15cf70365162fa58d031faa838580820694d4710ef65cbd9","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): manifest changes are an invariant guarantee and control anchor; candidate capture, dependency validation, resume and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"abe9df19c5a86df23b3cd56893a313dbc113605c6451134ad815f2c5f686b5da","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"69078cedd29df75edea4fd20499da32b3362cc91d90cf1a87a68c20f42394797","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): check-sequence.mjs only flipped the pressure policy default to enforce and the manifest recorded a hosted measurement run; candidate capture, dependency validation, resume, the launch niceness/sleep assertions and what a report certifies are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -599,7 +615,7 @@ pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
-job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -dis npm
 run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never

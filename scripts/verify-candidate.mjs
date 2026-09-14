@@ -17,7 +17,7 @@ import {
   currentBranch,
   resolveCandidateBase,
 } from './candidate.mjs';
-import { assertRuntime, assertUnnicedLaunch } from './runtime-preflight.mjs';
+import { assertRuntime, assertUnnicedLaunch, assertAwake } from './runtime-preflight.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -112,6 +112,7 @@ try {
   write();
   assertRuntime();
   report.launchNiceness = assertUnnicedLaunch({ priority: getPriority() });
+  report.sleepAssertion = assertAwake();
   let directory, candidate, options, tier, key, installed, installedAt;
   if (retry) {
     [tier] = argv;

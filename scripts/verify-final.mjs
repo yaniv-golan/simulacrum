@@ -1,4 +1,9 @@
-import { runVerificationPhases, parseCompletionArgs } from './verification-tiers.mjs';
+import {
+  runVerificationPhases,
+  parseCompletionArgs,
+  launchAdmission,
+  LAUNCH_ADMISSION_ID,
+} from './verification-tiers.mjs';
 import { verificationOutcome, formatVerificationOutcome } from './verification-outcome.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createVerificationContext } from './verification-run.mjs';
@@ -25,6 +30,7 @@ try {
   Object.assign(report, context.identity);
   const results = await runVerificationPhases(
     [
+      [LAUNCH_ADMISSION_ID, () => launchAdmission()],
       ['ci', () => runCI(context)],
       ['browser', () => verifyBrowserSuite('all', { context, ...options })],
       ['gate', () => runGate(undefined, context)],

@@ -109,6 +109,14 @@ export function validateManifest(m) {
     // A budget assertion needs a quiet host; the schedule keeps these serial and last.
     if (x.timingSensitive === true && x.execution === 'parallel')
       throw Error(`timing-sensitive checks run exclusively: ${x.id}`);
+    // What a budget measures decides when a merge tier runs it: `physics` rows run the engine
+    // in node with no browser (so only runtime files can move them); `render` rows drive the app.
+    if (x.timingSensitive === true && !['physics', 'render'].includes(x.measures))
+      throw Error(`timing-sensitive check must declare what it measures: ${x.id}`);
+    if (x.timingSensitive !== true && x.measures !== undefined)
+      throw Error(`measures is a timing-sensitive fact: ${x.id}`);
+    if (x.measures === 'physics' && x.environment !== 'self')
+      throw Error(`a physics budget runs the engine in node, not a browser: ${x.id}`);
   }
   if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
     throw Error('invalid merge smoke metadata');

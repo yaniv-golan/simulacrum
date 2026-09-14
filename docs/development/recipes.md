@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"4304587a608fb07907cafa3141dc3d7a1103fa43195f95a7b6252460978c09fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5fff03b83ec21369f00d535d4cc92e47c14da6f8607454ab15a6917064e7e399","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"00881b4b9aad8659e4fcbda8ac70a60888b8e52d0af8b35bc51d2aa8e3f63060","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef79ef18a6c46f6a244f9402a75ee2bc12cae389c8165d8f2e4b7524d1d23c39","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): the drift is the pressure policy default (enforce), its test, the README scheduling paragraph and a hosted measurement-run record in the manifest; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still selects every timing-budget check."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

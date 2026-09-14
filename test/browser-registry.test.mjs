@@ -580,8 +580,27 @@ test('timing-sensitive checks are a registered fact: declared rows run exclusive
   ]);
   for (const c of timingSensitiveChecks(m.browserChecks))
     assert.notEqual(c.execution, 'parallel', `${c.id} must run exclusively`);
-  // Source guard: a script that asserts a p95/quantile/budget must be declared.
   const { readFileSync } = await import('node:fs');
+  // What each budget measures is a declared fact; a physics row runs the engine in node with no
+  // browser at all (so a presentation change cannot move it), a render row drives the app.
+  for (const c of timingSensitiveChecks(m.browserChecks)) {
+    assert.ok(['physics', 'render'].includes(c.measures), `${c.id} declares what it measures`);
+    const source = readFileSync(c.script, 'utf8');
+    if (c.measures === 'physics')
+      assert.doesNotMatch(
+        source,
+        /\.launch\(|playwright|chromium/,
+        `${c.id} measures physics but launches a browser`,
+      );
+    else assert.match(source, /\.launch\(/, `${c.id} measures rendering but launches no browser`);
+  }
+  assert.deepEqual(
+    timingSensitiveChecks(m.browserChecks)
+      .filter((c) => c.measures === 'physics')
+      .map((c) => c.id),
+    ['measure-gears', 'measure-cameras'],
+  );
+  // Source guard: a script that asserts a p95/quantile/budget must be declared.
   for (const c of m.browserChecks)
     if (TIMING_ASSERTION.test(readFileSync(c.script, 'utf8')))
       assert.ok(
@@ -591,6 +610,19 @@ test('timing-sensitive checks are a registered fact: declared rows run exclusive
   assert.doesNotThrow(() => validateBrowserCoverage());
   for (const [mutate, message] of [
     [(x) => (x.browserChecks[0].timingSensitive = 'yes'), /invalid timingSensitive metadata/],
+    [
+      (x) => delete x.browserChecks.find((c) => c.id === 'measure-gears').measures,
+      /timing-sensitive check must declare what it measures/,
+    ],
+    [
+      (x) => (x.browserChecks.find((c) => !c.timingSensitive).measures = 'render'),
+      /measures is a timing-sensitive fact/,
+    ],
+    [
+      (x) =>
+        (x.browserChecks.find((c) => c.id === 'verify-adaptive-graphics').measures = 'physics'),
+      /a physics budget runs the engine in node, not a browser/,
+    ],
     [
       (x) => {
         const row = x.browserChecks.find((c) => c.id === 'verify-camera-browser');
@@ -733,5 +765,55 @@ test('parallel self-hosted checks prove isolation from source: port 0, per-check
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('live measured-scope reach: a timing row is reached by its own import closure, and a physics row never imports a browser', async () => {
+  const { affectedBrowserChecks, browserCheckClosures, MEASURED_SCOPE, measuredScopeReached } =
+    await import('../scripts/browser-selection.mjs');
+  const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
+  const { browserGraphEntrypoints } = await import('../scripts/browser-selection.mjs');
+  // The affected walk cannot say which timing row a harness module reaches (it stops at the
+  // first opaque hit); the closure can — computed with the real graph in affectedBrowserChecks.
+  const springs = affectedBrowserChecks(['scripts/measure-springs.mjs']).closureReached;
+  for (const id of [
+    'verify-spring-performance',
+    'verify-adaptive-graphics',
+    'verify-camera-browser',
+  ])
+    assert.equal(springs[id], true, `${id} imports measure-springs`);
+  assert.equal(
+    springs['measure-gears'],
+    false,
+    'a browser harness module does not reach the node row',
+  );
+  const gears = affectedBrowserChecks(['test/fixtures/gear-capacity.mjs']).closureReached;
+  assert.equal(gears['measure-gears'], true);
+  assert.equal(gears['verify-spring-performance'], false);
+  // Path classes: a presentation file reaches render rows only; a simulation file reaches all.
+  const rows = browserChecks().filter((c) => c.timingSensitive);
+  for (const row of rows) {
+    assert.equal(
+      measuredScopeReached(row, ['src/presentation/workshop.css']),
+      row.measures === 'render',
+    );
+    assert.equal(measuredScopeReached(row, ['src/simulation/session.mjs']), true);
+    assert.equal(measuredScopeReached(row, ['scripts/check-sequence.mjs']), false);
+  }
+  const matches = (patterns, path) => patterns.some((p) => p.test(path));
+  assert.ok(matches(MEASURED_SCOPE.render, 'src/presentation/x.mjs'));
+  assert.ok(!matches(MEASURED_SCOPE.physics, 'src/presentation/x.mjs'));
+  assert.ok(matches(MEASURED_SCOPE.physics, 'vendor/rapier-contact/x.tgz'));
+  // Structural half of `physics`: the row's whole closure carries no browser session, so no
+  // presentation change can move it — enforced on the closure, not on the row's own text.
+  const graph = buildModuleGraph(process.cwd(), {
+    purpose: 'test-selection',
+    entrypoints: browserGraphEntrypoints(process.cwd()),
+  });
+  const closures = browserCheckClosures(rows, graph);
+  for (const row of rows) {
+    const closure = closures.get(row.id);
+    const launchesBrowser = closure.has('scripts/browser-session.mjs');
+    assert.equal(launchesBrowser, row.measures === 'render', `${row.id}: measures ${row.measures}`);
   }
 });

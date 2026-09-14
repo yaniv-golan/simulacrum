@@ -1,3 +1,4 @@
+import { measuredScopeReached } from './browser-selection.mjs';
 import { readFileSync } from 'node:fs';
 import { parseExpressionAt } from 'acorn';
 import { fromMarkdown } from 'mdast-util-from-markdown';
@@ -35,7 +36,7 @@ export function mergeSelection({
       (!path.includes('/') && !['README.md', 'LICENSE', 'LICENSE.md'].includes(path)),
   );
   const fullReason = risky
-    ? `shared runtime, configuration or verification policy: ${risky}`
+    ? `shared runtime, configuration or verification policy: ${risky} (timing-budget rows by measured scope)`
     : !files?.length
       ? 'changed files unavailable'
       : selection.fallback ||
@@ -43,8 +44,18 @@ export function mergeSelection({
           ? 'unaudited affected scope'
           : null);
   const affected = new Set(selection.checks.map((check) => check.id));
+  // A timing-budget row runs in a merge tier when the delta can reach what it measures: its
+  // own import closure, or the runtime files of its class. Otherwise it is omitted with the
+  // reason — final and a local all-checks run execute every row regardless.
+  const outOfMeasuredScope = (check) =>
+    check.timingSensitive === true &&
+    Boolean(files?.length) && // an unknown delta cannot be said to miss anything
+    !measuredScopeReached(check, files, selection.closureReached ?? {});
   const chosen = checks.filter(
-    (check) => fullReason || check.mergeSmoke === true || affected.has(check.id),
+    (check) =>
+      (fullReason && !outOfMeasuredScope(check)) ||
+      check.mergeSmoke === true ||
+      (affected.has(check.id) && !outOfMeasuredScope(check)),
   );
   const chosenIds = new Set(chosen.map((check) => check.id));
   return {
@@ -66,7 +77,9 @@ export function mergeSelection({
       .filter((check) => !chosenIds.has(check.id))
       .map((check) => ({
         ...check,
-        reason: `outside audited ${selection.scope} selection and registered merge smoke`,
+        reason: outOfMeasuredScope(check)
+          ? `timing budget (${check.measures}): its measured scope is not in the delta; final and a local all-checks run execute it`
+          : `outside audited ${selection.scope} selection and registered merge smoke`,
         coverage: 'NOT_EXECUTED',
       })),
     selectionReasons: selection.reasons ?? [],
