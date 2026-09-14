@@ -17,6 +17,9 @@ primary home; keyboard shortcuts may supplement it. A new part or example must n
 automatically add another permanent workbench panel. Keep selected identity,
 mechanical movement scope, electrical networks and saved assemblies distinct.
 
+Controls are anchored so that content which grows or appears with state moves away from
+them, never through them (the reserved reason lines beside the hold buttons are the pattern);
+live numbers beside a control use tabular figures.
 Use short verb/object labels, with shortcuts secondary. Explain what happens rather
 than repeating the label. Name causes only when the evidence establishes them;
 otherwise give the observation and a useful next check. Do not shrink text to make

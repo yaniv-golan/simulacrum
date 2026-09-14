@@ -1287,6 +1287,8 @@ button:not(.keyed) > .key-badge {
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.45;
+  /* Live numbers beside controls keep a stable width as digits change. */
+  font-variant-numeric: tabular-nums;
 }
 .inspector .part-live strong {
   font-size: 14px;
