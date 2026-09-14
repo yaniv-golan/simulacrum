@@ -463,9 +463,16 @@ try {
   await page
     .getByRole('textbox', { name: 'Your feedback' })
     .fill('I expected this motor to move separately.');
-  await page.locator('[data-attachments] summary').first().click();
-  await page.locator('[data-image]').check();
-  await page.locator('[data-context]').check();
+  // A fresh draft opens its attachment disclosure with both captures already ticked.
+  browserEvidence.assert('deepEqual', [
+    await page.evaluate(() => ({
+      open: document.querySelector('[data-attachments]').open,
+      image: document.querySelector('[data-image]').checked,
+      context: document.querySelector('[data-context]').checked,
+    })),
+    { open: true, image: true, context: true },
+    'fresh draft opens the disclosure with the image and project attached',
+  ]);
   await page.locator('[data-image-preview]').waitFor({ state: 'visible' });
   await page.locator('[data-context-preview]').waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Send feedback', exact: true }).click();

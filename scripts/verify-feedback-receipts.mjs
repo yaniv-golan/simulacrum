@@ -980,7 +980,9 @@ try {
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording actions',
   );
   await openFeedback();
-  await page.locator('[data-attachments] summary').first().click();
+  await page.locator('[data-attachments]').evaluate((details) => {
+    details.open = true;
+  });
   await page.locator('[data-image]').check();
   await page.waitForFunction(() =>
     document.querySelector('[data-attachment-status]')?.textContent.includes('unavailable'),
