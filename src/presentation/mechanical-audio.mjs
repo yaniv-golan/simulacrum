@@ -66,7 +66,8 @@ export function createMechanicalAudio({
     master.connect(compressor);
     compressor.connect(ceiling);
     ceiling.connect(context.destination);
-    noise = context.createBuffer(1, Math.ceil(context.sampleRate * 2), context.sampleRate);
+    // Generated at a fixed rate so its bandwidth, and so every noise level, is device-independent.
+    noise = context.createBuffer(1, AUDIO_POLICY.noiseSampleRate * 2, AUDIO_POLICY.noiseSampleRate);
     const data = noise.getChannelData(0);
     let seed = 0x51a7;
     for (let i = 0; i < data.length; i++) {
@@ -103,7 +104,7 @@ export function createMechanicalAudio({
     };
     return voice;
   }
-  function layer(voice, type, frequency, at) {
+  function layer(voice, type, frequency, at, cutoff = frequency) {
     const source = type === 'noise' ? context.createBufferSource() : context.createOscillator();
     if (type === 'noise') {
       source.buffer = noise;
@@ -115,8 +116,8 @@ export function createMechanicalAudio({
     voice.nodes.push(source);
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = frequency;
-    filter.Q.value = 0.5;
+    filter.frequency.value = cutoff;
+    filter.Q.value = AUDIO_POLICY.filterQDb;
     const gain = context.createGain();
     gain.gain.value = 0;
     source.connect(filter);
@@ -134,13 +135,7 @@ export function createMechanicalAudio({
   function updateContinuous(group, rows, limit, listener, kind) {
     const candidates = rows.map((row) => {
       const mix = spatialMix(row.position, listener);
-      return {
-        ...row,
-        mix,
-        score:
-          mix.gain *
-          (kind === 'drive' ? row.motionGain + row.loadGain : row.rollGain + row.scrapeGain),
-      };
+      return { ...row, mix, score: mix.gain * row.level };
     });
     const selected = selectVoices(
         candidates,
@@ -163,9 +158,22 @@ export function createMechanicalAudio({
       if (!voice) {
         if (group.size >= limit) continue;
         voice = makeVoice(group, row.key, now);
-        voice.motion = layer(voice, kind === 'drive' ? 'triangle' : 'noise', row.frequency, now);
+        voice.motion = layer(
+          voice,
+          kind === 'drive' ? 'triangle' : 'noise',
+          row.frequency,
+          now,
+          row.frequency * (kind === 'drive' ? AUDIO_POLICY.driveCutoffRatio : 2),
+        );
         if (kind === 'drive') voice.travel = layer(voice, 'noise', row.frequency, now);
-        voice.texture = layer(voice, 'noise', kind === 'drive' ? 280 : 100, now);
+        voice.texture = layer(
+          voice,
+          'noise',
+          kind === 'drive'
+            ? AUDIO_POLICY.driveTextureCutoffHz
+            : AUDIO_POLICY.contactTextureCutoffHz,
+          now,
+        );
       }
       const motion = kind === 'drive' ? row.motionGain : row.scrapeGain,
         texture = kind === 'drive' ? row.loadGain : row.rollGain;
@@ -183,7 +191,10 @@ export function createMechanicalAudio({
       }
       ramp(voice.texture.gain.gain, texture, now, 0.03);
       if (voice.motion.source.frequency) ramp(voice.motion.source.frequency, row.frequency);
-      ramp(voice.motion.filter.frequency, row.frequency * 2);
+      ramp(
+        voice.motion.filter.frequency,
+        row.frequency * (kind === 'drive' ? AUDIO_POLICY.driveCutoffRatio : 2),
+      );
     }
     for (const [, voice] of spare) release(voice);
   }
@@ -282,7 +293,11 @@ export function createMechanicalAudio({
               Math.max(0, AUDIO_POLICY.horizon - (latest - event.tick) * interval),
             tone = impactTone(event.materials);
           const voice = makeVoice(impacts, ++starts, at),
-            gain = Math.min(0.04, 0.008 * Math.log1p(event.impulse)) * event.mix.gain;
+            gain =
+              Math.min(
+                AUDIO_POLICY.impactGainCap,
+                AUDIO_POLICY.impactGainPerLogImpulse * Math.log1p(event.impulse),
+              ) * event.mix.gain;
           voice.pan.pan.value = event.mix.pan;
           voice.bus.gain.setValueAtTime(gain, at);
           voice.bus.gain.exponentialRampToValueAtTime(0.00001, at + 0.12);

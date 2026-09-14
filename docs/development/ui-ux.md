@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"1a18835a7bdd8d630fb8c1d4b4a846a2a19e8512a34ecef7eb4a21a05902797c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8a63046a06bf500d156203c8a66cef87a23d1ff3e8cbbd5003ce3076b6ae489c","disposition":"updated","rationale":"The feedback paragraph now describes the default-on attachments (captured at open, shown ticked in an open disclosure with previews and a disclosure sentence naming programs; untick kept while the draft has text or voice; defaults-only drafts dropped on close; text-only browsers attach nothing) and the pending-choice rendering that removed the checkbox flicker under a slow store. The inspector readout sentence now states that a live readout showing a shaft speed reserves two lines for its reason line (workshop.css `.part-live:has(.shaft-speed) .diagnosis`, 2lh) so the hold buttons and sections below do not move when the command toggles, with the three-line paused reason noted as a remaining limit. Player task, footer ownership, receipt semantics and the no-entry learning decision are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"da897d62c1ffdd1b48b8cfbade2d31565d625ab88c6fa4bcd071a18203ccb434","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8a63046a06bf500d156203c8a66cef87a23d1ff3e8cbbd5003ce3076b6ae489c","disposition":"updated","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): the sound-controls paragraph now states the level policy: levels derive from one registered nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 % default, less with distance; textures and actuators weighted against it), measured by the audio check against a calibration tone through the same output chain, and a slow motor keeps harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Verified against mechanical-audio-model.mjs and verify-mechanical-audio.mjs."} -->
 
 
 
@@ -409,7 +409,12 @@ on preference. Sound starts off on each mount and requires a gesture. Build, ret
 replacement retain preference; pause, hidden visibility, gaps and disposal silence existing
 voices. Unavailable audio stays off with a retry message. Volume and button keyboard input
 cannot drive receivers. Measured motor/travel and contact textures are illustrative; material
-impact timbres combine both surfaces symmetrically. Visual motion remains readable without
+impact timbres combine both surfaces symmetrically. Their levels derive from one registered
+nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 %
+default, less with distance; textures and actuators are weighted against it), measured by the
+audio check against a calibration tone through the same output chain; a slow motor keeps
+harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Visual
+motion remains readable without
 sound. Learning admission: **no entry**; the existing motor and Ball experiments already provide
 the activity. Missing contact history establishes a new silent baseline. File opening and retry
 exclude one another before asynchronous reading or reset; rejected actions retain
