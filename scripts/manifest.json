@@ -6427,6 +6427,68 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "dialog-close-consistency",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Every custom dialog and the Teach a controller panel dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
+      "owners": [
+        {
+          "path": "src/presentation/dialog-close.mjs",
+          "anchor": "createDialogClose"
+        },
+        {
+          "path": "src/presentation/workshop.css",
+          "anchor": ".dialog-header"
+        },
+        {
+          "path": "src/application/feedback-client.mjs",
+          "anchor": "createDialogClose('Close feedback'"
+        },
+        {
+          "path": "src/application/remote-playtest.mjs",
+          "anchor": "createDialogClose('Close recording setup'"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-feedback-flow",
+        "verify-motion-diagnostics",
+        "verify-assemblies-browser",
+        "verify-camera-browser",
+        "verify-authorable-scenes",
+        "verify-learning-controller"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "dialog close control is one named × button whose semantics stay with the owner"
+          },
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "every custom dialog owner uses the shared top-right close control"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "every playtest dialog dismisses through one named top-right × and no embedded close button"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "bare close labels and dialog owners without the shared control are rejected"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
     }
   ],
   "browserLocalScopes": [
@@ -6526,7 +6588,8 @@
         "src/application/capture-stream.mjs",
         "src/application/feedback-capture-gate.mjs",
         "src/application/feedback-client.mjs",
-        "src/application/recording-admission.mjs"
+        "src/application/recording-admission.mjs",
+        "src/presentation/dialog-close.mjs"
       ],
       "externalImports": [],
       "checks": [
@@ -6930,7 +6993,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "0c17fcba765e4f27c65be6e76cde1da0173162a1d43270a472845288b9c5b870",
+      "sourceSha256": "bb44c3c09ce257ebc77565a54cdf5362bd09c791fc63bfa1e3bfd129e0d04dc2",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -7045,7 +7108,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7097,7 +7160,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7200,7 +7263,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7351,7 +7414,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "9af538bbb0fa1ccbb3c99a8dd150b744181bc68ebb273aeef3fe22be26ed7268",
+      "consumerSourceHash": "19e75bd79c7488d0d9f695f1dc6673c1faaa289a1c5477086478a933960356ce",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7554,7 +7617,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "2f285d6082ce5b13ed58a5ea1c005ecc3a704e43c4e6f79cd8961f2e01ba2f98"
+      "consumerSourceHash": "93a7ededab1522f8b9c413c3339512813a38729fb233a3d6cf602576a801516e"
     },
     {
       "checks": [
@@ -7571,7 +7634,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7636,7 +7699,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7695,7 +7758,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7726,7 +7789,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7867,7 +7930,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "08b1e45e1bca9d5db7a1ecba36f3b542bc1b3a63113f1c8b2d1cf39b394cb578",
+      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7956,7 +8019,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8207,7 +8270,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8279,7 +8342,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "779e61afd1dd95b549b94410c63b8028f0caf83ec8b8f3381562ee436f85dedd"
+      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8317,14 +8380,14 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "779e61afd1dd95b549b94410c63b8028f0caf83ec8b8f3381562ee436f85dedd"
+      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "13d0f5313236158bdafd216ce3e18f9a91515176d1151395c61fb2dc593c97b3",
+      "sourceSha256": "206c7b9605bcc6108545d35d04dc3b51ceb381069dda7bff6ad9fba7e411d518",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
@@ -8394,7 +8457,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9"
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -8464,7 +8527,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "08b1e45e1bca9d5db7a1ecba36f3b542bc1b3a63113f1c8b2d1cf39b394cb578"
+      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8524,7 +8587,7 @@
           ]
         }
       ],
-      "sourceSha256": "f01666a45b6c82c0862558fdf20a50eb7177ca45af1929ade6b97b2412d8d24b",
+      "sourceSha256": "79069fc9a2dca8b981a87313eb7dbf37d1cdf3c0e059e2cc6150696e8561af47",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8577,7 +8640,7 @@
           ]
         }
       ],
-      "sourceSha256": "e26a11c47fcc57075f2749147b7f10db23b4e1e0f1cdbf2a9600660d3e049e70",
+      "sourceSha256": "ab9baa8c627d89c5c588a2914795a1ebadefff451e8177b33a47dd3214ce5c42",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8615,7 +8678,7 @@
           ]
         }
       ],
-      "sourceSha256": "b40374765676cfe8025beb49124f00355d374e02ba0e6d16e1bb08a90cbcd326",
+      "sourceSha256": "7f0d1c0126b12b6095bad6da7a48acd450e052840b0d75f0296ea4c499f796f7",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

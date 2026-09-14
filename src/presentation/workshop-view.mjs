@@ -69,6 +69,7 @@ import {
   ENVIRONMENT_PRESETS,
   sceneObjectDescriptors,
 } from '../model/environment.mjs';
+import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -400,11 +401,10 @@ export function createWorkshopView(
   examples.setAttribute('closedby', 'any');
   const exampleMessage = element('p', 'example-message');
   exampleMessage.setAttribute('role', 'status');
-  const examplesHeader = element('div', 'examples-header');
-  const closeExamples = button('×', () => examples.close(), 'examples-close');
-  closeExamples.setAttribute('aria-label', 'Close examples');
-  closeExamples.title = 'Close examples';
-  examplesHeader.append(element('h2', '', 'Learn & examples'), closeExamples);
+  const examplesHeader = createDialogHeader(
+    element('h2', '', 'Learn & examples'),
+    createDialogClose('Close examples', () => examples.close()),
+  );
   examples.append(examplesHeader, exampleMessage);
   root.append(examples);
   const learnButton = button('Learn & examples', () => {
@@ -1229,7 +1229,12 @@ export function createWorkshopView(
   root.append(checkDialog);
   function showMachineCheck() {
     if (!frame) return;
-    checkDialog.replaceChildren(element('h2', '', 'Check machine'));
+    checkDialog.replaceChildren(
+      createDialogHeader(
+        element('h2', '', 'Check machine'),
+        createDialogClose('Close machine check', () => checkDialog.close()),
+      ),
+    );
     checkDialog.append(
       element(
         'p',
@@ -1272,7 +1277,6 @@ export function createWorkshopView(
       );
       checkDialog.append(card);
     }
-    checkDialog.append(button('Close', () => checkDialog.close(), 'primary'));
     if (!checkDialog.open) checkDialog.showModal();
   }
   const tools = element('div', 'edit-toolbar');
@@ -1349,7 +1353,10 @@ export function createWorkshopView(
   const help = element('dialog', 'workshop-dialog');
   help.setAttribute('aria-label', 'Help');
   help.append(
-    element('h2', '', 'Controls'),
+    createDialogHeader(
+      element('h2', '', 'Controls'),
+      createDialogClose('Close help', () => help.close()),
+    ),
     element('h3', '', 'Build'),
     element(
       'p',
@@ -1374,7 +1381,6 @@ export function createWorkshopView(
       'Machine controls shows the keys configured on this machine. Space runs or pauses. Return to Build restores the editable starting machine.',
     ),
     hint,
-    button('Close help', () => help.close()),
   );
   const buildInfo = element('details', 'build-info');
   const buildText = element('input');

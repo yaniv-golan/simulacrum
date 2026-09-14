@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"a2325bb145e407145ceccd6bfe2a1a053fd5764452b774d5412f2eb76ce1586b","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"969451fcea53899e8c36a2a1250f94e5955d831c6a31862092055c39f1bd77cf","disposition":"still accurate","rationale":"Harness diagnostics refinements only (timing split, first-exec hint, install age, wrapper-depth recovery); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"176c2a6db2e359409651567c31cfbc8ccd07219121c35d033040eee0b619dcc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9cb8adf7cc4f6cd6e4bdf3b2d85abaa891b8828114ffbd7cbce3e6cc7bb13527","disposition":"still accurate","rationale":"The manifest delta is scope metadata regenerated for dialog-close-related scripts; no physics owner, law, integration step, invariant or evidence rule changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"3d21cad4a01f9464fd95c9b257cdeeda9fe8387a3b68d30969540874a725524a","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"528ee529e81d3abdfecfe25020085c709a334111ae1deb2fb8da402d9e55aad5","disposition":"still accurate","rationale":"Failure capture now records announced status text; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f595dfd9cf5974deedc06d316465f48df83df4ac7b342b79628050da6d084018","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"07ec581345a730acdaee9956e20ef02291ae55737cf6e52f266b9f7715a4942c","disposition":"still accurate","rationale":"The model/boundary dependencies listed changed on main and were reviewed there; my delta is the assembly browser adopting the shared × (accessible name 'Close assemblies') and the check clicking that name. Proposal, placement, mirror, library and transaction guidance is unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored

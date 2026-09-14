@@ -1,4 +1,5 @@
 import { inspectLearningPrediction } from '../model/learning-model.mjs';
+import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 const el = (tag, text = '', cls = '') => {
   const e = document.createElement(tag);
   e.textContent = text;
@@ -23,8 +24,7 @@ export function createLearningControls(root, api, { inspectPart = () => {} } = {
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Teach a controller');
   panel.dataset.partHelpInput = '';
-  const header = el('header'),
-    title = el('h2', 'Teach a controller'),
+  const title = el('h2', 'Teach a controller'),
     body = el('div', '', 'learning-body'),
     status = el('p', '', 'learning-status'),
     liveReadout = el('p', '', 'learning-readings');
@@ -42,7 +42,7 @@ export function createLearningControls(root, api, { inspectPart = () => {} } = {
         root.querySelector('.machine-picker > summary'));
     target?.focus();
   };
-  header.append(title, button('Close', close));
+  const header = createDialogHeader(title, createDialogClose('Close controller teaching', close));
   panel.append(header, status, liveReadout, body);
   root.append(panel);
   const strip = el('div', '', 'learning-live');

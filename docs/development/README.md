@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"6ccc853eae785a41253a832ec10f0bc408934af42091872998f2349fa3c1675e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"64d61cfd5e3fc060737727b94f251ee7145e2686d540388a5e367ec789343350","disposition":"still accurate","rationale":"browser-session's failure capture now also records the application's announced status text; verification commands, completion tiers, same-source execution and the automation/human-acceptance distinction are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b7c6296bfe7ae17efcef8ef3e1766337f025d0abd52c2539957e598058046d33","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"still accurate","rationale":"The changed dependencies are main's own landings (verification-outcome, package.json, release-operations) already reviewed on main, plus my remote-setup sentence about dialog dismissal. Tiers, commands, window policy and evidence requirements described here are untouched by a presentation-only dialog header change."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -155,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"51d8373910a88cc73b7e746f265a428ed72aa72db3f4a14262dcd684558d99ec","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a1d537ff1152b22e3406a4cd9ada40e922f4c33fe698486301f2b9236a065d6d","disposition":"still accurate","rationale":"The regenerated reference lists the new bounded-process-ownership invariant (owner runProcess) and the readLiveStatus owner on verification-live-evidence; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6cfcb27eea1eb67bba4d47ff8ad45365715dbeb5f959a8b21173d1b67393c24f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb1f6b5fa31892c2a6af1946448bebaa1c6e25c9663c6d4352b57c8dc841e6c2","disposition":"still accurate","rationale":"Only the generated reference.md changed, gaining the dialog-close-consistency row in its Invariant owners table (owners createDialogClose, .dialog-header and the feedback/recording-setup close labels); the documentation workflow (prepare, review, batch, check) described here is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"b57d65074d61de9a1dac20d1d936e4fdb423a6c6fe8cc4390bb0ad3f60f97884","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e711715814160140a7bde7ed5727aa4e6ee6dca692754c90aaa425f9bf95f5f5","disposition":"updated","rationale":"Documented the split timing fields (enumerationMs for ps, snapshotMs for ranking, hintMs for the macOS attribute lookup), the first-exec hint and msSinceInstall on failed rows, the assertive live-region inclusion and the assertion-message convention; selection, scheduling, exclusivity and scope-audit rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"060a0d85a97b09fd1673e870d4d598bced422dd7928b995bb21ebb1b1a1f9182","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"beef06df6ca28af841b0eb5b63c5415b318a6872a07cf2bf2e482926a862bfd0","disposition":"still accurate","rationale":"browser:scopes apply regenerated the manifest rows for the remote-playtest local scope (dependency shape now includes src/presentation/dialog-close.mjs) and the reviewed metadata hashes of the four feedback fixture servers, the workbench journey and their consumer closures, after the witnesses passed. The proposal/review/apply flow, exclusion rules and local-contract semantics described here are exactly what was exercised; no text change needed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -562,7 +562,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"ef2bd859a0aed53d89bd55de41516cbd5608eade9b40c23e41820703c625a2b5","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8c29fea21d6145867d081a39d40a89d308b7b256651984b80c13144bfb748236","disposition":"still accurate","rationale":"verify-candidate records installedAt, carries it through the resume descriptor and publishes it to the tier so failed rows can report msSinceInstall with an identical resume environment; capture, isolation, attempt ownership, origin matching and which checks run are unchanged. Receipts carry the runner snapshot; appStatus lives on browser rows only."} -->
+<!-- doc-review {"version":1,"fingerprint":"a5dada95c0a04594bafa6ff2a77a38f983dbda7f1026df4997e513d253896603","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"766c82da12af8d92353c56621463b530ac0eb3c42093ab095cbcb200220f1f8a","disposition":"still accurate","rationale":"Only scope digest rows in scripts/manifest.json changed through the reviewed apply; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

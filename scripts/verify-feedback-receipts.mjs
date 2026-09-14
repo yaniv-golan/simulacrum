@@ -27,6 +27,7 @@ const browserEvidence = createFixtureEvidence({
     'src/application/capture-stream.mjs',
     'src/application/capture-packet.mjs',
     'src/application/recording-admission.mjs',
+    'src/presentation/dialog-close.mjs',
     'package-lock.json',
     'scripts/verify-feedback-receipts.mjs',
   ],
@@ -47,6 +48,8 @@ const moduleFiles = new Map(
     'capture-media-duration',
   ].map((name) => [`/${name}.mjs`, `src/application/${name}.mjs`]),
 );
+// Flattened application modules resolve their presentation import at the server root.
+moduleFiles.set('/presentation/dialog-close.mjs', 'src/presentation/dialog-close.mjs');
 const server = createServer((req, res) => {
   res.setHeader(
     'Content-Type',

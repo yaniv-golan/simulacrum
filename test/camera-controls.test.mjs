@@ -19,6 +19,9 @@ class Element {
   showModal() {
     this.open = true;
   }
+  close() {
+    this.open = false;
+  }
   removeAttribute() {}
   children = [];
   dataset = {};
@@ -26,7 +29,9 @@ class Element {
   append(...nodes) {
     this.children.push(...nodes);
   }
-  setAttribute() {}
+  setAttribute(key, value) {
+    (this.attributes ??= {})[key] = value;
+  }
   querySelectorAll() {
     return [];
   }
@@ -107,6 +112,21 @@ test('first photo selection is visible and later refresh preserves the chosen ph
   try {
     stage.children.find((n) => n.textContent === 'Photos').onclick();
     const dialog = root.children[0];
+    const [header] = dialog.children;
+    assert.equal(header.className, 'dialog-header', 'the gallery leads with its heading row');
+    const [heading, close] = header.children;
+    assert.equal(heading.textContent, 'Photos');
+    assert.equal(close.attributes['aria-label'], 'Close photos');
+    assert.equal(
+      dialog.children.find((n) => n.textContent === 'Close photos'),
+      undefined,
+      'no embedded close button duplicates the ×',
+    );
+    assert.equal(dialog.open, true);
+    close.onclick();
+    assert.equal(dialog.open, false, 'closing photos does not clear them');
+    assert.equal(photos.length, 1);
+    dialog.showModal();
     const list = dialog.children.find((n) => n.tag === 'select');
     assert.equal(list.value, '0', 'first photo has a visible selected option');
     photos.push({ ...photos[0], url: 'second' });

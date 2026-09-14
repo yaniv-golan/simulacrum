@@ -66,6 +66,9 @@ async function fixture(t, options = {}) {
     append(...items) {
       (this.appended ??= []).push(...items);
     }
+    prepend(...items) {
+      (this.appended ??= []).unshift(...items);
+    }
     replaceChildren(...children) {
       this.options = children;
       this.value = children[0]?.value || '';
@@ -463,4 +466,37 @@ test('feedback recovery occupies the supplied toolbar region without unavailable
     'offline feedback draft remains reachable',
   );
   assert.equal(f.mount.active(), false);
+});
+
+test('every playtest dialog dismisses through one named top-right × and no embedded close button', async (t) => {
+  const f = await fixture(t);
+  const dialogs = f.nodes.filter((n) => n.tag === 'dialog');
+  assert.equal(dialogs.length, 5, 'setup, project, completion, feedback and privacy notice');
+  const labels = [];
+  for (const dialog of dialogs) dialog.showModal();
+  const closed = new Set();
+  for (const dialog of dialogs) {
+    const header = dialog.appended?.[0];
+    assert.equal(header?.className, 'dialog-header', `${dialog.className} leads with its header`);
+    const [heading, close] = header.appended;
+    // The stub cannot resolve ids, so it only proves the heading node moved into the header.
+    assert.ok(['h2', '#feedback-title'].includes(heading.tag), 'header keeps the dialog heading');
+    assert.equal(close.className, 'dialog-close');
+    assert.match(close['aria-label'], /^Close \S/);
+    labels.push(close['aria-label']);
+    assert.doesNotMatch(
+      dialog.innerHTML ?? '',
+      /data-dismiss|data-close|data-cancel|Back to the workshop|>Close</,
+      `${dialog.className} keeps no second plain dismissal control`,
+    );
+    await close.onclick();
+    await settle();
+    closed.add(dialog);
+    assert.equal(dialog.open, false, `${close['aria-label']} closes its dialog`);
+    for (const other of dialogs)
+      if (!closed.has(other))
+        assert.equal(other.open, true, `${close['aria-label']} leaves ${other.className} open`);
+  }
+  assert.equal(new Set(labels).size, labels.length, 'accessible names identify each dialog');
+  f.mount.dispose();
 });

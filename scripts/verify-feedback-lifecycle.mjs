@@ -38,6 +38,7 @@ const evidence = createFixtureEvidence({
     'src/application/capture-outbox.mjs',
     'src/application/capture-stream.mjs',
     'src/application/capture-packet.mjs',
+    'src/presentation/dialog-close.mjs',
     'src/presentation/workshop.css',
     'scripts/verify-feedback-lifecycle.mjs',
     'package-lock.json',
@@ -111,7 +112,7 @@ const server = createServer(async (req, res) => {
       receivedAt: new Date().toISOString(),
     });
   }
-  if (/^\/src\/application\/[a-z-]+\.mjs$/.test(path)) {
+  if (/^\/src\/(?:application\/[a-z-]+|presentation\/dialog-close)\.mjs$/.test(path)) {
     res.setHeader('Content-Type', 'text/javascript');
     return res.end(
       readFileSync(
@@ -266,7 +267,7 @@ try {
         await page.evaluate(() => (window.deferMicrophone = true));
         await page.getByRole('button', { name: 'Record voice comment', exact: true }).click();
         await page.waitForFunction(() => window.micRequests === 1);
-        await page.locator('[data-back]').click();
+        await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
         await page.waitForFunction(() => !document.querySelector('.feedback-dialog').open);
         await page.evaluate(() => window.resolveMicrophone());
         await page.waitForFunction(() => window.micStopped === 1);

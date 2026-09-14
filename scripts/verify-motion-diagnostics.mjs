@@ -41,7 +41,7 @@ try {
   await page.locator('[data-command=check-machine]').click();
   browserEvidence.assert('equal', [await dialog.locator('[data-diagnostic-code]').count(), 0]);
   browserEvidence.assert('match', [await dialog.textContent(), /Run the machine to test/]);
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close machine check', exact: true }).click();
   await page.locator('.machine-picker > summary').click();
   await page
     .locator('.part-list-item')

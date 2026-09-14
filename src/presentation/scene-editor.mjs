@@ -11,6 +11,7 @@ import {
 import { loadSave } from '../model/blueprint.mjs';
 import { MATERIALS } from '../model/catalog.mjs';
 import { createDocumentProposal } from './document-proposal.mjs';
+import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 const el = (tag, text = '') => {
   const n = document.createElement(tag);
   n.textContent = text;
@@ -71,6 +72,7 @@ export function createSceneEditor({
   palette.className = 'scene-catalogue';
   inspector.className = 'scene-inspector';
   dialog.className = 'scene-browser';
+  dialog.setAttribute('aria-label', 'Choose scene');
   palette.hidden = inspector.hidden = true;
   left.append(palette);
   rightPanel.append(inspector);
@@ -389,12 +391,14 @@ export function createSceneEditor({
     if (proposal.read()?.phase === 'committing' || getFrame().metadata.mode !== 'build') return;
     browserScene = null;
     dialog.replaceChildren(
-      el('h2', 'Choose scene'),
+      createDialogHeader(
+        el('h2', 'Choose scene'),
+        createDialogClose('Close scene chooser', () => dialog.close()),
+      ),
       el(
         'p',
         'Replace only the scene. Your machine stays in place. Undo restores the previous scene.',
       ),
-      btn('Close', () => dialog.close()),
     );
     const list = el('div'),
       detail = el('div');

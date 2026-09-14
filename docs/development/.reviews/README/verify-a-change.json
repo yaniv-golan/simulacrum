@@ -3,7 +3,7 @@
   "dependencies": {
     "scripts/verification-outcome.mjs": "15a7e2f488042a0e636a1f352362956a3cf12240cc1970ca72263a722c9fd2ba",
     "docs/development/playtesting.md#release-operations": "bd680356c60f5bab229eefb568e92c8cbc8800ddb779013a75f3c33dd6ecb74a",
-    "docs/development/playtesting.md#remote-setup": "8531de2648f72f2ccc5a5c54b4d4b2dd274d3e8cf83b3713eb3b154f5b5fbf15",
+    "docs/development/playtesting.md#remote-setup": "7d250624feaa30cae2a275c89312dcda373b6f72b91d41169b0e4a06922959cb",
     "package.json": "0f34ab1c210cf922a6d845f11c525f353bdb5014dbc5efaf4e693ab8cc5ecf89",
     "scripts/runtime-preflight.mjs": "243c17a7df72eb827c51b4ac7d48356714e8d74b9396d5b384a671bb22521b61",
     "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",

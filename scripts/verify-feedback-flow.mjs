@@ -20,13 +20,14 @@ const evidence = createFixtureEvidence({
     'src/application/capture-media-duration.mjs',
     'src/application/capture-outbox.mjs',
     'src/application/capture-packet.mjs',
+    'src/presentation/dialog-close.mjs',
     'src/presentation/workshop.css',
     'scripts/verify-feedback-flow.mjs',
   ],
 });
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
-  if (/^\/src\/application\/[a-z-]+\.mjs$/.test(path)) {
+  if (/^\/src\/(?:application\/[a-z-]+|presentation\/dialog-close)\.mjs$/.test(path)) {
     res.setHeader('Content-Type', 'text/javascript');
     res.end(readFileSync('.' + path));
   } else if (path === '/fflate.mjs') {
@@ -181,7 +182,7 @@ try {
   await page
     .getByRole('textbox', { name: 'Your feedback', exact: true })
     .fill('UNSENT: I expected Undo to restore the wire.');
-  await page.getByRole('button', { name: 'Back to building', exact: true }).click();
+  await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   await page.waitForFunction(() => !window.capture.active());
   await page.getByRole('button', { name: 'Keep draft', exact: true }).waitFor();
@@ -192,7 +193,12 @@ try {
     await page.getByRole('textbox', { name: 'Your feedback', exact: true }).inputValue(),
     'UNSENT: I expected Undo to restore the wire.',
   ]);
-  await page.getByRole('button', { name: 'Back to building', exact: true }).click();
+  evidence.assert('equal', [
+    await page.getByRole('button', { name: 'Back to building', exact: true }).isVisible(),
+    false,
+    'composing offers one dismissal: the top-right ×',
+  ]);
+  await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
   await evidence.reload(page);
   await page.waitForFunction(() => !!window.capture);
   await page.keyboard.press('Escape');

@@ -16,7 +16,7 @@ try {
   await page.getByRole('button', { name: 'Teach a controller', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Teach a controller' });
   await panel.getByRole('button', { name: 'Teach / record correction', exact: true }).click();
-  await panel.getByRole('button', { name: 'Close', exact: true }).click();
+  await panel.getByRole('button', { name: 'Close controller teaching', exact: true }).click();
   await page.locator('canvas').click({ position: { x: 150, y: 120 } });
   await page.keyboard.down('w');
   const start = (await read()).tick;
@@ -119,10 +119,10 @@ try {
   evidence.assert('ok', [
     box.x >= 0 && box.y >= 0 && box.x + box.width <= 960 && box.y + box.height <= 640,
   ]);
-  await panel.getByRole('button', { name: 'Close', exact: true }).click();
+  await panel.getByRole('button', { name: 'Close controller teaching', exact: true }).click();
   await page.getByRole('button', { name: 'Teach a controller', exact: true }).click();
   await panel.getByText('Working delivery', { exact: true }).waitFor();
-  await panel.getByRole('button', { name: 'Close', exact: true }).click();
+  await panel.getByRole('button', { name: 'Close controller teaching', exact: true }).click();
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(`${out}/result.json`, JSON.stringify(evidence.identity, null, 2));

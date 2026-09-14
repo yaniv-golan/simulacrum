@@ -1,3 +1,4 @@
+import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 const el = (tag, text = '') => {
   const n = document.createElement(tag);
   n.textContent = text;
@@ -73,9 +74,11 @@ export function createCameraControls({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   dialog.append(
-    el('h2', 'Photos'),
+    createDialogHeader(
+      el('h2', 'Photos'),
+      createDialogClose('Close photos', () => dialog.close()),
+    ),
     el('p', 'Session photos are temporary. Save images before closing this page.'),
-    button('Close photos', () => dialog.close()),
     galleryStatus,
     list,
     picture,
