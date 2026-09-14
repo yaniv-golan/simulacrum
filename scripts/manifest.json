@@ -1579,7 +1579,7 @@
       "id": "copied-graph-integrity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Built-in definitions remain available independently of personal saved items and use the same placement preview. Assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice.",
+      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Built-in definitions remain available independently of personal saved items and use the same placement preview. Assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice. A single-part copy allocates a fresh identity, preserves the authored part without its connections, and lands one extent plus clearance from its original on the placement grid along one floor axis, stepping past occupied positions and failing explicitly rather than overlapping.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -1592,6 +1592,10 @@
         {
           "path": "src/presentation/assembly-placement.mjs",
           "anchor": "createAssemblyPlacement"
+        },
+        {
+          "path": "src/model/duplication.mjs",
+          "anchor": "duplicatePart"
         }
       ],
       "checks": [
@@ -1612,6 +1616,14 @@
           {
             "path": "test/assembly-placement.test.mjs",
             "anchor": "an applied placement with a missing or failed reply reconciles against authored state"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "duplicate preserves authored choices without mutating the original or copying connections"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "a copy lands one extent plus clearance from the original, snapped outward to the grid"
           }
         ],
         "negative": [
@@ -1630,6 +1642,10 @@
           {
             "path": "test/assembly-placement.test.mjs",
             "anchor": "placement admission preserves the previous proposal outside Build"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "occupied search limit and blueprint position bounds never produce an overlapping or invalid copy"
           }
         ]
       },

@@ -122,15 +122,46 @@ try {
   const rotated = (await frame()).metadata.blueprint.parts[0];
   browserEvidence.assert('deepEqual', [rotated.position, moved.position]);
   browserEvidence.assert('ok', [Math.abs(Math.abs(rotated.rotation[3]) - Math.SQRT1_2) < 1e-9]);
+  const cameraBefore = await page.evaluate(
+    () => window.workshopProbe.readInteractionState().camera,
+  );
   await page.keyboard.press('c');
   let bp = (await frame()).metadata.blueprint;
   browserEvidence.assert('equal', [bp.parts.length, 2]);
   browserEvidence.assert('equal', [bp.connections.length, 0]);
   browserEvidence.assert('equal', [bp.parts[1].type, rotated.type]);
   browserEvidence.assert('deepEqual', [bp.parts[1].rotation, rotated.rotation]);
+  // The copy lands beside the original along one floor axis, one extent plus
+  // 25 mm away on the 25 mm grid -- never a metre off, never diagonal.
+  const offset = bp.parts[1].position.map((v, i) => v - rotated.position[i]);
+  browserEvidence.assert('ok', [Math.abs(offset[1]) < 1e-9]);
+  browserEvidence.assert('ok', [Math.min(Math.abs(offset[0]), Math.abs(offset[2])) < 1e-9]);
+  const copyDistance = Math.hypot(...offset);
+  browserEvidence.assert('ok', [copyDistance > 0.05 && copyDistance < 0.5]);
   browserEvidence.assert('ok', [
-    Math.abs(Math.hypot(...bp.parts[1].position.map((v, i) => v - rotated.position[i])) - 1) < 1e-9,
+    Math.abs(copyDistance / 0.025 - Math.round(copyDistance / 0.025)) < 1e-6,
   ]);
+  // The view moves only when the copy fell outside the visible canvas, and the
+  // message says which happened: a copy in view leaves the camera untouched; a
+  // framed copy moves it so both parts render inside the viewport.
+  const cameraAfter = await page.evaluate(() => window.workshopProbe.readInteractionState().camera);
+  const copyMessage = await page.locator('.status-message').innerText();
+  browserEvidence.assert('match', [
+    copyMessage,
+    /^Copied (beside it|toward the camera and framed)/,
+  ]);
+  if (/framed/.test(copyMessage)) {
+    browserEvidence.assert('notDeepEqual', [cameraAfter.position, cameraBefore.position]);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    const centers = await page.evaluate(() => window.workshopProbe.readRenderedCenters());
+    browserEvidence.assert('equal', [centers.length, 2]);
+    browserEvidence.assert('ok', [
+      centers.every((c) => Math.abs(c.x) < 1 && Math.abs(c.y) < 1 && c.z > -1 && c.z < 1),
+    ]);
+  } else {
+    browserEvidence.assert('deepEqual', [cameraAfter.position, cameraBefore.position]);
+    browserEvidence.assert('deepEqual', [cameraAfter.target, cameraBefore.target]);
+  }
   await page.keyboard.press('Delete');
   browserEvidence.assert('equal', [(await frame()).metadata.blueprint.parts.length, 1]);
   await page.keyboard.press('ControlOrMeta+z');

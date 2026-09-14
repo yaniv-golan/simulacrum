@@ -161,6 +161,8 @@ export function createWorkshopView(
   let activeTool = 'select',
     draggingType = null,
     copySequence = 0,
+    keepViewOnInsert = null,
+    lastInsertFramed = false,
     followCenter = null,
     guideActive = false,
     editing,
@@ -1123,6 +1125,45 @@ export function createWorkshopView(
   let portCueKey = '',
     previewEndpoint = null,
     socketPreview = null;
+  function viewportInsets() {
+    const rect = stage.getBoundingClientRect();
+    let top = 100,
+      bottom = 70;
+    for (const node of document.querySelectorAll(
+      '.edit-toolbar,.inspection-banner,.playtest-panel',
+    )) {
+      if (node.hidden || !node.getClientRects().length) continue;
+      const box = node.getBoundingClientRect();
+      if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
+      else bottom = Math.max(bottom, rect.bottom - box.top + 16);
+    }
+    return { top, bottom, left: 24, right: 24 };
+  }
+  // A copy that already sits inside the visible canvas (between the toolbar
+  // and footer insets) does not justify re-framing the whole machine.
+  function meshInView(mesh) {
+    if (!mesh) return false;
+    const box = new THREE.Box3().setFromObject(mesh);
+    if (box.isEmpty()) return false;
+    // The renderer refreshes the camera matrices only on the next frame; a
+    // synchronous render after a command must project against the current pose.
+    camera.updateMatrixWorld();
+    const width = renderer.domElement.clientWidth,
+      height = renderer.domElement.clientHeight,
+      { top, bottom, left, right } = viewportInsets();
+    for (let corner = 0; corner < 8; corner++) {
+      const point = new THREE.Vector3(
+        corner & 1 ? box.max.x : box.min.x,
+        corner & 2 ? box.max.y : box.min.y,
+        corner & 4 ? box.max.z : box.min.z,
+      ).project(camera);
+      if (!(point.z > -1 && point.z < 1)) return false;
+      const px = ((point.x + 1) / 2) * width,
+        py = ((1 - point.y) / 2) * height;
+      if (px < left || px > width - right || py < top || py > height - bottom) return false;
+    }
+    return true;
+  }
   editing = createEditingControls({
     scene,
     camera,
@@ -1132,20 +1173,7 @@ export function createWorkshopView(
     getBlueprint: () => frame.metadata.blueprint,
     getMode: () => (exploded || partPlacement?.active() ? 'inspection' : frame?.metadata.mode),
     getMeshes: () => meshes,
-    getViewportInsets: () => {
-      const rect = stage.getBoundingClientRect();
-      let top = 100,
-        bottom = 70;
-      for (const node of document.querySelectorAll(
-        '.edit-toolbar,.inspection-banner,.playtest-panel',
-      )) {
-        if (node.hidden || !node.getClientRects().length) continue;
-        const box = node.getBoundingClientRect();
-        if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
-        else bottom = Math.max(bottom, rect.bottom - box.top + 16);
-      }
-      return { top, bottom, left: 24, right: 24 };
-    },
+    getViewportInsets: viewportInsets,
     onCommit: send,
     onInvalidate: invalidateScene,
   });
@@ -3952,8 +3980,12 @@ export function createWorkshopView(
         frame.metadata.mode === 'build' ? null : frame.power?.lamps?.find((l) => l.node === index),
       );
     }
-    if (blueprint.parts.length > previousCount) editing.focus();
-    else if (
+    if (blueprint.parts.length > previousCount) {
+      // An insert frames the machine unless the caller asked to keep the view
+      // and the new part already sits inside the visible canvas.
+      lastInsertFramed = !(keepViewOnInsert && meshInView(meshes.get(keepViewOnInsert)));
+      if (lastInsertFramed) editing.focus();
+    } else if (
       !retryCamera &&
       previousMode &&
       previousMode !== 'build' &&
@@ -4056,11 +4088,21 @@ export function createWorkshopView(
     } while (bp.parts.some((p) => p.id === id));
     try {
       const part = duplicatePart(bp, selected, id, cameraAxes().forward.negate().toArray());
-      const result = await send({ type: 'insert', part });
+      // The insert renders synchronously inside send; render decides there
+      // whether the copy is already in view or the machine must be re-framed.
+      keepViewOnInsert = id;
+      lastInsertFramed = false;
+      let result;
+      try {
+        result = await send({ type: 'insert', part });
+      } finally {
+        keepViewOnInsert = null;
+      }
       if (result?.ok) {
-        editing.focus();
         setMessage(
-          'Copied toward the camera; view widened to show both. The copy has no connections.',
+          lastInsertFramed
+            ? 'Copied toward the camera and framed to show both. The copy has no connections.'
+            : 'Copied beside it, toward the camera. The copy has no connections.',
         );
       }
     } catch (error) {
