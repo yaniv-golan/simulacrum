@@ -204,7 +204,32 @@ try {
     /A · shaft .*rad\/s/,
   ]);
   await page.screenshot({ path: `${out}/tested.png` });
+  // The readout above explains a zero command in two lines and "Powered" in one; the section
+  // below must not move with the drive, or a pointer hold lands beside its button.
+  const reason = page.locator('.part-live .diagnosis');
+  const sectionTop = () => section.evaluate((node) => node.offsetTop);
+  await liveWait(
+    page,
+    () =>
+      /command is zero/.test(document.querySelector('.part-live .diagnosis')?.textContent ?? ''),
+    null,
+    { label: 'zero-command reason shown' },
+  );
+  const resting = { top: await sectionTop(), y: (await plus.boundingBox()).y };
   await pressAndHold(plus, 1);
+  // "Powered" is the one-line reason; a still-coasting wheel reads two lines and proves nothing.
+  await liveWait(
+    page,
+    () => document.querySelector('.part-live .diagnosis')?.textContent === 'Powered',
+    null,
+    { label: 'Powered reason shown' },
+  );
+  evidence.assert('equal', [await reason.textContent(), 'Powered']);
+  evidence.assert('deepEqual', [
+    { top: await sectionTop(), y: (await plus.boundingBox()).y },
+    resting,
+    'the selected motor’s live readout keeps its height when the command toggles',
+  ]);
   await page.mouse.up();
   await duty(0);
   await page.keyboard.down('w');

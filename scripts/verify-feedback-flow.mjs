@@ -39,7 +39,7 @@ const server = createServer((req, res) => {
   } else {
     res.setHeader('Content-Type', 'text/html');
     res.end(
-      '<meta name="build-id" content="feedback-flow-fixture"><link rel="stylesheet" href="/style.css"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {mountRemotePlaytest} from "/src/application/remote-playtest.mjs"; window.capture=await mountRemotePlaytest({feedbackSnapshot:()=>({project:{id:"fixture"},workshop:{ui:{mode:"build"}}}),context:()=>({ui:{mode:"build"}}),checkpoint:()=>({blueprint:{id:"test"}}),screenshot:()=>null});</script>',
+      '<meta name="build-id" content="feedback-flow-fixture"><link rel="stylesheet" href="/style.css"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {mountRemotePlaytest} from "/src/application/remote-playtest.mjs"; window.capture=await mountRemotePlaytest({feedbackSnapshot:()=>({project:{id:"fixture"},workshop:{ui:{mode:"build"}}}),context:()=>({ui:{mode:"build"}}),checkpoint:()=>({blueprint:{id:"test"}}),screenshot:()=>"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="});</script>',
     );
   }
 });
@@ -159,9 +159,14 @@ try {
   const envelope = JSON.parse(submitted[0]);
   evidence.assert('equal', [envelope.text, 'The wiring step was clear.']);
   evidence.assert('equal', [
-    'image' in envelope || 'context' in envelope || 'voice' in envelope,
-    false,
-    'attachments require opt-in',
+    'image' in envelope && 'context' in envelope && !('voice' in envelope),
+    true,
+    'attachments are included by default; voice stays opt-in',
+  ]);
+  evidence.assert('equal', [
+    envelope.context.value.project.id,
+    'fixture',
+    'the default context is the captured project snapshot',
   ]);
   await page.getByRole('button', { name: 'Back to building', exact: true }).click();
   evidence.assert('equal', [
