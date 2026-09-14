@@ -396,7 +396,8 @@ recorded as `workersBasis` with the launch niceness; a tier that derives workers
 niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an already-niced
 parent), because a niced tier loses to every other process regardless of idle cores. It
 admits the timing phase only on a
-quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
+quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
+refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
