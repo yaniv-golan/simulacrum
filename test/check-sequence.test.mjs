@@ -480,7 +480,14 @@ test('quiet-host admission tracks the one-minute decay and refuses early only wh
 });
 
 test('quiet-host admission holds on foreign process pressure when enforced, records it when observing, and never on an unavailable sampler', async () => {
-  const { admitQuietHost } = await import('../scripts/check-sequence.mjs');
+  const { admitQuietHost, PRESSURE_POLICY } = await import('../scripts/check-sequence.mjs');
+  // Enforcement is the default (bounds read from a resting desktop's own tier records);
+  // observe is the explicit opt-out, not something the environment falls into.
+  assert.equal(
+    PRESSURE_POLICY.mode,
+    process.env.SIMULACRUM_TIMING_PRESSURE === 'observe' ? 'observe' : 'enforce',
+  );
+  assert.deepEqual([PRESSURE_POLICY.idleBound, PRESSURE_POLICY.foreignBound], [80, 40]);
   const run = (pressures, { mode = 'enforce', loads = [3], waitMs = 180000 } = {}) => {
     let i = 0,
       j = 0;
@@ -534,7 +541,7 @@ test('quiet-host admission holds on foreign process pressure when enforced, reco
   ]);
   assert.equal(dim.admitted, false);
   assert.match(dim.reason, /idle 61 % \(< 80 %\)/);
-  // Observe mode records the same pressure and admits (the data-gated default).
+  // Observe mode (the opt-out) records the same pressure and admits.
   const observed = await run([busy], { mode: 'observe' });
   assert.equal(observed.admitted, true);
   assert.equal(observed.pressure.mode, 'observe');

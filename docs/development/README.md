@@ -399,8 +399,10 @@ admits the timing phase only on a
 quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
 `SIMULACRUM_TIMING_WAIT_MS` for nightly; refusing early when the load is not falling) and
 samples what load1 cannot see — host CPU idle over one second and the busiest processes outside
-the tier's own tree, recorded in `timingAdmission.pressure` and, when
-`SIMULACRUM_TIMING_PRESSURE=enforce`, holding the wait and refusing by process name — then the
+the tier's own tree, recorded in `timingAdmission.pressure`, holding the wait and refusing by
+process name (idle below 80 % or a foreign process at 40 %+ of a core; bounds read from a
+resting desktop's own records; `SIMULACRUM_TIMING_PRESSURE=observe` records without
+refusing) — then the
 remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
 inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s

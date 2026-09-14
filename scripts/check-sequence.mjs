@@ -148,11 +148,12 @@ export function planBrowserPhases(
  * pass — it is a skipped gate, recorded as such. */
 /** Pressure policy: the foreign-process share is the detector (a call, the window server, an
  * indexer at 40 %+ of a core is what moved a 2 ms p95 on this host); idle is a coarse backstop
- * (a two-core desktop burst is still 86 % idle on fourteen cores). `mode` 'observe' records and
- * never refuses on pressure — the default until a tier's own `timingAdmission.pressure` records
- * on a quiet desktop have set the bounds — 'enforce' refuses, naming the process. */
+ * (a two-core desktop burst is still 86 % idle on fourteen cores). `mode` 'enforce' refuses,
+ * naming the process; the bounds come from a local tier's own records on a resting desktop
+ * (idle 86.5–88 %, busiest foreign process 16 %, 2026-09-14). 'observe' records and never
+ * refuses on pressure — the opt-out for a host whose resting record has not been read. */
 export const PRESSURE_POLICY = Object.freeze({
-  mode: process.env.SIMULACRUM_TIMING_PRESSURE === 'enforce' ? 'enforce' : 'observe',
+  mode: process.env.SIMULACRUM_TIMING_PRESSURE === 'observe' ? 'observe' : 'enforce',
   idleBound: Number(process.env.SIMULACRUM_TIMING_IDLE_BOUND) || 80,
   foreignBound: Number(process.env.SIMULACRUM_TIMING_FOREIGN_BOUND) || 40,
 });

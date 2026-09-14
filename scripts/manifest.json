@@ -9764,7 +9764,9 @@
   "hostProfiles": {
     "github-ubuntu-2cpu": {
       "measurement": true,
-      "measurementRuns": [],
+      "measurementRuns": [
+        "34889806209"
+      ],
       "moduleTimeoutMs": 30000,
       "unitTimeoutMs": 120000,
       "unitWorkers": 2,
