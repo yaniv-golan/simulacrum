@@ -6,6 +6,7 @@ import { liveWait } from './browser-idle.mjs';
 import { RELEASE_NOTES } from '../src/application/release-notes.mjs';
 import { STORAGE_KEY } from '../src/presentation/whats-new.mjs';
 import { REPOSITORY_URL } from '../src/model/features.mjs';
+import { releaseVersion } from './source-identity.mjs';
 const out = browserArtifactPath('artifacts/whats-new');
 mkdirSync(out, { recursive: true });
 const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
@@ -52,6 +53,7 @@ try {
     assert.equal(await page.locator('.whats-new-seen li').count(), RELEASE_NOTES.length);
     // About: one registered version source (the served app-version meta) and the repo.
     const version = await page.locator('meta[name=app-version]').getAttribute('content');
+    assert.equal(version, releaseVersion().version ?? '', 'served meta carries the wired version');
     const about = await page.locator('dialog[open] .help-about').innerText();
     assert.match(about, /open source \(MIT\)/);
     assert.ok(about.includes('github.com/yaniv-golan/simulacrum'), about);

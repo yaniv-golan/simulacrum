@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { RELEASE_NOTES, validateReleaseNotes } from '../src/application/release-notes.mjs';
 import { UI_FEATURES } from '../src/model/features.mjs';
@@ -117,6 +118,30 @@ test('release-notes check accepts the tree, rejects markdown notes first and all
     writeFileSync(join(root, 'docs', 'release-notes', 'x.md'), '# no\n');
     // No module or git in this root: the markdown tripwire must fire first.
     await assert.rejects(checkReleaseNotes(root), /fingerprint/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('release-notes check fails a release tag that disagrees with package.json or a non-semver version', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'release-gate-'));
+  const git = (...args) =>
+    execFileSync(
+      'git',
+      ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args],
+      { cwd: root, encoding: 'utf8' },
+    );
+  try {
+    git('init', '-q');
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '0.4.0' }));
+    git('add', 'package.json');
+    git('commit', '-qm', 'bump');
+    await checkReleaseNotes(root);
+    git('tag', '-a', 'v0.3.1', '-m', 'wrong tag on the bumped commit');
+    await assert.rejects(checkReleaseNotes(root), /does not match/);
+    git('tag', '-d', 'v0.3.1');
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ version: 'x' }));
+    await assert.rejects(checkReleaseNotes(root), /must be semver/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
