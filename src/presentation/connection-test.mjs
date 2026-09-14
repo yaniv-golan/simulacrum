@@ -40,6 +40,7 @@ export function createConnectionTest({
   highlight = () => {},
   reveal = () => {},
 }) {
+  const closedByPlayer = new Set();
   let frame,
     selectedId,
     paths,
@@ -109,7 +110,22 @@ export function createConnectionTest({
     section = node('section', '', 'connection-test');
     section.setAttribute('aria-label', 'Connect and test actuator');
     const disclosure = node('details');
-    disclosure.open = Boolean(keepOpen);
+    // An actuator still missing its power or its shaft shows what it needs
+    // without a click; once both are connected, or the player closed it for
+    // this part, the player's own state rules as before. Control is optional:
+    // a receiver-less motor runs at its Drive setting; keys need a receiver.
+    const incomplete = !paths.powerSources.length || !paths.shaftPeers.length;
+    const closureKey = `${pathBlueprint.id}:${part.id}`;
+    const expectedOpen = Boolean(keepOpen) || (incomplete && !closedByPlayer.has(closureKey));
+    disclosure.open = expectedOpen;
+    let lastOpen = expectedOpen;
+    disclosure.addEventListener('toggle', () => {
+      // Programmatic opens fire toggle too; record only a change the player made.
+      if (disclosure.open === lastOpen) return;
+      lastOpen = disclosure.open;
+      if (disclosure.open) closedByPlayer.delete(closureKey);
+      else closedByPlayer.add(closureKey);
+    });
     disclosure.append(node('summary', 'Connect & test'));
     section.append(disclosure);
     const power = node('div', '', 'connection-test-path');

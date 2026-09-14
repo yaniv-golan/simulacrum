@@ -114,7 +114,7 @@ details exposes angular limits and motor/driver settings. These parts are includ
 in the current M3b construction scope; their availability does not qualify later
 physical milestones.
 
-Select a motor or hinge for **Connect & test**. Follow the named power path, control
+Select a motor or hinge for **Connect & test**; it opens by itself while power or the shaft is still missing. Follow the named power path, control
 source and moving output; missing links open the usual wiring controls. **Test in
 Run** simulates the whole machine, including gravity and other powered components.
 For a directly wired receiver, hold +/− to temporarily override its keyboard input.

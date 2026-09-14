@@ -2186,7 +2186,9 @@ export function createWorkshopView(
         : null;
     const openSections =
       right.dataset.partId === selected
-        ? [...right.querySelectorAll('details[open]')].map((node) => node.className)
+        ? [...right.querySelectorAll('details[open]')]
+            .filter((node) => !node.closest('.connection-test'))
+            .map((node) => node.className)
         : [];
     right.dataset.partId = selected ?? '';
     right.dataset.inspectorType = part?.type ?? '';
@@ -3318,10 +3320,14 @@ export function createWorkshopView(
     placement.append(turn);
     right.append(mirrorButton, placement);
 
+    // Connect & test owns its own open state (it opens itself for an actuator
+    // still missing power or a shaft and remembers the player's closure); the
+    // inspector's memory must not close it behind that owner's back.
     for (const details of right.querySelectorAll('details'))
-      details.open =
-        openSections.includes(details.className) &&
-        !(mode !== 'build' && details.classList.contains('receiver-controls'));
+      if (!details.closest('.connection-test'))
+        details.open =
+          openSections.includes(details.className) &&
+          !(mode !== 'build' && details.classList.contains('receiver-controls'));
     if (focusLabel) {
       const replacement = [...right.querySelectorAll('[aria-label]')].find(
         (node) => node.getAttribute('aria-label') === focusLabel,

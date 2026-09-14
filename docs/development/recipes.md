@@ -654,7 +654,9 @@ exploded markers remain schematic interaction overlays.
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths
-while open. Row pointer leave clears highlighting, but closing the panel, changing
+while open. It opens by itself for an actuator still missing its power or its shaft
+connection until the player closes it for that part; once both are connected the
+player's own open state rules (control is optional). Row pointer leave clears highlighting, but closing the panel, changing
 selection, removing the target and disposal clear reveal as well. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,
 tracing and exploded display state keep their existing owners; compose their inputs
