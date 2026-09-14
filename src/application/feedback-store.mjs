@@ -161,11 +161,10 @@ export async function openFeedbackStore({
       return transaction((state) => {
         const item = state.items.find((row) => row.id === id);
         if (item?.outcome !== 'blocked') throw Error('Only blocked feedback can be corrected');
+        // Default image/context captures alone are not an unsent report; only text or voice is.
         if (
           state.draft &&
-          (state.draft.text?.trim() ||
-            state.draft.voiceRecording ||
-            draftFields.slice(1).some((field) => state.draft[field]))
+          (state.draft.text?.trim() || state.draft.voice || state.draft.voiceRecording)
         )
           throw Error(
             'You already have an unsent draft. Send or discard it before creating a correction.',

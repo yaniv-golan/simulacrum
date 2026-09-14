@@ -353,6 +353,13 @@ h3 {
   color: #afc7bd;
   margin-top: 8px;
 }
+/* While a shaft is running (the speed line exists) the reason line keeps two lines' height
+   whether it says "Powered" or explains a zero command, so the hold buttons and everything
+   below do not move when the drive toggles. Build mode's one-line reason pays nothing. */
+.part-live:has(.shaft-speed) .diagnosis {
+  min-height: 2.9em;
+  min-height: 2lh;
+}
 .port-list {
   display: flex;
   flex-direction: column;

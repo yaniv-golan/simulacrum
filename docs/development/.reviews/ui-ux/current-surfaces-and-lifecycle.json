@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/presentation/workshop-view.mjs": "4b53743903e30e47112c07e6e53deae874382cdea9c741a04b23de24c4600d2f",
-    "src/presentation/workshop.css": "5ef21a55877c5d5553737cc4856835e3863bdd886029604d7eb8a5c8b30dc849",
+    "src/presentation/workshop.css": "6c2f67c866526256a94b8aac1799065f31f21dc1c2d4a8e9a39456e65f2a34e7",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/catalog.mjs": "d3c8a92c8e4489706862e4069b7cc8429c27b4bd5cad2b402eff721628a6dd7b",

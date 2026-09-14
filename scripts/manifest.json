@@ -5495,6 +5495,22 @@
           {
             "path": "test/feedback-load.test.mjs",
             "anchor": "synthetic corpus preserves feedback envelopes separately from capture media and detects corruption"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "unchecking both attachments never re-checks the second while the first save is pending"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a fresh draft attaches the workshop image and project by default"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a draft holding only default captures is discarded on close and recaptured on reopen"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "Send stays disabled while an attachment save is pending"
           }
         ],
         "negative": [
@@ -5525,6 +5541,18 @@
           {
             "path": "test/feedback-load.test.mjs",
             "anchor": "feedback load retries the exact v1 envelope, rebinds references, and rejects malformed receipts"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a failed attachment reverts its box to the committed draft once the intent clears"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a failed default image capture stays visible after the project capture succeeds"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "text-only stores attach nothing by default and keep the controls hidden"
           }
         ]
       },
@@ -7356,7 +7384,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "e65890b55909d58d2c4ea8c1f04128abbf827110aa195f7f07e0e1962afd3cc3",
+      "sourceSha256": "4f2f027ea2973ef1a94aa9aa65710537d0ced1a1fd9d4362a2262e392ae6f388",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -7496,7 +7524,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7505,7 +7533,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "fe429990f4e7aae2eaaa35e4b965cc3b6b2f9479bcd87fe582b65a2343a203d5",
+      "sourceSha256": "6ae7e25e4520144a5bfd0b9ecb200386616443d44ad740679fcf05a6a97e2e98",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -7560,7 +7588,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "cfc254651c20b22d3ffd00d49a534a33673cb43d39ffc98168b71d317d5046c6",
+      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7725,7 +7753,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "cfc254651c20b22d3ffd00d49a534a33673cb43d39ffc98168b71d317d5046c6",
+      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7938,7 +7966,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e990d0e6b0af3d30594d632ba0cc003cbf4ecf57da760bf7ef1815609287c80a",
+      "consumerSourceHash": "f63c05819d2b0b56112909aa109f2e49620fb68b6c178c1f962f1555db6d6193",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8238,7 +8266,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -8315,7 +8343,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -8386,7 +8414,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -8429,7 +8457,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -8582,7 +8610,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "5e59203415f722d49bfe40f951e15eed87677cac1180314cfa2cfbd21a91c981",
+      "consumerSourceHash": "a289137d585e672aa065d43038f9d1c619ede94a4115fdd138a3315b8dde84ec",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -8600,6 +8628,7 @@
         "src/application/feedback-client.mjs",
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
+        "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
         "test/playtest-admission.test.mjs",
@@ -8731,7 +8760,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "cfc254651c20b22d3ffd00d49a534a33673cb43d39ffc98168b71d317d5046c6",
+      "consumerSourceHash": "154c1c30d56d60606e864423acd053d9f5d7387994f84046806db61ad7a6c735",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9045,7 +9074,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9125,11 +9154,12 @@
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
         "test/cloud-playtest.test.mjs",
+        "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "3634db9f202e72091748d5f898bca10bf43a92ff8a1ff541c2e2111eea789a3b",
+      "consumerSourceHash": "2f73597589b718b2b6f82a6235ce02236107fde9cfca5e40851f3276ebe3aabf",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9223,11 +9253,12 @@
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
         "test/cloud-playtest.test.mjs",
+        "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "3634db9f202e72091748d5f898bca10bf43a92ff8a1ff541c2e2111eea789a3b",
+      "consumerSourceHash": "2f73597589b718b2b6f82a6235ce02236107fde9cfca5e40851f3276ebe3aabf",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9377,7 +9408,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "db995bf59484dd66971043043158359c434c924c5fcb0c2c41576a7f7122a41e",
+      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9417,6 +9448,7 @@
         "src/application/feedback-client.mjs",
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
+        "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
         "test/playtest-admission.test.mjs",
@@ -9459,7 +9491,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "5e59203415f722d49bfe40f951e15eed87677cac1180314cfa2cfbd21a91c981",
+      "consumerSourceHash": "a289137d585e672aa065d43038f9d1c619ede94a4115fdd138a3315b8dde84ec",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9579,7 +9611,7 @@
           ]
         }
       ],
-      "sourceSha256": "f162bcb85e78d635e95d735b94da8e315bcd2a5ed5cee64e8f006d354f34484f",
+      "sourceSha256": "5e132bf9415183e3e677a240b2bd4041e326ea6399ff81e4b34a24a995b7856d",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
@@ -9694,7 +9726,7 @@
           ]
         }
       ],
-      "sourceSha256": "0a60100fdd19878cb43918f7043922d8aedc752f44173776d57d3e928cf79997",
+      "sourceSha256": "a7faaea8dee43b077d41e8d5e58acbe224b3d25e2bf040e135e8b7d025255a24",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
