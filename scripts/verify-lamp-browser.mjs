@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { liveWait } from './browser-idle.mjs';
 const out = browserArtifactPath('artifacts/lamp-browser');
 mkdirSync(out, { recursive: true });
 const evidence = createBrowserEvidence();
@@ -60,7 +61,9 @@ try {
   await select(lamp);
   await page.screenshot({ path: `${out}/mounted-build.png` });
   await page.locator('[data-command=run]').click();
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick >= 12);
+  await liveWait(page, () => JSON.parse(window.render_game_to_text()).tick >= 12, null, {
+    label: 'twelve ticks',
+  });
   let f = await read();
   assert.ok(f.power.lamps[0].luminousFluxLm > 990);
   let v = await page.evaluate(() => window.workshopProbe.readInteractionState().lamps[0]);

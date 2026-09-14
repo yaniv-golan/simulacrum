@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { liveWait } from './browser-idle.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 const out = browserArtifactPath('artifacts/lamp-performance');
 mkdirSync(out, { recursive: true });
@@ -124,7 +125,9 @@ try {
   await page.screenshot({ path: `${out}/eight-on.png` });
   const waitTicks = async () => {
     const t = await page.evaluate(() => JSON.parse(window.render_game_to_text()).tick);
-    await page.waitForFunction((t) => JSON.parse(window.render_game_to_text()).tick >= t + 12, t);
+    await liveWait(page, (t) => JSON.parse(window.render_game_to_text()).tick >= t + 12, t, {
+      label: 'twelve ticks',
+    });
   };
   await page.keyboard.down('w');
   await waitTicks();
@@ -188,10 +191,11 @@ try {
   await page.evaluate(() => {
     window.lampSlow = true;
   });
-  await page.waitForFunction(
+  await liveWait(
+    page,
     () => window.workshopProbe.readInteractionState().rendering.quality.level >= 3,
-    {},
-    { timeout: 30000 },
+    null,
+    { label: 'adaptive drop to level 3' },
   );
   await page.evaluate(() => {
     window.lampSlow = false;
