@@ -309,9 +309,11 @@ try {
       ext = gl.getExtension('WEBGL_debug_renderer_info');
     return gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER);
   });
-  // Both captures must have run with lamp shadows on for the comparison to mean anything.
+  // Both captures must have run with lamp shadows on for the comparison to mean anything;
+  // this journey runs exclusively so the adaptive level cannot quietly drop and void it.
   const shadowChecked = open.lampShadowSize > 0 && occluded.lampShadowSize > 0;
-  if (shadowChecked) {
+  assert.ok(shadowChecked, `lamp shadows stayed on (levels ${open.level}, ${occluded.level})`);
+  {
     assert.ok(
       occluded.meanDelta < open.meanDelta * 0.35,
       `plate darkens the floor behind it (${occluded.meanDelta} vs ${open.meanDelta})`,
