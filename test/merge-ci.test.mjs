@@ -50,6 +50,26 @@ test('matching completed full comparison exposes omitted failure', () => {
   assert.equal(compare().status, 'COVERAGE_GAP');
   assert.deepEqual(compare().omittedFailures, ['other']);
 });
+test('registered NOT_EVALUATED rows are listed, not treated as missing outcomes', () => {
+  const report = {
+    ...full,
+    runs: [
+      { id: 'smoke', status: 'passed' },
+      {
+        id: 'other',
+        status: 'NOT_EVALUATED',
+        reason: 'hosted profile github-ubuntu-2cpu: performance tier is not evaluated on this platform',
+      },
+    ],
+  };
+  assert.equal(compare(report).status, 'NO_OBSERVED_GAP');
+  assert.deepEqual(compare(report).notEvaluated, ['other']);
+  assert.equal(
+    compare({ ...report, runs: [report.runs[0], { ...report.runs[1], reason: undefined }] }).status,
+    'NOT_EVALUATED',
+    'an unregistered reason is still an incomplete outcome',
+  );
+});
 test('mismatched, incomplete, duplicate or unknown evidence never supplies agreement', () => {
   for (const report of [
     { ...full, status: 'running' },

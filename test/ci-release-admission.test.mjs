@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { latestReleaseRun, assertExperimentAdmission } from '../scripts/playtest/ci-release.mjs';
-test('latest release ignores PR and schedule while considering manual and push releases', () => {
+test('latest release ignores PR, schedule and push runs; only dispatched releases count', () => {
   const run = (event, id) => ({
     event,
     id,
@@ -26,7 +26,8 @@ test('latest release ignores PR and schedule while considering manual and push r
     };
   };
   assert.equal(latestReleaseRun(query, 'owner/repo', 'v2').id, 6);
-  assert.equal(paths.length, 2);
+  assert.equal(paths.length, 1, 'push runs are not queried');
+  assert.match(paths[0], /event=workflow_dispatch/);
   assert.equal(
     latestReleaseRun(() => ({ workflow_runs: [run('schedule', 25)] }), 'owner/repo', 'v2'),
     undefined,
