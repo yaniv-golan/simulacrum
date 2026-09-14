@@ -145,6 +145,16 @@ export async function withBrowserReport(
     }
   }
 }
+function findRunnerError(error, depth = 0) {
+  if (!error || depth > 4) return null;
+  if (error.processDiagnostics) return error;
+  for (const cause of error.errors ?? []) {
+    const found = findRunnerError(cause, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+const installedAt = Date.parse(process.env.SIMULACRUM_CANDIDATE_INSTALLED_AT ?? '') || null;
 /** What the application announced when a check failed: every browser session's
  * status sidecar under the evidence directory (sessions are named by script or option). */
 function readAppStatus(directory) {
@@ -372,10 +382,10 @@ async function executeBrowserSuite(
             );
           } catch (error) {
             retainOrigin(error.evidenceOrigin ?? evidenceOrigin);
-            // Cleanup or retention failures wrap the runner error; keep its snapshot.
-            const diagnostics =
-              error.processDiagnostics ??
-              error.errors?.find((cause) => cause?.processDiagnostics)?.processDiagnostics;
+            // Cleanup or retention failures wrap the runner error, possibly twice;
+            // keep the runner's own diagnostics and failure kind.
+            const runnerError = findRunnerError(error);
+            const diagnostics = runnerError?.processDiagnostics;
             const appStatus = readAppStatus(row.evidenceDirectory);
             Object.assign(row, {
               status: 'failed',
@@ -383,10 +393,12 @@ async function executeBrowserSuite(
               observedAt: performance.timeOrigin + performance.now(),
               elapsedMs: error.elapsedMs,
               errors: errorMessages(error),
-              failureKind: error.failureKind ?? 'unknown',
+              failureKind: error.failureKind ?? runnerError?.failureKind ?? 'unknown',
               checkKind: check.tier,
               processSnapshot: diagnostics?.snapshot ?? null,
               appStatus,
+              // H1 signal: how fresh this candidate's installed binaries were at the failure.
+              msSinceInstall: installedAt ? Date.now() - installedAt : null,
             });
             publish();
             console.log(

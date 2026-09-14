@@ -8,8 +8,8 @@ const TERMINATION_GRACE_MS = 250;
 const SNAPSHOT_ROWS = 8;
 // Host daemons whose activity is worth seeing at a stall regardless of ranking
 // (Gatekeeper/XProtect assessment of freshly installed binaries, Spotlight indexing).
-const WATCHED_DAEMONS =
-  /^(?:syspolicyd|XProtect\w*|XprotectService|mds|mds_stores|mdworker\w*|trustd)$/;
+const WATCHED_DAEMONS = /^(?:syspolicyd|xprotect\w*|mds|mds_stores|mdworker\w*|trustd)$/i;
+const SNAPSHOT_LIST_ROWS = 32;
 /** Bounded host inventory at a failure. `comm` is the executable name only; no
  * arguments or environment values are read. Diagnostics, never attribution. */
 function listProcesses() {
@@ -37,8 +37,35 @@ function listProcesses() {
         time,
         etime,
         comm: basename(comm.join(' ')),
+        executable: comm.join(' '),
       };
     });
+}
+/** H1 signal (unverified hypothesis): a freshly installed binary still carrying
+ * quarantine/provenance attributes is a candidate for a first-exec assessment stall.
+ * macOS only; bounded; never throws. */
+function firstExecHint(executable) {
+  if (process.platform !== 'darwin' || !executable || !executable.startsWith('/'))
+    return { unsupported: process.platform !== 'darwin' ? process.platform : 'relative' };
+  try {
+    const attributes = execFileSync('xattr', ['-l', executable], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1000,
+    });
+    return {
+      path: executable,
+      quarantined: /^com\.apple\.quarantine:/m.test(attributes),
+      provenance: /^com\.apple\.provenance:/m.test(attributes),
+    };
+  } catch (error) {
+    return { path: executable, error: error.code ?? error.message };
+  }
+}
+function timedHint(executable) {
+  const started = performance.now();
+  const firstExec = firstExecHint(executable);
+  return { firstExecHint: firstExec, hintMs: performance.now() - started };
 }
 function processSnapshot(rows, rootPid, at) {
   const brief = ({ pid, ppid, stat, pcpu, rssKb, time, etime, comm }) => ({
@@ -66,8 +93,12 @@ function processSnapshot(rows, rootPid, at) {
     loadAverage: loadavg(),
     topCpu: top('pcpu'),
     topRss: top('rssKb'),
-    watch: rows.filter((row) => WATCHED_DAEMONS.test(row.comm)).map(brief),
-    tree: tree.map(brief),
+    watch: rows
+      .filter((row) => WATCHED_DAEMONS.test(row.comm))
+      .slice(0, SNAPSHOT_LIST_ROWS)
+      .map(brief),
+    tree: tree.slice(0, SNAPSHOT_LIST_ROWS).map(brief),
+    ...(root && at === 'watchdog' ? timedHint(root.executable) : {}),
   };
 }
 function signalGroup(child, signal, observe = () => {}) {
@@ -139,22 +170,33 @@ export function runProcess(
         });
       else processDiagnostics.droppedEvents++;
     };
-    const takeSnapshot = (at, rootPid, rows = null) => {
+    // enumerationMs is the ps call (only paid here when the watchdog did not already
+    // enumerate); snapshotMs is the in-memory ranking and tree walk.
+    const takeSnapshot = (at, rootPid, rows = null, enumerationMs = null) => {
       if (process.platform === 'win32') {
         processDiagnostics.snapshot = { at, unsupported: 'win32' };
+        observe('snapshot', { at, error: null });
         return;
       }
-      const snapshotStarted = performance.now();
+      let listStarted = performance.now();
       try {
+        if (!rows) {
+          rows = listProcesses();
+          enumerationMs = performance.now() - listStarted;
+        }
+        const snapshotStarted = performance.now();
+        const snapshot = processSnapshot(rows, rootPid, at);
         processDiagnostics.snapshot = {
-          ...processSnapshot(rows ?? listProcesses(), rootPid, at),
-          snapshotMs: performance.now() - snapshotStarted,
+          ...snapshot,
+          enumerationMs,
+          snapshotMs: performance.now() - snapshotStarted - (snapshot.hintMs ?? 0),
         };
       } catch (error) {
         processDiagnostics.snapshot = {
           at,
           snapshotError: error.code ?? error.message,
-          snapshotMs: performance.now() - snapshotStarted,
+          enumerationMs: enumerationMs ?? performance.now() - listStarted,
+          snapshotMs: 0,
         };
       }
       observe('snapshot', { at, error: processDiagnostics.snapshot.snapshotError ?? null });
@@ -199,6 +241,7 @@ export function runProcess(
       if (!closed || (timedOut && !forced)) return;
       // Post-hoc host context for a check failure; the child is already gone, so the
       // tree is empty. Bounded by the same 1 s enumeration limit as the watchdog path.
+      const elapsedMs = performance.now() - started;
       if (!timedOut && closeCode !== 0 && !processDiagnostics.snapshot) takeSnapshot('exit', null);
       observe('settlement', { code: closeCode, signal: closeSignal, timedOut });
       const result = {
@@ -206,7 +249,7 @@ export function runProcess(
         stdout,
         stderr,
         output: stdout + stderr,
-        elapsedMs: performance.now() - started,
+        elapsedMs,
         code: closeCode,
         signal: closeSignal,
         failureKind: timedOut ? 'watchdog' : closeCode !== 0 ? 'check-failure' : null,
@@ -221,6 +264,7 @@ export function runProcess(
       observe('watchdog-fired', { dueMs });
       timedOut = true;
       if (process.platform === 'win32') {
+        takeSnapshot('watchdog', child.pid);
         observe('taskkill-requested', { target: child.pid });
         spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }).once(
           'error',
@@ -234,9 +278,10 @@ export function runProcess(
       // from leaves upward. This path also handles synchronously blocked runners.
       try {
         observe('enumeration-started');
+        const enumerationStarted = performance.now();
         const rows = listProcesses();
         // The same inventory names who else was busy at the stall.
-        takeSnapshot('watchdog', child.pid, rows);
+        takeSnapshot('watchdog', child.pid, rows, performance.now() - enumerationStarted);
         const descendants = [child.pid];
         for (let i = 0; i < descendants.length; i++)
           for (const { pid, ppid } of rows)

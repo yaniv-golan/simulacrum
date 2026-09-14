@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"03e51742c0ceb7fdcb73abe92c3f7ff6407f5ee722bfe39c6359293ccd4ec93d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1df39bb0d2a5faa3cbce281f9f81e587b5ce12b6b8b18b66e921ccbd8e71df24","disposition":"still accurate","rationale":"The mechanical-audio gates now name the trial and measured values in their messages with unchanged predicates, and harness failure diagnostics were added; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"a2325bb145e407145ceccd6bfe2a1a053fd5764452b774d5412f2eb76ce1586b","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"969451fcea53899e8c36a2a1250f94e5955d831c6a31862092055c39f1bd77cf","disposition":"still accurate","rationale":"Harness diagnostics refinements only (timing split, first-exec hint, install age, wrapper-depth recovery); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

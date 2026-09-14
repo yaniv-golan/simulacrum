@@ -61,12 +61,12 @@ try {
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
   write();
   assertRuntime();
-  let directory, candidate, options, tier, key, installed;
+  let directory, candidate, options, tier, key, installed, installedAt;
   if (previous) {
     directory = resolve(previous.directory);
     key = readFileSync(join(directory, 'resume-key'));
     const descriptor = readResumeDescriptor(directory, key);
-    ({ candidate, options, tier, installed } = descriptor);
+    ({ candidate, options, tier, installed, installedAt } = descriptor);
     if (resolve(candidate.destination) !== join(directory, 'source'))
       throw Error('candidate location mismatch');
     report.parentAttempt = previous.attempt;
@@ -115,9 +115,11 @@ try {
     installed = await timing.measure('dependency-validation', () =>
       dependencyDigest(candidate.destination),
     );
+    // Retained in the descriptor so a resume reproduces the same tier environment.
+    installedAt = new Date().toISOString();
     key = randomBytes(32);
     writeFileSync(join(directory, 'resume-key'), key, { mode: 0o600, flag: 'wx' });
-    writeResumeDescriptor(directory, { candidate, options, tier, installed }, key);
+    writeResumeDescriptor(directory, { candidate, options, tier, installed, installedAt }, key);
   }
   lock = acquireCandidateAttempt(directory);
   const attempt = lock.attempt;
@@ -142,6 +144,7 @@ try {
     attempt,
     attemptReport: attemptOutput,
     installedDependencies: installed,
+    ...(installedAt ? { installedAt } : {}),
   });
   write();
   // Copy scheduling hints as artifacts only; no prior report or receipt is admitted.
@@ -186,6 +189,7 @@ try {
             ...process.env,
             SIMULACRUM_LEAF_LEDGER: ledger,
             SIMULACRUM_VERIFICATION_ATTEMPT: attempt,
+            ...(installedAt ? { SIMULACRUM_CANDIDATE_INSTALLED_AT: installedAt } : {}),
             // Published to window contenders so a competing integration can stack
             // instead of racing; origin is the integrating worktree, not the candidate.
             SIMULACRUM_VERIFICATION_INTENT: JSON.stringify({

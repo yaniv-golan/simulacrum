@@ -130,6 +130,7 @@ test('readLiveStatus keeps visible, unique, polite announcements only, whitespac
     el('Not placed\n  ·   Powered Motor'),
     el('x'.repeat(300)),
     el('y'.repeat(3000)),
+    ...Array.from({ length: 12 }, (_, i) => el(String(i).repeat(240))),
   ];
   const saved = globalThis.document;
   globalThis.document = {
@@ -146,6 +147,7 @@ test('readLiveStatus keeps visible, unique, polite announcements only, whitespac
       'x'.repeat(240),
     ]);
     assert.ok(status.join('|').length <= 2048 + 240);
+    assert.ok(status.length < nodes.length - 2, 'the byte cap stops before every node is copied');
   } finally {
     if (saved === undefined) delete globalThis.document;
     else globalThis.document = saved;

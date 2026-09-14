@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"b1546033b4ae2138b93adf20f7db87c413f9bd05bdc96b02e61a555de2971af5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"65a606e4fcd5980c4cc412a139941f8a9bc294c5874291c5ed6388b931f8b2e5","disposition":"updated","rationale":"Documented the failure diagnostics that failed rows now carry: processSnapshot from the process runner (bounded top-CPU/RSS rows, watched daemons, own tree, load averages at the moment; post-hoc without a tree on non-zero exit; platform %cpu semantics; context not attribution) and appStatus (visible role=status/live-region text echoed on the FAIL line). Selection, scheduling, exclusivity and scope-audit rules are unchanged; the manifest change is the new invariant plus consumer-hash refresh applied with witnesses."} -->
+<!-- doc-review {"version":1,"fingerprint":"b57d65074d61de9a1dac20d1d936e4fdb423a6c6fe8cc4390bb0ad3f60f97884","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e711715814160140a7bde7ed5727aa4e6ee6dca692754c90aaa425f9bf95f5f5","disposition":"updated","rationale":"Documented the split timing fields (enumerationMs for ps, snapshotMs for ranking, hintMs for the macOS attribute lookup), the first-exec hint and msSinceInstall on failed rows, the assertive live-region inclusion and the assertion-message convention; selection, scheduling, exclusivity and scope-audit rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -391,14 +391,19 @@ A failed row additionally carries `processSnapshot` from the
 [process runner](../../scripts/run-check.mjs#implementation): at a watchdog timeout, the
 same bounded process enumeration that terminates the owned tree also retains load
 averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
-Spotlight daemons regardless of rank, and the check's own tree (executable names only,
-never arguments or environment); a non-zero exit retains a post-hoc snapshot without a
-tree. macOS `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time`
-and `etime` accompany it. The snapshot is context for a person, never attribution, and a
-failure to take it is recorded without changing the outcome. Failed browser rows also
-carry `appStatus`: the visible `role="status"` and polite live-region texts the
+Spotlight daemons regardless of rank, the check's own tree (executable names only,
+never arguments or environment), and on macOS whether the stalled executable still
+carried quarantine or provenance attributes; a non-zero exit retains a post-hoc snapshot
+without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost and `hintMs` the attribute lookup. macOS
+`%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time` and `etime`
+accompany it. The snapshot is context for a person, never attribution, and a failure to
+take it is recorded without changing the outcome. Failed browser rows also carry
+`appStatus` — the visible `role="status"` and polite or assertive live-region texts the
 application was announcing when the failure was captured, echoed on the `FAIL` line, so a
-timeout on a disabled control names the application's own reason.
+timeout on a disabled control names the application's own reason — and `msSinceInstall`,
+the age of the candidate's installed dependencies at the failure. Performance gates
+should name the trial and the measured values in their assertion message so a failure
+row is readable without the evidence files.
 Shared sensing remains exclusive. Its contact journey stops wall-clock progression
 while arming both receivers, then observes every fixed step within the existing physical horizon.
 Starter also remains exclusive because it checks
@@ -508,7 +513,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"ecd5cb934dfe7e18141777a614b68308a45665a9585aa61b2243d034417b6330","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"732e4c67e5b469992bb16675435264fe07565460398c73e1b7a784000678beb0","disposition":"still accurate","rationale":"The process runner gained a bounded diagnostic snapshot on its failure paths inside the existing 1 s enumeration bound; window serialization, inheritance, wait limits, intent publication and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"77e0c1ebc5ab953a1ea0f3883aaaed4cfb044a1c81bb2491cb4bdd55f8e31c76","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"87913b8cdf24841f10f1785fc5fa9e56a6450381977b9d40394e688c74bf6b2c","disposition":"still accurate","rationale":"The runner's failure-path snapshot now times its enumeration and attribute lookup separately and matches Gatekeeper daemons case-insensitively; window serialization, inheritance, wait limits, intent publication and recovery are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -557,7 +562,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"57df3331f5836ab1d009a64fb8e11479d992e5e367e5d495d4157914b8b6070f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e6ec1ec45026a7bbe72dd4183739d80e9c50be6c8650ecf4d71d73bfac8f86d6","disposition":"still accurate","rationale":"Failed rows and receipts now carry processSnapshot/appStatus diagnostics; capture, isolation, attempt ownership, origin matching and which checks run are unchanged, and the manifest delta is the new runner invariant plus consumer-hash refresh applied through browser:scopes with passing witnesses."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef2bd859a0aed53d89bd55de41516cbd5608eade9b40c23e41820703c625a2b5","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8c29fea21d6145867d081a39d40a89d308b7b256651984b80c13144bfb748236","disposition":"still accurate","rationale":"verify-candidate records installedAt, carries it through the resume descriptor and publishes it to the tier so failed rows can report msSinceInstall with an identical resume environment; capture, isolation, attempt ownership, origin matching and which checks run are unchanged. Receipts carry the runner snapshot; appStatus lives on browser rows only."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

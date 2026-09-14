@@ -192,10 +192,20 @@ test('watchdog records a bounded process snapshot with the child in its tree', a
     `snapshotMs ${snapshot.snapshotMs}`,
   );
   assert.ok(snapshot.topCpu.length <= 8 && snapshot.topRss.length <= 8);
+  assert.ok(snapshot.watch.length <= 32 && snapshot.tree.length <= 32, 'lists are bounded');
+  assert.ok(snapshot.enumerationMs >= 0 && snapshot.enumerationMs < 1000, 'ps cost is measured');
   assert.ok(
     snapshot.tree.some((row) => row.pid === pid),
     'child appears in its own tree',
   );
+  if (process.platform === 'darwin') {
+    // H1 signal: the stalled executable's quarantine/provenance attributes (a hypothesis
+    // input, not attribution). The child here is the node binary itself.
+    assert.equal(snapshot.firstExecHint.path, process.execPath);
+    assert.equal(typeof snapshot.firstExecHint.quarantined, 'boolean');
+    assert.equal(typeof snapshot.firstExecHint.provenance, 'boolean');
+    assert.ok(snapshot.hintMs >= 0 && snapshot.hintMs < 1000, 'xattr cost is measured');
+  }
   for (const row of [...snapshot.topCpu, ...snapshot.topRss, ...snapshot.tree, ...snapshot.watch])
     assert.deepEqual(Object.keys(row).sort(), SNAPSHOT_ROW_KEYS);
   assert.ok(Array.isArray(snapshot.watch));
@@ -205,7 +215,9 @@ test('watchdog records a bounded process snapshot with the child in its tree', a
     'snapshot is observed before settlement',
   );
   assert.equal(events.at(-1).type, 'settlement');
-  t.diagnostic(`snapshotMs ${snapshot.snapshotMs.toFixed(1)} rows ${snapshot.tree.length} tree`);
+  t.diagnostic(
+    `enumerationMs ${snapshot.enumerationMs.toFixed(1)} snapshotMs ${snapshot.snapshotMs.toFixed(1)} hintMs ${(snapshot.hintMs ?? 0).toFixed(1)} tree ${snapshot.tree.length} watch ${snapshot.watch.length}`,
+  );
 });
 
 test('a non-zero exit records a post-hoc snapshot without a tree; success records none', async () => {
@@ -216,6 +228,12 @@ test('a non-zero exit records a post-hoc snapshot without a tree; success record
   if (process.platform !== 'win32') {
     assert.equal(exit.processDiagnostics.snapshot.at, 'exit');
     assert.deepEqual(exit.processDiagnostics.snapshot.tree, []);
+    assert.equal(exit.processDiagnostics.snapshot.firstExecHint, undefined);
+    assert.ok(exit.processDiagnostics.snapshot.enumerationMs > 0, 'the exit path pays its own ps');
+    assert.ok(
+      exit.elapsedMs < exit.processDiagnostics.events.at(-1).elapsedMs,
+      'elapsed excludes the snapshot',
+    );
     assert.equal(exit.processDiagnostics.events.at(-1).type, 'settlement');
   }
   const ok = await runProcess(process.execPath, ['-e', '0'], { timeoutMs: 5000 });
