@@ -2,6 +2,7 @@ import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
+import { liveWait } from './browser-idle.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { proposeSurfaceMount } from '../src/model/assembly.mjs';
 // Beam length: one inspector control, live preview, obstruction and end-mount rejections,
@@ -35,17 +36,23 @@ try {
   const slider = page.getByRole('slider', { name: 'Beam length', exact: true });
   assert.equal(await slider.getAttribute('step'), '10', 'slider moves in 10 mm steps');
   await slider.fill('600');
-  await page.waitForFunction(
+  await liveWait(
+    page,
     () =>
       JSON.parse(window.render_game_to_text()).metadata.blueprint.parts[0].parameters.length ===
       0.6,
+    undefined,
+    { label: 'slider commits 600 mm' },
   );
   await length.fill('700');
   await length.press('Tab');
-  await page.waitForFunction(
+  await liveWait(
+    page,
     () =>
       JSON.parse(window.render_game_to_text()).metadata.blueprint.parts[0].parameters.length ===
       0.7,
+    undefined,
+    { label: 'number commits 700 mm' },
   );
   const shape = await page.evaluate(() =>
     window.workshopProbe.readRenderedShapes().find((s) => s.id === 'beam'),
@@ -57,8 +64,14 @@ try {
   // Too long: the preview names the obstruction and the value is not applied.
   await length.fill('1000');
   await length.press('Tab');
-  await page.waitForFunction(() =>
-    /overlaps/.test(document.querySelector('.primary-setting .parameter-help')?.textContent ?? ''),
+  await liveWait(
+    page,
+    () =>
+      /overlaps/.test(
+        document.querySelector('.primary-setting .parameter-help')?.textContent ?? '',
+      ),
+    undefined,
+    { label: 'obstruction copy shown' },
   );
   assert.equal((await readPart('beam')).parameters.length, 0.7);
   await length.press('Escape');
@@ -78,10 +91,14 @@ try {
   }).blueprint;
   writeFileSync(`${out}/crossed.json`, JSON.stringify(crossed));
   await evidence.loadAndWait(page, `${out}/crossed.json`);
-  await page.waitForFunction(() =>
-    JSON.parse(window.render_game_to_text()).metadata.connections.every(
-      (c) => c.reasonCode === 'OK',
-    ),
+  await liveWait(
+    page,
+    () =>
+      JSON.parse(window.render_game_to_text()).metadata.connections.every(
+        (c) => c.reasonCode === 'OK',
+      ),
+    undefined,
+    { label: 'lap joint compiles OK' },
   );
   // A part on the end face blocks resizing with the player copy, atomically.
   const capped = structuredClone(crossed);
@@ -102,8 +119,14 @@ try {
   const before = await page.evaluate(() => JSON.parse(window.render_game_to_text()).metadata);
   await length.fill('500');
   await length.press('Tab');
-  await page.waitForFunction(() =>
-    /Detach/.test(document.querySelector('.primary-setting .parameter-help')?.textContent ?? ''),
+  await liveWait(
+    page,
+    () =>
+      /Detach/.test(
+        document.querySelector('.primary-setting .parameter-help')?.textContent ?? '',
+      ),
+    undefined,
+    { label: 'detach copy shown' },
   );
   const after = await page.evaluate(() => JSON.parse(window.render_game_to_text()).metadata);
   assert.deepEqual(after.blueprint, before.blueprint, 'rejected resize changes nothing');
