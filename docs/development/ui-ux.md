@@ -319,7 +319,10 @@ dismissal remains a per-dialog choice. The nonmodal Part help window keeps its o
 titlebar pair (expand and close) as an adjacent, separately owned surface.
 Learn & examples opens a bounded browser. The top-right close control, Escape, or a
 click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
-into the parts area; leaving removes it. New examples enlarge this browser, not the
+into the parts area; leaving removes it. The guided build says what to do next ("Next:
+Place Motor") and ticks a step from what the player built, not from who placed it: the
+k-th part of the step's type, or the k-th connection of its kind between the two types,
+counts wherever it sits; "Do it for me" is the fallback and wires the player's own parts. New examples enlarge this browser, not the
 ordinary toolbar. The introductory activities identify their format and outcome: a guided
 rolling build with an independent motor-setting attempt, a keyboard driving task, and
 a spring-settling experiment. The spring inspector offers a requested damping comparison

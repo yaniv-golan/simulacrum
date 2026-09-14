@@ -3274,7 +3274,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -3303,6 +3303,10 @@
         {
           "path": "src/application/workshop-app.mjs",
           "anchor": "mountWorkshopApp"
+        },
+        {
+          "path": "src/application/starter-guide.mjs",
+          "anchor": "starterSteps"
         }
       ],
       "checks": [
@@ -3326,6 +3330,14 @@
           {
             "path": "test/scene-library.test.mjs",
             "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
+          },
+          {
+            "path": "test/starter-guide.test.mjs",
+            "anchor": "a player-placed part of the step type satisfies the step wherever it sits"
+          },
+          {
+            "path": "test/starter-guide.test.mjs",
+            "anchor": "the guide can still perform every step itself and never reuses an id"
           }
         ],
         "negative": [
@@ -3344,6 +3356,10 @@
           {
             "path": "test/scene-library.test.mjs",
             "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
+          },
+          {
+            "path": "test/starter-guide.test.mjs",
+            "anchor": "a connection step counts kind and part types; Do it for me wires the player parts"
           }
         ]
       },

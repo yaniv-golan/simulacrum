@@ -690,16 +690,18 @@ export function createWorkshopView(
     }
     if (guideReceipt) guide.append(element('p', 'guide-receipt', `✓ ${guideReceipt.message}`));
     if (step) {
-      guide.append(element('p', '', step.description));
+      // The player performs the step; the button is the fallback, not the instruction.
+      const description = element('p', '', step.description);
+      guide.append(element('p', 'guide-next', `Next: ${step.label}`), description);
       const next = button(
-        step.label,
+        'Do it for me',
         async () => {
           editing.clearPreview();
+          const planned = step.commands(bp).find((c) => c.type === 'connect');
           const result = await send({ type: 'guide-step' });
           if (result?.ok) {
-            const command = step.commands.find((c) => c.type === 'connect'),
-              edge =
-                command && frame.metadata.blueprint.connections.find((c) => c.id === command.id);
+            const edge =
+              planned && frame.metadata.blueprint.connections.find((c) => c.id === planned.id);
             if (edge) {
               select(edge.b.part);
               sourcePort = { ...edge.b };
@@ -713,13 +715,16 @@ export function createWorkshopView(
             editing.focus();
           }
         },
-        'primary',
+        'quiet',
       );
       next.dataset.command = 'guide-step';
+      next.setAttribute('aria-label', `Do it for me: ${step.label}`);
       next.disabled = frame?.metadata.mode !== 'build';
       const preview = () => {
         if (step.part) editing.showPreview([step.part]);
-        const connection = step.commands.find((c) => c.type === 'connect');
+        const connection = step
+          .commands(frame.metadata.blueprint)
+          .find((c) => c.type === 'connect');
         if (connection) showGuideConnection(connection, false);
       };
       const leave = () => {
@@ -736,7 +741,7 @@ export function createWorkshopView(
       next.addEventListener('focus', preview);
       next.addEventListener('pointerleave', leave);
       next.addEventListener('blur', leave);
-      guide.insertBefore(next, guide.children[1]);
+      guide.insertBefore(next, description);
       if (step.part) preview();
     } else {
       guide.append(

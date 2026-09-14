@@ -394,7 +394,7 @@ export async function mountWorkshopApp(root) {
     if (command.type === 'guide-step') {
       const step = starterSteps().find((s) => !s.done(frame().metadata.blueprint));
       if (!step) return { ok: true, reasonCode: 'OK', path: '' };
-      for (const edit of step.commands) {
+      for (const edit of step.commands(frame().metadata.blueprint)) {
         const result = await onCommand(edit);
         if (!result.ok) return result;
       }
