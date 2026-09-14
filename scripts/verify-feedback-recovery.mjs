@@ -160,6 +160,19 @@ try {
       await page.waitForFunction(
         () => document.querySelector('[data-save]').textContent === 'Draft saved on this device.',
       );
+      if (scenario === 'capacity') {
+        // The budget here is the freed space and one byte: the default context attachment fits
+        // the draft but not its frozen copy. The player's way out is to untick it; what this
+        // step proves is the server rejection, not a second storage-limit message.
+        await page.locator('[data-attachments]').evaluate((details) => {
+          details.open = true;
+        });
+        await page
+          .getByLabel('Include project and workshop state (programs included)', { exact: true })
+          .uncheck();
+        // The preview flag follows the committed draft, so this proves the untick was written.
+        await page.waitForFunction(() => document.querySelector('[data-context-preview]').hidden);
+      }
       await page.evaluate(() => {
         window.client.configure({ feedback: { enabled: true, protocolVersion: 1 } });
         const digest = crypto.subtle.digest.bind(crypto.subtle);
