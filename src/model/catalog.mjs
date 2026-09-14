@@ -639,7 +639,10 @@ export const CATALOG = freeze({
   },
 });
 /** An authored length default must equal the canonical primitive it replaces, so "absent"
- * and "default" are the same geometry. Checked at load for every dimensioned definition. */
+ * and "default" are the same geometry. Checked at load for every dimensioned definition.
+ * Length is read from the first primitive only; a multi-primitive dimensioned part needs
+ * the declarative dimension map deferred by the parametric-beam plan.
+ * @param {Record<string, { parameterDefinitions?: Record<string, { default?: number }>, primitives: readonly { halfExtents: readonly number[] }[] }>} catalog */
 export function assertDimensionDefaults(catalog) {
   for (const [type, definition] of Object.entries(catalog)) {
     const length = definition.parameterDefinitions?.length;

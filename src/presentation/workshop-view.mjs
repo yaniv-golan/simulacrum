@@ -2595,8 +2595,7 @@ export function createWorkshopView(
       const authored = dimension in part.parameters ? part.parameters[dimension] : undefined,
         value = (authored ?? rating.default) * 1000,
         title = dimension === 'diameter' ? 'Diameter' : 'Length',
-        subject =
-          { ball: 'Ball', gripWheel: 'Wheel', beam: 'Beam' }[part.type] ?? definition.name;
+        subject = { ball: 'Ball', gripWheel: 'Wheel', beam: 'Beam' }[part.type] ?? definition.name;
       dimensions.append(element('label', '', `${title} (mm)`));
       number.type = 'number';
       slider.type = 'range';

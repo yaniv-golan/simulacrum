@@ -541,7 +541,7 @@ export async function createWorkshop(
           )
             return result(false, 'INVALID_COMMAND', 'key');
           if (resizeMovesMount(next, part.id, { ...part.parameters, [command.key]: command.value }))
-            return result(false, 'SURFACE_RESIZE_MOVES_MOUNT', 'value');
+            return result(false, 'SURFACE_RESIZE_MOVES_MOUNT', 'key');
           part.parameters[command.key] = command.value;
           break;
         }

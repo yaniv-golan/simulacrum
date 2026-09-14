@@ -9,7 +9,7 @@ import { proposeSurfaceMount } from '../src/model/assembly.mjs';
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/beam-length-browser');
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'focus' });
+const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const readPart = (id) =>
   page.evaluate(
@@ -32,6 +32,14 @@ try {
   assert.equal(await length.count(), 1, 'exactly one Length control');
   assert.equal(await page.getByRole('spinbutton', { name: /length/i }).count(), 1);
   assert.equal(await length.inputValue(), '400');
+  const slider = page.getByRole('slider', { name: 'Beam length', exact: true });
+  assert.equal(await slider.getAttribute('step'), '10', 'slider moves in 10 mm steps');
+  await slider.fill('600');
+  await page.waitForFunction(
+    () =>
+      JSON.parse(window.render_game_to_text()).metadata.blueprint.parts[0].parameters.length ===
+      0.6,
+  );
   await length.fill('700');
   await length.press('Tab');
   await page.waitForFunction(
@@ -43,12 +51,14 @@ try {
     window.workshopProbe.readRenderedShapes().find((s) => s.id === 'beam'),
   );
   assert.ok(Math.abs(Math.max(...shape.size) - 0.7) < 1e-6, 'rendered length matches authored');
+  const mass = await page.locator('.part-mass').first().textContent();
+  assert.match(mass ?? '', /^3\.02 kg/, 'inspector mass follows length × section × density');
   await page.screenshot({ path: `${out}/resized.png` });
   // Too long: the preview names the obstruction and the value is not applied.
   await length.fill('1000');
   await length.press('Tab');
   await page.waitForFunction(() =>
-    /overlaps/.test(document.querySelector('.parameter-help')?.textContent ?? ''),
+    /overlaps/.test(document.querySelector('.primary-setting .parameter-help')?.textContent ?? ''),
   );
   assert.equal((await readPart('beam')).parameters.length, 0.7);
   await length.press('Escape');
@@ -93,7 +103,7 @@ try {
   await length.fill('500');
   await length.press('Tab');
   await page.waitForFunction(() =>
-    /Detach/.test(document.querySelector('.parameter-help')?.textContent ?? ''),
+    /Detach/.test(document.querySelector('.primary-setting .parameter-help')?.textContent ?? ''),
   );
   const after = await page.evaluate(() => JSON.parse(window.render_game_to_text()).metadata);
   assert.deepEqual(after.blueprint, before.blueprint, 'rejected resize changes nothing');
@@ -101,7 +111,10 @@ try {
   await page.screenshot({ path: `${out}/end-mount-rejected.png` });
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
-  writeFileSync(`${out}/result.json`, JSON.stringify({ ...evidence.identity, errors: evidence.errors }));
+  writeFileSync(
+    `${out}/result.json`,
+    JSON.stringify({ ...evidence.identity, errors: evidence.errors }),
+  );
 } catch (error) {
   await evidence.captureFailure(error);
   throw error;

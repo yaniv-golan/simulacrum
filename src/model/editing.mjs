@@ -32,7 +32,8 @@ export function resizeMovesMount(blueprint, id, parameters) {
   const local = (subject, endpoint) => {
     try {
       return resolveSurfaceEndpoint(subject, endpoint).position;
-    } catch {
+    } catch (error) {
+      if (error?.reasonCode !== 'SURFACE_OUT_OF_BOUNDS') throw error;
       return null;
     }
   };

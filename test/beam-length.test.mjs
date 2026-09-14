@@ -10,8 +10,13 @@ import { createEmptyBlueprint, createPart, loadSave } from '../src/model/bluepri
 import { explainFailure } from '../src/model/messages.mjs';
 import { createWorkshop } from '../src/core/workshop.mjs';
 import { createPassiveSuspensionCart } from '../src/model/fixtures/guided-suspension.mjs';
+import { captureAssembly, insertAssembly } from '../src/model/reusable-assemblies.mjs';
+import { assertRejectedEditUnchanged } from './contracts/editing.mjs';
 
-const GATE = new URL('./fixtures/spring-reference/powered-gate-counterexample.json', import.meta.url);
+const GATE = new URL(
+  './fixtures/spring-reference/powered-gate-counterexample.json',
+  import.meta.url,
+);
 const beamAt = (id, position, length) => {
   const part = createPart('beam', id, position);
   if (length !== undefined) part.parameters.length = length;
@@ -55,12 +60,33 @@ test('beam long faces mount through a section-sized pad; end faces keep their wh
   // A beam can now lie flat on a plate (120 mm half-face) and lap across another beam.
   const onPlate = proposeSurfaceMount(
     { ...createEmptyBlueprint('t', 'T'), parts: [createPart('plate', 'plate', [0, 1, 0]), beam] },
-    { part: 'beam', sourceRegion: 'bottom', targetPart: 'plate', targetRegion: 'top', u: 0, v: 0, twist: 0, id: 'm1' },
+    {
+      part: 'beam',
+      sourceRegion: 'bottom',
+      targetPart: 'plate',
+      targetRegion: 'top',
+      u: 0,
+      v: 0,
+      twist: 0,
+      id: 'm1',
+    },
   ).blueprint;
   assert.equal(compileAssembly(onPlate).connections[0].reasonCode, 'OK');
   const crossing = proposeSurfaceMount(
-    { ...createEmptyBlueprint('t', 'T'), parts: [beamAt('rail', [0, 1, 0], 0.7), beamAt('cross', [0, 2, 0], 0.5)] },
-    { part: 'cross', sourceRegion: 'bottom', targetPart: 'rail', targetRegion: 'top', u: 0.2, v: 0, twist: Math.PI / 2, id: 'm2' },
+    {
+      ...createEmptyBlueprint('t', 'T'),
+      parts: [beamAt('rail', [0, 1, 0], 0.7), beamAt('cross', [0, 2, 0], 0.5)],
+    },
+    {
+      part: 'cross',
+      sourceRegion: 'bottom',
+      targetPart: 'rail',
+      targetRegion: 'top',
+      u: 0.2,
+      v: 0,
+      twist: Math.PI / 2,
+      id: 'm2',
+    },
   ).blueprint;
   assert.equal(compileAssembly(crossing).connections[0].reasonCode, 'OK');
 });
@@ -114,28 +140,42 @@ test('renaming and rig placement never change a beam whose length and material a
           return { ...createEmptyBlueprint(id, name), parts: [part] };
         };
         const reference = compileAssembly(make('beam', 'Beam', [0, 1, 0])).configuration.bodies[0];
-        const perturbed = compileAssembly(make(`p-${seed}`, `Renamed ${seed}`, position)).configuration.bodies[0];
+        const perturbed = compileAssembly(make(`p-${seed}`, `Renamed ${seed}`, position))
+          .configuration.bodies[0];
         assert.deepEqual(perturbed.halfExtents, reference.halfExtents);
         assert.equal(perturbed.mass, reference.mass);
         assert.equal(perturbed.friction, reference.friction);
         assert.equal(perturbed.restitution, reference.restitution);
-        assert.ok(Math.abs(perturbed.mass - 8 * (length / 2) * 0.02 * 0.02 * MATERIALS[material].density) < 1e-9);
+        assert.ok(
+          Math.abs(perturbed.mass - 8 * (length / 2) * 0.02 * 0.02 * MATERIALS[material].density) <
+            1e-9,
+        );
       },
     ),
     { numRuns: 60 },
   );
-  // Counterexample: mass derived from identity rather than the authored choices fails the property.
+  // Counterexample: a compiler that lets the part name leak into mass fails the same property.
   const fromName = (bp) => {
     const compiled = compileAssembly(bp);
     compiled.configuration.bodies[0].mass *= bp.parts[0].name.length;
     return compiled;
   };
-  const named = (name) => {
-    const part = beamAt('beam', [0, 1, 0], 0.5);
-    part.name = name;
-    return fromName({ ...createEmptyBlueprint('t', 'T'), parts: [part] }).configuration.bodies[0].mass;
-  };
-  assert.notEqual(named('A'), named('Renamed beam'), 'identity-derived mass violates the property');
+  assert.throws(() =>
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 1000 }), (seed) => {
+        const make = (name) => {
+          const part = beamAt('beam', [0, 1, 0], 0.5);
+          part.name = name;
+          return { ...createEmptyBlueprint('t', 'T'), parts: [part] };
+        };
+        assert.equal(
+          fromName(make(`Renamed ${seed}`)).configuration.bodies[0].mass,
+          fromName(make('Beam')).configuration.bodies[0].mass,
+        );
+      }),
+      { numRuns: 20 },
+    ),
+  );
 });
 
 test('a length change keeps long-face mounts that still fit and rejects the rest atomically', async () => {
@@ -144,17 +184,24 @@ test('a length change keeps long-face mounts that still fit and rejects the rest
     await w.act({ type: 'place', partType: 'beam', id: 'rail', position: [0, 1, 0] });
     await w.act({ type: 'place', partType: 'spacerBlock', id: 'block', position: [0, 2, 0] });
     const mounted = await w.act({
-      type: 'surface-mount', part: 'block', sourceRegion: 'bottom', targetPart: 'rail',
-      targetRegion: 'top', u: 0.15, v: 0, twist: 0, id: 'mount',
+      type: 'surface-mount',
+      part: 'block',
+      sourceRegion: 'bottom',
+      targetPart: 'rail',
+      targetRegion: 'top',
+      u: 0.15,
+      v: 0,
+      twist: 0,
+      id: 'mount',
     });
     assert.equal(mounted.ok, true);
-    assert.equal((await w.act({ type: 'parameter', id: 'rail', key: 'length', value: 0.35 })).ok, true);
-    const before = w.observe();
-    const rejected = await w.act({ type: 'parameter', id: 'rail', key: 'length', value: 0.25 });
-    assert.equal(rejected.ok, false);
-    assert.equal(rejected.reasonCode, 'SURFACE_OUT_OF_BOUNDS');
-    assert.deepEqual(w.observe().frames[0].metadata.blueprint, before.frames[0].metadata.blueprint);
-    assert.deepEqual(w.observe().frames[0].metadata.editing, before.frames[0].metadata.editing);
+    assert.equal(
+      (await w.act({ type: 'parameter', id: 'rail', key: 'length', value: 0.35 })).ok,
+      true,
+    );
+    const shrink = { type: 'parameter', id: 'rail', key: 'length', value: 0.25 };
+    assert.equal((await w.act(shrink)).reasonCode, 'SURFACE_OUT_OF_BOUNDS');
+    await assertRejectedEditUnchanged(w, shrink);
   } finally {
     w.dispose();
   }
@@ -166,23 +213,33 @@ test('a length change that would move a surface peer is rejected, then admitted 
     await w.act({ type: 'place', partType: 'beam', id: 'beam', position: [0, 1, 0] });
     await w.act({ type: 'place', partType: 'spacerBlock', id: 'cap', position: [1, 1, 0] });
     assert.equal(
-      (await w.act({
-        type: 'surface-mount', part: 'cap', sourceRegion: 'left', targetPart: 'beam',
-        targetRegion: 'right', u: 0, v: 0, twist: 0, id: 'end',
-      })).ok,
+      (
+        await w.act({
+          type: 'surface-mount',
+          part: 'cap',
+          sourceRegion: 'left',
+          targetPart: 'beam',
+          targetRegion: 'right',
+          u: 0,
+          v: 0,
+          twist: 0,
+          id: 'end',
+        })
+      ).ok,
       true,
     );
-    const before = w.observe();
-    const rejected = await w.act({ type: 'parameter', id: 'beam', key: 'length', value: 0.6 });
-    assert.equal(rejected.ok, false);
+    const grow = { type: 'parameter', id: 'beam', key: 'length', value: 0.6 };
+    const rejected = await w.act(grow);
     assert.equal(rejected.reasonCode, 'SURFACE_RESIZE_MOVES_MOUNT');
-    assert.match(explainFailure(rejected, before.frames[0].metadata.blueprint), /Detach/);
-    assert.deepEqual(w.observe().frames[0].metadata.blueprint, before.frames[0].metadata.blueprint);
-    assert.deepEqual(w.observe().frames[0].metadata.editing, before.frames[0].metadata.editing);
-    assert.ok(
-      w.observe().frames[0].metadata.connections.every((c) => c.reasonCode === 'OK'),
-      'no connection is left misaligned',
-    );
+    assert.match(explainFailure(rejected, w.observe().frames[0].metadata.blueprint), /Detach/);
+    await assertRejectedEditUnchanged(w, grow);
+    // The plausible wrong trace: a shrink applied by hand leaves the cap where it was and the
+    // pair compiles misaligned (a grow would first trip the ordinary overlap rejection).
+    const shrink = { type: 'parameter', id: 'beam', key: 'length', value: 0.3 };
+    assert.equal((await w.act(shrink)).reasonCode, 'SURFACE_RESIZE_MOVES_MOUNT');
+    const forced = structuredClone(w.observe().frames[0].metadata.blueprint);
+    forced.parts.find((p) => p.id === 'beam').parameters.length = 0.3;
+    assert.equal(compileAssembly(forced).connections[0].reasonCode, 'MISALIGNED');
     assert.equal((await w.act({ type: 'disconnect', id: 'end' })).ok, true);
     // Detached but still in the way: the ordinary overlap rule now owns the rejection.
     assert.equal(
@@ -190,7 +247,10 @@ test('a length change that would move a surface peer is rejected, then admitted 
       'SURFACE_OVERLAP',
     );
     assert.equal((await w.act({ type: 'delete', id: 'cap' })).ok, true);
-    assert.equal((await w.act({ type: 'parameter', id: 'beam', key: 'length', value: 0.6 })).ok, true);
+    assert.equal(
+      (await w.act({ type: 'parameter', id: 'beam', key: 'length', value: 0.6 })).ok,
+      true,
+    );
   } finally {
     w.dispose();
   }
@@ -201,10 +261,17 @@ test('a beam mounted by its own end face cannot be resized in place (guided-susp
   try {
     const bp = w.observe().frames[0].metadata.blueprint;
     const endMounted = bp.connections.find((c) =>
-      [c.a, c.b].some((e) => e.surface && ['left', 'right'].includes(e.surface.region) && bp.parts.find((p) => p.id === e.part)?.type === 'beam'),
+      [c.a, c.b].some(
+        (e) =>
+          e.surface &&
+          ['left', 'right'].includes(e.surface.region) &&
+          bp.parts.find((p) => p.id === e.part)?.type === 'beam',
+      ),
     );
     assert.ok(endMounted, 'fixture mounts a beam by an end face');
-    const beam = [endMounted.a, endMounted.b].map((e) => bp.parts.find((p) => p.id === e.part)).find((p) => p.type === 'beam');
+    const beam = [endMounted.a, endMounted.b]
+      .map((e) => bp.parts.find((p) => p.id === e.part))
+      .find((p) => p.type === 'beam');
     const rejected = await w.act({ type: 'parameter', id: beam.id, key: 'length', value: 0.5 });
     assert.equal(rejected.reasonCode, 'SURFACE_RESIZE_MOVES_MOUNT');
     assert.deepEqual(w.observe().frames[0].metadata.blueprint, bp);
@@ -219,10 +286,20 @@ test('the resize rule is not type dispatch: a wheel with an attached axle still 
     await w.act({ type: 'place', partType: 'gripWheel', id: 'wheel', position: [0, 1, 0] });
     await w.act({ type: 'place', partType: 'steelAxle', id: 'axle', position: [-0.3, 1, 0] });
     assert.equal(
-      (await w.act({ type: 'connect', id: 'shaft', a: { part: 'axle', port: 'right' }, b: { part: 'wheel', port: 'axle' } })).ok,
+      (
+        await w.act({
+          type: 'connect',
+          id: 'shaft',
+          a: { part: 'axle', port: 'right' },
+          b: { part: 'wheel', port: 'axle' },
+        })
+      ).ok,
       true,
     );
-    assert.equal((await w.act({ type: 'parameter', id: 'wheel', key: 'diameter', value: 0.3 })).ok, true);
+    assert.equal(
+      (await w.act({ type: 'parameter', id: 'wheel', key: 'diameter', value: 0.3 })).ok,
+      true,
+    );
   } finally {
     w.dispose();
   }
@@ -242,17 +319,30 @@ test('a length that would intersect a neighbour is rejected on the command path'
   }
 });
 
-test('duplication and mirroring carry the authored length; they never derive it', async () => {
+test('mirroring and reusable-assembly instantiation carry the authored length; they never derive it', async () => {
   const w = await createWorkshop();
   try {
     await w.act({ type: 'place', partType: 'beam', id: 'beam', position: [0, 1, 0] });
-    assert.equal((await w.act({ type: 'parameter', id: 'beam', key: 'length', value: 0.7 })).ok, true);
+    assert.equal(
+      (await w.act({ type: 'parameter', id: 'beam', key: 'length', value: 0.7 })).ok,
+      true,
+    );
     await w.act({ type: 'place', partType: 'chassis', id: 'reference', position: [-2, 1, 0] });
-    const mirrored = await w.act({ type: 'mirror-assembly', ids: ['beam'], referenceId: 'reference', axis: 'x' });
+    const mirrored = await w.act({
+      type: 'mirror-assembly',
+      ids: ['beam'],
+      referenceId: 'reference',
+      axis: 'x',
+    });
     assert.equal(mirrored.ok, true);
     const parts = w.observe().frames[0].metadata.blueprint.parts.filter((p) => p.type === 'beam');
     assert.equal(parts.length, 2);
     for (const part of parts) assert.equal(part.parameters.length, 0.7);
+    const bp = w.observe().frames[0].metadata.blueprint;
+    const { definition } = captureAssembly(bp, { name: 'Link', ids: ['beam'], ports: [] });
+    const inserted = insertAssembly(bp, definition, [0, 3, 0], [0, 0, 0, 1]).blueprint;
+    assert.equal(inserted.parts.at(-1).type, 'beam');
+    assert.equal(inserted.parts.at(-1).parameters.length, 0.7);
   } finally {
     w.dispose();
   }

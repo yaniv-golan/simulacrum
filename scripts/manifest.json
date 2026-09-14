@@ -895,11 +895,11 @@
     {
       "id": "verify-beam-length-browser",
       "script": "scripts/verify-beam-length-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 90000,
+      "timeoutMs": 45000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
