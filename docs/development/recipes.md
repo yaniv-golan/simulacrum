@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7b23123833c1f50a7565995bc579f0570b00af322c88630bf5bdeb05beb5914f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bed4cc1b3ece87fb740220e44084fbe54dbde8e5b4ce4e2bf46bbc2b56dffe64","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"4304587a608fb07907cafa3141dc3d7a1103fa43195f95a7b6252460978c09fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5fff03b83ec21369f00d535d4cc92e47c14da6f8607454ab15a6917064e7e399","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
