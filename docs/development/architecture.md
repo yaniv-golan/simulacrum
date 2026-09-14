@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"ae2f0c4fbe339487466f0184c0975a6e5d7fd154494a918ab96ff70d6e720774","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"5463bbf554a6880b760baa30fc8a62666827dfa8499ee7308c7af0ee2a19593f","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its third adversarial review and rebased onto main 421a2b1 (phased scheduler); markers re-recorded on the rebased text. validate-manifest.mjs still loads and validates the canonical manifest for milestone allocation and check metadata; on top of the scheduler's timingSensitive rules it admits browserChannel (\"chrome\") and requires performance-tier checks to be timingSensitive. AGENTS.md changes one verification-table row. Layer ownership and the registry reader's role are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"526bb62f29a7fc6a285093c61e9194a453520c13767bdfc92e100a54c2ab4d33","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"ed1661c731f155dc3c5c61eaed4b99f27f69d3662c29f9da80605a71764e1b1e","disposition":"still accurate","rationale":"validate-manifest additionally validates hostProfiles (closed keys, deadlines no shorter than local, bounded measurement runs, per-check hosted budgets once registered) and AGENTS.md gained the hosted nightly sentence; layer ownership, module-graph rules and the manifest's role are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
