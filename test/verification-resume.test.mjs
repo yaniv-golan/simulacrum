@@ -68,3 +68,87 @@ test('run reconstructs a signed result without reexecuting the leaf and preserve
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('receipts record their origin attempt, carry it through resumed saves and expire by chain depth', async () => {
+  const { createVerificationRun } = await import('../scripts/verification-run.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'resume-origin-'));
+  try {
+    const identity = { source: 'fixed' },
+      key = Buffer.alloc(32, 5),
+      id = 'browser:mirror';
+    const first = createLeafLedger({
+      directory: join(dir, 'a'),
+      key,
+      identity,
+      eligible: [],
+      saveEligible: null,
+      origin: { attempt: 'attempt-a', report: '/a/report.json' },
+    });
+    // Every passing leaf is saved when saving is unrestricted, even outside the resume list.
+    await createVerificationRun({ readIdentity: () => identity, writeLedger: first }).check(
+      id,
+      { script: 'x' },
+      () => ({ code: 0, output: 'first' }),
+    );
+    const loaded = createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: [id] }).load(
+      id,
+      { script: 'x' },
+    );
+    assert.deepEqual(loaded.origin, { attempt: 'attempt-a', report: '/a/report.json', depth: 0 });
+    // A plain resume ledger still ignores the browser leaf.
+    assert.equal(
+      createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: ['unit:x'] }).load(id, {
+        script: 'x',
+      }),
+      null,
+    );
+    // Resumed saves keep the original origin and count depth.
+    const second = createLeafLedger({
+      directory: join(dir, 'b'),
+      key,
+      identity,
+      eligible: [id],
+      saveEligible: null,
+      origin: { attempt: 'attempt-b', report: '/b/report.json' },
+    });
+    const run = createVerificationRun({
+      readIdentity: () => identity,
+      resumeLedger: createLeafLedger({ directory: join(dir, 'a'), key, identity, eligible: [id] }),
+      writeLedger: second,
+    });
+    assert.equal((await run.check(id, { script: 'x' }, () => assert.fail('reexecuted'))).output, 'first');
+    assert.deepEqual(run.receipts()[0].origin, {
+      attempt: 'attempt-a',
+      report: '/a/report.json',
+      depth: 1,
+    });
+    const chained = createLeafLedger({ directory: join(dir, 'b'), key, identity, eligible: [id] }).load(id, {
+      script: 'x',
+    });
+    assert.equal(chained.origin.attempt, 'attempt-a');
+    assert.equal(chained.origin.depth, 1);
+    // Beyond the chain depth limit the receipt is not offered.
+    const { CHAIN_DEPTH_LIMIT } = await import('../scripts/candidate-after.mjs');
+    const stale = createLeafLedger({
+      directory: join(dir, 'c'),
+      key,
+      identity,
+      eligible: [id],
+      saveEligible: null,
+      origin: { attempt: 'attempt-c', report: '/c/report.json' },
+    });
+    stale.save(id, { script: 'x' }, { code: 0, output: 'old' }, 1, {
+      attempt: 'attempt-0',
+      report: '/0/report.json',
+      depth: CHAIN_DEPTH_LIMIT,
+    });
+    assert.equal(
+      createLeafLedger({ directory: join(dir, 'c'), key, identity, eligible: [id] }).load(id, {
+        script: 'x',
+      }),
+      null,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

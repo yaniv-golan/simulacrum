@@ -56,19 +56,42 @@ test('aggregate deadline bounds a blocking child while independent later work re
     'settlement',
   );
 });
-test('inherited verifier environment is identity-bound without recording secret values', async () => {
-  const { verificationIdentity } = await import('../scripts/verification-run.mjs');
-  const prior = process.env.SIM_VERIFIER_TEST_CONFIGURATION;
+test('identity binds the declared relevant environment only; the whole environment is forensic', async () => {
+  const { verificationIdentity, environmentForensics, RELEVANT_ENVIRONMENT } = await import(
+    '../scripts/verification-run.mjs'
+  );
+  const saved = Object.fromEntries(
+    ['SIM_VERIFIER_TEST_CONFIGURATION', 'FEEDBACK_SOURCE', 'PLAYWRIGHT_TEST_FLAG'].map((k) => [
+      k,
+      process.env[k],
+    ]),
+  );
+  const restore = () => {
+    for (const [k, v] of Object.entries(saved))
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+  };
   try {
+    delete process.env.FEEDBACK_SOURCE;
+    delete process.env.PLAYWRIGHT_TEST_FLAG;
     process.env.SIM_VERIFIER_TEST_CONFIGURATION = 'first-private-value';
-    const first = verificationIdentity();
+    const first = verificationIdentity(),
+      forensicFirst = environmentForensics();
     process.env.SIM_VERIFIER_TEST_CONFIGURATION = 'second-private-value';
     const second = verificationIdentity();
-    assert.notEqual(first.environmentDigest, second.environmentDigest);
+    // An undeclared variable (terminal, cwd, private configuration) must not change identity.
+    assert.equal(first.environmentDigest, second.environmentDigest);
+    assert.notEqual(environmentForensics().environmentDigest, forensicFirst.environmentDigest);
     assert.equal(JSON.stringify(second).includes('second-private-value'), false);
+    assert.ok(RELEVANT_ENVIRONMENT.names.includes('FEEDBACK_SOURCE'));
+    assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes('PLAYWRIGHT_'));
+    process.env.FEEDBACK_SOURCE = 'override';
+    assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
+    delete process.env.FEEDBACK_SOURCE;
+    process.env.PLAYWRIGHT_TEST_FLAG = '1';
+    assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
   } finally {
-    if (prior === undefined) delete process.env.SIM_VERIFIER_TEST_CONFIGURATION;
-    else process.env.SIM_VERIFIER_TEST_CONFIGURATION = prior;
+    restore();
   }
 });
 test('Vite receives an initialized environment before final verification identity is sealed', async () => {

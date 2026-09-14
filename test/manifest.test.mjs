@@ -74,3 +74,19 @@ test('the manifest stays out of prettier so hosted format checks see the writer 
     '.prettierignore must list scripts/manifest.json; validateManifest owns its layout',
   );
 });
+test('always-fresh browser checks are registered booleans and cover every timing-asserting check', () => {
+  const m = structuredClone(manifest);
+  const fresh = m.browserChecks.filter((c) => c.alwaysFresh === true).map((c) => c.id);
+  for (const id of [
+    'verify-spring-performance',
+    'verify-lamp-performance',
+    'qualify-workshop',
+    'measure-gears',
+    'measure-cameras',
+    'verify-mechanical-audio',
+  ])
+    assert.ok(fresh.includes(id), `${id} must never reuse a receipt`);
+  assert.ok(m.browserChecks.filter((c) => c.tier === 'performance').every((c) => c.alwaysFresh === true));
+  m.browserChecks[0].alwaysFresh = 'yes';
+  assert.throws(() => validateManifest(m), /alwaysFresh/);
+});
