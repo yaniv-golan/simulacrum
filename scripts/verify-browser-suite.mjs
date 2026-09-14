@@ -205,8 +205,8 @@ async function executeBrowserSuite(
     throw Error('fail-fast is restricted to explicit development probes');
   report.failFast = failFast;
   report.phase = 'selection';
-  // A tier (a run with a verification context) takes one worker per three idle cores, at most
-  // three, measured at start; a run without a tier context — the hosted CI route, witnesses —
+  // A tier (a run with a verification context) takes one worker per two idle cores, at most
+  // four, measured at start; a run without a tier context — the hosted CI route, witnesses —
   // keeps today's two workers and, below, today's unconditional timing execution. An explicit
   // worker count above two remains a probe privilege.
   const tierContext = Boolean(context); // a default context is created below for the run

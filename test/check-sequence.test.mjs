@@ -377,19 +377,20 @@ test('phased planning: headless pool first, policy-serialized lane, timing-sensi
   );
 });
 
-test('tier workers follow measured load headroom: one per three idle cores, one to three', async () => {
+test('tier workers follow load headroom: one per two idle cores, one to four', async () => {
   const { tierWorkers, LOAD_PER_WORKER, MAX_TIER_WORKERS } = await import(
     '../scripts/check-sequence.mjs'
   );
-  assert.equal(LOAD_PER_WORKER, 3);
-  assert.equal(MAX_TIER_WORKERS, 3);
-  // The first phased run started at load1 6.56 on 14 cores and derived 4; that is now 2.
-  assert.equal(tierWorkers({ cores: 14, load1: 6.56 }), 2);
-  assert.equal(tierWorkers({ cores: 14, load1: 2 }), 3, 'a quiet 14-core host gets three');
-  assert.equal(tierWorkers({ cores: 14, load1: 9 }), 1);
+  assert.equal(LOAD_PER_WORKER, 2);
+  assert.equal(MAX_TIER_WORKERS, 4);
+  // The first phased run started at load1 6.56 on 14 cores and derived 4 with one core per
+  // worker; a GPU-backed pool row costs about two, so that host now gets three.
+  assert.equal(tierWorkers({ cores: 14, load1: 6.56 }), 3);
+  assert.equal(tierWorkers({ cores: 14, load1: 2 }), 4, 'a quiet 14-core host gets four');
+  assert.equal(tierWorkers({ cores: 14, load1: 11 }), 1);
   assert.equal(tierWorkers({ cores: 14, load1: 20 }), 1, 'never below one');
   assert.equal(tierWorkers({ cores: 4, load1: 0.5 }), 1, 'a 4-vCPU runner runs the pool serially');
-  assert.equal(tierWorkers({ cores: 32, load1: 1 }), 3, 'never above three');
+  assert.equal(tierWorkers({ cores: 32, load1: 1 }), 4, 'never above four');
 });
 
 test('quiet-host admission: within bound admits, above bound waits once bounded, then refuses without retrying', async () => {

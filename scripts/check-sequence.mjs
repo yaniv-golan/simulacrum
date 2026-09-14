@@ -176,14 +176,16 @@ export async function admitQuietHost({
   return { admitted: true, load1: current, waitedMs, samples };
 }
 
-/** Workers for a tier follow the host. A pooled check is not one core: on the first phased run
- * (14 cores) four concurrent headless checks held load1 near 15 — about three runnable threads
- * each (renderer, compositor/raster, GPU process, node driver). That pool included six checks
- * since returned to the lane, so three per worker is a conservative reading of one run, to be
- * re-derived from the next run's per-row load; the cap of three keeps a quiet 14-core host
- * under the load at which a pooled renderer was seen starved. */
-export const LOAD_PER_WORKER = 3;
-export const MAX_TIER_WORKERS = 3;
+/** Workers for a tier follow the host. On the first phased run (14 cores) four concurrent
+ * headless checks held load1 near 15 — about three runnable threads each — but that pool
+ * rendered WebGL in software: the headless shell ran SwiftShader, so the GPU process rasterised
+ * on CPU threads. With the ui profile on Metal (mirror probe: headless+metal 0.96× headed wall,
+ * SwiftShader 4.19×) the raster threads are gone and a pooled check is its renderer main thread
+ * plus the node driver — about two runnable threads, taken as two per worker until the tier's
+ * per-row load recalibrates it. Cap four; quiet-host admission and the renderer liveness
+ * windows remain the tripwires. */
+export const LOAD_PER_WORKER = 2;
+export const MAX_TIER_WORKERS = 4;
 export function tierWorkers({ cores, load1, perWorker = LOAD_PER_WORKER }) {
   return Math.max(1, Math.min(MAX_TIER_WORKERS, Math.floor((cores - load1) / perWorker)));
 }

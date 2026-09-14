@@ -391,8 +391,8 @@ The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) sche
 run in three phases: the headless pool (checks declared `execution: parallel`), the
 serialized lane (exclusive checks that are not timing-sensitive), then timing-sensitive
 checks last. A completion tier derives its pool workers from the host at start — one per
-three idle cores (a pooled headless check holds about three runnable threads), at most
-three, recorded as `workersBasis` — and admits the timing phase only on a
+two idle cores (a GPU-backed headless check is about two runnable threads), at most four,
+recorded as `workersBasis` — and admits the timing phase only on a
 quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
