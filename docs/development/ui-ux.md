@@ -445,9 +445,14 @@ current readings. Boundary warnings remain independent of this preference.
 Inspector readouts update their DOM only when formatted values change, and a live readout
 that shows a shaft speed reserves two lines for its reason line, so the hold buttons and
 sections below it stay put whether the command reads zero or "Powered" (a three-line
-paused reason can still shift them). The running
-health hint refreshes in 30-tick bands after tick 120 and invalidates its cached
-diagnosis when blueprint, session, epoch or operating mode changes.
+paused reason can still shift them). The machine
+health line has two faces from one diagnosis owner: in Build it is the readiness line
+("Ready to run · power ✓ · axles ✓ · drive set ✓ · Check machine"), re-derived per
+edit, claiming readiness only when every remaining issue is a zero drive setting and
+deferring to an issue's own title outside those three classes; while running it refreshes
+in 30-tick bands after tick 120 with the first blocker. Both invalidate the cached
+diagnosis when blueprint, session, epoch or operating mode changes; clicking either
+opens Check machine.
 
 Machine controls and measurements share a bounded layout at the lower workbench edge.
 They sit beside one another where space allows and stack on narrower workbenches,

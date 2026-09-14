@@ -61,7 +61,7 @@ import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { UI_FEATURES } from '../model/features.mjs';
 import { CATALOG, MATERIALS } from '../model/catalog.mjs';
-import { diagnoseMotion, motorShaftSpeed } from '../model/motion-diagnostics.mjs';
+import { diagnoseMotion, motorShaftSpeed, readinessLine } from '../model/motion-diagnostics.mjs';
 import { explainReason, explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
 import {
@@ -3296,29 +3296,38 @@ export function createWorkshopView(
     return motorShaftSpeed(frame, motor.node);
   }
   function refreshHealth() {
+    // Build: the readiness line, re-derived per edit. Run: the first blocker after a second.
     health.hidden = true;
-    if (frame.metadata.mode !== 'run' || frame.tick < 120) {
+    const mode = frame.metadata.mode,
+      build = mode === 'build';
+    if (build ? sceneEditor?.active() : mode !== 'run' || frame.tick < 120) {
       healthSample = null;
       return;
     }
-    const bucket = Math.floor(frame.tick / 30);
+    const bucket = build ? null : Math.floor(frame.tick / 30);
     if (
       !healthSample ||
       healthSample.blueprint !== frame.metadata.blueprint ||
+      healthSample.mode !== mode ||
       healthSample.epoch !== renderedCursor?.epoch ||
       healthSample.session !== renderedCursor?.session ||
       healthSample.bucket !== bucket
-    )
+    ) {
+      const issues = diagnoseMotion(frame),
+        blocker = issues.find((issue) => issue.code !== 'COMMAND_OFF');
       healthSample = {
         blueprint: frame.metadata.blueprint,
+        mode,
         epoch: renderedCursor?.epoch,
         session: renderedCursor?.session,
         bucket,
-        issue: diagnoseMotion(frame).find((issue) => issue.code !== 'COMMAND_OFF'),
+        text: build
+          ? readinessLine(issues, frame.metadata.blueprint)
+          : blocker && `${blocker.title} · Check machine`,
       };
-    const issue = healthSample.issue;
-    if (issue) {
-      health.textContent = `${issue.title} · Check machine`;
+    }
+    if (healthSample.text) {
+      health.textContent = healthSample.text;
       health.hidden = false;
     }
   }

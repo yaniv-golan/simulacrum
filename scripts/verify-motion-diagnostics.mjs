@@ -16,7 +16,13 @@ try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   page.setDefaultTimeout(6000);
+  const health = page.locator('.machine-health');
+  browserEvidence.assert('equal', [await health.isVisible(), false], 'empty bench: no line');
   await placeCatalogPart(page, 'poweredMotor');
+  browserEvidence.assert('equal', [
+    await health.textContent(),
+    'Not ready to run · power ✗ · axles ✗ · drive set ✓ · Check machine',
+  ]);
   await page.locator('[data-command=check-machine]').click();
   const dialog = page.getByRole('dialog', { name: 'Check machine' });
   browserEvidence.assert('deepEqual', [
@@ -38,7 +44,13 @@ try {
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
-  await page.locator('[data-command=check-machine]').click();
+  await health.filter({ hasText: /^Ready to run/ }).waitFor();
+  browserEvidence.assert('equal', [
+    await health.textContent(),
+    'Ready to run · power ✓ · axles ✓ · drive set ✓ · Check machine',
+  ]);
+  await health.click();
+  browserEvidence.assert('equal', [await dialog.isVisible(), true], 'the line opens the check');
   browserEvidence.assert('equal', [await dialog.locator('[data-diagnostic-code]').count(), 0]);
   browserEvidence.assert('match', [await dialog.textContent(), /Run the machine to test/]);
   await dialog.getByRole('button', { name: 'Close machine check', exact: true }).click();
@@ -50,6 +62,8 @@ try {
   const drive = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
   await drive.fill('0');
   await drive.press('Tab');
+  await health.filter({ hasText: /drive set ✗/ }).waitFor();
+  browserEvidence.assert('match', [await health.textContent(), /^Ready to run · power ✓/]);
   await page.locator('[data-command=check-machine]').click();
   browserEvidence.assert('equal', [
     await dialog.locator('[data-diagnostic-code=COMMAND_OFF]').count(),

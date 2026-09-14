@@ -176,9 +176,10 @@ and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include 
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
 
-The compact running health hint caches its diagnosis in 30-tick buckets after tick
-120. Blueprint, session and epoch changes retire that sample; leaving Run clears
-it. Preserve the completed-data diagnosis owner and independently drained
+The compact health hint caches its diagnosis: in Build per blueprint/session/epoch
+(the readiness line from `readinessLine`), while running in 30-tick buckets after tick
+120 (the first non-`COMMAND_OFF` blocker). Blueprint, session, epoch and mode changes
+retire that sample; the scene editor and the first running second clear it. Preserve the completed-data diagnosis owner and independently drained
 measurement/history cursors.
 
 For controller decisions, use [completed decision projection](../../src/model/controller-decision.mjs)

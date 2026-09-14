@@ -469,8 +469,12 @@ export async function runAssemblyCases(partition, evidence, browser) {
     });
     await attempt('failure-layout', async (p) => {
       await placeCatalogPart(p, 'poweredMotor');
+      // Build already shows the readiness line; the Run line is a different, later text.
+      await p.locator('.machine-health', { hasText: /^Not ready to run/ }).waitFor();
       await p.locator('[data-command=run]').click();
-      await p.locator('.machine-health').waitFor({ state: 'visible', timeout: 6000 });
+      await p
+        .locator('.machine-health', { hasText: /has no power connection · Check machine$/ })
+        .waitFor({ state: 'visible', timeout: 6000 });
       const health = await p.locator('.machine-health').boundingBox(),
         follow = await p
           .getByRole('checkbox', { name: 'Follow motion' })

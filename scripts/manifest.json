@@ -6607,6 +6607,44 @@
       "qualificationBars": [
         "F1"
       ]
+    },
+    {
+      "id": "build-readiness-honesty",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The Build-mode machine health line is derived only from the motion diagnosis owner and never claims more than it checked: it reads Ready to run only when every remaining issue is a zero drive setting, shows one glyph per checked class (power, axles, drive set), keeps an issue's own title for any blocker outside those classes, says nothing on an empty bench or a hinge-only machine, and opens Check machine with the same cards.",
+      "owners": [
+        {
+          "path": "src/model/motion-diagnostics.mjs",
+          "anchor": "readinessLine"
+        },
+        {
+          "path": "src/presentation/workshop-view.mjs",
+          "anchor": "function refreshHealth"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-motion-diagnostics",
+        "verify-assembly-ux-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/motion-diagnostics.test.mjs",
+            "anchor": "build readiness line claims ready only when every issue is a zero drive setting"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/motion-diagnostics.test.mjs",
+            "anchor": "build readiness line defers to other issues and says nothing on an empty bench"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
     }
   ],
   "browserLocalScopes": [
