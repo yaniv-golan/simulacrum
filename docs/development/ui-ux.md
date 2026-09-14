@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"a6537f74978fdaaefe00d35a50cb936255824dc21a43f703e82aee45890508b0","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a090af4e40270925f3d352266afdb612e0b9470a81caffd7921b946105e42180","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. No player-facing surface changed on this branch (src/ is untouched); module-graph’s discovery change is tooling. Surface inventory and lifecycle text remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"d12b4c174c75aae7b1e89befb89552973ac8151d03a9b48911f70ced8ce7f8f3","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"ab08bb83f841936dcab32c5440deb43abc1059d7f2852672ffb20fb4c366c646","disposition":"still accurate","rationale":"browser-session.mjs only added a read of the visible status/live-region texts for failure evidence; no player-facing surface, region, visibility lifecycle or copy changed."} -->
 
 
 

@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"528dca8bd3c258cdff6d1905b9f2ad1c1ce02f9ec6dd0fd26a35ac7f85704e78","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6c1756314b1ce93496891ae7bcb0b03734697223a99e17076a57cef004161f59","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery skips nested worktrees; input handlers, cursor guards, cancellation and preview ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"586039eee8b3b67cad263b95d4a9c912d314af504d6092d5f96363b06d144575","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"224e804fef95c4e7da0510f73388231c52fa0fb57f591df128b6e0ddfd281d5a","disposition":"still accurate","rationale":"The diagnostics change touched harness files only (browser-session.mjs live-status read, browser-evidence consumers); the listed model/presentation dependencies carry main's refreshed digests after the merge and the interaction recipe's owners, controls and verification steps are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5ad82b2deff40a4f50eeb3f812ede2c2540b0e7e62b5b5bcbf3b5ccbac922877","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8c1156958e88677636c3de2a95511a373d43ab636273f1a59baefb4bd572bab0","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scope rows, waiver enumeration, manifest layout guard) and its documentation. The recipe’s analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"e746794ef8cc2d8d99dae56c6672c7b02219dc3801641bf39ddc4d4caf5cc31e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"e54a183215615b5eda4627ca03adfbdce3eccc265ebcf3ed84ac6ebde0d0b60e","disposition":"still accurate","rationale":"Harness diagnostics refinements only (timing split, first-exec hint, install age, wrapper-depth recovery); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"ca60d7731a0856583982c65f9767e39cd221b7312e2d118e0479e6285273c85b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"b0265720ac8c3732ba4007a6735bfa8d13abb534e03fba9e3520f96474a540f6","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery excludes nested worktrees; assembly, mirror and scene authoring owners and their admission rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cd5895d1e35c35359756efccbfcad3d231acda5d1a8289588f4677cc4e393650","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"be3e8267f765385012605a7efb37fc7a7fa8a00640f121d49c947b7adb06ffa4","disposition":"still accurate","rationale":"No authoring, assembly-library or model owner changed; the browser harness dependencies (browser-session.mjs, browser-evidence.mjs) gained failure diagnostics only, and the recipe's steps and evidence requirements stand."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +600,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"1b599db7d13da161fd08d1c5e8f1bd5086a8155e823963d1b32847b291a7e2e2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8ccce7ef9e610100ae3faaee2e67e7e8e3a6f2b6f6edd6330fd631e8d0ce8941","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery excludes nested worktrees; overlay owners, warmup retention and blueprint reference guidance are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"319628c5b813d2bc423b45f6ae549b00b6ae3d5a68604b0b87f8f6eeaca0fda3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"90c46ba390bcedc1bed21b5f8386181f0f332a1f75f8efac3de8bb3c0d05c198","disposition":"still accurate","rationale":"No presentation or overlay owner changed; the browser harness dependencies gained failure diagnostics only (live-status capture, snapshot timing), and the recipe's owners, controls and journey verification are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
