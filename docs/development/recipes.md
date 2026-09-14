@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"36d076dc3425ca5e51e928ef2ee56c01b735da2e824709fdb5075898e535d291","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"24efbde1e19a69b6739b37712e413f2b56a64f17ae50295e2b3cb54fad8c6740","disposition":"still accurate","rationale":"Verification-harness changes only (receipt reuse across candidates, never-index marker, manifest control registration); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"1f43d4d60c4800b527e0a1b2af3cc22233308564615a74c9663e4a086411ac62","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"08ebfd85474dad4793ecbcedc867dc37b153a9e897719840171319bc67e1bed7","disposition":"still accurate","rationale":"Follow-up to the diagnosed retry on main 38f6de8, amended after its read-only review: refused rows named by their phase, host-slept leaves covered through the phase cause, suite failure builder, format gate. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (refused-phase retry rows, the format gate, the hosted workflow step) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

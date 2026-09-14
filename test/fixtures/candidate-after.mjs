@@ -3,7 +3,8 @@
 // arguments: <mode> <origin root or "new"> [attemptReport] [flags...]
 // flags: x=fail|pass, unit=fail (unit:test/a.test.mjs fails inside ci:budget so the browser phase
 // never runs), omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the candidate
-// itself fails), tier=<tier>, base=<ref>, moved=yes (the base ref now names another commit),
+// itself fails), refuse=timing (the timing-sensitive row is refused by admission before it runs
+// and leaves no receipt), tier=<tier>, base=<ref>, moved=yes (the base ref now names another commit),
 // cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
 // Stubs keep capture, preflight and processes local; the tier is emulated with a real
 // verification context and leaf ledger so receipts, reuse and origins are the production ones.
@@ -170,7 +171,12 @@ globalThis.candidateTransport = {
           await run();
           results.push({ id, status: 'passed' });
         } catch (error) {
-          results.push({ id, status: 'failed' });
+          results.push({
+            id,
+            status: 'failed',
+            error: error.message,
+            ...(Array.isArray(error.notEvaluated) ? { notEvaluated: error.notEvaluated } : {}),
+          });
           throw error;
         }
       };
@@ -190,9 +196,15 @@ globalThis.candidateTransport = {
             { mode: 'production' },
             leaf('build:browser', { code: 0 }),
           );
+          const refused = [];
           for (const check of manifest.browserChecks) {
             const id = `browser:${check.id}`;
             if (omit.includes(id) || !selected(check)) continue;
+            // Admission refuses a timing-sensitive row before it runs: no receipt, only the id.
+            if (flag('refuse') === 'timing' && check.timingSensitive) {
+              refused.push(check.id);
+              continue;
+            }
             await context.check(id, { script: id }, () => {
               executed.push(id);
               if (id === 'browser:x' && flag('x') === 'fail')
@@ -223,6 +235,11 @@ globalThis.candidateTransport = {
               };
             });
           }
+          if (refused.length)
+            throw Object.assign(Error(`Browser checks failed: ${refused.join(', ')}`), {
+              notEvaluated: refused,
+              failedChecks: [],
+            });
         });
       } catch {
         code = 1;

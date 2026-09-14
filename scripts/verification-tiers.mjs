@@ -45,6 +45,9 @@ export async function runVerificationPhases(
     } catch (error) {
       row.ok = false;
       row.error = error.message;
+      // Rows a phase never evaluated are recorded by id so a retry can require them.
+      if (Array.isArray(error.notEvaluated) && error.notEvaluated.length)
+        row.notEvaluated = [...error.notEvaluated];
       console.error(`${id}: ${error.stack}`);
     }
     row.status = row.ok ? 'passed' : 'failed';

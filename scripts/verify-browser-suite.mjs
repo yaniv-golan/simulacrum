@@ -47,6 +47,27 @@ import {
  * child scheduled with a different pool size. A system browser channel is not pinned by
  * installed dependencies; its version is part of that check's configuration so a browser
  * update refuses reuse of this receipt and nothing else. */
+/** The status of a row the suite never evaluated (refused admission, host sleep, fail-fast). */
+export const NOT_EVALUATED_STATUS = 'not evaluated';
+/** The suite's failure names both classes of non-pass row: rows that ran and failed, and rows
+ * refused before they ran (an admission refusal leaves no receipt at all), so a diagnosed retry
+ * can require the refused rows without a receipt to read. */
+export function browserSuiteFailure(outcomes, runs) {
+  const failures = outcomes.filter((outcome) => outcome.ok === false);
+  const error = new AggregateError(
+    failures.map((outcome) => outcome.error),
+    `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
+  );
+  error.notEvaluated = failures
+    .filter((outcome) => runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS)
+    .map((outcome) => outcome.id)
+    .sort();
+  error.failedChecks = failures
+    .map((outcome) => outcome.id)
+    .filter((id) => !error.notEvaluated.includes(id))
+    .sort();
+  return error;
+}
 export function browserReceiptConfiguration(check, budget = { timeoutMs: check.timeoutMs }) {
   return {
     script: check.script,
@@ -141,14 +162,14 @@ export async function withBrowserReport(
   } finally {
     for (const row of report.runs)
       if (row.status === 'queued' || row.status === 'running') {
-        row.status = 'not evaluated';
+        row.status = NOT_EVALUATED_STATUS;
         row.reason = report.failure ?? 'Execution interrupted';
       }
     report.finishedAt = new Date().toISOString();
     try {
       writeBrowserHistory(
         historyPath,
-        report.runs.filter((row) => !row.reused && row.status !== 'not evaluated'),
+        report.runs.filter((row) => !row.reused && row.status !== NOT_EVALUATED_STATUS),
       );
     } catch (error) {
       report.historyWarning = `Scheduling hints could not be saved: ${error.message}`;
@@ -525,7 +546,7 @@ async function executeBrowserSuite(
             const slept = (error.failureKind ?? runnerError?.failureKind) === 'host-slept';
             const notEvaluated = error.notEvaluated || slept;
             Object.assign(row, {
-              status: notEvaluated ? 'not evaluated' : 'failed',
+              status: notEvaluated ? NOT_EVALUATED_STATUS : 'failed',
               ...(notEvaluated ? { reason: runnerError?.summary ?? error.message } : {}),
               ...(slept ? { hostSleptMs: runnerError?.hostSleptMs ?? error.hostSleptMs } : {}),
               ok: false,
@@ -552,12 +573,8 @@ async function executeBrowserSuite(
         },
         { workers, failFast },
       );
-      const failures = outcomes.filter((outcome) => outcome.ok === false);
-      if (failures.length)
-        throw new AggregateError(
-          failures.map((outcome) => outcome.error),
-          `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
-        );
+      if (outcomes.some((outcome) => outcome.ok === false))
+        throw browserSuiteFailure(outcomes, runs);
     },
     async () => {
       report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);

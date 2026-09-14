@@ -240,6 +240,91 @@ test('every failed or unexecuted leaf needs its own cause; an aborted aggregate 
   assert.throws(() => classifyParentLeaves(deep), /chain/);
 });
 
+test('rows a phase refused before they ran are unexecuted leaves beneath that phase, covered by its cause and required of the retry', () => {
+  // Real case (2026-09-15, candidate 4DsIoB attempt 88b0e2f3): the timing phase was refused by
+  // admission, no timing row reached the ledger, and the only record was the browser phase row.
+  const p = parent();
+  p.verification.checks = p.verification.checks.filter((r) => !r.id.startsWith('browser:'));
+  p.verification.results[2] = {
+    id: 'browser',
+    status: 'failed',
+    error: 'Browser checks failed: spring-perf, audio',
+    notEvaluated: ['spring-perf', 'audio'],
+  };
+  const c = classifyParentLeaves(p);
+  assert.deepEqual(c.failed, []);
+  assert.deepEqual(c.unexecuted, ['browser:audio', 'browser:spring-perf']);
+  assert.deepEqual(c.unexecutedBy, { browser: ['browser:audio', 'browser:spring-perf'] });
+  // Without the fix this parent was "nothing to retry"; now the phase cause covers its rows.
+  assert.throws(() => validateCauses(c, new Map()), /browser:audio, browser:spring-perf/);
+  assert.deepEqual(validateCauses(c, new Map([['browser', 'timing admission refused']])), {
+    browser: { aggregate: true, covers: ['browser:audio', 'browser:spring-perf'] },
+  });
+  assert.deepEqual(
+    validateCauses(
+      c,
+      new Map([
+        ['browser:spring-perf', 'x'],
+        ['browser:audio', 'y'],
+      ]),
+    ),
+    {
+      'browser:spring-perf': { aggregate: false, covers: ['browser:spring-perf'] },
+      'browser:audio': { aggregate: false, covers: ['browser:audio'] },
+    },
+  );
+  const required = requiredReexecution({ classification: c, manifest });
+  assert.ok(required.has('browser:spring-perf') && required.has('browser:audio'));
+  // A phase row without the list still records only an aborted aggregate.
+  const bare = parent();
+  bare.verification.results[2] = { id: 'browser', status: 'failed', error: 'x' };
+  assert.deepEqual(classifyParentLeaves(bare).unexecutedBy, {});
+  // Regression from review: the ci phase names unit FILES a sleeping host skipped; they are
+  // unit leaves beneath ci, never browser checks, so the retry's selection stays registered.
+  const slept = parent();
+  slept.verification.checks = slept.verification.checks.filter((r) => r.id !== 'browser:ball');
+  slept.verification.results = [
+    {
+      id: 'ci',
+      status: 'failed',
+      error: 'host slept: 2 unit tests not evaluated',
+      notEvaluated: ['test/late.test.mjs', 'test/later.test.mjs'],
+    },
+  ];
+  const sc = classifyParentLeaves(slept);
+  assert.deepEqual(sc.failed, []);
+  assert.deepEqual(sc.unexecutedBy, {
+    ci: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'],
+  });
+  assert.deepEqual(validateCauses(sc, new Map([['ci', 'host slept mid-CI']])), {
+    ci: { aggregate: true, covers: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'] },
+  });
+  assert.ok(
+    [...requiredReexecution({ classification: sc, manifest })].every((id) =>
+      id.startsWith('unit:'),
+    ),
+  );
+  // A phase that cannot own not-evaluated rows is refused rather than guessed at.
+  const odd = parent();
+  odd.verification.results = [{ id: 'selection', status: 'failed', notEvaluated: ['x'] }];
+  assert.throws(() => classifyParentLeaves(odd), /cannot own/);
+  // A browser row the host slept through carries a receipt marked not evaluated: it is an
+  // unexecuted leaf beneath the browser phase (the phase cause covers it), not a failure.
+  const hostSlept = parent();
+  hostSlept.verification.checks.find((r) => r.id === 'browser:ball').notEvaluated = true;
+  const hc = classifyParentLeaves(hostSlept);
+  assert.deepEqual(hc.failed, []);
+  assert.deepEqual(hc.unexecutedBy, { browser: ['browser:ball'] });
+  assert.deepEqual(validateCauses(hc, new Map([['browser', 'host slept']])).browser.covers, [
+    'browser:ball',
+  ]);
+  assert.deepEqual(validateCauses(hc, new Map([['browser:ball', 'host slept']]))['browser:ball'], {
+    aggregate: false,
+    covers: ['browser:ball'],
+  });
+  assert.ok(requiredReexecution({ classification: hc, manifest }).has('browser:ball'));
+});
+
 test('reexecution covers non-pass leaves, their registered controls and every always-fresh class', () => {
   const p = parent();
   const c = classifyParentLeaves(p);

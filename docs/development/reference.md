@@ -77,6 +77,7 @@ These are registered commands and checks, not evidence that they passed.
 | boundary-types | runtime-contract | M3b | [scripts/check-boundary-types.mjs](../../scripts/check-boundary-types.mjs) |
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
+| format | gate-integrity | M0 | [scripts/check-format.mjs](../../scripts/check-format.mjs) |
 | verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
 | verification-scope-configuration | gate-integrity | M3b | [scripts/verification-window.mjs](../../scripts/verification-window.mjs) |
 

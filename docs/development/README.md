@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"71e47c4176d6f511dd51d93d8e00a3007d430e63d785f7c4d206fcd60141e91a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"3083bfa3e07ef409f8333c2d3de038d172f4ed29ae1489aff41ae73e6a03631d","disposition":"still accurate","rationale":"reference.md was regenerated for the reuse change (command/check facts only); the prepare → review → check workflow this section describes is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"043a4a9ed670d74ca62d0a1882438fc245efe471fa6ecd20af5e72e70902abae","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9b1676c05f5928ff5e66ba32e6abb590e0f106cdba44626908038089d431f470","disposition":"still accurate","rationale":"Follow-up to the diagnosed retry on main 38f6de8: refused-phase rows visible to --after, the every-commit format gate, the prettier fix. The regenerated reference lists the new format gate (scripts/check-format.mjs, gate-integrity, M0); the regenerate, section-specific review, batch submission and exact-source closure workflow described here is unchanged and no review was accepted automatically."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"2168562bfabb7e2b6f6fb9bf1d414b5ca28575060fc754cc3b404f9b8a4fedc0","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"248bfe8be7735f8c7eb53d9a37625b815a4b43ea533d74a8ab47bed351fe25e3","disposition":"still accurate","rationale":"The browser receipt configuration binds the row and its budget, never the worker count (already stated); receipts now also record retained-evidence checksums and a cross-candidate resume ledger verifies them through an accept hook, and candidate-resume-integrity gained the reuse owners/controls — selection, scheduling, exclusivity and scope-audit rules described here are unchanged. Receipt reuse across candidates (Slice B): `--after` with a passed parent lends its workshop browser receipts to a local or merge child on identical bytes, dependencies and identity; the offered set is derived from manifest facts (browser/workshop, not mergeSmoke, not timingSensitive, depth-0 only), cited evidence is verified by digest before a receipt is offered (missing executes, altered fails closed), hosted-profile and measurement reports and final are refused, and a child that reused reports passed with reused receipts. Also: every candidate copy and the release snapshot carry a `.metadata_never_index` marker at their root."} -->
+<!-- doc-review {"version":1,"fingerprint":"c9960c650a4232391911a437402f4cc893c57beeeb484dc7261f082748db9fb6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3681f8f453cc5fda4dd782bdde0dd6cdfc4a1494bfd4f96915484063df63ea72","disposition":"still accurate","rationale":"Follow-up to the diagnosed retry on main 38f6de8, amended after its read-only review: refused rows named by their phase, host-slept leaves covered through the phase cause, suite failure builder, format gate. Selection, scope rows, admission and the scheduler are unchanged; the suite failure now separates refused ids from failed ids through a pure builder keyed on the suite's own not-evaluated status, which changes what a retry can see, not which checks run or how."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,10 @@ comparisons. This reduces repeated parsing without removing byte-based drift che
 
 CI completes structural prerequisites, then admits invariant-control and remaining unit
 files through one four-worker pool. The standalone structural gate still runs its invariant
-unit controls. The 180-second CI obligation is unchanged.
+unit controls. The structural prerequisites include the `format` gate — the same
+`prettier --check` over `src`, `scripts` and `test` that the hosted `format:check` job runs,
+cached under `artifacts/format-gate` (never under `node_modules`, whose bytes the candidate
+digests) — so a layout defect cannot reach `main` through a local tier. The 180-second CI obligation is unchanged.
 
 The unit runner stops admitting queued tests when the iteration budget expires and
 reports their paths as `unexecuted`; they are not failed test executions. A started child
@@ -607,7 +610,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"c25294f639a453e5de43b7d945772106d7a60ceab5518c6bdb45937662ff6f94","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"77ccc180aa20a03bae28d7a985d3423e1eadd236aa9b8b17e8ff1bba91f816f4","disposition":"updated","rationale":"Added the receipt-reuse paragraph after the diagnosed retry: passed-parent admission (attestation, finished attempt, local|merge, not hosted/measurement, final refused), identity requirements, the derived offered set, the ledger fields (previous/previousKey/reuse), evidence verification semantics and the passed-with-reused-receipts status; the candidate paragraph also names the .metadata_never_index marker. Receipt reuse across candidates (Slice B): `--after` with a passed parent lends its workshop browser receipts to a local or merge child on identical bytes, dependencies and identity; the offered set is derived from manifest facts (browser/workshop, not mergeSmoke, not timingSensitive, depth-0 only), cited evidence is verified by digest before a receipt is offered (missing executes, altered fails closed), hosted-profile and measurement reports and final are refused, and a child that reused reports passed with reused receipts. Also: every candidate copy and the release snapshot carry a `.metadata_never_index` marker at their root."} -->
+<!-- doc-review {"version":1,"fingerprint":"46a7bfc02bd7a8c2af9527d14e5dee5ef40a1f5d532d034440ebb832c8800679","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5da38de3e619da362f074a1a5db785cba2b34daf740fab9a8ae1a024e78e34f2","disposition":"updated","rationale":"Follow-up to the diagnosed retry on main 38f6de8, amended after its read-only review: refused rows named by their phase, host-slept leaves covered through the phase cause, suite failure builder, format gate. The retry paragraph now distinguishes rows refused before they ran (no receipt; the phase row names them) from rows a sleeping host skipped (receipt marked not evaluated), both classified as unexecuted leaves beneath their phase so the phase cause or a per-row cause covers them and each must be observed executed and passing. Verified against candidate-after.mjs classifyParentLeaves/validateCauses, verify-browser-suite.mjs browserSuiteFailure and verification-tiers.mjs."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -671,7 +674,12 @@ parent must be a `failed` report that completed its tier; an attempt that failed
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
 its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
 `ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
-(`ci`, `browser`) may record that the leaves beneath it never ran. A plain `resume` of a retry
+(`ci`, `browser`) may record that the leaves beneath it never ran. Rows a phase refused before
+they ran (timing rows under a refused admission) leave no receipt and the phase row names them
+(`notEvaluated`); rows a sleeping host skipped carry a receipt marked not evaluated. Both count as
+unexecuted leaves beneath their phase rather than as failures, so a cause on the phase covers
+them (a cause per row is also accepted) and the retry must observe each one executed and
+passing. A plain `resume` of a retry
 report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
 parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused
 rather than re-pinned — and the parent's bytes, identity and installed dependencies are read
