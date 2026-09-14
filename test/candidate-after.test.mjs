@@ -17,7 +17,13 @@ import {
   resolveRetrySelection,
   attestReport,
   verifyAttestation,
+  reusableAcrossCandidates,
+  reuseSet,
+  reuseSummary,
+  validateReuseReport,
+  REUSE_TIERS,
 } from '../scripts/candidate-after.mjs';
+import { readFileSync } from 'node:fs';
 
 const manifest = {
   browserChecks: [
@@ -26,6 +32,8 @@ const manifest = {
     { id: 'audio', script: 'scripts/audio.mjs', tier: 'browser', timingSensitive: true },
     { id: 'mirror', script: 'scripts/mirror.mjs', tier: 'browser' },
     { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
+    { id: 'hosted', script: 'scripts/hosted.mjs', tier: 'browser', environment: 'self' },
+    { id: 'probe', script: 'scripts/probe.mjs', tier: 'browser', environment: 'probe' },
   ],
   checks: [{ id: 'layers' }, { id: 'invariant-controls' }],
   invariants: [
@@ -230,6 +238,91 @@ test('every failed or unexecuted leaf needs its own cause; an aborted aggregate 
   // Chain depth is refused before anything runs.
   const deep = parent({ after: { chain: Array(CHAIN_DEPTH_LIMIT).fill(parent().attempt) } });
   assert.throws(() => classifyParentLeaves(deep), /chain/);
+});
+
+test('rows a phase refused before they ran are unexecuted leaves beneath that phase, covered by its cause and required of the retry', () => {
+  // Real case (2026-09-15, candidate 4DsIoB attempt 88b0e2f3): the timing phase was refused by
+  // admission, no timing row reached the ledger, and the only record was the browser phase row.
+  const p = parent();
+  p.verification.checks = p.verification.checks.filter((r) => !r.id.startsWith('browser:'));
+  p.verification.results[2] = {
+    id: 'browser',
+    status: 'failed',
+    error: 'Browser checks failed: spring-perf, audio',
+    notEvaluated: ['spring-perf', 'audio'],
+  };
+  const c = classifyParentLeaves(p);
+  assert.deepEqual(c.failed, []);
+  assert.deepEqual(c.unexecuted, ['browser:audio', 'browser:spring-perf']);
+  assert.deepEqual(c.unexecutedBy, { browser: ['browser:audio', 'browser:spring-perf'] });
+  // Without the fix this parent was "nothing to retry"; now the phase cause covers its rows.
+  assert.throws(() => validateCauses(c, new Map()), /browser:audio, browser:spring-perf/);
+  assert.deepEqual(validateCauses(c, new Map([['browser', 'timing admission refused']])), {
+    browser: { aggregate: true, covers: ['browser:audio', 'browser:spring-perf'] },
+  });
+  assert.deepEqual(
+    validateCauses(
+      c,
+      new Map([
+        ['browser:spring-perf', 'x'],
+        ['browser:audio', 'y'],
+      ]),
+    ),
+    {
+      'browser:spring-perf': { aggregate: false, covers: ['browser:spring-perf'] },
+      'browser:audio': { aggregate: false, covers: ['browser:audio'] },
+    },
+  );
+  const required = requiredReexecution({ classification: c, manifest });
+  assert.ok(required.has('browser:spring-perf') && required.has('browser:audio'));
+  // A phase row without the list still records only an aborted aggregate.
+  const bare = parent();
+  bare.verification.results[2] = { id: 'browser', status: 'failed', error: 'x' };
+  assert.deepEqual(classifyParentLeaves(bare).unexecutedBy, {});
+  // Regression from review: the ci phase names unit FILES a sleeping host skipped; they are
+  // unit leaves beneath ci, never browser checks, so the retry's selection stays registered.
+  const slept = parent();
+  slept.verification.checks = slept.verification.checks.filter((r) => r.id !== 'browser:ball');
+  slept.verification.results = [
+    {
+      id: 'ci',
+      status: 'failed',
+      error: 'host slept: 2 unit tests not evaluated',
+      notEvaluated: ['test/late.test.mjs', 'test/later.test.mjs'],
+    },
+  ];
+  const sc = classifyParentLeaves(slept);
+  assert.deepEqual(sc.failed, []);
+  assert.deepEqual(sc.unexecutedBy, {
+    ci: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'],
+  });
+  assert.deepEqual(validateCauses(sc, new Map([['ci', 'host slept mid-CI']])), {
+    ci: { aggregate: true, covers: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'] },
+  });
+  assert.ok(
+    [...requiredReexecution({ classification: sc, manifest })].every((id) =>
+      id.startsWith('unit:'),
+    ),
+  );
+  // A phase that cannot own not-evaluated rows is refused rather than guessed at.
+  const odd = parent();
+  odd.verification.results = [{ id: 'selection', status: 'failed', notEvaluated: ['x'] }];
+  assert.throws(() => classifyParentLeaves(odd), /cannot own/);
+  // A browser row the host slept through carries a receipt marked not evaluated: it is an
+  // unexecuted leaf beneath the browser phase (the phase cause covers it), not a failure.
+  const hostSlept = parent();
+  hostSlept.verification.checks.find((r) => r.id === 'browser:ball').notEvaluated = true;
+  const hc = classifyParentLeaves(hostSlept);
+  assert.deepEqual(hc.failed, []);
+  assert.deepEqual(hc.unexecutedBy, { browser: ['browser:ball'] });
+  assert.deepEqual(validateCauses(hc, new Map([['browser', 'host slept']])).browser.covers, [
+    'browser:ball',
+  ]);
+  assert.deepEqual(validateCauses(hc, new Map([['browser:ball', 'host slept']]))['browser:ball'], {
+    aggregate: false,
+    covers: ['browser:ball'],
+  });
+  assert.ok(requiredReexecution({ classification: hc, manifest }).has('browser:ball'));
 });
 
 test('reexecution covers non-pass leaves, their registered controls and every always-fresh class', () => {
@@ -667,4 +760,224 @@ test('a parent report is trusted only under the attestation of its own candidate
       }),
     /unavailable/,
   );
+});
+
+const passedParent = (overrides = {}) =>
+  parent({
+    status: 'passed',
+    tier: 'local',
+    verification: {
+      ...parent().verification,
+      status: 'passed',
+      results: parent().verification.results.map((r) => ({ ...r, status: 'passed' })),
+      checks: [
+        ...parent().verification.checks.filter((r) => r.id !== 'browser:ball'),
+        receipt('browser:ball', true),
+        receipt('browser:smoke', true),
+        receipt('browser:hosted', true),
+        receipt('browser:probe', true),
+      ],
+    },
+    ...overrides,
+  });
+
+test('across candidates only workshop browser journeys carry a receipt; smoke, timing, hosted, probe and unit leaves never do', () => {
+  assert.equal(reusableAcrossCandidates('browser:ball', manifest), true);
+  assert.equal(reusableAcrossCandidates('browser:mirror', manifest), true);
+  assert.equal(reusableAcrossCandidates('browser:smoke', manifest), false, 'merge smoke');
+  assert.equal(reusableAcrossCandidates('browser:hosted', manifest), false, 'hosted');
+  assert.equal(reusableAcrossCandidates('browser:probe', manifest), false, 'probe');
+  assert.equal(reusableAcrossCandidates('browser:audio', manifest), false, 'timing-sensitive');
+  assert.equal(reusableAcrossCandidates('browser:spring-perf', manifest), false, 'performance');
+  assert.equal(reusableAcrossCandidates('unit:test/geometry.test.mjs', manifest), false, 'unit');
+  assert.equal(reusableAcrossCandidates('browser:missing', manifest), false);
+  assert.equal(reusableAcrossCandidates('build:browser', manifest), false);
+  // The registered manifest decides: a workshop journey with local storage is reusable, the
+  // camera journey is timing-sensitive, every hosted recording check is self, smoke is smoke.
+  const real = JSON.parse(readFileSync(new URL('../scripts/manifest.json', import.meta.url)));
+  const rows = Object.fromEntries(real.browserChecks.map((c) => [c.id, c]));
+  assert.equal(reusableAcrossCandidates('browser:verify-recording-browser', real), true);
+  assert.equal(rows['verify-camera-browser'].timingSensitive, true);
+  assert.equal(reusableAcrossCandidates('browser:verify-camera-browser', real), false);
+  for (const c of real.browserChecks) {
+    const reusable = reusableAcrossCandidates(`browser:${c.id}`, real);
+    if (
+      c.mergeSmoke ||
+      c.timingSensitive ||
+      c.tier !== 'browser' ||
+      (c.environment ?? 'workshop') !== 'workshop'
+    )
+      assert.equal(reusable, false, c.id);
+    else assert.equal(reusable, true, c.id);
+  }
+  assert.ok(
+    real.browserChecks.filter((c) => reusableAcrossCandidates(`browser:${c.id}`, real)).length >=
+      30,
+  );
+  assert.deepEqual([...REUSE_TIERS], ['local', 'merge']);
+});
+
+test('a passed parent classifies for reuse; a passed report carrying a failed leaf is refused', () => {
+  const c = classifyParentLeaves(passedParent());
+  assert.equal(c.kind, 'reuse');
+  assert.deepEqual(c.failed, []);
+  assert.equal(classifyParentLeaves(parent()).kind, 'retry');
+  assert.equal(
+    classifyParentLeaves(passedParent({ status: 'passed with reused receipts' })).kind,
+    'reuse',
+  );
+  assert.throws(
+    () => classifyParentLeaves(passedParent({ status: 'passed after failure' })),
+    /--after needs|failed/,
+  );
+  const inconsistent = passedParent();
+  inconsistent.verification.checks.find((r) => r.id === 'browser:mirror').ok = false;
+  assert.throws(() => classifyParentLeaves(inconsistent), /failed.*browser:mirror/);
+  // A hosted-profile or measurement report is never evidence for reuse.
+  const hosted = passedParent();
+  hosted.verification.hostProfile = 'github-ubuntu-2cpu';
+  assert.throws(() => classifyParentLeaves(hosted), /hosted-profile or measurement/);
+  const measured = passedParent();
+  measured.verification.measurement = true;
+  assert.throws(() => classifyParentLeaves(measured), /hosted-profile or measurement/);
+  // A passed parent takes no cause.
+  assert.throws(() => validateCauses(c, new Map([['browser:ball', 'x']])), /nothing failed/);
+  assert.deepEqual(validateCauses(c, new Map()), {});
+});
+
+test("the offered set is the parent's own depth-0 workshop journeys; resumed or chained receipts are always fresh", () => {
+  const p = passedParent();
+  p.verification.checks.find((r) => r.id === 'browser:mirror').resumed = true;
+  p.verification.checks.find((r) => r.id === 'browser:mirror').origin = {
+    attempt: p.attempt,
+    report: 'r',
+    depth: 1,
+  };
+  const set = reuseSet({ classification: classifyParentLeaves(p), manifest });
+  assert.deepEqual(set.offered, ['browser:ball']);
+  assert.ok(set.alwaysFresh.includes('browser:mirror'), 'resumed in the parent');
+  assert.ok(set.alwaysFresh.includes('browser:smoke'));
+  assert.ok(set.alwaysFresh.includes('browser:hosted'));
+  assert.ok(set.alwaysFresh.includes('browser:audio'));
+  assert.ok(set.alwaysFresh.includes('unit:test/geometry.test.mjs'));
+  assert.throws(
+    () => reuseSet({ classification: classifyParentLeaves(parent()), manifest }),
+    /passed/,
+  );
+});
+
+test('a reuse child is passed with reused receipts exactly when it resumed a receipt the parent offered and executed', () => {
+  const p = passedParent();
+  const origin = { attempt: p.attempt, report: p.attemptReport, depth: 1 };
+  const child = (checks, status = 'passed') => ({ status, checks });
+  const summary = reuseSummary({
+    parent: p,
+    mode: 'same-bytes',
+    sameBytes: { sameSource: true, sameDependencies: true, sameIdentity: true },
+    offered: ['browser:ball', 'browser:mirror'],
+    child: child([
+      receipt('check:layers', true),
+      receipt('browser:ball', true, { resumed: true, origin }),
+      receipt('browser:smoke', true),
+    ]),
+  });
+  assert.equal(summary.status, 'passed with reused receipts');
+  assert.equal(summary.after.kind, 'reuse');
+  assert.deepEqual(summary.after.reused, [{ id: 'browser:ball', origin }]);
+  assert.deepEqual(summary.after.notSelected, ['browser:mirror']);
+  assert.deepEqual(summary.after.executed, ['browser:smoke', 'check:layers']);
+  assert.deepEqual(summary.after.counts, { offered: 2, reused: 1, executed: 2 });
+  assert.deepEqual(summary.after.chain, []);
+  assert.equal(summary.after.parentTier, 'local');
+  // Nothing reused is plain passed; a failed child is failed.
+  assert.equal(
+    reuseSummary({
+      parent: p,
+      mode: 'delta',
+      sameBytes: {},
+      offered: [],
+      child: child([receipt('browser:ball', true)]),
+    }).status,
+    'passed',
+  );
+  assert.equal(
+    reuseSummary({
+      parent: p,
+      mode: 'same-bytes',
+      sameBytes: {},
+      offered: ['browser:ball'],
+      child: child([], 'failed'),
+    }).status,
+    'failed',
+  );
+  // The report validator refuses every inconsistent shape.
+  const report = (overrides = {}) => ({
+    status: 'passed with reused receipts',
+    tier: 'merge',
+    after: { ...summary.after },
+    verification: { checks: [receipt('browser:ball', true, { resumed: true, origin })] },
+    ...overrides,
+  });
+  const consistent = report();
+  assert.equal(validateReuseReport(consistent), consistent);
+  assert.throws(
+    () => validateReuseReport(report({ status: 'passed' })),
+    /must be passed with reused receipts/,
+  );
+  assert.throws(
+    () => validateReuseReport(report({ after: { ...summary.after, reused: [] } })),
+    /at least one/,
+  );
+  assert.throws(() => validateReuseReport(report({ tier: 'final' })), /final/);
+  // A caller may admit other child tiers (release operations); the parent is never final.
+  const intoFinal = report({ tier: 'final' });
+  assert.equal(validateReuseReport(intoFinal, { childTiers: ['final'] }), intoFinal);
+  assert.throws(
+    () => validateReuseReport(report({ after: { ...summary.after, parentTier: 'final' } })),
+    /local or merge parent/,
+  );
+  assert.throws(
+    () =>
+      validateReuseReport(report({ after: { ...summary.after, parentTier: 'final' } }), {
+        childTiers: ['final'],
+      }),
+    /local or merge parent/,
+  );
+  assert.throws(
+    () =>
+      validateReuseReport(
+        report({
+          verification: {
+            checks: [
+              receipt('browser:ball', true, { resumed: true, origin: { ...origin, depth: 2 } }),
+            ],
+          },
+        }),
+      ),
+    /depth-0/,
+  );
+  assert.throws(
+    () => validateReuseReport(report({ after: { ...summary.after, offered: ['browser:mirror'] } })),
+    /not offered/,
+  );
+  assert.throws(
+    () =>
+      validateReuseReport(
+        report({
+          verification: {
+            checks: [
+              receipt('browser:ball', true, { resumed: true, origin }),
+              receipt('browser:mirror', true, { resumed: true, origin }),
+            ],
+          },
+        }),
+      ),
+    /missing from the after block/,
+  );
+  assert.throws(
+    () => validateReuseReport(report({ after: { ...summary.after, kind: 'retry' } })),
+    /consistent/,
+  );
+  // validateAfterReport dispatches on the block kind.
+  assert.equal(validateAfterReport(consistent), consistent);
 });

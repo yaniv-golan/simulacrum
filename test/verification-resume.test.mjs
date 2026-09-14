@@ -211,3 +211,78 @@ test('the production save policy is the reusable-leaf predicate: non-process, ag
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('an accept hook offers a receipt only while its evidence is intact: missing executes again, altered bytes fail closed', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'resume-accept-'));
+  try {
+    const verdicts = [];
+    const options = {
+      directory: dir,
+      key: Buffer.alloc(32, 3),
+      identity: { source: 'same' },
+      eligible: ['browser:x'],
+      saveEligible: null,
+    };
+    createLeafLedger(options).save('browser:x', { script: 'x' }, { code: 0, evidence: 'e' }, 5);
+    let verdict = 'ok';
+    const ledger = createLeafLedger({
+      ...options,
+      accept: (payload) => {
+        verdicts.push(payload.id);
+        return verdict;
+      },
+    });
+    assert.equal(ledger.load('browser:x', { script: 'x' }).value.evidence, 'e');
+    verdict = 'missing';
+    assert.equal(ledger.load('browser:x', { script: 'x' }), null, 'executes again');
+    verdict = 'mismatch';
+    assert.throws(() => ledger.load('browser:x', { script: 'x' }), /evidence mismatch: browser:x/);
+    assert.deepEqual(verdicts, ['browser:x', 'browser:x', 'browser:x']);
+    // Without a hook the receipt is offered as before.
+    assert.equal(createLeafLedger(options).load('browser:x', { script: 'x' }).status, 'passed');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('retained evidence is accepted by digest and size, missing paths execute again and a browser receipt without checksums is never offered across candidates', async () => {
+  const { acceptRetainedEvidence } = await import('../scripts/verification-run.mjs');
+  const { createHash } = await import('node:crypto');
+  const { mkdirSync } = await import('node:fs');
+  const dir = mkdtempSync(join(tmpdir(), 'evidence-accept-'));
+  try {
+    mkdirSync(join(dir, 'x'));
+    writeFileSync(join(dir, 'x/witness.json'), '{"ok":true}');
+    writeFileSync(join(dir, 'x.log'), 'log');
+    const entry = (path) => {
+      const bytes = readFileSync(path);
+      return {
+        path,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+        bytes: bytes.length,
+      };
+    };
+    const checksums = [
+      { path: join(dir, 'x'), directory: true },
+      entry(join(dir, 'x/witness.json')),
+      entry(join(dir, 'x.log')),
+    ];
+    const payload = (evidenceChecksums) => ({
+      id: 'browser:x',
+      value: { code: 0, evidenceChecksums },
+    });
+    assert.equal(acceptRetainedEvidence(payload(checksums)), 'ok');
+    assert.equal(acceptRetainedEvidence(payload(undefined)), 'missing', 'no checksums');
+    assert.equal(acceptRetainedEvidence({ id: 'unit:test/a.test.mjs', value: { code: 0 } }), 'ok');
+    writeFileSync(join(dir, 'x.log'), 'LOG');
+    assert.equal(acceptRetainedEvidence(payload(checksums)), 'mismatch', 'same size, other bytes');
+    writeFileSync(join(dir, 'x.log'), 'log');
+    writeFileSync(join(dir, 'x/witness.json'), '{"ok":false}');
+    assert.equal(acceptRetainedEvidence(payload(checksums)), 'mismatch');
+    rmSync(join(dir, 'x'), { recursive: true });
+    assert.equal(acceptRetainedEvidence(payload(checksums)), 'missing');
+    assert.equal(acceptRetainedEvidence(payload([{ sha256: 'x' }])), 'malformed');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
