@@ -4,6 +4,15 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, basename } from 'node:path';
 
+/** Runs in every harness page before the app: a remembered first-run answer, so the
+ * one-time chooser stays a first-visit journey's own subject. */
+function markReturningDevice() {
+  try {
+    localStorage.setItem('simulacrum-first-run-v1', 'harness');
+  } catch {
+    // No storage: the app then never opens the chooser either.
+  }
+}
 /** In-page reader of what the application currently announces to assistive
  * technology: visible, unique role=status and polite/assertive live regions.
  * Self-contained so it can be passed to page.evaluate and unit-tested on a stub. */
@@ -373,11 +382,15 @@ export function attachBrowserSession(
       } catch (error) {
         await cleanupAfterFailure(error);
       }
-      const newContext = async (options = {}) => {
+      // Every context is a returning device unless a check asks for a first visit: the
+      // workshop's one-time first-run choice would otherwise open in every journey.
+      const newContext = async ({ firstRun = false, ...options } = {}) => {
         try {
-          return await timing.measure('context-setup', async () =>
-            wrapContext(await browser.newContext(options)),
-          );
+          return await timing.measure('context-setup', async () => {
+            const context = await browser.newContext(options);
+            if (!firstRun) await context.addInitScript(markReturningDevice);
+            return wrapContext(context);
+          });
         } catch (error) {
           await cleanupAfterFailure(error);
         }

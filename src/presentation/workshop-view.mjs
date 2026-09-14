@@ -18,7 +18,13 @@ import {
   applyGraphicsQuality,
   createGraphicsRenderer,
 } from './graphics-quality.mjs';
-import { footerModel, modeControlState, movementScope } from './workbench-content.mjs';
+import {
+  FIRST_RUN_KEY,
+  firstRunDecision,
+  footerModel,
+  modeControlState,
+  movementScope,
+} from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
@@ -140,6 +146,7 @@ export function createWorkshopView(
     cameraSession,
     builtInAssemblies = [],
     guideSteps = [],
+    firstRun = 'modal',
   },
 ) {
   const learningControls = learning
@@ -883,11 +890,87 @@ export function createWorkshopView(
     'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear',
   );
   const empty = element('div', 'empty-hint');
+  const hintGuide = button('▷ Start the guide', () =>
+    chooseExample({ name: 'the guided build', command: { type: 'new' }, guide: true }, hintGuide),
+  );
+  hintGuide.dataset.command = 'hint-guide';
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
-    element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Open Parts and add a part, or let the guide walk you through one.'),
+    hintGuide,
   );
+  // Once per remembered device: how to start. Escape and the × both mean the empty bench.
+  function offerFirstRun() {
+    let keys = null;
+    try {
+      keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i));
+    } catch {
+      keys = null;
+    }
+    const shape = firstRunDecision({
+      keys: keys ?? [],
+      storage: keys !== null,
+      hasContent: hasWorkshopContent(frame.metadata.blueprint),
+      guideActive,
+      shape: firstRun,
+    });
+    if (!shape) return false;
+    const dialog = element('dialog', 'workshop-dialog first-run');
+    dialog.setAttribute('aria-label', 'How do you want to start?');
+    let launch = null;
+    const answer = (action) => {
+      launch = action;
+      dialog.close();
+    };
+    const guided = button(
+      'Guided build',
+      () =>
+        answer(() =>
+          chooseExample({ name: 'the guided build', command: { type: 'new' }, guide: true }),
+        ),
+      'primary',
+    );
+    guided.dataset.command = 'first-run-guide';
+    const example = button('Drive an example', () =>
+      answer(() =>
+        chooseExample({
+          name: 'the driving example',
+          command: { type: 'driving-example', replace: true },
+        }),
+      ),
+    );
+    example.dataset.command = 'first-run-example';
+    const actions = element('div', 'first-run-actions');
+    actions.append(guided, example);
+    dialog.append(
+      createDialogHeader(
+        element('h2', '', 'How do you want to start?'),
+        createDialogClose('Close · start on the empty bench', () => dialog.close()),
+      ),
+      element(
+        'p',
+        '',
+        'Build your first rolling machine one step at a time, drive a finished one, or start on the empty bench.',
+      ),
+      actions,
+      element('p', 'muted small', 'Close this (Escape) to start on the empty bench.'),
+    );
+    dialog.addEventListener('close', () => {
+      try {
+        localStorage.setItem(FIRST_RUN_KEY, new Date().toISOString());
+      } catch {
+        // Without storage the decision above never opens this dialog again this load.
+      }
+      dialog.remove();
+      launch?.();
+    });
+    root.append(dialog);
+    if (shape === 'modal') dialog.showModal();
+    else dialog.show();
+    guided.focus();
+    return true;
+  }
   const stage = element('div', 'stage'),
     buildId = element(
       'div',
@@ -4515,6 +4598,7 @@ export function createWorkshopView(
   draw();
   return {
     utilityHost: footer,
+    offerFirstRun,
     readCompletedDraw: () => structuredClone(completedDraw),
     updateSound: (state) => soundControls.update(state),
     audioListener: () => {

@@ -439,8 +439,19 @@ Give feedback shares the existing workshop footer before, during and after recor
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
-readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
-is currently implemented. Future optional hints require an explicit trigger,
+readable and copyable here; the served marker remains for assessment evidence. The one
+automatic surface is the first-run choice
+([firstRunDecision](../../src/presentation/workbench-content.mjs#source)): once per
+remembered device, on an empty workshop with no guide active, a dialog asks how to
+start — guided build, the driving example, or (its × and Escape alike) the empty bench —
+and any answer is stored under `simulacrum-first-run-v1`; any earlier `simulacrum` key
+counts as a prior visit, and without storage the dialog never opens, so nobody is asked
+on every load. Its trigger is the first visit, its completion is any answer, and its
+retrieval route is Learn & examples (the primary home of both launchers) plus the empty
+bench's own guide button. On the hosted build it waits for recording setup to close, so
+consent precedes it and the recorder never captures the answer without consent. The
+browser harness marks every context a returning device unless a check asks for a first
+visit. No other automatic hint/tour is implemented. Future optional hints require an explicit trigger,
 dismissal/completion condition and retrieval route, with no timer hiding required
 instructions. Honor dismissal where persistence exists; local resets are not proof
 that someone wants another tour. Errors and consequential state are never dismissed

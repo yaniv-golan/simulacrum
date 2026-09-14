@@ -395,6 +395,21 @@ h3 {
   font-size: 13px;
   color: #95acb7;
 }
+.empty-hint button {
+  pointer-events: auto;
+  margin-top: 10px;
+}
+/* The one-time first-run choice; its × and Escape both mean the empty bench. */
+.first-run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+.first-run-actions button {
+  flex: 1 1 160px;
+  min-height: 44px;
+}
 .part-kind {
   font-size: 11px;
   color: #91a8b3;

@@ -428,6 +428,10 @@ Source changes stop new dispatches and drain already-started work.
 The [shared browser launch boundary](../../scripts/browser-session.mjs#implementation) checks the resolved profile and headless option against
 the child process execution policy, so passing a profile through a variable cannot bypass
 exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
+Every context it opens is marked a returning device (an init script stores the
+`simulacrum-first-run-v1` answer) so the workshop's one-time first-run choice never opens
+inside an unrelated journey; a check that is about the first visit passes
+`firstRun: true` to `newPage`/`newContext` and gets a clean device.
 Reports preserve manifest order, all failures, worker configuration and source identity.
 Every check records its planned schedule index, dispatch time, active browser peers and
 host load averages. These describe admission conditions; they do not establish stable

@@ -8,17 +8,48 @@ const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/workbench-content');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, firstRun: true });
+const read = (p = page) => p.evaluate(() => JSON.parse(window.render_game_to_text()));
 try {
-  await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
+  await evidence.goto(page, url);
   await page.waitForFunction(() => window.workshopProbe);
   page.setDefaultTimeout(6000);
+  // A first visit asks how to start; × (or Escape) means the empty bench and is remembered.
+  const chooser = page.locator('dialog.first-run');
+  await chooser.waitFor({ state: 'visible' });
+  evidence.assert('equal', [await chooser.getAttribute('aria-label'), 'How do you want to start?']);
+  await page.getByRole('button', { name: 'Close · start on the empty bench', exact: true }).click();
+  await chooser.waitFor({ state: 'detached' });
+  evidence.assert('equal', [await chooser.count(), 0, 'an answered chooser leaves the DOM']);
+  evidence.assert('equal', [(await read()).metadata.blueprint.parts.length, 0]);
   evidence.assert('equal', [
     await page.locator('.starter-guide').isVisible(),
     false,
     'the parts catalogue must not start with an unsolicited lesson/example panel',
   ]);
+  evidence.assert('equal', [
+    await page.locator('.empty-hint [data-command=hint-guide]').isVisible(),
+    true,
+    'the empty bench keeps the guide reachable after the choice',
+  ]);
+  await evidence.reload(page);
+  await page.waitForFunction(() => window.workshopProbe);
+  evidence.assert('equal', [await chooser.count(), 0, 'the answer is remembered on this device']);
+  for (const [command, expect] of [
+    ['first-run-guide', (p) => p.locator('.starter-guide.active-guide').isVisible()],
+    ['first-run-example', async (p) => (await read(p)).metadata.blueprint.parts.length > 0],
+  ]) {
+    const fresh = await browser.newPage({ viewport: { width: 1280, height: 720 }, firstRun: true });
+    await evidence.goto(fresh, url);
+    await fresh.waitForFunction(() => window.workshopProbe);
+    await fresh.locator('dialog.first-run').waitFor({ state: 'visible' });
+    await fresh.locator(`[data-command=${command}]`).click();
+    await fresh.locator('dialog.first-run').waitFor({ state: 'detached' });
+    evidence.assert('equal', [await fresh.locator('dialog.first-run').count(), 0]);
+    evidence.assert('equal', [await expect(fresh), true, `${command} runs its launcher`]);
+    await fresh.close();
+  }
   const footer = page.locator('.workshop-footer');
   evidence.assert('equal', [
     await footer.locator('.next-step').isVisible(),

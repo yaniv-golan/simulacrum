@@ -79,6 +79,7 @@ export async function mountRemotePlaytest({
     return {
       active: () => false,
       emit: () => {},
+      setupClosed: Promise.resolve(),
       dispose: () => {
         client.dispose();
         void captureGate.close();
@@ -93,6 +94,7 @@ export async function mountRemotePlaytest({
     return {
       active: () => false,
       emit: () => {},
+      setupClosed: Promise.resolve(),
       dispose: () => {
         client.dispose();
         void captureGate.close();
@@ -224,6 +226,11 @@ export async function mountRemotePlaytest({
       projectHeading(),
       createDialogClose('Close recording setup', () => dialog.close()),
     ),
+  );
+  // Consent precedes anything else the workshop asks; the app sequences its first-run choice
+  // on this promise.
+  const setupClosed = new Promise((resolve) =>
+    dialog.addEventListener('close', () => resolve(), { once: true }),
   );
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
@@ -1004,5 +1011,5 @@ export async function mountRemotePlaytest({
     // until those writes settle; a future mount resumes the durable outbox.
     closeDatabaseIfIdle();
   }
-  return { active: () => active, emit, dispose, feedback: client };
+  return { active: () => active, emit, dispose, feedback: client, setupClosed };
 }

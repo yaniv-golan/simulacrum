@@ -25,3 +25,15 @@ export function modeControlState(mode) {
     stepEnabled: mode === 'paused',
   };
 }
+export const FIRST_RUN_KEY = 'simulacrum-first-run-v1';
+/**
+ * Whether the one-time first-run choice opens, and in which shape. Null means the ordinary
+ * empty-bench hint: a prior visit (any stored simulacrum key), content on the bench, an active
+ * guide, or no storage to remember an answer in — a player who cannot be remembered is never
+ * asked again on every load.
+ */
+export function firstRunDecision({ keys, storage, hasContent, guideActive, shape = 'modal' }) {
+  if (hasContent || guideActive || !storage) return null;
+  if (keys.some((key) => key.startsWith('simulacrum'))) return null;
+  return shape === 'hint' ? null : shape;
+}

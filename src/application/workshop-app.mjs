@@ -792,6 +792,10 @@ export async function mountWorkshopApp(root) {
     context: () => ({ build: buildId, ...recordingContext(), observation: frame() }),
     checkpoint: () => workshop.checkpoint(),
   });
+  // Recording consent comes first on the hosted build; the first-run choice waits for it.
+  remote.setupClosed?.then(() => {
+    if (!disposed) view.offerFirstRun();
+  });
   window.render_game_to_text = () => JSON.stringify(workshop.observe().frames[0]);
   window.advanceTime = (milliseconds) => {
     clock.pause();
