@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7e1ca5a59197f02d118eaba813b7cf9cfbf23a2b6fef27ef0dae9d33a0d41e37","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7d98fa42a3ee64738f26326c6f973e5c1958ef885fbcb88dbb79822fefd811cc","disposition":"still accurate","rationale":"Re-recorded after stacking on the refused-phase candidate f1008a7 (refused phases become unexecuted leaves for --after; local format gate); the reuse text below is unchanged by that stack. reference.md was regenerated for the reuse change (command/check facts only); the prepare → review → check workflow this section describes is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ab9c16bec6b6879f460097b118a73b38e2aa26443db32318879b787ab2dab65","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"78efd01dbaa9cacb246c347dd695f66a5c62589d5245748f9361a01087d3a9c8","disposition":"still accurate","rationale":"Parametric beam: docs/development/reference.md was regenerated (geometry-agreement now lists verify-beam-length-browser); the section describes the generated reference as the source of current pointers and the prepare/review/check workflow, which is exactly what ran."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"7ae20d25c9d92df415881bfbbfb5e5350a1839b8fd8ee3f454cc62b7360a33b6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d0b32411db91e295cbefda3deb5e0400e3d92d478ed816de1dd933bb7529f199","disposition":"updated","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): the launch-admission paragraph now states that the foreign-process bound applies only when the tier's resolved selection reaches a timing row (reach recorded on the tier and on the row's policy, with mode and bounds), that a structural-reach tier launches on load and idle alone, that the selection phase refuses a reach that moved after launch, and that WindowServer pressure is cured by hiding the drawing apps, never a laxer bound or a dark display (the focus lane checks are headed, hence caffeinate -d). Verified against verification-tiers.mjs (selectionReach, launchAdmission, assertSelectionReach), verify-merge.mjs, verify-local.mjs and verify-final.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"8c0d3f3d7cebdb8f999c2ae5cbc878b7419aa6d1bf25dd351d90a67d3e758c9e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d8df096d47a73e01ca1b28a13c96f424ce9d7f91facdce25eb43b73c56240ba","disposition":"still accurate","rationale":"Parametric beam scope rows: the manifest's browserLocalScopes now declare verify-beam-length-browser on the messages.mjs local row it asserts against and acknowledge it as a reaching check on the rows it merely loads, recorded through the proposal/apply flow this section describes; consumer hashes moved for the shared model modules the change edited. The flow and its guarantees are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -618,7 +618,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"92b2fcd6d8e65c63425ab4e6c4202872af88d33f71b49b31f7f5763356c431db","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4da75b52c179b0dc41810a7c43681aaa5ceb0c1700fc9ced326cd6f9b803a984","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): verification-tiers.mjs gained selectionReach/assertSelectionReach and a reach argument to launchAdmission; candidate capture, dependency validation, resume, the launch niceness/sleep assertions (caffeinate -dis unchanged) and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b9d368b4ba0745d3f4bf8cd4dbe392205ead04f0abb357c34a990becb13b88c7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d2345ac4efd873a5f888a4c9604906395b31cd36cce204b97969919c81c9c04f","disposition":"still accurate","rationale":"Parametric beam scope rows: only browserLocalScopes metadata changed in the manifest (declared/acknowledged reaching checks and consumer hashes); tiers, watchdog and deadlines described here are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

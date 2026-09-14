@@ -906,6 +906,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-beam-length-browser",
+      "script": "scripts/verify-beam-length-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "measure-gears",
       "script": "scripts/measure-gears.mjs",
       "execution": "exclusive",
@@ -1176,6 +1187,10 @@
           {
             "path": "test/scene-capacity.test.mjs",
             "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change keeps long-face mounts that still fit and rejects the rest atomically"
           }
         ],
         "negative": [
@@ -1399,7 +1414,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
+      "guarantee": "Authored wheel, sphere and beam-length geometry drives physical dimensions, mass, inertia and mounting faces; a dimension edit never moves an existing surface attachment; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1423,7 +1438,8 @@
         "verify-property-focus",
         "verify-surface-browser",
         "verify-ball-browser",
-        "verify-authorable-scenes"
+        "verify-authorable-scenes",
+        "verify-beam-length-browser"
       ],
       "controls": {
         "positive": [
@@ -1458,6 +1474,18 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "length scales the beam along its axis: half extent, mass and end faces follow, section does not"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "beam long faces mount through a section-sized pad; end faces keep their whole face"
+          },
+          {
+            "path": "test/component-contract.test.mjs",
+            "anchor": "dimensioned beam uses authored length through save, compiler and physics"
           }
         ],
         "negative": [
@@ -1492,6 +1520,14 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change that would move a surface peer is rejected, then admitted once detached"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length that would intersect a neighbour is rejected on the command path"
           }
         ]
       },
@@ -1523,12 +1559,20 @@
           {
             "path": "test/assembly.test.mjs",
             "anchor": "authored selectable material is copied without identity inference"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a committed save without length loads unchanged and compiles to the same configuration"
           }
         ],
         "negative": [
           {
             "path": "test/assembly.test.mjs",
             "anchor": "renaming and rig placement never select material mass or contact properties"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "renaming and rig placement never change a beam whose length and material are fixed"
           }
         ]
       },
@@ -6767,6 +6811,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -6914,6 +6959,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -7007,6 +7053,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -7074,7 +7121,8 @@
         "verify-spring-browser",
         "verify-learning-examples",
         "verify-assembly-library-browser",
-        "verify-authorable-scenes"
+        "verify-authorable-scenes",
+        "verify-beam-length-browser"
       ],
       "consumers": [
         "index.html",
@@ -7087,6 +7135,7 @@
         "src/presentation/scene-editor.mjs",
         "src/presentation/surface-controls.mjs",
         "src/presentation/workshop-view.mjs",
+        "test/beam-length.test.mjs",
         "test/connection-test.test.mjs",
         "test/failure-messages.test.mjs",
         "test/gear-construction.test.mjs",
@@ -7105,6 +7154,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -7656,7 +7706,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7720,7 +7770,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7737,6 +7787,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
@@ -7810,6 +7861,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -7885,7 +7937,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7915,6 +7967,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -8019,6 +8072,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -8102,7 +8156,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "3c6604f2a6419f3bae46bc9cbe0e4facc51ebeaec72c562f9628e18f91a800a4",
+      "consumerSourceHash": "5f08a2cbe9405f445398d69653faabfff1e27bedc04b799b8a98ea3d4e7c135c",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8148,6 +8202,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -8264,6 +8319,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -8374,7 +8430,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "3f511052210964b603c2dcceb81c22e00604626164f64a7592d2e195c161da68",
+      "consumerSourceHash": "2cac20390a8efc3b9b0921b056f0410d869fe0890c94473c1ad6fd0af0015b36",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -8408,7 +8464,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -8485,7 +8541,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -8556,7 +8612,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -8599,7 +8655,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -8752,7 +8808,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
+      "consumerSourceHash": "e7da278bc1a7ed5fb0dc5b6d0e0675c10c54792e2c54c63fe6697b0153f93cc7",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -8797,6 +8853,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -8902,7 +8959,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8955,6 +9012,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -9083,6 +9141,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -9222,7 +9281,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9307,7 +9366,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
+      "consumerSourceHash": "bf4172c0d3fa0b3ba050b9bbe0dff478d9c17b5e70b28d7024c0a7d7b461ceb3",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9319,6 +9378,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -9406,7 +9466,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
+      "consumerSourceHash": "bf4172c0d3fa0b3ba050b9bbe0dff478d9c17b5e70b28d7024c0a7d7b461ceb3",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9418,6 +9478,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -9556,7 +9617,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9639,7 +9700,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
+      "consumerSourceHash": "e7da278bc1a7ed5fb0dc5b6d0e0675c10c54792e2c54c63fe6697b0153f93cc7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9651,6 +9712,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",

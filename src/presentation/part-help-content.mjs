@@ -197,10 +197,11 @@ export const PART_HELP = {
   ),
   beam: help(
     'A narrow support for your machine',
-    'Joins parts into a rigid frame. Use it for a rail or crossbar.',
+    'Joins parts into a rigid frame. Use it for a rail, crossbar or linkage arm. Set the length in the inspector; mass follows the material and size.',
     'Mount other parts to its surfaces.',
     [
       'Select a part and use Snap to surface to mount it to the beam. Fixed mounting prevents relative motion.',
+      'Select the beam and set Length (mm) in the inspector. Detach anything on its ends before resizing.',
     ],
   ),
   plate: help(
