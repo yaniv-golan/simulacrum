@@ -59,6 +59,14 @@ export const RELEASE_NOTES = Object.freeze(
       feature: 'beam',
     },
     {
+      id: '2026-09-14-sound-level',
+      date: '2026-09-14',
+      name: 'Machine sound plays at a proper level',
+      summary:
+        'Motors, rolling and impacts are clearly audible again, about 18 dB louder than before; the volume slider works as usual.',
+      feature: 'mechanicalSound',
+    },
+    {
       id: '2026-09-14-feedback-context-default',
       date: '2026-09-14',
       name: 'Feedback includes your project by default',
