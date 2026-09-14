@@ -14,6 +14,7 @@ import {
   STORAGE_KEY,
 } from '../src/presentation/whats-new.mjs';
 import { checkReleaseNotes, latestNoteDate } from '../scripts/check-release-notes.mjs';
+import { REPOSITORY_URL } from '../src/model/features.mjs';
 
 const context = () => ({
   featureKeys: Object.keys(UI_FEATURES),
@@ -119,4 +120,8 @@ test('release-notes check accepts the tree, rejects markdown notes first and all
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('the repository URL is the public source', () => {
+  assert.equal(REPOSITORY_URL, 'https://github.com/yaniv-golan/simulacrum');
 });

@@ -5,6 +5,7 @@ import { browserArtifactPath } from './browser-artifacts.mjs';
 import { liveWait } from './browser-idle.mjs';
 import { RELEASE_NOTES } from '../src/application/release-notes.mjs';
 import { STORAGE_KEY } from '../src/presentation/whats-new.mjs';
+import { REPOSITORY_URL } from '../src/model/features.mjs';
 const out = browserArtifactPath('artifacts/whats-new');
 mkdirSync(out, { recursive: true });
 const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
@@ -38,7 +39,7 @@ async function scenario(name, run, { init } = {}) {
   }
 }
 try {
-  await scenario('first-visit', async (page) => {
+  await scenario('first-visit', async (page, context) => {
     const s = await state(page);
     assert.equal(s.firstVisit, true);
     assert.equal(s.badge, false);
@@ -49,9 +50,43 @@ try {
     const status = page.locator('.whats-new-status');
     assert.equal(await status.innerText(), 'Nothing new since your last visit.');
     assert.equal(await page.locator('.whats-new-seen li').count(), RELEASE_NOTES.length);
+    // About: one registered version source (the served app-version meta) and the repo.
+    const version = await page.locator('meta[name=app-version]').getAttribute('content');
+    const about = await page.locator('dialog[open] .help-about').innerText();
+    assert.match(about, /open source \(MIT\)/);
+    assert.ok(about.includes('github.com/yaniv-golan/simulacrum'), about);
+    assert.ok(
+      version ? about.includes(`Simulacrum ${version}`) : about.includes('build '),
+      `about names the served version or build (${about})`,
+    );
     await page.screenshot({ path: `${out}/first-visit-help.png` });
     await page.keyboard.press('Escape');
-    return { stored: await stored(page) };
+    // Source on GitHub: always visible beside Help, keyboard reachable, opens a new tab.
+    const link = page.getByRole('link', { name: 'Source on GitHub', exact: true });
+    assert.equal(await link.getAttribute('href'), REPOSITORY_URL);
+    assert.equal(await link.getAttribute('target'), '_blank');
+    assert.match(await link.getAttribute('rel'), /noopener/);
+    let opened = null;
+    await context.route('https://github.com/**', (route) => {
+      opened = route.request().url();
+      route.abort();
+    });
+    await helpButton(page).focus();
+    await page.keyboard.press('Tab');
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
+      'Source on GitHub',
+      'Tab from Help reaches the repository link',
+    );
+    const [popup] = await Promise.all([context.waitForEvent('page'), page.keyboard.press('Enter')]);
+    assert.notEqual(popup, page, 'the repository opens in a new tab');
+    assert.equal(opened, REPOSITORY_URL, 'the new tab requested the repository');
+    assert.equal(page.url(), url, 'the workshop tab stays put');
+    await popup.close();
+    await page.setViewportSize({ width: 780, height: 700 });
+    await page.screenshot({ path: `${out}/narrow-header.png` });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    return { stored: await stored(page), version, about };
   });
 
   await scenario('returning-keys-alive', async (page) => {
