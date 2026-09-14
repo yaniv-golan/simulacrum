@@ -407,7 +407,15 @@ remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
 inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
 deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
-is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+is a failed attempt whose only row is `launch-admission`, not evaluated. The launch applies the
+foreign-process bound only to a tier whose resolved selection reaches a timing row (`reach:
+timing`, recorded on the tier and on the row's `policy`); a tier that will measure nothing
+launches on load and idle alone (`reach: structural` — a window server at 55 % of one core does
+not starve a 5 s gate), and its selection phase refuses if the reach moved after launch, so no
+timing phase ever follows a lax launch. `WindowServer` in a refusal means someone's windows
+are drawing (an editor, a chat app); the cure is hiding or quitting them, never a laxer bound
+and never a dark display — the `focus` lane checks are headed and stall once macOS marks their
+window invisible, which is why the tier holds `caffeinate -d`. A leaf the host slept
 through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
 `host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
 tier a timing-budget check runs only when the delta can reach what it measures (its manifest
