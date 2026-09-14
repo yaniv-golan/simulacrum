@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"927cc61d7590f1fcfe7ce6fbeb17071a3a1a04cd8e42971b9f68edc1b55b8670","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e9f096473e607a39d41b78461a173bb8796bb30ad2a8a6268fc27b320ac8d945","disposition":"still accurate","rationale":"AGENTS.md's verification paragraph now states that every browser check is executed, or reported NOT_EVALUATED with a registered platform reason, on a registered platform daily (the hosted nightly under hostProfiles) beside the phased-scheduler sentence; entry commands, layer table and ownership map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8f010b8c724cf571edd2d82a2141f68055b7b73505d80041482766b585ab9f58","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"ebc63058f94cabeeb1faff1d1e343d7cf5f261aaf3d053f69bb6272f585bfe40","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. AGENTS.md changes: the verification-table row naming the diagnosed retry of a failed local/merge candidate (this change set) beside the stacked landings' selection sentence; the guide's entry points, layer table pointers and the working loop it summarises are unchanged, and the retry is documented where the guide already sends readers for isolated completion."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"75e32a00b62ee8afa69cb65adad1af9688a4a1b3c908136306cb4f8afe8b1ca8","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"56709387ad9170aa5e23bcf77210c811edfc1e7fbf9be36a56edaa96be3340bf","disposition":"still accurate","rationale":"The changed dependency is the playtesting remote-setup explanation rewritten for default-on feedback attachments; tiers, commands, window policy and evidence requirements here are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"ec7bab10b72ba33ef238dfb5c2babc761263b8afcb66e7c144d697cb866bc00e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"1a9b2b5c3a1aeb189f618fe16440ebf2a076177c129f6f8c8002d8590e9cad6e","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): runtime-preflight.mjs gained assertAwake (the tier keeps the host awake itself); the commands this section names and their semantics are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"73101de62d7ee3e0083bbb5ace09be09f503844f69cd737b96a3885bfc5a47ca","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea9066920fcd1d3be32d9f20d31a2e731f107fd3e441889a5bf7bdf870686110","disposition":"updated","rationale":"The scheduled-coverage paragraph now describes the hosted profile: registered deadlines never shorter than local, performance-tier and timing-sensitive checks reported NOT_EVALUATED and listed apart by the coverage comparison, measurement-mode labelling and its hand-recorded run bookkeeping, unscaled in-script deadlines, tiers refusing any profile, and a dispatched release-package staying unprofiled. Review, check and batch commands are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f3e373fdbe85d922aeb164b51f744762ed17c495b811968054ed4d26a8fd2c65","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e705774b9275ef69234f31d76c48411ffe68fc791ba803c83d0be707e3839e09","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. The regenerated reference lists the candidate-after.mjs owners (reexecutionSet, resolveRetrySelection, attestReport) under candidate-resume-integrity beside the stacked landings' owners; the regenerate, section-specific review, batch submission and exact-source closure workflow described here is unchanged and no review was accepted automatically."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c362cbb1cebb8e246af782a802e4e547149945947b66ac005fdaf5f1eb7ef8e1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d40284d3bb8719cdac051bfb72f6774cc40c37c68d9e2c1555a1fb9e701a7add","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): only the mechanical-audio-truth invariant's guarantee text and a control anchor changed in scripts/manifest.json; browser selection, scope rows, scheduling and admission are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1ea6b10d1eca1bb3eacb9d798ff81a8358888be3ea847c534af1baec245bef61","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3f57ab8ef7a9834b7cac23470f7cca32f64ae13703d4f775387d1274c4e83748","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. Scope metadata rows for app-fingerprint, source-identity and module-graph gained four consumers (the retry E2E fixture/test and the local runner fixture/test) with byte-identical reads; applied through the reviewed proposal with invariant-controls witnesses executed. Selection, reaching-check rows, the phased scheduler, admission and the retry widening/coverage rules are as previously reviewed; the receipt configuration now carries the hosted budget beside the row fields, never the worker count."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -397,8 +397,24 @@ niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an alrea
 parent), because a niced tier loses to every other process regardless of idle cores. It
 admits the timing phase only on a
 quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
-refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
-and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
+`SIMULACRUM_TIMING_WAIT_MS` for nightly; refusing early when the load is not falling) and
+samples what load1 cannot see — host CPU idle over one second and the busiest processes outside
+the tier's own tree, recorded in `timingAdmission.pressure`, holding the wait and refusing by
+process name (idle below 80 % or a foreign process at 40 %+ of a core; bounds read from a
+resting desktop's own records; `SIMULACRUM_TIMING_PRESSURE=observe` records without
+refusing) — then the
+remaining timing rows are recorded `not evaluated`
+and the run fails; nothing is retried. Every tier also runs that admission once at launch,
+inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
+deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
+is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
+`host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
+tier a timing-budget check runs only when the delta can reach what it measures (its manifest
+`measures` class — `physics` for the two node-only engine budgets, `render` for the six that
+drive the app — or its own import closure); the omitted rows carry the reason; `final` and a local all-checks run execute every row (the
+hosted nightly reports timing rows NOT_EVALUATED under its profile). The hosted merge route
+uses the same selection, so it omits them too. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
 admission and records that it did. Missing metadata, performance checks, headed (focus) and recording profiles,
@@ -542,7 +558,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6d41390ab605cb158779c3a325c5bc1d010e8a6f309b904e4371ade167b3e615","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4ee661668f8a134cc4cdc01a6b39570d78c574158974a885f3616d18d1dde0fc","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): run-check's process inventory moved to process-inventory.mjs and the runner gained a sleep heartbeat; the launch admission waits inside the window (≤ 60 s) — window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -591,7 +607,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0ec7bf41caf82a15875ae230c07c9220ede3245878a6e15d0d4b42db49a4a32b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"357c8e627cfee24a15cf70365162fa58d031faa838580820694d4710ef65cbd9","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): manifest changes are an invariant guarantee and control anchor; candidate capture, dependency validation, resume and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bd2e005f6304538eefd86dccdc4411f36812f9a3ae22f2f516e59f666acf3b23","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6f198d8d817d4a67dee1b1858a5b03298e04d6f01aeed13a33d51ee8f51db249","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. The retry paragraph is unchanged from its fourth-review wording: coverage-bounded source-only delta, required set observed, attested parent reports, resolved refs, signed-descriptor identity, resume refusal, browserChannel binding. The stacked landings add launch/pressure admission and timing rows by measured scope, which the candidate section already describes as tier behaviour; SIMULACRUM_HOST_PROFILE joins the listed relevant environment. Verified against verify-candidate.mjs (assertUnnicedLaunch/assertAwake preflight order unchanged relative to capture) and candidate-after.mjs."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -602,7 +618,7 @@ marker sits above `source` and never enters the candidate's identity.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
-job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -dis npm
 run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
@@ -665,7 +681,7 @@ with its resume key (every candidate report carries one), so an edited report is
 and relevant identity (runtime, platform and the declared relevant environment — `NODE_ENV`
 defaulting to `production` as the tier does, `NODE_OPTIONS`, `POWER_BASELINE_SOURCE`,
 `FEEDBACK_*`, `LOAD_CELL_MATRIX_*`, `PLAYWRIGHT_*` including `PLAYWRIGHT_BROWSERS_PATH`,
-`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable the project's own code reads under
+`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`, `SIMULACRUM_HOST_PROFILE`; every other variable the project's own code reads under
 `scripts`, `src`, `test` and the root configuration is listed with its reason in
 `ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound — variables consumed only by
 libraries, such as `CI`, `TZ`, `DEBUG` or `NODE_TLS_*`, are forensic too — which also lets a

@@ -146,6 +146,29 @@ export function planBrowserPhases(
 /** Timing-sensitive checks start only on a quiet host. Above the bound the caller waits once,
  * for at most `waitMs`, then reports refusal; a refusal is never retried and never becomes a
  * pass — it is a skipped gate, recorded as such. */
+/** Pressure policy: the foreign-process share is the detector (a call, the window server, an
+ * indexer at 40 %+ of a core is what moved a 2 ms p95 on this host); idle is a coarse backstop
+ * (a two-core desktop burst is still 86 % idle on fourteen cores). `mode` 'enforce' refuses,
+ * naming the process; the bounds come from a local tier's own records on a resting desktop
+ * (idle 86.5–88 %, busiest foreign process 16 %, 2026-09-14). 'observe' records and never
+ * refuses on pressure — the opt-out for a host whose resting record has not been read. */
+export const PRESSURE_POLICY = Object.freeze({
+  mode: process.env.SIMULACRUM_TIMING_PRESSURE === 'observe' ? 'observe' : 'enforce',
+  idleBound: Number(process.env.SIMULACRUM_TIMING_IDLE_BOUND) || 80,
+  foreignBound: Number(process.env.SIMULACRUM_TIMING_FOREIGN_BOUND) || 40,
+});
+export function pressureHolds(sample, policy = PRESSURE_POLICY) {
+  if (!sample || sample.method === 'unavailable' || policy.mode !== 'enforce') return null;
+  const busy = (sample.foreign ?? []).filter((row) => row.pcpu >= policy.foreignBound);
+  const reasons = [];
+  if (busy.length)
+    reasons.push(
+      `${busy.map((row) => `${row.comm} ${row.pcpu} %`).join(', ')} (foreign ≥ ${policy.foreignBound} %)`,
+    );
+  if (Number.isFinite(sample.idlePercent) && sample.idlePercent < policy.idleBound)
+    reasons.push(`idle ${sample.idlePercent} % (< ${policy.idleBound} %)`);
+  return reasons.length ? `host pressure: ${reasons.join('; ')}` : null;
+}
 export async function admitQuietHost({
   cores,
   bound = Math.max(1, Math.floor(cores / 2)),
@@ -153,18 +176,30 @@ export async function admitQuietHost({
   pollMs = 5000,
   trendMs = 30000,
   load1,
+  pressure = null,
+  policy = PRESSURE_POLICY,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = () => performance.now(),
 }) {
   // load1 is a one-minute average: right after a pool it decays for a minute or more, so the
   // wait tracks the decay instead of expiring at a fixed 60 s. Once a trend window is in hand,
   // a flat or rising load is refused early — there is nothing to wait for — while a falling one
-  // is waited out up to waitMs, the projected crossing recorded with the samples.
+  // is waited out up to waitMs, the projected crossing recorded with the samples. Host pressure
+  // (idle %, foreign process shares) is sampled beside it; when enforced it holds the wait too,
+  // but never triggers the flat-trend early refusal, which is about load1 alone.
   const samples = [];
   const started = now();
-  const sample = () => {
+  let lastPressure = null;
+  const sample = async () => {
     const value = load1();
-    samples.push({ atMs: Math.round(now() - started), load1: value });
+    lastPressure = pressure ? await pressure() : null;
+    samples.push({
+      atMs: Math.round(now() - started),
+      load1: value,
+      ...(lastPressure
+        ? { idlePercent: lastPressure.idlePercent, foreign: lastPressure.foreign }
+        : {}),
+    });
     return value;
   };
   const trend = () => {
@@ -187,29 +222,47 @@ export async function admitQuietHost({
       projectedMs: slope < 0 ? Math.round((current - bound) / -slope) : null,
     };
   };
-  let current = sample(),
-    seen = null;
-  while (current > bound && now() - started < waitMs) {
-    seen = trend();
-    if (seen && seen.projectedMs === null) break;
+  let current = await sample(),
+    seen = null,
+    held = pressureHolds(lastPressure, policy);
+  while ((current > bound || held) && now() - started < waitMs) {
+    seen = current > bound ? trend() : seen;
+    if (current > bound && !held && seen && seen.projectedMs === null) break;
     await sleep(Math.min(pollMs, waitMs - (now() - started)));
-    current = sample();
+    current = await sample();
+    held = pressureHolds(lastPressure, policy);
   }
   const waitedMs = Math.round(now() - started),
-    loads = samples.map((s) => s.load1);
-  if (current > bound)
-    return {
-      admitted: false,
+    loads = samples.map((s) => s.load1),
+    result = {
       load1: current,
       waitedMs,
       samples: loads,
       trend: seen ?? trend(),
-      reason:
-        seen?.projectedMs === null
-          ? `host load ${current} above bound ${bound} after ${waitedMs} ms and not falling (${seen.slopePerS}/s over the last ${trendMs} ms)`
-          : `host load ${current} above bound ${bound} after ${waitedMs} ms`,
+      pressure: lastPressure
+        ? {
+            ...lastPressure,
+            mode: policy.mode,
+            bounds: { idle: policy.idleBound, foreign: policy.foreignBound },
+            samples: samples.map((s) => ({
+              atMs: s.atMs,
+              idlePercent: s.idlePercent,
+              foreign: s.foreign,
+            })),
+          }
+        : null,
     };
-  return { admitted: true, load1: current, waitedMs, samples: loads, trend: seen ?? trend() };
+  if (current > bound)
+    return {
+      admitted: false,
+      ...result,
+      reason:
+        seen?.projectedMs === null && !held
+          ? `host load ${current} above bound ${bound} after ${waitedMs} ms and not falling (${seen.slopePerS}/s over the last ${trendMs} ms)`
+          : `host load ${current} above bound ${bound} after ${waitedMs} ms${held ? `; ${held}` : ''}`,
+    };
+  if (held) return { admitted: false, ...result, reason: `${held} after ${waitedMs} ms` };
+  return { admitted: true, ...result };
 }
 
 /** Workers for a tier follow the host. On the first phased run (14 cores) four concurrent

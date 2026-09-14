@@ -12,7 +12,10 @@ const attestationOf = (report, key) => {
   const { attestation, ...rest } = report;
   return createHmac('sha256', key).update(JSON.stringify(rest)).digest('hex');
 };
-/** HMAC of the report under the candidate's resume key; the report is published with it. */
+/** HMAC of the report under the candidate's resume key; the report is published with it. The key
+ * lives 0600 in the candidate directory: this is the same same-UID trust class as the signed
+ * descriptor and leaf receipts (see verification-resume.mjs) — it refuses an edited or re-pointed
+ * report unless the editor holds the candidate's key, not proof against the key's owner. */
 export function attestReport(report, key) {
   return attestationOf(report, key);
 }

@@ -11,7 +11,10 @@ const stable = (value) =>
  * must not change identity, or no two invocations ever share a receipt. Every variable a leaf
  * reads under scripts, src or test is either listed here or exempted below with its reason. */
 export const RELEVANT_ENVIRONMENT = Object.freeze({
-  names: Object.freeze(['NODE_ENV', 'NODE_OPTIONS', 'POWER_BASELINE_SOURCE']),
+  // The hosted profile changes budgets and which rows are evaluated; verify:candidate refuses it
+  // outright, so no hosted (measurement) receipt can ever be offered to a retry, and binding it
+  // keeps the direct tiers' receipts honest too.
+  names: Object.freeze(['NODE_ENV', 'NODE_OPTIONS', 'POWER_BASELINE_SOURCE', 'SIMULACRUM_HOST_PROFILE']),
   prefixes: Object.freeze([
     'FEEDBACK_',
     'LOAD_CELL_MATRIX_',
@@ -24,6 +27,10 @@ export const RELEVANT_ENVIRONMENT = Object.freeze({
 export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
   'scheduling admission for timing-sensitive rows, which never reuse a receipt': [
     'SIMULACRUM_TIMING_LOAD_BOUND',
+    'SIMULACRUM_TIMING_IDLE_BOUND',
+    'SIMULACRUM_TIMING_FOREIGN_BOUND',
+    'SIMULACRUM_TIMING_PRESSURE',
+    'SIMULACRUM_TIMING_WAIT_MS',
   ],
   'attempt coordination, set per attempt or per candidate by the candidate command or the window': [
     'SIMULACRUM_VERIFICATION_WINDOW',

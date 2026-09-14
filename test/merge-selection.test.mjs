@@ -322,3 +322,75 @@ test('an explicit changed-file list replaces the git diff but never the pinned r
   );
   assert.throws(() => mergeChanges({ base: 'c0ffee', changedFiles: 'not-a-list' }, git), /changed/);
 });
+
+test('a timing-budget row runs in a merge tier only when the delta can reach what it measures', () => {
+  const timing = [
+    { id: 'measure-gears', timingSensitive: true, measures: 'physics', environment: 'self' },
+    { id: 'measure-cameras', timingSensitive: true, measures: 'physics', environment: 'self' },
+    { id: 'verify-adaptive-graphics', timingSensitive: true, measures: 'render' },
+    { id: 'verify-camera-browser', timingSensitive: true, measures: 'render' },
+  ];
+  const all = [...checks, ...timing];
+  const run = (files, closureReached = {}) =>
+    mergeSelection({ checks: all, selection: { ...selection, closureReached }, files });
+  const ids = (rows) => rows.map((row) => row.id).sort();
+  const omittedTiming = (result) =>
+    ids(result.omitted.filter((row) => row.reason.startsWith('timing budget')));
+  // Tooling-only delta: full selection for every functional row, all four timing rows omitted
+  // with the reason (this is the 12-failures-a-day case).
+  const tooling = run(['scripts/check-sequence.mjs']);
+  assert.match(tooling.fullReason, /verification policy.*timing-budget rows by measured scope/);
+  assert.deepEqual(ids(tooling.checks), ids(checks));
+  assert.deepEqual(omittedTiming(tooling), ids(timing));
+  assert.match(
+    tooling.omitted.find((row) => row.id === 'measure-gears').reason,
+    /timing budget \(physics\): its measured scope is not in the delta; final and a local all-checks run execute it/,
+  );
+  // A render-scope runtime delta that forces the full selection (src/core is risky): the two
+  // physics stopwatches are omitted, the render budgets run.
+  const core = run(['src/core/workshop.mjs']);
+  assert.ok(core.fullReason);
+  assert.deepEqual(omittedTiming(core), ['measure-cameras', 'measure-gears']);
+  assert.ok(ids(core.checks).includes('verify-adaptive-graphics'));
+  // A presentation-only delta is not risky, so the audited narrow selection applies: timing rows
+  // it did not reach are omitted — physics ones with the measured-scope reason, render ones with
+  // the ordinary one — and none is added by hand.
+  const css = run(['src/presentation/workshop.css']);
+  assert.equal(css.fullReason, null);
+  assert.deepEqual(omittedTiming(css), ['measure-cameras', 'measure-gears']);
+  assert.ok(!ids(css.checks).includes('verify-adaptive-graphics'));
+  assert.match(
+    css.omitted.find((row) => row.id === 'verify-adaptive-graphics').reason,
+    /outside audited/,
+  );
+  // Simulation delta: every row runs (control).
+  assert.deepEqual(omittedTiming(run(['src/simulation/session.mjs'])), []);
+  // The engine pin reaches everything (control).
+  assert.deepEqual(omittedTiming(run(['package.json'])), []);
+  // A timing row's own closure (its script, a harness module, a fixture) reaches it alone:
+  // the affected walk cannot say this, the closure flag from affectedBrowserChecks can.
+  const own = run(['scripts/measure-gears.mjs'], { 'measure-gears': true });
+  assert.deepEqual(omittedTiming(own), [
+    'measure-cameras',
+    'verify-adaptive-graphics',
+    'verify-camera-browser',
+  ]);
+  assert.ok(ids(own.checks).includes('measure-gears'));
+  // Merge smoke rows are never omitted by this rule (control).
+  for (const result of [tooling, css, own])
+    for (const id of ['workshop', 'selection', 'ui-lifecycle'])
+      assert.ok(ids(result.checks).includes(id));
+  // A narrow audited selection that happened to include a timing row still applies the rule.
+  const narrow = mergeSelection({
+    checks: all,
+    selection: {
+      checks: [checks[3], timing[0]],
+      scope: 'local-contract',
+      reasons: [],
+      closureReached: {},
+    },
+    files: ['src/presentation/copy.mjs'],
+  });
+  assert.ok(!ids(narrow.checks).includes('measure-gears'));
+  assert.ok(omittedTiming(narrow).includes('measure-gears'));
+});

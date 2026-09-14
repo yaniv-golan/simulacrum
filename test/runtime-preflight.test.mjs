@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertRuntime, assertUnnicedLaunch } from '../scripts/runtime-preflight.mjs';
+import { assertRuntime, assertUnnicedLaunch, assertAwake } from '../scripts/runtime-preflight.mjs';
 test('runtime admission uses the package range and rejects unsupported or ambiguous versions', () => {
   for (const version of ['24.18.0', '24.19.2'])
     assert.doesNotThrow(() => assertRuntime({ version }));
@@ -92,4 +92,26 @@ test('a tier that derives its workers refuses a niced launch and names the fix',
   // zsh's bgnice backgrounds a job at nice 5; the 1b tier on 421a2b1 failed exactly this way.
   assert.throws(() => assertUnnicedLaunch({ priority: 5 }), /nice 5.*unsetopt bgnice/s);
   assert.throws(() => assertUnnicedLaunch({ priority: NaN }), /unsetopt bgnice/);
+});
+
+test('the tier keeps the host awake with caffeinate -dis bound to its own pid on macOS only', () => {
+  const launches = [];
+  const launch = (command, args) => launches.push([command, args]);
+  assert.deepEqual(assertAwake({ pid: 4242, platform: 'darwin', launch }), {
+    method: 'caffeinate -dis -w',
+    pid: 4242,
+  });
+  assert.deepEqual(launches, [['caffeinate', ['-dis', '-w', '4242']]]);
+  // Elsewhere: recorded as unavailable, never a failure; nothing launched.
+  assert.equal(assertAwake({ pid: 1, platform: 'linux', launch }).method, 'unavailable');
+  assert.equal(launches.length, 1);
+  // A missing caffeinate binary is recorded, not thrown.
+  const missing = assertAwake({
+    platform: 'darwin',
+    launch: () => {
+      throw Error('spawn caffeinate ENOENT');
+    },
+  });
+  assert.equal(missing.method, 'unavailable');
+  assert.match(missing.error, /ENOENT/);
 });

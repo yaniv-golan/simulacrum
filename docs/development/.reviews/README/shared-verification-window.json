@@ -2,8 +2,9 @@
   "version": 1,
   "dependencies": {
     "package.json": "b6045fa8948cdd321884c4b634646c1ec9744797328be37be26813d241cc3fd0",
-    "scripts/run-check.mjs": "131a30f90090d135141ffc835192f5f2ed69e6e333a7b2c2bb7adb09ea0580da",
-    "scripts/runtime-preflight.mjs": "4a440460399dddf77db76f7c78f843d0a6ffb9e3318d46ca2e975e06e0087a2d",
+    "scripts/process-inventory.mjs": "e1041b6c52628e19eb48c46c3d3d804be3e0e12565bfd4e8c47dbb2d4f985d70",
+    "scripts/run-check.mjs": "75eb78439df937509acb13b77b68817c029177417c8558fed065fa3f517d6343",
+    "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
     "scripts/verification-window.mjs": "732dc8da11bc5ebd9e780b25cd04bd6333ba097a5de5fbdc22433959bdf15df8",
     "docs/development/README.md#verify-a-change": "0cc969306639858a19c4504ee74b45774712abd5300f51cfeb31dd4ebb8b1d9c",
     "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c"

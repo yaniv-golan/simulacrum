@@ -137,10 +137,12 @@ Run focused tests during development, derived from import and data dependency gr
 unknown changes select all tests. Structural checks target <5 s, unit/property <30 s,
 short physics <60 s. The every-commit command must stay below 180 s and report wall time.
 Long contact tests run at merge/nightly until measured. Merge runs CI plus audited affected browser journeys and mandatory integration smoke;
-unknown, shared-runtime and verification-policy changes select all browser checks.
-All browser checks run for release/qualification. Every browser check is executed, or reported
-NOT_EVALUATED with a registered platform reason, on a registered platform at least once per day
-(hosted nightly under `hostProfiles`), and its outcome is read; critical-module mutation runs weekly.
+unknown, shared-runtime and verification-policy changes select all functional browser checks,
+while timing-budget checks run in a merge tier only when the delta reaches what they measure
+(a manifest fact: `measures` physics or render). All browser checks run for
+release/qualification. Every browser check is executed, or reported NOT_EVALUATED with a
+registered platform reason, on a registered platform at least once per day (hosted nightly
+under `hostProfiles`), and its outcome is read; critical-module mutation runs weekly.
 Tiers schedule the browser suite in phases (headless pool on one worker per two idle cores, at
 most four; policy-serialized checks; timing-sensitive checks last on an admitted quiet host) and the
 `test:browser:serial` and a rotated `SIMULACRUM_BROWSER_SCHEDULE_SEED` are the controls a

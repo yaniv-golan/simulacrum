@@ -134,7 +134,12 @@ test('unsupported runtime invalidates canonical completion evidence before child
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'scripts'));
   mkdirSync(join(root, 'artifacts'));
-  for (const file of ['verification-window.mjs', 'run-check.mjs', 'runtime-preflight.mjs'])
+  for (const file of [
+    'verification-window.mjs',
+    'run-check.mjs',
+    'process-inventory.mjs',
+    'runtime-preflight.mjs',
+  ])
     copyFileSync(new URL('../scripts/' + file, import.meta.url), join(root, 'scripts', file));
   writeFileSync(
     join(root, 'package.json'),

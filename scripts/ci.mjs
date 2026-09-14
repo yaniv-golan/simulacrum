@@ -25,7 +25,16 @@ export async function runCI(context = createVerificationContext()) {
         ]),
       ]);
       const elapsedMs = performance.now() - start;
-      if (elapsedMs >= deadlineMs) throw Error(`iteration-budget: ${elapsedMs}ms`);
+      // Time the host was asleep counts against the budget only as a named cause, never as CI time.
+      const hostSleptMs = context
+        .receipts()
+        .reduce((sum, r) => sum + (r.processDiagnostics?.hostSleptMs ?? r.hostSleptMs ?? 0), 0);
+      if (elapsedMs >= deadlineMs)
+        throw Error(
+          hostSleptMs > 0
+            ? `host slept ${Math.round(hostSleptMs / 1000)} s during CI: budget not evaluated (${elapsedMs}ms elapsed)`
+            : `iteration-budget: ${elapsedMs}ms`,
+        );
       const resumed = context.receipts().filter((r) => r.resumed).length;
       const hosted = hostedReportFields(context.hostProfile ?? null);
       const timingClaim = hosted.hostProfile

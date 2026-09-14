@@ -82,6 +82,7 @@ test('performance-tier checks are registered timing-sensitive, which also exclud
   assert.ok(performance, 'a performance-tier check exists');
   assert.equal(performance.timingSensitive, true);
   performance.timingSensitive = false;
+  delete performance.measures; // `measures` is itself a timing-sensitive fact
   assert.throws(() => validateManifest(perf), /performance-tier/);
 });
 

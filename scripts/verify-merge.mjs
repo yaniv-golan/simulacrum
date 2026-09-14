@@ -6,7 +6,14 @@ import { browserChecks } from './browser-registry.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { mergeChanges, mergeSelection } from './merge-selection.mjs';
 import { withRequiredChecks, resolveRetrySelection } from './candidate-after.mjs';
-import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
+import {
+  runVerificationPhases,
+  localOutcome,
+  parseCompletionArgs,
+  sleptSummary,
+  launchAdmission,
+  LAUNCH_ADMISSION_ID,
+} from './verification-tiers.mjs';
 const started = performance.now();
 const report = {
   attempt: process.env.SIMULACRUM_VERIFICATION_ATTEMPT ?? null,
@@ -39,6 +46,7 @@ try {
   let selection;
   const results = await runVerificationPhases(
     [
+      [LAUNCH_ADMISSION_ID, () => launchAdmission()],
       ['ci', () => runCI(context)],
       [
         'selection',
@@ -148,6 +156,6 @@ try {
   write();
 }
 console.log(
-  `Merge automation: ${report.outcome.automation.status} (${(report.elapsedMs / 1000).toFixed(1)}s). Qualification and human acceptance: NOT EVALUATED.`,
+  `Merge automation: ${report.outcome.automation.status} (${(report.elapsedMs / 1000).toFixed(1)}s). Qualification and human acceptance: NOT EVALUATED.${sleptSummary(report.checks)}`,
 );
 process.exitCode = report.outcome.exitCode;

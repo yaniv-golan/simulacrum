@@ -1,4 +1,5 @@
 import { spawn, execFileSync } from 'node:child_process';
+import { listProcesses, descendantsOf } from './process-inventory.mjs';
 import { pathToFileURL } from 'node:url';
 import { loadavg } from 'node:os';
 import { basename } from 'node:path';
@@ -10,37 +11,10 @@ const SNAPSHOT_ROWS = 8;
 // (Gatekeeper/XProtect assessment of freshly installed binaries, Spotlight indexing).
 const WATCHED_DAEMONS = /^(?:syspolicyd|xprotect\w*|mds|mds_stores|mdworker\w*|trustd)$/i;
 const SNAPSHOT_LIST_ROWS = 32;
-/** Bounded host inventory at a failure. `comm` is the executable name only; no
- * arguments or environment values are read. Diagnostics, never attribution. */
-function listProcesses() {
-  return execFileSync(
-    'ps',
-    ['-A', '-o', 'pid=,ppid=,pgid=,uid=,stat=,pcpu=,rss=,time=,etime=,comm='],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1000 },
-  )
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      // comm is last because macOS prints the executable path, which may contain spaces.
-      const [pid, ppid, pgid, uid, stat, pcpu, rss, time, etime, ...comm] = line
-        .trim()
-        .split(/\s+/);
-      return {
-        pid: Number(pid),
-        ppid: Number(ppid),
-        pgid: Number(pgid),
-        uid: Number(uid),
-        stat,
-        pcpu: Number(pcpu),
-        rssKb: Number(rss),
-        time,
-        etime,
-        comm: basename(comm.join(' ')),
-        executable: comm.join(' '),
-      };
-    });
-}
+// A beat every second; a gap of more than a minute between beats is a host sleep, never a
+// busy scheduler (timer lateness on a loaded host is measured in seconds).
+const HEARTBEAT_MS = 1000;
+const SLEEP_GAP_MS = 60_000;
 /** H1 signal (unverified hypothesis): a freshly installed binary still carrying
  * quarantine/provenance attributes is a candidate for a first-exec assessment stall.
  * macOS only; bounded; never throws. */
@@ -78,11 +52,8 @@ function processSnapshot(rows, rootPid, at) {
     etime,
     comm,
   });
-  const tree = [];
-  const root = rows.find((row) => row.pid === rootPid);
-  if (root) tree.push(root);
-  for (let i = 0; i < tree.length; i++)
-    for (const row of rows) if (row.ppid === tree[i].pid && !tree.includes(row)) tree.push(row);
+  const tree = descendantsOf(rows, rootPid);
+  const root = tree[0]?.pid === rootPid ? tree[0] : null;
   const top = (key) =>
     [...rows]
       .sort((a, b) => b[key] - a[key])
@@ -148,6 +119,9 @@ export function runProcess(
     env = process.env,
     maxOutputBytes = 4 * 1024 * 1024,
     inheritOutput = false,
+    heartbeatMs = HEARTBEAT_MS,
+    sleepGapMs = SLEEP_GAP_MS,
+    wallClock = Date.now,
   } = {},
 ) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error('deadline must be positive');
@@ -161,6 +135,22 @@ export function runProcess(
       events: [],
       droppedEvents: 0,
     };
+    // A wall-clock heartbeat sees a host sleep on every platform: a gap between beats far
+    // longer than the beat is time the host was not running, not time the check spent.
+    // (libuv's continuous clock happens to count sleep on darwin, Linux's monotonic one does
+    // not; Date.now() does everywhere.) Accumulated, and named at settlement.
+    let lastBeat = wallClock(),
+      hostSleptMs = 0;
+    const heartbeat = setInterval(() => {
+      const beat = wallClock(),
+        gap = beat - lastBeat;
+      lastBeat = beat;
+      if (gap > sleepGapMs) {
+        hostSleptMs += gap;
+        observe('host-slept', { gapMs: gap, hostSleptMs });
+      }
+    }, heartbeatMs);
+    heartbeat.unref?.();
     const observe = (type, details = {}) => {
       if (processDiagnostics.events.length < 256)
         processDiagnostics.events.push({
@@ -216,6 +206,7 @@ export function runProcess(
     } catch (error) {
       if (firstChild && activeChildren.size === 0) process.off('SIGTERM', propagateTermination);
       observe('spawn-error', { errno: error.code });
+      clearInterval(heartbeat);
       reject(Object.assign(error, { processDiagnostics }));
       return;
     }
@@ -242,20 +233,39 @@ export function runProcess(
       // Post-hoc host context for a check failure; the child is already gone, so the
       // tree is empty. Bounded by the same 1 s enumeration limit as the watchdog path.
       const elapsedMs = performance.now() - started;
+      clearInterval(heartbeat);
+      // One last look: a sleep that ended just before settlement has no beat after it yet.
+      const finalGap = wallClock() - lastBeat;
+      if (finalGap > sleepGapMs) {
+        hostSleptMs += finalGap;
+        observe('host-slept', { gapMs: finalGap, hostSleptMs });
+      }
+      processDiagnostics.hostSleptMs = hostSleptMs;
       if (!timedOut && closeCode !== 0 && !processDiagnostics.snapshot) takeSnapshot('exit', null);
-      observe('settlement', { code: closeCode, signal: closeSignal, timedOut });
+      observe('settlement', { code: closeCode, signal: closeSignal, timedOut, hostSleptMs });
+      const failed = timedOut || closeCode !== 0;
       const result = {
         processDiagnostics,
         stdout,
         stderr,
         output: stdout + stderr,
         elapsedMs,
+        hostSleptMs,
         code: closeCode,
         signal: closeSignal,
-        failureKind: timedOut ? 'watchdog' : closeCode !== 0 ? 'check-failure' : null,
+        failureKind: !failed
+          ? null
+          : hostSleptMs > 0
+            ? 'host-slept'
+            : timedOut
+              ? 'watchdog'
+              : 'check-failure',
       };
-      if (timedOut || closeCode !== 0) {
-        const summary = `${timedOut ? `timed out after ${timeoutMs} ms` : `check exited ${closeCode ?? closeSignal}`}: ${command} ${args.join(' ')}`;
+      if (failed) {
+        const summary =
+          hostSleptMs > 0
+            ? `host slept ${Math.round(hostSleptMs / 1000)} s during the check (${timedOut ? `watchdog after ${timeoutMs} ms` : `exit ${closeCode ?? closeSignal}`}): not evaluated: ${command} ${args.join(' ')}`
+            : `${timedOut ? `timed out after ${timeoutMs} ms` : `check exited ${closeCode ?? closeSignal}`}: ${command} ${args.join(' ')}`;
         reject(Object.assign(new Error(`${summary}\n${result.output}`), result, { summary }));
       } else resolve(result);
     }
@@ -344,6 +354,7 @@ export function runProcess(
     child.once('error', (error) => {
       observe('process-error', { errno: error.code });
       clearTimeout(timer);
+      clearInterval(heartbeat);
       releaseChild(child);
       reject(Object.assign(error, { processDiagnostics }));
     });

@@ -322,7 +322,45 @@ export function affectedBrowserChecks(files) {
   });
   if (JSON.stringify(sourceIdentity()) !== JSON.stringify(source))
     throw Error('source changed during browser selection');
-  return { source, ...selection };
+  return {
+    source,
+    ...selection,
+    closureReached: closureReached(browserChecks(), graph, selection.files),
+  };
+}
+/** Which timing-sensitive checks have a changed file inside their own import closure (their
+ * script, the harness modules and fixtures it imports, opaque nodes traversed). The affected
+ * walk stops at the first opaque hit and cannot say this; the closure can. */
+export function closureReached(checks, graph, files) {
+  const changed = new Set(files);
+  const closures = browserCheckClosures(
+    checks.filter((check) => check.timingSensitive === true),
+    graph,
+  );
+  return Object.fromEntries(
+    [...closures].map(([id, reached]) => [id, [...reached].some((path) => changed.has(path))]),
+  );
+}
+/** What a timing-sensitive row measures, and the files that can move it. `physics` rows run
+ * the engine in node with no browser; `render` rows measure the application in a browser. */
+export const MEASURED_SCOPE = Object.freeze({
+  physics: [
+    /^src\/(?:simulation|model|scripting)\//,
+    /^(?:package\.json|package-lock\.json)$/,
+    /^vendor\//,
+  ],
+  render: [
+    /^src\/(?:simulation|model|scripting|presentation|application|core)\//,
+    /^(?:package\.json|package-lock\.json|index\.html|vite\.config\.mjs)$/,
+    /^vendor\//,
+  ],
+});
+export function measuredScopeReached(check, files, closureReached = {}) {
+  const patterns = MEASURED_SCOPE[check.measures] ?? MEASURED_SCOPE.render;
+  return (
+    closureReached[check.id] === true ||
+    (files ?? []).some((path) => patterns.some((pattern) => pattern.test(path)))
+  );
 }
 
 /** Positive static associations affect order only; opaque/unknown input never narrows coverage. */

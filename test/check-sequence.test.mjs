@@ -422,6 +422,7 @@ test('quiet-host admission: within bound admits, above bound waits once bounded,
     waitedMs: 0,
     samples: [3.2],
     trend: null,
+    pressure: null,
   });
   const waited = await run([9, 8.5, 6.9]);
   assert.equal(waited.admitted, true);
@@ -476,4 +477,86 @@ test('quiet-host admission tracks the one-minute decay and refuses early only wh
   assert.equal(slow.waitedMs, 180000);
   assert.ok(slow.load1 > 7);
   assert.equal(slow.samples.length, 37);
+});
+
+test('quiet-host admission holds on foreign process pressure when enforced, records it when observing, and never on an unavailable sampler', async () => {
+  const { admitQuietHost, PRESSURE_POLICY } = await import('../scripts/check-sequence.mjs');
+  // Enforcement is the default (bounds read from a resting desktop's own tier records);
+  // observe is the explicit opt-out, not something the environment falls into.
+  assert.equal(
+    PRESSURE_POLICY.mode,
+    process.env.SIMULACRUM_TIMING_PRESSURE === 'observe' ? 'observe' : 'enforce',
+  );
+  assert.deepEqual([PRESSURE_POLICY.idleBound, PRESSURE_POLICY.foreignBound], [80, 40]);
+  const run = (pressures, { mode = 'enforce', loads = [3], waitMs = 180000 } = {}) => {
+    let i = 0,
+      j = 0;
+    const clock = { now: 0 };
+    return admitQuietHost({
+      cores: 14,
+      bound: 7,
+      waitMs,
+      pollMs: 5000,
+      load1: () => loads[Math.min(i++, loads.length - 1)],
+      pressure: async () => pressures[Math.min(j++, pressures.length - 1)],
+      policy: { mode, idleBound: 80, foreignBound: 40 },
+      sleep: async (ms) => {
+        clock.now += ms;
+      },
+      now: () => clock.now,
+    });
+  };
+  const busy = {
+    method: 'cpus+ps',
+    idlePercent: 86,
+    foreign: [
+      { comm: 'WindowServer', pcpu: 52 },
+      { comm: 'zoom.us', pcpu: 38 },
+    ],
+  };
+  const quiet = {
+    method: 'cpus+ps',
+    idlePercent: 93,
+    foreign: [{ comm: 'WindowServer', pcpu: 4 }],
+  };
+  // load1 is fine (3 ≤ 7) but a foreign process holds 52 % of a core: the wait runs to waitMs —
+  // the flat-trend early refusal is about load1 and must not fire here — then refuses by name.
+  const held = await run([busy]);
+  assert.equal(held.admitted, false);
+  assert.equal(held.waitedMs, 180000);
+  assert.match(held.reason, /host pressure: WindowServer 52 % \(foreign ≥ 40 %\) after 180000 ms/);
+  assert.equal(held.pressure.mode, 'enforce');
+  assert.equal(held.pressure.samples.length, 37);
+  // Pressure that drops at the third poll admits, and the samples show the drop.
+  const released = await run([busy, busy, quiet]);
+  assert.equal(released.admitted, true);
+  assert.equal(released.waitedMs, 10000);
+  assert.deepEqual(
+    released.pressure.samples.map((s) => s.foreign[0].pcpu),
+    [52, 52, 4],
+  );
+  // Low idle alone (a busy host with no single loud process) holds too.
+  const dim = await run([
+    { method: 'cpus+ps', idlePercent: 61, foreign: [{ comm: 'x', pcpu: 12 }] },
+  ]);
+  assert.equal(dim.admitted, false);
+  assert.match(dim.reason, /idle 61 % \(< 80 %\)/);
+  // Observe mode (the opt-out) records the same pressure and admits.
+  const observed = await run([busy], { mode: 'observe' });
+  assert.equal(observed.admitted, true);
+  assert.equal(observed.pressure.mode, 'observe');
+  assert.equal(observed.pressure.foreign[0].comm, 'WindowServer');
+  // Plausible wrong: an unavailable sampler must not refuse; the admission rests on load1.
+  const blind = await run([{ method: 'unavailable', idlePercent: null, foreign: [] }]);
+  assert.equal(blind.admitted, true);
+  assert.equal(blind.pressure.method, 'unavailable');
+  // Load above bound AND pressure: the reason names both, and the flat-load early refusal is
+  // suppressed while pressure holds (the wait is about the desktop, not the queue).
+  const both = await run([busy], { loads: Array(60).fill(10) });
+  assert.equal(both.admitted, false);
+  assert.equal(both.waitedMs, 180000);
+  assert.match(
+    both.reason,
+    /host load 10 above bound 7 after 180000 ms; host pressure: WindowServer 52 %/,
+  );
 });

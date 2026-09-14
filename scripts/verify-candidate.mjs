@@ -24,7 +24,7 @@ import {
   currentBranch,
   resolveCandidateBase,
 } from './candidate.mjs';
-import { assertRuntime, assertUnnicedLaunch } from './runtime-preflight.mjs';
+import { assertRuntime, assertUnnicedLaunch, assertAwake } from './runtime-preflight.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -75,6 +75,8 @@ const output = 'artifacts/verification-candidate.json';
 let attemptOutput, lock;
 // Once the candidate's resume key exists, every published report is attested under it so a
 // later --after trusts classification and coverage only from a report this candidate wrote.
+// Same-UID trust class as the descriptor and receipts: an edited or re-pointed report is
+// refused unless the editor holds this candidate's 0600 key.
 let attestKey = null;
 const write = () => {
   report.elapsedMs = performance.now() - started;
@@ -137,6 +139,7 @@ try {
   write();
   assertRuntime();
   report.launchNiceness = assertUnnicedLaunch({ priority: getPriority() });
+  report.sleepAssertion = assertAwake();
   let directory, candidate, options, tier, key, installed, installedAt;
   if (retry) {
     [tier] = argv;

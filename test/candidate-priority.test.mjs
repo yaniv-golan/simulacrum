@@ -47,6 +47,13 @@ for (const [tier, codes] of [
         [captured.destination, captured.origin],
       );
       assert.equal(report.status, code === 1 ? 'failed' : 'passed');
+      // The candidate keeps the host awake itself (through the replaceable preflight helper,
+      // which the fixture records) and names the launch priority it saw.
+      assert.deepEqual(report.sleepAssertion, {
+        method: 'fixture',
+        pid: report.sleepAssertion.pid,
+      });
+      assert.equal(report.launchNiceness, 0);
       assert.equal(
         report.qualification.status,
         tier !== 'final' ? 'NOT_EVALUATED' : code ? 'BLOCKED' : 'PASS',

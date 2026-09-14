@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"4304587a608fb07907cafa3141dc3d7a1103fa43195f95a7b6252460978c09fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5fff03b83ec21369f00d535d4cc92e47c14da6f8607454ab15a6917064e7e399","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"a5fa89202ba32c78aaf6d695671201e03a04219803525c015e40519b0fa9988d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"197f7184eb6b580f35cb427b660ad64d1dd19f07ad15df2a78a88aa23da59bce","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (retry, admission, scope metadata consumers) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
