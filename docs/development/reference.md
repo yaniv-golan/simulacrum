@@ -21,8 +21,12 @@ These are registered commands and checks, not evidence that they passed.
 | npm run bar:L1c | node scripts/bars.mjs L1c |
 | npm run bar:L1d | node scripts/bars.mjs L1d |
 | npm run bar:L2 | node scripts/bars.mjs L2 |
+| npm run bar:O1 | node scripts/bars.mjs O1 |
+| npm run bar:O2 | node scripts/bars.mjs O2 |
 | npm run bar:P1 | node scripts/bars.mjs P1 |
 | npm run bar:S1 | node scripts/bars.mjs S1 |
+| npm run bar:V1 | node scripts/bars.mjs V1 |
+| npm run bar:V2 | node scripts/bars.mjs V2 |
 | npm run bars | node scripts/bars.mjs |
 | npm run browser:scopes | node scripts/browser-scopes.mjs |
 | npm run build | node scripts/verification-window.mjs scripts/build-app.mjs |
