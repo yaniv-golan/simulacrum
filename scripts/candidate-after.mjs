@@ -111,6 +111,12 @@ export function classifyParentLeaves(parent) {
     throw Error(
       `passed parent attempt carries failed or unexecuted leaves: ${[...failed, ...unexecuted, ...abortedAggregates].join(', ')}`,
     );
+  // A hosted-profile or measurement report is never evidence for another candidate; candidates
+  // refuse the profile themselves, so this names the refusal rather than relying on it.
+  if (kind === 'reuse' && (verification.hostProfile || verification.measurement === true))
+    throw Error(
+      `receipt reuse never cites a hosted-profile or measurement report (${verification.hostProfile ?? 'measurement'})`,
+    );
   return { kind, passing, failed, unexecuted, unexecutedBy, abortedAggregates, candidateFailure };
 }
 

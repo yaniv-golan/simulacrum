@@ -748,6 +748,13 @@ test('a passed parent classifies for reuse; a passed report carrying a failed le
   const inconsistent = passedParent();
   inconsistent.verification.checks.find((r) => r.id === 'browser:mirror').ok = false;
   assert.throws(() => classifyParentLeaves(inconsistent), /failed.*browser:mirror/);
+  // A hosted-profile or measurement report is never evidence for reuse.
+  const hosted = passedParent();
+  hosted.verification.hostProfile = 'github-ubuntu-2cpu';
+  assert.throws(() => classifyParentLeaves(hosted), /hosted-profile or measurement/);
+  const measured = passedParent();
+  measured.verification.measurement = true;
+  assert.throws(() => classifyParentLeaves(measured), /hosted-profile or measurement/);
   // A passed parent takes no cause.
   assert.throws(() => validateCauses(c, new Map([['browser:ball', 'x']])), /nothing failed/);
   assert.deepEqual(validateCauses(c, new Map()), {});
