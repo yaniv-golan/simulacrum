@@ -58,6 +58,8 @@ const output = 'artifacts/verification-candidate.json';
 let attemptOutput, lock;
 // Once the candidate's resume key exists, every published report is attested under it so a
 // later --after trusts classification and coverage only from a report this candidate wrote.
+// Same-UID trust class as the descriptor and receipts: an edited or re-pointed report is
+// refused unless the editor holds this candidate's 0600 key.
 let attestKey = null;
 const write = () => {
   report.elapsedMs = performance.now() - started;
