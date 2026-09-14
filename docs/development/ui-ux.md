@@ -231,8 +231,8 @@ replaces catalogue and inspector content while Editing scene is active; Done res
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
 a draft; Apply scene publishes one ordinary command. V/W/E select the same tools
-as their buttons; arrows and Page Up/Down move the proposal, and Alt plus these
-keys rotates it. Space retains Run/Pause and period retains single-step through
+as their buttons; arrows move the proposal on the floor, Shift+↑↓ or Page Up/Down
+lift and lower it, and Alt plus these keys rotates it. Space retains Run/Pause and period retains single-step through
 the existing workshop handler, including while scene editing remains open in Run or Paused.
 Unapplied scene drafts still block Run. Text fields retain native keyboard editing. A preview hides committed
 scene meshes, including objects proposed for removal, and Cancel restores them.

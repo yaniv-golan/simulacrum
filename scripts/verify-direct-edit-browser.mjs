@@ -118,9 +118,30 @@ try {
   browserEvidence.assert('ok', [
     Math.abs(Math.hypot(...moved.position.map((v, i) => v - original.position[i])) - 0.025) < 1e-9,
   ]);
+  // Arrows move on the floor; Shift with the up arrow lifts by the same step,
+  // and the visible canvas hint says so.
+  browserEvidence.assert('ok', [Math.abs(moved.position[1] - original.position[1]) < 1e-9]);
+  browserEvidence.assert('match', [
+    await page.locator('.canvas-hint').textContent(),
+    /Shift\+↑↓ raises and lowers/,
+  ]);
+  await page.keyboard.press('Shift+ArrowUp');
+  const lifted = (await frame()).metadata.blueprint.parts[0];
+  browserEvidence.assert('ok', [Math.abs(lifted.position[1] - moved.position[1] - 0.025) < 1e-9]);
+  browserEvidence.assert('ok', [
+    Math.abs(lifted.position[0] - moved.position[0]) < 1e-9 &&
+      Math.abs(lifted.position[2] - moved.position[2]) < 1e-9,
+  ]);
+  await page.keyboard.press('Shift+ArrowDown');
+  // Lowering returns to the same height up to float residue (0.06 + 0.025 − 0.025).
+  const lowered = (await frame()).metadata.blueprint.parts[0];
+  browserEvidence.assert('ok', [
+    lowered.position.every((v, i) => Math.abs(v - moved.position[i]) < 1e-9),
+  ]);
   await page.keyboard.press('Alt+ArrowUp');
   const rotated = (await frame()).metadata.blueprint.parts[0];
-  browserEvidence.assert('deepEqual', [rotated.position, moved.position]);
+  // Rotation copies the position verbatim: bit-exact against the lowered pose.
+  browserEvidence.assert('deepEqual', [rotated.position, lowered.position]);
   browserEvidence.assert('ok', [Math.abs(Math.abs(rotated.rotation[3]) - Math.SQRT1_2) < 1e-9]);
   const cameraBefore = await page.evaluate(
     () => window.workshopProbe.readInteractionState().camera,

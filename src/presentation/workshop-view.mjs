@@ -113,6 +113,9 @@ function element(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+// One sentence for the direct-editing hint; every site that restores it uses this.
+const SELECT_HINT =
+  'Drag a part to move · Shift+↑↓ raises and lowers · Drag empty space to orbit · Scroll to zoom · Esc to clear';
 function button(text, fn, className = '') {
   const node = element('button', className, text);
   node.type = 'button';
@@ -820,11 +823,7 @@ export function createWorkshopView(
   const partList = element('div', 'part-list');
   const viewport = element('section', 'viewport');
   viewport.setAttribute('aria-label', 'Three dimensional workbench');
-  const hint = element(
-    'div',
-    'canvas-hint',
-    'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear',
-  );
+  const hint = element('div', 'canvas-hint', SELECT_HINT);
   const empty = element('div', 'empty-hint');
   // The guided first build is offered where a newcomer must look; it calls the
   // same launcher as the Learn & examples card and leaves with the first part.
@@ -1407,7 +1406,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Arrows move 2.5 cm. Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
+      'Arrows move 2.5 cm on the floor; Shift+↑↓ or Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
     ),
     element('h3', '', 'View'),
     element(
@@ -1579,7 +1578,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent =
       value === 'select'
-        ? 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear'
+        ? SELECT_HINT
         : value === 'rotate'
           ? 'Drag rings to rotate · V for direct part movement · Drag empty space to orbit'
           : 'Drag arrows to move · V for direct part movement · Drag empty space to orbit';
@@ -3921,7 +3920,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent = on
       ? 'Click a part or dashed connection to inspect · Drag to orbit · Esc clears selection'
-      : 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+      : SELECT_HINT;
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
   function render(next, cursor = getCursor?.()) {
@@ -4044,9 +4043,7 @@ export function createWorkshopView(
     if (frame.metadata.mode !== 'build')
       hint.textContent =
         'Machine controls lists your keys · Space pauses · Drag empty space to orbit';
-    else if (previousMode !== 'build')
-      hint.textContent =
-        'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+    else if (previousMode !== 'build') hint.textContent = SELECT_HINT;
     partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
     partPlacement?.refresh();
     refreshAssemblyState();
@@ -4283,16 +4280,19 @@ export function createWorkshopView(
             .multiply(new THREE.Quaternion(...rotation))
             .toArray();
         } else {
+          // Shift with the up/down arrows lifts and lowers (world Y), the same
+          // step Page Up/Down give; arrows alone move on the floor plane.
+          const lift = event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key);
           const direction =
-            event.key === 'ArrowUp'
-              ? forward
-              : event.key === 'ArrowDown'
-                ? forward.negate()
-                : event.key === 'ArrowRight'
-                  ? right
-                  : event.key === 'ArrowLeft'
-                    ? right.negate()
-                    : new THREE.Vector3(0, event.key === 'PageUp' ? 1 : -1, 0);
+            lift || event.key.startsWith('Page')
+              ? new THREE.Vector3(0, ['ArrowUp', 'PageUp'].includes(event.key) ? 1 : -1, 0)
+              : event.key === 'ArrowUp'
+                ? forward
+                : event.key === 'ArrowDown'
+                  ? forward.negate()
+                  : event.key === 'ArrowRight'
+                    ? right
+                    : right.negate();
           position = new THREE.Vector3(...position).addScaledVector(direction, 0.025).toArray();
         }
         send({ type: 'transform', id: part.id, position, rotation });
