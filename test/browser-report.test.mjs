@@ -107,7 +107,8 @@ test('real suite owns cleanup inside failed receipts and preserves simultaneous 
       assert.equal(row.report.runs[0].processSnapshot?.at, 'watchdog');
       assert.equal(row.report.runs[0].failureKind, 'watchdog', 'kind recovered through wrappers');
       assert.deepEqual(row.report.runs[0].appStatus, ['Not placed · fixture']);
-      assert.equal(row.report.runs[0].msSinceInstall, null);
+      // H1 signal: the failed row carries the age of the candidate's installed binaries.
+      assert.ok(row.report.runs[0].msSinceInstall >= 60000, 'install age from the pinned time');
     } else {
       assert.equal(row.report.runs[0].processSnapshot, null);
       assert.deepEqual(row.report.runs[0].appStatus, []);

@@ -48,6 +48,9 @@ registerHooks({
     return next(url, context);
   },
 });
+// A candidate exports its install time to the tier; pin one here so the fixture is
+// deterministic whether it runs directly or inside a candidate.
+process.env.SIMULACRUM_CANDIDATE_INSTALLED_AT = new Date(Date.now() - 60000).toISOString();
 const { verifyBrowserSuite } = await import('../../scripts/verify-browser-suite.mjs');
 const { createVerificationRun } = await import('../../scripts/verification-run.mjs');
 process.chdir(fixture);
