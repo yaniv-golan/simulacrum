@@ -146,7 +146,7 @@ const server = createServer(async (req, res) => {
     </script>`);
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const browser = await evidence.launch({ profile: 'recording', channel: 'chrome', headless: true });
+const browser = await evidence.launch({ profile: 'ui', channel: 'chrome', headless: true });
 const origin = `http://127.0.0.1:${server.address().port}`;
 async function until(predicate, limit = 10000) {
   const deadline = Date.now() + limit;

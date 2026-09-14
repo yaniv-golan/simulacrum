@@ -4,7 +4,7 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
 
-const browser = await browserEvidence.launch({ profile: 'recording', ...{} }),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 

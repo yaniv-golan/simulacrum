@@ -1,4 +1,4 @@
-import { loadavg } from 'node:os';
+import { loadavg, cpus } from 'node:os';
 import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
@@ -24,7 +24,12 @@ import {
   createVerificationContext,
   initializeVerificationEnvironment,
 } from './verification-run.mjs';
-import { runCheckSequence, packParallelChecks, balanceParallelChecks } from './check-sequence.mjs';
+import {
+  runCheckSequence,
+  planBrowserPhases,
+  admitQuietHost,
+  tierWorkers,
+} from './check-sequence.mjs';
 import { errorMessages, withCleanup } from './verification-cleanup.mjs';
 const stamp = 'dist/.verification-source.json';
 export async function prepareBrowserBuild(context) {
@@ -113,7 +118,7 @@ export async function withBrowserReport(
     try {
       writeBrowserHistory(
         historyPath,
-        report.runs.filter((row) => !row.reused),
+        report.runs.filter((row) => !row.reused && row.status !== 'not evaluated'),
       );
     } catch (error) {
       report.historyWarning = `Scheduling hints could not be saved: ${error.message}`;
@@ -186,10 +191,12 @@ async function executeBrowserSuite(
     reuseBuild = false,
     failFast = false,
     context,
-    workers = 2,
+    workers,
     selection = null,
     priorityFiles = [],
     priorityProvenance,
+    seed = process.env.SIMULACRUM_BROWSER_SCHEDULE_SEED ?? 'tier',
+    host = { cores: cpus().length, load1: () => loadavg()[0] },
   },
   report,
   publish,
@@ -198,8 +205,21 @@ async function executeBrowserSuite(
     throw Error('fail-fast is restricted to explicit development probes');
   report.failFast = failFast;
   report.phase = 'selection';
+  // A tier (a run with a verification context) takes one worker per three idle cores, at most
+  // three, measured at start; a run without a tier context — the hosted CI route, witnesses —
+  // keeps today's two workers and, below, today's unconditional timing execution. An explicit
+  // worker count above two remains a probe privilege.
+  const tierContext = Boolean(context); // a default context is created below for the run
+  const derived = workers === undefined && tierContext;
+  const load1AtStart = host.load1();
+  if (derived) workers = tierWorkers({ cores: host.cores, load1: load1AtStart });
+  else if (workers === undefined) workers = 2;
+  report.workersBasis = derived
+    ? { cores: host.cores, load1: load1AtStart, derived: true }
+    : { explicit: workers, load1: load1AtStart, derived: false };
+  report.workers = workers;
   if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
-  if (workers > 2 && (context || !Array.isArray(mode)))
+  if (!derived && workers > 2 && (context || !Array.isArray(mode)))
     throw Error('more than two workers requires explicit development probes');
   context ??= createVerificationContext();
   if (selection && JSON.stringify(selection.source) !== JSON.stringify(sourceIdentity()))
@@ -226,16 +246,23 @@ async function executeBrowserSuite(
   );
   report.priority = { ...priority, checks: priority.checks.map((c) => c.id) };
   const priorityCount = new Set(priority.reasons.map((row) => row.id)).size;
-  const packed = packParallelChecks(priority.checks, { workers, priorityCount });
-  const scheduled =
-    workers === 1 ? packed : balanceParallelChecks(packed, report.durations, priorityCount);
+  const plan = planBrowserPhases(priority.checks, {
+    durations: report.durations,
+    priorityIds: priority.reasons.map((row) => row.id),
+    seed,
+  });
+  const scheduled = plan.order;
   report.schedule = {
     policy:
-      workers === 1
-        ? 'original order'
-        : 'bounded parallel packing, longest historical checks first within runs',
+      'phased: headless pool (longest first, priority as queue order), serialized lane, timing-sensitive last',
     priorityCount,
-    maxNewCombinedGroupSize: workers === 1 ? 0 : 4,
+    workers,
+    seed,
+    phases: {
+      pool: plan.pool.map((c) => c.id),
+      lane: plan.lane.map((c) => c.id),
+      timing: plan.timing.map((c) => c.id),
+    },
     checks: scheduled.map((check) => check.id),
   };
   report.source = source;
@@ -274,13 +301,42 @@ async function executeBrowserSuite(
         scheduled,
         async (check) => {
           const row = runs.find((row) => row.id === check.id);
+          if (check.phase === 'timing' && !report.timingAdmission) {
+            // Timing-sensitive checks need a quiet host: wait once, bounded; a refusal is a
+            // skipped gate, never a pass and never a retry. Only a tier that derived its
+            // workers from the host is admitted this way; a run without a tier context (the
+            // hosted CI route, witnesses) or with an explicit worker count keeps today's
+            // unconditional execution and records that it did.
+            const bound = Number(process.env.SIMULACRUM_TIMING_LOAD_BOUND);
+            report.timingAdmission = derived
+              ? await admitQuietHost({
+                  cores: host.cores,
+                  ...(Number.isFinite(bound) && bound > 0 ? { bound } : {}),
+                  load1: host.load1,
+                })
+              : {
+                  admitted: true,
+                  skipped: tierContext ? 'explicit workers' : 'no tier context',
+                  load1: host.load1(),
+                };
+            publish();
+          }
           row.measurementConditions = {
+            phase: check.phase,
+            workers,
             scheduleIndex: scheduled.findIndex((c) => c.id === check.id),
             startedAt: new Date().toISOString(),
             activeBrowserChecks: runs.filter((r) => r.status === 'running').map((r) => r.id),
             hostLoadAverage: loadavg(),
+            load1: host.load1(),
             note: 'Schedule and host-load context only; warmup and external contention are not controlled by these observations.',
           };
+          if (check.phase === 'timing' && !report.timingAdmission.admitted) {
+            const refused = Error(`not evaluated: ${report.timingAdmission.reason}`);
+            refused.notEvaluated = true;
+            refused.failureKind = 'host-load';
+            throw refused;
+          }
           row.status = 'running';
           publish();
           let target = url,
@@ -388,7 +444,8 @@ async function executeBrowserSuite(
             const diagnostics = runnerError?.processDiagnostics;
             const appStatus = readAppStatus(row.evidenceDirectory);
             Object.assign(row, {
-              status: 'failed',
+              status: error.notEvaluated ? 'not evaluated' : 'failed',
+              ...(error.notEvaluated ? { reason: error.message } : {}),
               ok: false,
               observedAt: performance.timeOrigin + performance.now(),
               elapsedMs: error.elapsedMs,

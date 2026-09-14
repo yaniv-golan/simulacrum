@@ -189,6 +189,7 @@ export function createWorkshopView(
   const renderCosts = [];
   const liveReadoutKeys = new WeakMap();
   let renderedFrames = 0,
+    loopTicks = 0,
     sceneDirty = true,
     scenePrepared = false;
   const invalidateScene = () => {
@@ -4309,6 +4310,7 @@ export function createWorkshopView(
     // Keep the display owner alive when its injected clock or render update throws.
     // The application pauses that clock and reports the error; do not swallow it.
     animation = requestAnimationFrame(draw);
+    loopTicks++;
     beforeDraw?.(now);
     if (framePreparationFailed) {
       previousFrameRendered = false;
@@ -4511,6 +4513,9 @@ export function createWorkshopView(
       rendering: {
         completedDraw: structuredClone(completedDraw),
         frames: renderedFrames,
+        // Animation-frame callbacks observed, whether or not a frame was submitted: a check
+        // that asserts nothing changed during a window can tell "idle" from "starved".
+        loopTicks,
         quality: graphicsQuality.read(),
         pixelRatio: renderer.getPixelRatio(),
         costsMs: [...renderCosts],

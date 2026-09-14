@@ -1,6 +1,7 @@
 import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
+import { settledWindow } from './browser-idle.mjs';
 const browserEvidence = createBrowserEvidence();
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -196,13 +197,14 @@ try {
       { timeout: 15000 },
     );
     const before = await frames();
-    await page.waitForTimeout(350);
+    // Prove the renderer was alive while it submitted nothing; a starved window is refused.
+    const settled = await settledWindow(page, 350);
     browserEvidence.assert('equal', [
       await frames(),
       before,
       'settled build mode does not submit duplicate GPU frames',
     ]);
-    idleChecks.push({ before, after: await frames() });
+    idleChecks.push({ before, after: await frames(), loopTicks: settled.observed });
   }
   async function draws(action) {
     const before = await frames();
@@ -214,7 +216,7 @@ try {
   }
   await idle();
   const idlePixels = await canvas.screenshot({ path: `${out}/idle-before.png` });
-  await page.waitForTimeout(350);
+  await settledWindow(page, 350);
   browserEvidence.assert('deepEqual', [
     await canvas.screenshot({ path: `${out}/idle-after.png` }),
     idlePixels,

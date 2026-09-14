@@ -4,6 +4,48 @@ import { readdirSync, readFileSync } from 'node:fs';
 export function browserChecks() {
   return readManifest().browserChecks;
 }
+/** A script that asserts a timing budget; declared, not inferred, so the schedule and receipt
+ * reuse read one registered fact. One-directional: an assertion must be declared; declaring
+ * without an assertion is allowed. The probe is source-local and lexical: budgets asserted in
+ * an imported helper (spring-performance via measure-springs.mjs) or phrased as wall-clock
+ * caps and sampling-gap guards (starter, shared-sensing) are not caught and must be declared
+ * by their owners; the audit of 2026-09-14 lists them. */
+export const TIMING_ASSERTION =
+  /\b(?:p95|quantile|renderP95Ms|cadenceP95Ms|tickP95Ms|realTimeRatio|frameCpuMs|audioCpuMs)\b/;
+export function timingSensitiveChecks(checks = browserChecks()) {
+  return checks.filter((c) => c.timingSensitive === true);
+}
+/** A self-hosted check may share the pool only when the source shows it is isolated: it binds
+ * its servers to port 0, keeps every artifact path under the per-check root, and starts no Vite
+ * dev server (those share one dependency-optimizer cache). Local script imports are inspected
+ * one level down so a thin wrapper cannot hide a server. */
+export function selfCheckIsolationProblems(path, read) {
+  const sources = [read(path)];
+  for (const match of read(path).matchAll(
+    /from\s+['"](\.\/[^'"]+\.mjs)['"]|import\(['"](\.\/[^'"]+\.mjs)['"]\)/g,
+  )) {
+    const specifier = match[1] ?? match[2];
+    // Shared harness modules (browser-*.mjs, catalog actions) are the isolation mechanism
+    // itself and are inspected by their own tests, not as part of a check.
+    if (/^\.\/(?:browser-[a-z-]+|catalog-browser-actions)\.mjs$/.test(specifier)) continue;
+    try {
+      sources.push(read(`scripts/${specifier.slice(2)}`));
+    } catch {
+      /* an unreadable import is reported by the module graph, not here */
+    }
+  }
+  const problems = [];
+  for (const source of sources) {
+    if (/\b(?:listen\(\s*[1-9]\d*|port\s*:\s*[1-9]\d*)/.test(source)) problems.push('fixed port');
+    if (/from\s+['"]vite['"]/.test(source)) problems.push('vite dev server (shared cache)');
+    // Every artifact literal must be the argument of browserArtifactPath(...), whichever line
+    // the formatter put it on; strip those calls first, then any remaining literal is a leak.
+    const unremapped = source.replace(/browserArtifactPath\(\s*[^)]*\)/g, '');
+    if (/['"`]artifacts\//.test(unremapped))
+      problems.push('artifact path outside the per-check root');
+  }
+  return [...new Set(problems)];
+}
 export function validateBrowserCoverage(root = process.cwd()) {
   const checks = browserChecks();
   const registered = new Set(checks.map((c) => c.script));
@@ -18,6 +60,18 @@ export function validateBrowserCoverage(root = process.cwd()) {
         )
       )
         throw Error(`parallel browser check requires exclusive profile: ${path}`);
+      const registeredCheck = checks.find((c) => c.script === path);
+      if (registeredCheck && !registeredCheck.timingSensitive && TIMING_ASSERTION.test(source))
+        throw Error(`timing budget assertion requires timingSensitive: ${path}`);
+      if (registeredCheck?.execution === 'parallel' && registeredCheck.environment === 'self') {
+        const problems = selfCheckIsolationProblems(path, (p) =>
+          readFileSync(`${root}/${p}`, 'utf8'),
+        );
+        if (problems.length)
+          throw Error(
+            `parallel self-hosted check must be isolated: ${path}: ${problems.join(', ')}`,
+          );
+      }
       if (
         (/from\s+['"]playwright['"]/.test(source) ||
           (/from\s+['"]\.\/browser-evidence\.mjs['"]/.test(source) && /\.launch\(/.test(source))) &&

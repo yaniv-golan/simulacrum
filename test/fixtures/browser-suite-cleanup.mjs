@@ -138,6 +138,7 @@ for (const [priorityFiles, selection] of [
         order: globalThis.executionOrder,
         liveRuns: globalThis.liveRuns,
         selected: selected.map((c) => c.script),
+        selectedById: Object.fromEntries(selected.map((c) => [c.id, c.script])),
         report: JSON.parse(readFileSync('artifacts/browser-suite/selected.json')),
       }),
   );
@@ -232,9 +233,15 @@ writeFileSync(
   'dist/.verification-source.json',
   JSON.stringify({ source: { head: 'fixture', workingTreeDigest: 'fixture' }, app: 'fixture' }),
 );
-for (const options of [{ workers: 4 }, { workers: 4, context: {} }]) {
+for (const [checks, options] of [
+  [['verify-browser'], { workers: 4 }],
+  [['verify-browser'], { workers: 4, context: {} }],
+  // No workers and no tier context (the hosted CI route): two workers, timing rows run
+  // unconditionally, and the report says why admission was skipped.
+  [['verify-browser', 'qualify-workshop'], {}],
+]) {
   try {
-    await verifyBrowserSuite(['verify-browser'], { ...options, reuseBuild: true });
+    await verifyBrowserSuite(checks, { ...options, reuseBuild: true });
   } catch {}
   console.log('WORKERS ' + JSON.stringify(globalThis.fixtureRead()));
 }

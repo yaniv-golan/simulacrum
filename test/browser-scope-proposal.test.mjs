@@ -288,15 +288,30 @@ test('a proposal records which checks the candidate delta selects but no witness
 test('the default affected selector under a live candidate agrees with execution discovery', async () => {
   // The unit fixtures stub the selector; this proves the production default reads the same
   // graph and manifest the tier would use, minus the proposal's own witnesses.
-  const { prepareScopeProposal } = await import('../scripts/browser-scope-proposal.mjs');
-  const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { prepareScopeProposal, inspectScopeInputs } = await import(
+    '../scripts/browser-scope-proposal.mjs'
+  );
+  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
   const proposal = prepareScopeProposal(process.cwd(), [], { base: 'HEAD' });
   const { basis, checks } = proposal.affectedNotWitnessed;
   assert.match(basis.base, /^[0-9a-f]{40}$/);
   assert.ok(Array.isArray(checks), proposal.affectedNotWitnessed.error);
+  // The enumeration is defined under the PROPOSED manifest (the rows a reviewer is about to
+  // accept), so the reference selection must use it too: on a stale registry the current
+  // manifest's audited rows fall back to opaque and would select everything.
+  const proposed = JSON.parse(proposal.proposedManifest);
+  const { graph, read } = inspectScopeInputs(process.cwd());
   const witnessed = new Set(proposal.changes.flatMap((c) => c.witnesses));
   const expected = basis.files.length
-    ? affectedBrowserChecks(basis.files)
+    ? selectAffectedBrowserChecks({
+        checks: proposed.browserChecks,
+        graph,
+        files: basis.files,
+        scopes: proposed.browserLocalScopes ?? [],
+        metadataScopes: proposed.browserReviewMetadataScopes ?? [],
+        readSource: read,
+        metadataEnvironmentSafe: true,
+      })
         .checks.map((c) => c.id)
         .filter((id) => !witnessed.has(id))
         .sort()

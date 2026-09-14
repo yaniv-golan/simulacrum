@@ -1,9 +1,11 @@
 import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
+import { settledWindow } from './browser-idle.mjs';
 
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
+const settledWindows = []; // liveness of every wait-and-assert-nothing window, in result.json
 
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
@@ -120,7 +122,7 @@ try {
         Math.abs(exit.before[i][axis] - exit.after[i][axis]) < 1e-6,
         'returning to assembly must not jump the camera',
       ]);
-  await page.waitForTimeout(700);
+  settledWindows.push(await settledWindow(page, 700));
   browserEvidence.assert('deepEqual', [await read(), before]);
   browserEvidence.assert('equal', [await wiring.isChecked(), false]);
   browserEvidence.assert('equal', [await page.locator('.wiring-notice').isVisible(), false]);
@@ -147,7 +149,7 @@ try {
     await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
     await page.waitForTimeout(600);
     await page.getByRole('button', { name, exact: true }).click();
-    await page.waitForTimeout(700);
+    settledWindows.push(await settledWindow(page, 700));
     browserEvidence.assert('equal', [await page.locator('.inspection-banner').isVisible(), false]);
     browserEvidence.assert('deepEqual', [(await read()).frame, beforeInspection]);
     await page.locator('canvas').first().focus();
@@ -207,6 +209,7 @@ try {
         ...browserEvidence.identity,
         build: await page.locator('meta[name=build-id]').getAttribute('content'),
         errors,
+        settledWindows,
         checks: [
           'inspection preserves telemetry and reports displayed poses',
           'shaft explanation and recorded display context',

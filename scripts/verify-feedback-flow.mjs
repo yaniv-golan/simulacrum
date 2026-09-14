@@ -44,7 +44,7 @@ const server = createServer((req, res) => {
   }
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const browser = await evidence.launch({ profile: 'recording', channel: 'chrome', headless: true });
+const browser = await evidence.launch({ profile: 'ui', channel: 'chrome', headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   let unavailable = false;

@@ -172,10 +172,23 @@ test('actual suite separates canonical selection from priority execution', () =>
     .filter((s) => s.startsWith('PRIORITY '))
     .map((s) => JSON.parse(s.slice(9)));
   assert.equal(rows.length, 3);
-  assert.deepEqual(rows[2].order, [...rows[2].selected].reverse());
+  // Execution follows the recorded phased schedule: the pool first (priority as queue order
+  // inside it), the serialized lane, then timing-sensitive checks last. The fixture's pair is
+  // one pool check and one timing-sensitive check, so the priority check leads every run and
+  // the timing-sensitive check closes it; the priority run is distinguished by its provenance.
+  const scriptOf = (row, id) => row.selectedById[id];
+  for (const row of rows) {
+    assert.deepEqual(
+      row.order,
+      row.report.schedule.checks.map((id) => row.selectedById[id]),
+      'execution order is the recorded phased schedule',
+    );
+    assert.deepEqual(row.report.schedule.phases.timing, ['qualify-workshop']);
+    assert.equal(row.order.at(-1), scriptOf(row, 'qualify-workshop'));
+  }
   assert.equal(rows[2].report.priority.provenance, 'captured changed files');
-  assert.deepEqual(rows[0].order, rows[0].selected);
-  assert.deepEqual(rows[1].order, [...rows[1].selected].reverse());
+  assert.equal(rows[0].report.priority.reasons.length, 0, 'no priority without changed files');
+  assert.ok(rows[1].report.priority.reasons.some((r) => r.id === 'verify-attachment-status'));
   assert.deepEqual(
     rows[0].report.runs.map((r) => r.id),
     rows[1].report.runs.map((r) => r.id),
@@ -189,14 +202,17 @@ test('actual suite separates canonical selection from priority execution', () =>
     assert.ok(Array.isArray(conditions.activeBrowserChecks));
   }
 
-  assert.equal(
-    rows[1].liveRuns[1].find((r) => r.id === rows[1].report.runs[1].id).status,
-    'failed',
-  );
-  assert.equal(
-    rows[0].liveRuns[1].find((r) => r.id === rows[0].report.runs[0].id).status,
-    'passed',
-  );
+  // Live snapshots are taken at each execution; index them by the phased schedule, not by
+  // the canonical run order the report keeps.
+  // The deliberately failing check is the pool check, so it executes first in every row: at
+  // the second snapshot it has failed while the timing-sensitive check is running, and the
+  // final report still records the timing-sensitive check as passed.
+  const executed = (row, i) => row.report.schedule.checks[i];
+  for (const row of [rows[0], rows[1]]) {
+    assert.equal(row.liveRuns[1].find((r) => r.id === executed(row, 0)).status, 'failed');
+    assert.equal(row.liveRuns[1].find((r) => r.id === executed(row, 1)).status, 'running');
+    assert.equal(row.report.runs.find((r) => r.id === executed(row, 1)).status, 'passed');
+  }
   assert.equal(rows[0].report.runs.filter((r) => r.ok === false).length, 1);
   assert.equal(rows[1].report.runs.filter((r) => r.ok === false).length, 1);
 });
@@ -342,11 +358,22 @@ test('actual suite allows four-worker probes and rejects completion-context over
     .split('\n')
     .filter((s) => s.startsWith('WORKERS '))
     .map((s) => JSON.parse(s.slice(8)));
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 3);
   assert.equal(rows[0].ok, true, JSON.stringify(rows[0]));
   assert.equal(rows[1].ok, false);
   assert.match(rows[1].failure, /explicit development probes/);
   assert.deepEqual(rows[1].runs, []);
+  // Without a tier context nothing is derived from the host: two workers, and the timing
+  // phase is not gated on a quiet host (hosted CI runners are never quiet).
+  assert.equal(rows[2].ok, true, JSON.stringify(rows[2]));
+  assert.equal(rows[2].workers, 2);
+  assert.deepEqual(
+    { ...rows[2].workersBasis, load1: undefined },
+    { explicit: 2, derived: false, load1: undefined },
+  );
+  assert.equal(rows[2].timingAdmission.skipped, 'no tier context');
+  assert.equal(rows[2].timingAdmission.admitted, true);
+  assert.deepEqual(rows[2].schedule.phases.timing, ['qualify-workshop']);
 });
 
 test('cleanup attempts every resource despite phase publication and close failures', async () => {

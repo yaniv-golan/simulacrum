@@ -79,12 +79,16 @@ test('runtime roots include engine consumers without test imports; unknown and o
   );
 });
 
-test('performance and self-hosted checks cannot opt into parallel execution', () => {
+test('performance, probe and timing-sensitive self-hosted checks cannot opt into parallel execution', () => {
   for (const mutate of [
     (m) => (m.browserChecks[0].execution = 'unknown'),
     (m) => (m.browserChecks[0].execution = 'parallel'),
     (m) => {
-      const c = m.browserChecks.find((c) => c.environment === 'self');
+      const c = m.browserChecks.find((c) => c.environment === 'probe');
+      c.execution = 'parallel';
+    },
+    (m) => {
+      const c = m.browserChecks.find((c) => c.environment === 'self' && c.timingSensitive);
       c.execution = 'parallel';
     },
   ]) {
@@ -92,8 +96,12 @@ test('performance and self-hosted checks cannot opt into parallel execution', ()
     mutate(m);
     assert.throws(() => validateManifest(m));
   }
+  // An isolated self-hosted check may share the pool; the source control below decides isolation.
+  const m = structuredClone(readManifest());
+  const c = m.browserChecks.find((x) => x.environment === 'self' && !x.timingSensitive);
+  c.execution = 'parallel';
+  assert.doesNotThrow(() => validateManifest(m));
 });
-
 test('local feature boundary narrows only its reviewed dependency shape; shared and new inputs expand', async () => {
   const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
     '../scripts/browser-selection.mjs'
@@ -548,4 +556,186 @@ test('audio probe readers are selected for every audio entrypoint; an audio loca
     'the fabricated row must actually match, or the control proves nothing',
   );
   assert.deepEqual(missing(narrowed, file), ['verify-ball-browser']);
+});
+
+test('timing-sensitive checks are a registered fact: declared rows run exclusively and every budget assertion declares itself', async () => {
+  const { timingSensitiveChecks, TIMING_ASSERTION } = await import(
+    '../scripts/browser-registry.mjs'
+  );
+  const m = readManifest();
+  const declared = timingSensitiveChecks(m.browserChecks)
+    .map((c) => c.id)
+    .sort();
+  // The eight rows measured as budget-asserting on 2026-09-14; the guard below, not this
+  // list, is what keeps the set honest when a new check starts asserting a budget.
+  assert.deepEqual(declared, [
+    'measure-cameras',
+    'measure-gears',
+    'qualify-workshop',
+    'verify-adaptive-graphics',
+    'verify-camera-browser',
+    'verify-lamp-performance',
+    'verify-mechanical-audio',
+    'verify-spring-performance',
+  ]);
+  for (const c of timingSensitiveChecks(m.browserChecks))
+    assert.notEqual(c.execution, 'parallel', `${c.id} must run exclusively`);
+  // Source guard: a script that asserts a p95/quantile/budget must be declared.
+  const { readFileSync } = await import('node:fs');
+  for (const c of m.browserChecks)
+    if (TIMING_ASSERTION.test(readFileSync(c.script, 'utf8')))
+      assert.ok(
+        c.timingSensitive === true,
+        `${c.id} asserts a timing budget but is not declared timingSensitive`,
+      );
+  assert.doesNotThrow(() => validateBrowserCoverage());
+  for (const [mutate, message] of [
+    [(x) => (x.browserChecks[0].timingSensitive = 'yes'), /invalid timingSensitive metadata/],
+    [
+      (x) => {
+        const row = x.browserChecks.find((c) => c.id === 'verify-camera-browser');
+        row.timingSensitive = true;
+        row.execution = 'parallel';
+      },
+      /timing-sensitive checks run exclusively/,
+    ],
+  ]) {
+    const mutated = structuredClone(m);
+    mutate(mutated);
+    assert.throws(() => validateManifest(mutated), message);
+  }
+  // Negative control for the guard: an undeclared budget-asserting script is refused.
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const root = mkdtempSync(join(tmpdir(), 'timing-guard-'));
+  try {
+    mkdirSync(join(root, 'scripts'));
+    cpSync('scripts/manifest.json', join(root, 'scripts/manifest.json'));
+    for (const c of m.browserChecks) cpSync(c.script, join(root, c.script));
+    const undeclared = m.browserChecks.find((c) => !c.timingSensitive);
+    writeFileSync(
+      join(root, undeclared.script),
+      readFileSync(undeclared.script, 'utf8') + "\nassert.ok(p95 <= 1, 'sneaky budget');\n",
+    );
+    assert.throws(
+      () => validateBrowserCoverage(root),
+      new RegExp(`timing budget assertion requires timingSensitive: ${undeclared.script}`),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('checks moved into the headless pool launch the ui profile and stay registered parallel', async () => {
+  const { readFileSync } = await import('node:fs');
+  const m = readManifest();
+  // Re-registered 2026-09-14 after an assertion-level audit: neither asserts on window focus,
+  // tab capture or a timing budget; their exclusivity was only the profile literal. The six
+  // headed (focus) checks audited alongside them stay headed: on the first phased run the same
+  // scripts under the headless shell took 4.1x their headed duration (33.8 s → 138 s, not
+  // load-correlated) while pooled rows paid 1.18x for contention; 33.8 s of lane beats 138 s
+  // of pool CPU, and the headless rendering cost is the real lever for every pooled row.
+  const moved = ['verify-property-focus', 'verify-recording-browser'];
+  for (const id of [
+    'verify-rope-browser',
+    'verify-load-cell-browser',
+    'verify-load-cell-force-browser',
+    'verify-load-cell-copy-browser',
+    'verify-mirror-browser',
+    'verify-authorable-scenes',
+  ]) {
+    const row = m.browserChecks.find((c) => c.id === id);
+    assert.equal(row?.execution, 'exclusive', `${id} stays in the lane`);
+    assert.match(readFileSync(row.script, 'utf8'), /profile:\s*'focus'/, `${id} stays headed`);
+  }
+  for (const id of moved) {
+    const row = m.browserChecks.find((c) => c.id === id);
+    assert.equal(row?.execution, 'parallel', `${id} is registered parallel`);
+    assert.equal(row.environment, 'workshop');
+    assert.notEqual(row.timingSensitive, true);
+    const source = readFileSync(row.script, 'utf8');
+    assert.doesNotMatch(
+      source,
+      /profile\s*:\s*['"](?:focus|recording|performance)['"]|headless\s*:\s*false/,
+      `${id} launches headless ui`,
+    );
+  }
+  // assembly-ux stays pooled with a watchdog that admits the pool's measured contention: its
+  // serial duration (84.7 s under ≈4 external load) was 94 % of the old 90 s watchdog, and the
+  // first phased run fired it at 1.15x with 17 of 19 evidence sections written — slow, not hung.
+  const assemblyUx = m.browserChecks.find((c) => c.id === 'verify-assembly-ux-browser');
+  assert.equal(assemblyUx.execution, 'parallel');
+  assert.equal(assemblyUx.timeoutMs, 120000);
+  // The runtime guard still refuses a parallel launch that is not headless ui: keep the
+  // registry guard as the negative control (it throws for a parallel row with a focus profile).
+  assert.doesNotThrow(() => validateBrowserCoverage());
+});
+
+test('parallel self-hosted checks prove isolation from source: port 0, per-check artifact roots, no Vite dev server', async () => {
+  const { selfCheckIsolationProblems } = await import('../scripts/browser-registry.mjs');
+  const { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync } = await import(
+    'node:fs'
+  );
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const m = readManifest();
+  const pooledSelf = m.browserChecks.filter(
+    (c) => c.environment === 'self' && c.execution === 'parallel',
+  );
+  assert.deepEqual(pooledSelf.map((c) => c.id).sort(), [
+    'verify-cloud-runtime',
+    'verify-feedback-flow',
+    'verify-feedback-lifecycle',
+    'verify-feedback-receipts',
+  ]);
+  const read = (p) => readFileSync(p, 'utf8');
+  for (const c of pooledSelf)
+    assert.deepEqual(selfCheckIsolationProblems(c.script, read), [], c.id);
+  // feedback-recovery proves isolation too but stays in the lane: its consecutive unchecks race
+  // the dialog's render() (feedback-client.mjs:282 rewrites a checkbox from a draft whose save
+  // is still pending); the lane only restores the timing that let it pass, so it is timing-
+  // dependent until the application fix lands, then one manifest field pools it again.
+  const recovery = m.browserChecks.find((c) => c.id === 'verify-feedback-recovery');
+  assert.equal(recovery.execution, 'exclusive');
+  assert.deepEqual(selfCheckIsolationProblems(recovery.script, read), []);
+  // The Vite-hosted checks are not isolated (shared dependency-optimizer cache) and stay exclusive.
+  for (const id of ['verify-part-help-window', 'verify-mechanical-audio']) {
+    const c = m.browserChecks.find((x) => x.id === id);
+    assert.equal(c.execution, 'exclusive');
+    assert.ok(
+      selfCheckIsolationProblems(c.script, read).includes('vite dev server (shared cache)'),
+    );
+  }
+  // Wrapper imports are followed one level: cloud-runtime's server lives in ./playtest/verify-runtime.mjs.
+  assert.deepEqual(
+    selfCheckIsolationProblems('scripts/verify-cloud-runtime.mjs', (p) =>
+      p.endsWith('verify-runtime.mjs') ? 'createServer().listen(4173)' : read(p),
+    ),
+    ['fixed port'],
+  );
+  assert.deepEqual(
+    selfCheckIsolationProblems(
+      'x',
+      () => "writeFileSync('artifacts/shared/out.json', body); listen(0)",
+    ),
+    ['artifact path outside the per-check root'],
+  );
+  // Negative control through the registry itself: a fabricated pooled self row with a fixed port is refused.
+  const root = mkdtempSync(join(tmpdir(), 'self-isolation-'));
+  try {
+    mkdirSync(join(root, 'scripts'));
+    for (const c of m.browserChecks) cpSync(c.script, join(root, c.script));
+    const target = pooledSelf.find((c) => c.id === 'verify-feedback-receipts');
+    writeFileSync(
+      join(root, target.script),
+      read(target.script).replace('listen(0,', 'listen(4173,'),
+    );
+    assert.throws(
+      () => validateBrowserCoverage(root),
+      new RegExp(`parallel self-hosted check must be isolated: ${target.script}: fixed port`),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

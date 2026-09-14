@@ -94,12 +94,20 @@ export function validateManifest(m) {
       !['browser', 'performance'].includes(x.tier) ||
       !['workshop', 'self', 'probe'].includes(x.environment) ||
       (x.execution !== undefined && !['parallel', 'exclusive'].includes(x.execution)) ||
-      (x.execution === 'parallel' && (x.tier === 'performance' || x.environment !== 'workshop')) ||
+      (x.execution === 'parallel' &&
+        (x.tier === 'performance' ||
+          x.environment === 'probe' ||
+          (x.environment === 'self' && x.timingSensitive === true))) ||
       typeof x.smoke !== 'boolean' ||
       !Number.isSafeInteger(x.timeoutMs) ||
       x.timeoutMs <= 0
     )
       throw Error(`invalid browser check: ${x.id}`);
+    if (x.timingSensitive !== undefined && typeof x.timingSensitive !== 'boolean')
+      throw Error(`invalid timingSensitive metadata: ${x.id}`);
+    // A budget assertion needs a quiet host; the schedule keeps these serial and last.
+    if (x.timingSensitive === true && x.execution === 'parallel')
+      throw Error(`timing-sensitive checks run exclusively: ${x.id}`);
   }
   if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
     throw Error('invalid merge smoke metadata');

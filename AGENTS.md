@@ -138,6 +138,10 @@ short physics <60 s. The every-commit command must stay below 180 s and report w
 Long contact tests run at merge/nightly until measured. Merge runs CI plus audited affected browser journeys and mandatory integration smoke;
 unknown, shared-runtime and verification-policy changes select all browser checks.
 All browser checks run nightly and for release/qualification; critical-module mutation runs weekly.
+Tiers schedule the browser suite in phases (headless pool on one worker per three idle cores,
+at most three; policy-serialized checks; timing-sensitive checks last on an admitted quiet host) and the
+`test:browser:serial` and a rotated `SIMULACRUM_BROWSER_SCHEDULE_SEED` are the controls a
+nightly run uses so contention or order can never be the reason a check passes.
 Use `npm run verify:local` for local completion (CI plus conservatively affected browser checks;
 `--base <commit>` includes committed changes). Clean source defaults to all checks.
 Use `npm run verify:merge -- --base <commit>` for routine merge readiness. Use the

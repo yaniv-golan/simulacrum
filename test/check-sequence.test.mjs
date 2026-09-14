@@ -299,3 +299,129 @@ test('four workers drain before exclusive work', async () => {
   );
   assert.equal(peak, 4);
 });
+
+test('phased planning: headless pool first, policy-serialized lane, timing-sensitive last; priority is queue order', async () => {
+  const { planBrowserPhases } = await import('../scripts/check-sequence.mjs');
+  const checks = [
+    { id: 'perf', execution: 'exclusive', timingSensitive: true },
+    { id: 'p1', execution: 'parallel' },
+    { id: 'lane1', execution: 'exclusive' },
+    { id: 'p2', execution: 'parallel' },
+    { id: 'p3', execution: 'parallel' },
+    { id: 'audio', execution: 'exclusive', timingSensitive: true },
+    { id: 'lane2', execution: 'exclusive' },
+    { id: 'p4', execution: 'parallel' },
+  ];
+  const durations = { p1: 5000, p2: 90000, p3: 1000, p4: 40000 };
+  // p3 is a priority check: it stays at the head of the pool but does not split the pool.
+  const plan = planBrowserPhases(checks, { durations, priorityIds: ['p3'] });
+  assert.deepEqual(
+    plan.pool.map((c) => c.id),
+    ['p3', 'p2', 'p4', 'p1'],
+  );
+  assert.deepEqual(
+    plan.lane.map((c) => c.id),
+    ['lane1', 'lane2'],
+  );
+  assert.deepEqual(
+    plan.timing.map((c) => c.id),
+    ['perf', 'audio'],
+  );
+  assert.deepEqual(
+    plan.order.map((c) => c.id),
+    ['p3', 'p2', 'p4', 'p1', 'lane1', 'lane2', 'perf', 'audio'],
+  );
+  assert.deepEqual(
+    plan.order.map((c) => c.phase),
+    ['pool', 'pool', 'pool', 'pool', 'lane', 'lane', 'timing', 'timing'],
+  );
+  // Deterministic: same inputs, same order (default seed balances by recorded duration).
+  assert.deepEqual(planBrowserPhases(checks, { durations, priorityIds: ['p3'] }).order, plan.order);
+  const tied = [
+    { id: 'x', execution: 'parallel' },
+    { id: 'y', execution: 'parallel' },
+    { id: 'z', execution: 'parallel' },
+  ];
+  // With recorded durations the default seed balances; a rotated seed must still reorder.
+  const withDurations = { x: 3000, y: 2000, z: 1000 };
+  assert.deepEqual(
+    planBrowserPhases(tied, { durations: withDurations }).pool.map((c) => c.id),
+    ['x', 'y', 'z'],
+  );
+  const rotated = planBrowserPhases(tied, { durations: withDurations, seed: 'nightly-1' });
+  assert.equal(rotated.balanced, false);
+  assert.deepEqual(
+    rotated.pool.map((c) => c.id),
+    planBrowserPhases(tied, { seed: 'nightly-1' }).pool.map((c) => c.id),
+    'a rotated seed ignores durations',
+  );
+  const orders = new Set(
+    ['s1', 's2', 's3', 's4', 's5', 's6', 's7'].map((seed) =>
+      planBrowserPhases(tied, { seed })
+        .pool.map((c) => c.id)
+        .join(),
+    ),
+  );
+  assert.ok(orders.size > 1, 'seed changes the order of ties');
+  assert.deepEqual(
+    [...orders].map((o) => o.split(',').sort().join()),
+    [...orders].map(() => 'x,y,z'),
+    'never drops a check',
+  );
+  // Coverage is exact: every check appears once.
+  assert.deepEqual(plan.order.map((c) => c.id).sort(), checks.map((c) => c.id).sort());
+  // A timing-sensitive row registered parallel is refused by the planner, not silently pooled.
+  assert.throws(
+    () => planBrowserPhases([{ id: 'bad', execution: 'parallel', timingSensitive: true }]),
+    /timing-sensitive checks run exclusively/,
+  );
+});
+
+test('tier workers follow measured load headroom: one per three idle cores, one to three', async () => {
+  const { tierWorkers, LOAD_PER_WORKER, MAX_TIER_WORKERS } = await import(
+    '../scripts/check-sequence.mjs'
+  );
+  assert.equal(LOAD_PER_WORKER, 3);
+  assert.equal(MAX_TIER_WORKERS, 3);
+  // The first phased run started at load1 6.56 on 14 cores and derived 4; that is now 2.
+  assert.equal(tierWorkers({ cores: 14, load1: 6.56 }), 2);
+  assert.equal(tierWorkers({ cores: 14, load1: 2 }), 3, 'a quiet 14-core host gets three');
+  assert.equal(tierWorkers({ cores: 14, load1: 9 }), 1);
+  assert.equal(tierWorkers({ cores: 14, load1: 20 }), 1, 'never below one');
+  assert.equal(tierWorkers({ cores: 4, load1: 0.5 }), 1, 'a 4-vCPU runner runs the pool serially');
+  assert.equal(tierWorkers({ cores: 32, load1: 1 }), 3, 'never above three');
+});
+
+test('quiet-host admission: within bound admits, above bound waits once bounded, then refuses without retrying', async () => {
+  const { admitQuietHost } = await import('../scripts/check-sequence.mjs');
+  const samples = [];
+  const run = (loads, { waitMs = 100, pollMs = 10 } = {}) => {
+    let i = 0;
+    const clock = { now: 0 };
+    return admitQuietHost({
+      cores: 14,
+      bound: 7,
+      waitMs,
+      pollMs,
+      load1: () => {
+        const v = loads[Math.min(i++, loads.length - 1)];
+        samples.push(v);
+        return v;
+      },
+      sleep: async (ms) => {
+        clock.now += ms;
+      },
+      now: () => clock.now,
+    });
+  };
+  assert.deepEqual(await run([3.2]), { admitted: true, load1: 3.2, waitedMs: 0, samples: [3.2] });
+  const waited = await run([9, 8.5, 6.9]);
+  assert.equal(waited.admitted, true);
+  assert.equal(waited.load1, 6.9);
+  assert.ok(waited.waitedMs > 0 && waited.waitedMs <= 100);
+  assert.deepEqual(waited.samples, [9, 8.5, 6.9]);
+  const refused = await run([12, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]);
+  assert.equal(refused.admitted, false);
+  assert.equal(refused.waitedMs, 100, 'the wait is bounded by waitMs and never repeats');
+  assert.match(refused.reason, /host load 10 above bound 7 after 100 ms/);
+});

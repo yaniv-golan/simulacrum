@@ -102,3 +102,88 @@ export function balanceParallelChecks(checks, durations = {}, priorityCount = 0)
   }
   return ordered;
 }
+
+/** Three phases with one registered fact deciding membership: the headless pool
+ * (`execution: 'parallel'`, packed longest historical duration first; the priority prefix
+ * is queue order, never a packing barrier), the policy-serialized lane (exclusive for
+ * focus/recording/self-hosting reasons), then timing-sensitive checks, which need a quiet
+ * host and run last. The order is deterministic in its inputs; the seed only breaks ties
+ * among checks without a recorded duration so a nightly run can rotate them. */
+export function planBrowserPhases(
+  checks,
+  { durations = {}, priorityIds = [], seed = 'tier' } = {},
+) {
+  // The default seed keeps the longest-first balance; any other seed orders the pool by the
+  // seed alone (durations never tie), which is what makes a rotated nightly order a control.
+  const balanced = seed === 'tier';
+  for (const check of checks)
+    if (check.timingSensitive === true && check.execution === 'parallel')
+      throw Error(`timing-sensitive checks run exclusively: ${check.id}`);
+  const tie = (id) => {
+    let hash = 2166136261;
+    for (const char of `${seed}:${id}`) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+    return hash >>> 0;
+  };
+  const priority = new Set(priorityIds);
+  const pool = checks
+    .filter((c) => c.execution === 'parallel' && c.timingSensitive !== true)
+    .map((c) => ({ ...c, phase: 'pool' }))
+    .sort(
+      (a, b) =>
+        Number(priority.has(b.id)) - Number(priority.has(a.id)) ||
+        (balanced ? (durations[b.id] ?? 0) - (durations[a.id] ?? 0) : 0) ||
+        tie(a.id) - tie(b.id),
+    );
+  const lane = checks
+    .filter((c) => c.execution !== 'parallel' && c.timingSensitive !== true)
+    .map((c) => ({ ...c, phase: 'lane' }));
+  const timing = checks
+    .filter((c) => c.timingSensitive === true)
+    .map((c) => ({ ...c, phase: 'timing' }));
+  return { pool, lane, timing, order: [...pool, ...lane, ...timing], seed, balanced };
+}
+
+/** Timing-sensitive checks start only on a quiet host. Above the bound the caller waits once,
+ * for at most `waitMs`, then reports refusal; a refusal is never retried and never becomes a
+ * pass — it is a skipped gate, recorded as such. */
+export async function admitQuietHost({
+  cores,
+  bound = Math.max(1, Math.floor(cores / 2)),
+  waitMs = 60000,
+  pollMs = 5000,
+  load1,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  now = () => performance.now(),
+}) {
+  const samples = [];
+  const started = now();
+  let current = load1();
+  samples.push(current);
+  while (current > bound && now() - started < waitMs) {
+    await sleep(Math.min(pollMs, waitMs - (now() - started)));
+    current = load1();
+    samples.push(current);
+  }
+  const waitedMs = Math.round(now() - started);
+  if (current > bound)
+    return {
+      admitted: false,
+      load1: current,
+      waitedMs,
+      samples,
+      reason: `host load ${current} above bound ${bound} after ${waitedMs} ms`,
+    };
+  return { admitted: true, load1: current, waitedMs, samples };
+}
+
+/** Workers for a tier follow the host. A pooled check is not one core: on the first phased run
+ * (14 cores) four concurrent headless checks held load1 near 15 — about three runnable threads
+ * each (renderer, compositor/raster, GPU process, node driver). That pool included six checks
+ * since returned to the lane, so three per worker is a conservative reading of one run, to be
+ * re-derived from the next run's per-row load; the cap of three keeps a quiet 14-core host
+ * under the load at which a pooled renderer was seen starved. */
+export const LOAD_PER_WORKER = 3;
+export const MAX_TIER_WORKERS = 3;
+export function tierWorkers({ cores, load1, perWorker = LOAD_PER_WORKER }) {
+  return Math.max(1, Math.min(MAX_TIER_WORKERS, Math.floor((cores - load1) / perWorker)));
+}

@@ -387,16 +387,23 @@ explicit probe remains useful during development, but is not evidence of complet
 There is no cross-candidate receipt cache. Only explicitly audited pure unit leaves
 may resume within the same frozen candidate; see isolated candidate completion.
 
-The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) supports
-`--workers 1` and `--workers 2` for completion. Explicit `--checks` development probes
-also accept three or four workers for measured comparisons; they cannot override completion
-concurrency. The default remains two; use one for serial comparisons. Bounded serial/parallel probes
-and the full required suite validate changes to this scheduling policy.
-Only checks declared `execution: parallel` in the manifest may overlap. Missing metadata,
-performance checks, recording, focus-sensitive checks and self-hosted environments run
-exclusively. Each admitted check owns its browser process, contexts and artifact directory;
-probe servers are local to the check and always closed. Exclusive checks drain the previous
-work before starting. Available workers immediately take the next admitted check.
+The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) schedules a
+run in three phases: the headless pool (checks declared `execution: parallel`), the
+serialized lane (exclusive checks that are not timing-sensitive), then timing-sensitive
+checks last. A completion tier derives its pool workers from the host at start — one per
+three idle cores (a pooled headless check holds about three runnable threads), at most
+three, recorded as `workersBasis` — and admits the timing phase only on a
+quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
+and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
+scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
+remain for development probes and for `test:browser:serial`; an explicit count skips host
+admission and records that it did. Missing metadata, performance checks, headed (focus) and recording profiles,
+probe environments and self-hosted checks that do not prove isolation run exclusively;
+`timingSensitive: true` rows (declared, and required by a source guard whenever a script
+asserts a p95/quantile/CPU budget) always run last. A self-hosted row may join the pool only
+when its source binds servers to port 0, keeps every artifact path under the per-check root
+and starts no Vite dev server. Each admitted check owns its browser process, contexts and
+artifact directory; probe servers are local to the check and always closed.
 Source changes stop new dispatches and drain already-started work.
 The [shared browser launch boundary](../../scripts/browser-session.mjs#implementation) checks the resolved profile and headless option against
 the child process execution policy, so passing a profile through a variable cannot bypass
@@ -436,13 +443,13 @@ The UI-lifecycle, assembly-library and surface process watchdogs allow headroom 
 observed two-worker execution. Their idle-frame, physical and interaction assertions
 remain unchanged; process deadlines are not performance acceptance thresholds.
 
-With two workers, undersized parallel runs may be grouped across exclusive checks.
-Existing runs are never split, runs of four or more remain in place, and new combined
-groups contain at most four checks. The explicit priority prefix and relative exclusive
-order are preserved. The report records the resulting schedule separately; this does
-not admit additional checks to parallel execution. Successful historical durations order
-longer checks first within each admitted parallel run, after the priority prefix. This
-never moves work across an exclusive barrier; serial runs keep their original order.
+Inside the pool, priority checks queue first and the rest run longest recorded duration
+first; the priority prefix never splits the pool. The order is deterministic in its inputs;
+`SIMULACRUM_BROWSER_SCHEDULE_SEED` set to anything but the default orders the pool by the
+seed alone (ignoring durations), which is the control a nightly run uses together with
+`test:browser:serial` so neither order nor contention can be the reason a check passes.
+The report records the phases, the schedule, each row's phase and the host load it started
+under; this admits no additional check to the pool.
 `--priority-files <repository-paths...>` on local/final/candidate completion uses
 positive static dependencies to order likely integration checks earlier. Required
 coverage stays unchanged; unknown associations retain ordinary ordering. Candidate
