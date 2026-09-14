@@ -1,5 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { createLeafLedger } from './verification-resume.mjs';
+import { reusableLeaf } from './candidate-after.mjs';
+import {
+  RELEVANT_ENVIRONMENT,
+  relevantEnvironmentDigest,
+  environmentForensics,
+  processIdentity,
+} from './verification-environment.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { readHostProfile, profileDeadline, childEnvironment } from './host-profile.mjs';
 import { sourceIdentity } from './source-identity.mjs';
@@ -14,30 +21,10 @@ const stable = (value) =>
       ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
       : v,
   );
+export { RELEVANT_ENVIRONMENT, relevantEnvironmentDigest, environmentForensics };
 export function verificationIdentity() {
-  return {
-    source: sourceIdentity(),
-    build: appFingerprint(),
-    runtime: process.version,
-    platform: process.platform,
-    arch: process.arch,
-    environmentDigest: createHash('sha256')
-      .update(
-        stable(
-          Object.fromEntries(
-            Object.entries(process.env).filter(
-              ([k]) =>
-                ![
-                  'SIMULACRUM_VERIFICATION_WINDOW',
-                  'SIMULACRUM_LEAF_LEDGER',
-                  'SIMULACRUM_VERIFICATION_ATTEMPT',
-                ].includes(k),
-            ),
-          ),
-        ),
-      )
-      .digest('hex'),
-  };
+  // The installed dependency digest (browser runtime included) is bound by the candidate.
+  return { source: sourceIdentity(), build: appFingerprint(), ...processIdentity() };
 }
 /** Invocation receipts may reconstruct audited same-candidate leaves. Every reuse revalidates identity. */
 export function createVerificationRun({
@@ -76,6 +63,8 @@ export function createVerificationRun({
           if (previous) {
             receipt.resumed = true;
             receipt.originalElapsedMs = previous.elapsedMs;
+            if (previous.origin)
+              receipt.origin = { ...previous.origin, depth: (previous.origin.depth ?? 0) + 1 };
             return previous.value;
           }
           return execute();
@@ -89,6 +78,7 @@ export function createVerificationRun({
             configuration,
             value,
             receipt.originalElapsedMs ?? performance.now() - started,
+            receipt.origin ?? null,
           );
           return value;
         })
@@ -119,26 +109,102 @@ export function createVerificationRun({
     },
   };
 }
+/** Shape of the retry selection a ledger configuration may carry; anything else is refused. The
+ * configuration is honoured only for the attempt it was written for: its origin attempt must be
+ * the one the tier was launched under. */
+export function readRetrySelection(value, { origin, attempt } = {}) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) throw Error('invalid retry selection');
+  if (!attempt || origin?.attempt !== attempt)
+    throw Error('retry selection is bound to the attempt that wrote the ledger configuration');
+  const list = (name) => {
+    const rows = value[name];
+    if (rows === undefined) return undefined;
+    if (!Array.isArray(rows) || rows.some((row) => typeof row !== 'string' || !row))
+      throw Error(`invalid retry selection ${name}`);
+    return [...new Set(rows)].sort();
+  };
+  for (const key of Object.keys(value))
+    if (!['changedFiles', 'required', 'covered'].includes(key))
+      throw Error(`invalid retry selection field ${key}`);
+  return {
+    changedFiles: list('changedFiles') ?? null,
+    required: list('required') ?? [],
+    covered: list('covered') ?? [],
+  };
+}
+/** A receipt from another candidate is offered only while the evidence it points at is intact:
+ * an absent file or directory means the leaf executes again; altered bytes fail closed. A browser
+ * receipt without checksums predates them and is never offered across candidates. */
+export function acceptRetainedEvidence(payload) {
+  const entries = payload.value?.evidenceChecksums;
+  if (!Array.isArray(entries) || !entries.length)
+    return payload.id.startsWith('browser:') ? 'missing' : 'ok';
+  for (const entry of entries) {
+    if (typeof entry?.path !== 'string') return 'malformed';
+    let stat;
+    try {
+      stat = statSync(entry.path);
+    } catch (error) {
+      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return 'missing';
+      throw error;
+    }
+    if (entry.directory === true) {
+      if (!stat.isDirectory()) return 'mismatch';
+      continue;
+    }
+    if (!stat.isFile() || stat.size !== entry.bytes) return 'mismatch';
+    if (createHash('sha256').update(readFileSync(entry.path)).digest('hex') !== entry.sha256)
+      return 'mismatch';
+  }
+  return 'ok';
+}
 export function initializeVerificationEnvironment() {
   assertRuntime();
   process.env.NODE_ENV ??= 'production';
 }
 export function createVerificationContext(options) {
   initializeVerificationEnvironment();
-  let ledgerOptions = {};
+  let ledgerOptions = {},
+    selection = null;
   if (process.env.SIMULACRUM_LEAF_LEDGER && !options?.readIdentity) {
     const config = JSON.parse(readFileSync(process.env.SIMULACRUM_LEAF_LEDGER, 'utf8'));
+    // A diagnosed retry hands its selection through this private, attempt-scoped file only:
+    // the byte delta the tier's policy classifies in place of the git diff, and the browser
+    // checks it must add to whatever it selects. No command-line flag carries either.
+    selection = readRetrySelection(config.selection, {
+      origin: config.origin,
+      attempt: process.env.SIMULACRUM_VERIFICATION_ATTEMPT,
+    });
     const manifest = JSON.parse(readFileSync('scripts/manifest.json', 'utf8'));
     const identity = verificationIdentity();
-    const shared = {
-      key: Buffer.from(config.key, 'hex'),
-      identity,
-      eligible: manifest.verificationResumeLeaves ?? [],
-    };
+    const shared = { key: Buffer.from(config.key, 'hex'), identity };
+    // Every passing leaf is saved so a later diagnosed retry has receipts; plain resume reads
+    // only the audited pure leaves, a retry reads the explicit reuse list it was given.
     ledgerOptions = {
-      writeLedger: createLeafLedger({ ...shared, directory: config.output }),
+      writeLedger: createLeafLedger({
+        ...shared,
+        directory: config.output,
+        eligible: [],
+        // Only leaves a diagnosed retry may reuse are saved: unit files and browser checks that
+        // are not timing-sensitive. Aggregates, gates and builds never enter the ledger.
+        saveEligible: (id) => reusableLeaf(id, manifest),
+        origin: config.origin ?? null,
+      }),
       ...(config.previous
-        ? { resumeLedger: createLeafLedger({ ...shared, directory: config.previous }) }
+        ? {
+            resumeLedger: createLeafLedger({
+              ...shared,
+              // Another candidate's receipts were signed with its key and point at its evidence.
+              ...(config.previousKey
+                ? { key: Buffer.from(config.previousKey, 'hex'), accept: acceptRetainedEvidence }
+                : {}),
+              directory: config.previous,
+              eligible: Array.isArray(config.reuse)
+                ? config.reuse
+                : (manifest.verificationResumeLeaves ?? []),
+            }),
+          }
         : {}),
     };
   }
@@ -176,6 +242,7 @@ export function createVerificationContext(options) {
     assertAdmission: () => remaining(Infinity),
   });
   return Object.assign(run, {
+    selection,
     hostProfile,
     async withDeadline(limit, execute) {
       const previous = deadline;

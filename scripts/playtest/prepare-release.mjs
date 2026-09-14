@@ -44,6 +44,9 @@ export async function prepareRelease(destination) {
   }
   await mkdir(resolve(out, '..'), { recursive: true, mode: 0o700 });
   await mkdir(out, { recursive: false, mode: 0o700 });
+  // Keep Spotlight off the frozen snapshot: the marker sits at the release root, outside the
+  // `source` map and the snapshot's identity.
+  await writeFile(join(out, '.metadata_never_index'), '', { mode: 0o600, flag: 'wx' });
   const snapshot = join(out, 'source');
   run('git', ['clone', '--quiet', '--no-hardlinks', '--no-checkout', root, snapshot]);
   for (const path of Object.keys(source)) {

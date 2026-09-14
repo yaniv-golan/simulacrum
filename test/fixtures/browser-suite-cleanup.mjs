@@ -154,7 +154,15 @@ for (const [childFailed, cleanupFailed] of [
   globalThis.cleanupMustFail = cleanupFailed;
   globalThis.failScript = undefined;
   globalThis.executionOrder = [];
-  const run = createVerificationRun({ readIdentity: () => ({ source: 'reuse-fixture' }) });
+  globalThis.savedValues = [];
+  const run = createVerificationRun({
+    readIdentity: () => ({ source: 'reuse-fixture' }),
+    writeLedger: {
+      save(id, configuration, value) {
+        globalThis.savedValues.push({ id, value });
+      },
+    },
+  });
   const context = {
     ...run,
     check(id, configuration, execute) {
@@ -195,6 +203,7 @@ for (const [childFailed, cleanupFailed] of [
         originalLog,
         retainedLog: readFileSync(reports[0].runs[0].log, 'utf8'),
         retainedReport: JSON.parse(readFileSync(reports[0].reportPath, 'utf8')),
+        savedValues: globalThis.savedValues,
       }),
   );
 }

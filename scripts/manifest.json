@@ -192,6 +192,16 @@
       "timeoutMs": 1000
     },
     {
+      "id": "format",
+      "dueAt": "M0",
+      "description": "src, scripts and test in prettier layout (the hosted format:check, run on every commit)",
+      "ruleId": "gate-integrity",
+      "module": "scripts/check-format.mjs",
+      "export": "checkFormat",
+      "args": [],
+      "timeoutMs": 60000
+    },
+    {
       "id": "verification-workflow",
       "dueAt": "M3b",
       "description": "local success never qualifies; failed prerequisites stop downstream work",
@@ -534,7 +544,8 @@
       "smoke": true,
       "timeoutMs": 150000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-guide-feedback",
@@ -622,7 +633,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-selection-browser",
@@ -809,7 +821,8 @@
       "smoke": false,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-cloud-runtime",
@@ -969,7 +982,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-lifecycle",
@@ -980,7 +994,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-recovery",
@@ -991,7 +1006,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-parts-catalog",
@@ -4851,11 +4867,15 @@
       "id": "candidate-resume-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Only registered successful pure leaves resume with matching signed identity/configuration; failures, aggregates and unknown leaves execute. Candidate attempts require ownership and current terminal reports.",
+      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, timing-sensitive checks, merge smoke, aggregates and unknown leaves execute and are observed as executed passing receipts, a source-only delta retry never selects less than the tier's fresh policy except checks a parent receipt covers and the delta does not reach, every non-pass leaf carries a diagnosed cause, tampered or oversized receipts fail closed, and a report that reused a receipt says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports. A passed parent attempt on identical bytes, dependencies and identity may lend its non-timing-sensitive workshop browser receipts to a later local or merge candidate (--after with a passed report): the child selects its own checks, executes CI, unit, smoke, timing-sensitive, hosted and probe leaves, admits only an attested, finished, non-hosted parent, offers only receipts the parent executed itself, verifies each cited receipt's retained evidence (missing executes again, altered fails closed), refuses final on either side, and reports passed with reused receipts rather than plain green.",
       "owners": [
         {
           "path": "scripts/verification-resume.mjs",
           "anchor": "createLeafLedger"
+        },
+        {
+          "path": "scripts/candidate-after.mjs",
+          "anchor": "reexecutionSet"
         },
         {
           "path": "scripts/candidate-resume.mjs",
@@ -4864,6 +4884,14 @@
         {
           "path": "scripts/candidate-attempt.mjs",
           "anchor": "requireAttemptReport"
+        },
+        {
+          "path": "scripts/candidate-after.mjs",
+          "anchor": "reusableAcrossCandidates"
+        },
+        {
+          "path": "scripts/verification-run.mjs",
+          "anchor": "acceptRetainedEvidence"
         }
       ],
       "checks": [
@@ -4878,6 +4906,50 @@
           {
             "path": "test/candidate-resume.test.mjs",
             "anchor": "dependency records are framed"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "receipts record their origin attempt, carry it through resumed saves and expire by chain depth"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "identity binds the declared relevant environment only; the whole environment is forensic"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "the summary names reused origins, re-executed leaves and maps a passing tier to passed after failure"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "reexecution covers non-pass leaves, their registered controls and every always-fresh class"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "every environment variable read in the tree binds identity or is exempted with a reason"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "required browser checks widen a selection from the registry and never narrow it"
+          },
+          {
+            "path": "test/local-runner.test.mjs",
+            "anchor": "a retry only widens it or skips covered checks its delta does not reach"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a source-only delta selects the fresh policy minus covered checks the delta does not reach, plus required"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "retained evidence is accepted by digest and size"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "same-context suite reuse references retained original evidence"
           }
         ],
         "negative": [
@@ -4892,6 +4964,46 @@
           {
             "path": "test/verification-run.test.mjs",
             "anchor": "a watchdog shortened by the shared budget reports budget exhaustion, not a hung test"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "every failed or unexecuted leaf needs its own cause; an aborted aggregate covers absent leaves"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "an after report is admitted only when its block is consistent with the child receipts"
+          },
+          {
+            "path": "test/verification-resume-controls.test.mjs",
+            "anchor": "plain resume never reads aggregate, timing-sensitive or unaudited leaves, whatever the production save policy stored"
+          },
+          {
+            "path": "test/verification-tiers.test.mjs",
+            "anchor": "refuses --changed-files"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a source-only delta after a parent with no browser coverage runs every check the fresh policy selects"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "a ledger retry selection is admitted only in its declared shape and for its own attempt"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "across candidates only workshop browser journeys carry a receipt"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a passed parent classifies for reuse; a passed report carrying a failed leaf is refused"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a reuse child is passed with reused receipts exactly when it resumed a receipt the parent offered and executed"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "an accept hook offers a receipt only while its evidence is intact"
           }
         ]
       },
@@ -5116,6 +5228,10 @@
           {
             "path": "test/merge-ci.test.mjs",
             "anchor": "push invalid ancestry"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes"
           }
         ]
       },
@@ -7910,16 +8026,20 @@
         "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/ci-order.test.mjs",
         "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -8148,6 +8268,7 @@
         "test/browser-scope-proposal.test.mjs",
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8156,8 +8277,11 @@
         "test/experiment-inputs.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
         "test/fixtures/candidate-priority.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -8953,6 +9077,7 @@
         "test/browser-scope-proposal.test.mjs",
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8965,12 +9090,15 @@
         "test/experiment-inputs.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
         "test/fixtures/candidate-priority.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
