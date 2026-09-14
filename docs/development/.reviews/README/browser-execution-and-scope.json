@@ -6,7 +6,7 @@
     "scripts/browser-registry.mjs": "a14c4664fd1575c76321fb1becf9fa79e8d4e72b7c10c90b1d9ac76c30fbf62c",
     "scripts/browser-selection.mjs": "1adc83c63d95e60b65bebe2467689823cd490071c20640d0383d973b1e3b0d33",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "7789633ada0abec3f5cad39e1c1aafcc971a4055d8dc566139d9a5af327af4db",
+    "scripts/manifest.json": "7b80f25005cb4b744f9d44b03e31a62c0f3b53fcdd7923d03438f754cf411f34",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",

@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"4f10742a870381a037eae11ff4401354634d1efce758fdac3eb9afed27ae8b2f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"996db26c647110b292fdd4b07ccb46e4dab75e7750a3fb79198785bbc2ca009b","disposition":"updated","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): the scheduling paragraph now says workersBasis records the launch niceness, a tier that derives workers refuses a niced launch (zsh nices every backgrounded job unless bgnice is unset), and the timing admission's bounded wait tracks the one-minute load average's decay up to 180 s, refusing early when the load is not falling. Verified against verify-browser-suite.mjs, check-sequence.mjs (admitQuietHost) and runtime-preflight.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"13229f245e642a1fa060ec47d14cce246c3e6a45c8347123e29aaa29885a9cd9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ca38e9b21b25cc443a39f71eede2b9922fde4ec22a851119b381d3090ec5cc22","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests in scripts/manifest.json changed (consumer closures that include verify-connection-test-browser.mjs); the scheduling and admission text recorded in the previous review is unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -591,7 +591,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"7a8a2037f699b567622a6ef721c26efddd900d6637161a61f52dbd548add013d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7e40b4a0df17a04ff54fcfd98c96d1ce2e20342ff58104715cd8e92a2ecec3ab","disposition":"updated","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): the candidate section now states the launch recipe (unsetopt bgnice; nohup caffeinate) and that the candidate command refuses a niced launch (verify-candidate.mjs records launchNiceness); capture, dependency validation, resume and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56317f90f6b2e680abdc1cd4a295294918757917f9547c30d12bdedaa38a848a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4613b05038a27d9324d372d43c1d41ab6f35d1fe0e37d538fafd0d3693db8968","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests changed; capture, dependency validation, the niced-launch refusal and the launch recipe are as reviewed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

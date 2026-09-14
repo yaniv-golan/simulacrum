@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"3ff9132fe800fc88ba952cc97db942061bc5b0937e9f0a204ac318c25fd29b7a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1b203b583dacd9fc83964b526909108951f958924955e39f4f8a34dc28d9da46","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (launch refusal, liveWait in browser-idle and the connection test, admission decay) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"5be945d12fe10e1e77b4e9b60db13a410a8b1d25503d3ec6c9b3354d10b5517f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7b3f43f684adb0b321f5482192adc0a84b0e1aee212bf51dbc94866aa2f8acb7","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): verify-connection-test-browser.mjs now aims its drive-button presses at the element at press time and confirms the hold; no simulation, physics-door, power, checkpoint or contact behavior changed. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
