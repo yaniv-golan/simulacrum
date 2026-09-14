@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5f793ce970b9bb75e4f567dfc2aff12a86f95ce2d1a8b8d8f4af116b018680ad","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"a015bd2916f2459df2b34e5135c5c9cc82fb5d853d9b6c5283804c91be36ef89","disposition":"still accurate","rationale":"scripts/manifest.json changed only the verify-assembly-ux-browser row's timeoutMs (90000 → 120000): twelve retained passes ran 71–89 s against the 90 s cap and two merge tiers today killed the check during teardown after it had printed its pass; no check inventory, selection rule, scope row, invariant or ownership described by this section changed. No physics owner or control changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"33bd3c9b10e86d075e8f5fc7b43d79b95a7d2e81628fff3f8f7f880a7b346a8f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"21f9fcc56c48c6b229f026b0fab1077de35b6a3a3b039771e6671c3ffb8be038","disposition":"still accurate","rationale":"test/assembly-partitions.test.mjs now expects the 120 s watchdog on the assembly UX partition (measured 71–89 s, killed in teardown at 90 s) and still binds the library partition to 90 s; the bounded-probe guarantee and everything this section describes are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

@@ -394,7 +394,7 @@
     "test/actuator-polarity.test.mjs": "d369435fa4d24e7201a739c9f7e46651ddbff3bdf3df9d3d6491a5c943438038",
     "test/analysis-snapshot.test.mjs": "9bf5ae6785fbbb3127ee4142e7857b6c0dd56c740f3de1b06434c1e79dc25cae",
     "test/assembly-library.test.mjs": "031e3993a40617104f68cf138668af929fd96c40d15eb7625dbde18e385f37fd",
-    "test/assembly-partitions.test.mjs": "c2cc302b26f189c753daf03696ad24de66a610d9910672cb4aea6c744c519b33",
+    "test/assembly-partitions.test.mjs": "c443a7c966c7616e1031485a7be3dbc10237c7b4f4cf1bac8e554279a806a2d5",
     "test/assembly-placement.test.mjs": "a192775e6db7283d3039ea6c4dd4c96d5417f0fcf2f419d1ec96213e2628101b",
     "test/assembly.test.mjs": "bfcee8479007f30f09405ed17eec18843fb5dc19d40363b6569d0dc871f90a5c",
     "test/assessment.test.mjs": "766deed368e90e6a447498731084657c19b6eaa430de62cff48c8587fbde0a1b",
