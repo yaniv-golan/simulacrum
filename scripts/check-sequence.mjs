@@ -149,31 +149,67 @@ export function planBrowserPhases(
 export async function admitQuietHost({
   cores,
   bound = Math.max(1, Math.floor(cores / 2)),
-  waitMs = 60000,
+  waitMs = 180000,
   pollMs = 5000,
+  trendMs = 30000,
   load1,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = () => performance.now(),
 }) {
+  // load1 is a one-minute average: right after a pool it decays for a minute or more, so the
+  // wait tracks the decay instead of expiring at a fixed 60 s. Once a trend window is in hand,
+  // a flat or rising load is refused early — there is nothing to wait for — while a falling one
+  // is waited out up to waitMs, the projected crossing recorded with the samples.
   const samples = [];
   const started = now();
-  let current = load1();
-  samples.push(current);
+  const sample = () => {
+    const value = load1();
+    samples.push({ atMs: Math.round(now() - started), load1: value });
+    return value;
+  };
+  const trend = () => {
+    const at = now() - started,
+      window = samples.filter((s) => s.atMs >= at - trendMs);
+    if (window.length < 3 || at < trendMs) return null;
+    const n = window.length,
+      meanT = window.reduce((s, p) => s + p.atMs, 0) / n,
+      meanL = window.reduce((s, p) => s + p.load1, 0) / n,
+      slope =
+        window.reduce((s, p) => s + (p.atMs - meanT) * (p.load1 - meanL), 0) /
+        Math.max(
+          1e-9,
+          window.reduce((s, p) => s + (p.atMs - meanT) ** 2, 0),
+        );
+    const current = samples.at(-1).load1;
+    return {
+      windowMs: trendMs,
+      slopePerS: Number((slope * 1000).toFixed(4)),
+      projectedMs: slope < 0 ? Math.round((current - bound) / -slope) : null,
+    };
+  };
+  let current = sample(),
+    seen = null;
   while (current > bound && now() - started < waitMs) {
+    seen = trend();
+    if (seen && seen.projectedMs === null) break;
     await sleep(Math.min(pollMs, waitMs - (now() - started)));
-    current = load1();
-    samples.push(current);
+    current = sample();
   }
-  const waitedMs = Math.round(now() - started);
+  const waitedMs = Math.round(now() - started),
+    loads = samples.map((s) => s.load1);
   if (current > bound)
     return {
       admitted: false,
       load1: current,
       waitedMs,
-      samples,
-      reason: `host load ${current} above bound ${bound} after ${waitedMs} ms`,
+      samples: loads,
+      trend: seen ?? trend(),
+      reason:
+        seen?.projectedMs === null
+          ? `host load ${current} above bound ${bound} after ${waitedMs} ms and not falling (${seen.slopePerS}/s over the last ${trendMs} ms)`
+          : `host load ${current} above bound ${bound} after ${waitedMs} ms`,
     };
-  return { admitted: true, load1: current, waitedMs, samples };
+  return { admitted: true, load1: current, waitedMs, samples: loads, trend: seen ?? trend() };
 }
 
 /** Workers for a tier follow the host. On the first phased run (14 cores) four concurrent

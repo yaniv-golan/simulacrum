@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"b161b6b818f8c7a746141b1ab23238ba0f1dff28323f4bc3d4adcc1db27944fd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d6a5c49a532f6dfd0ab26d4c76715501085cf07e5c3ac88d857dbd1db2dff0c0","disposition":"still accurate","rationale":"Changed dependencies reached through this section's evidence scripts: ci.yml routing and job budgets, ci-verification and ci-release dispatch-only release runs, ci.mjs budget, merge-comparison's NOT_EVALUATED listing, AGENTS.md and the two developer-doc sentences. No physics law, fixture, evidence script or reset policy changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5be945d12fe10e1e77b4e9b60db13a410a8b1d25503d3ec6c9b3354d10b5517f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7b3f43f684adb0b321f5482192adc0a84b0e1aee212bf51dbc94866aa2f8acb7","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): verify-connection-test-browser.mjs now aims its drive-button presses at the element at press time and confirms the hold; no simulation, physics-door, power, checkpoint or contact behavior changed. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

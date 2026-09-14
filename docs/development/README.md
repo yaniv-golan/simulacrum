@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"e7ad77a217b9979bab1d93671a91484fc73f4ff7730db9398bdbf8f4906f7a96","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"74565866aca7a84458119919cbc17eb9a22f7586e41f56d7ca26e41b2a9f83f4","disposition":"still accurate","rationale":"Only the linked release-operations section changed (releases by dispatch, pushes verify under the hosted profile); tier commands, CI order, the Node engine range and the completion tiers described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"763ebe58a477840ddb427099e58af61b1fdb28c158d7d606021f2dbf59b1021e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"a9fa17cbb6e655ff452c9a604c0fa5c8a33fdb58291339b8b2bddbaddc36b801","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs gained assertUnnicedLaunch, used by the tiers; the commands this section names and their semantics are unchanged; the launch recipe is documented in the candidate section."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"6201ef4db6d6f35a874d8741dfae9df23a6075ce96c416cacd5eed75d0aa8101","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"9f147889761daa1ba8845078f2a64b6f93fa4b19daa5eb2c039413d2db1b4b77","disposition":"still accurate","rationale":"verify-browser-suite partitions a hosted run (performance tier and timing-sensitive rows NOT_EVALUATED), applies registered or measurement browser budgets and the profile's two workers on the no-tier-context route beside the phased scheduler; verification-run applies profile deadlines as max(caller, profile) and strips the profile from unit children; ci.mjs reads its budget from the profile; validate-manifest validates hostProfiles. Registry rows, scope selection, witness policy and local execution rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"13229f245e642a1fa060ec47d14cce246c3e6a45c8347123e29aaa29885a9cd9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ca38e9b21b25cc443a39f71eede2b9922fde4ec22a851119b381d3090ec5cc22","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests in scripts/manifest.json changed (consumer closures that include verify-connection-test-browser.mjs); the scheduling and admission text recorded in the previous review is unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -392,8 +392,12 @@ run in three phases: the headless pool (checks declared `execution: parallel`), 
 serialized lane (exclusive checks that are not timing-sensitive), then timing-sensitive
 checks last. A completion tier derives its pool workers from the host at start — one per
 two idle cores (a GPU-backed headless check is about two runnable threads), at most four,
-recorded as `workersBasis` — and admits the timing phase only on a
-quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
+recorded as `workersBasis` with the launch niceness; a tier that derives workers refuses a
+niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an already-niced
+parent), because a niced tier loses to every other process regardless of idle cores. It
+admits the timing phase only on a
+quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
+refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
@@ -538,7 +542,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"dc44282df63250fd9d3ebf2bda45968748f7f25474da782a32396c6ba1a20fa4","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"53289dc48cb438ed48ab61803ad72a5d58e1f868549fe9ad16f0810805ba0c9f","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): package.json's new test:browser:serial script runs through the same verification-window wrapper; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -587,14 +591,16 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"2dfb2fe97fefc1235cba00ec6301fbb30cd47d2b9a77accf4b44e68518233f19","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9818a896b7e455ce0da5ccfb6ac12c487c289d3ef17ddd40e361b67fa036ecb4","disposition":"still accurate","rationale":"verify-candidate and parseCompletionArgs refuse to run under a hosted profile before any capture or report write; host-profile.mjs is the new owner of that refusal and of the registered deadlines; validate-manifest validates the profile. Candidate capture, tier commands, source binding and drift rejection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56317f90f6b2e680abdc1cd4a295294918757917f9547c30d12bdedaa38a848a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4613b05038a27d9324d372d43c1d41ab6f35d1fe0e37d538fafd0d3693db8968","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests changed; capture, dependency validation, the niced-launch refusal and the launch recipe are as reviewed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
-(or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
+(or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
 replace local base selection or final required coverage. Candidate browser runs also read

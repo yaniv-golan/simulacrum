@@ -91,7 +91,9 @@ registerHooks({
       source =
         'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; }';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
-      source = 'export function assertRuntime() {}';
+      // The fixture models an un-niced launch; the refusal itself is unit-tested on the real module.
+      source =
+        'export function assertRuntime() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; }';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source = 'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args);';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);

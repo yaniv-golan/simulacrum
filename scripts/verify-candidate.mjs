@@ -7,7 +7,7 @@ import {
 import { mergeChanges } from './merge-selection.mjs';
 import { parseCompletionArgs } from './verification-tiers.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { tmpdir, getPriority } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import {
@@ -16,7 +16,7 @@ import {
   destinationStillMatches,
   currentBranch,
 } from './candidate.mjs';
-import { assertRuntime } from './runtime-preflight.mjs';
+import { assertRuntime, assertUnnicedLaunch } from './runtime-preflight.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -63,6 +63,7 @@ try {
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
   write();
   assertRuntime();
+  report.launchNiceness = assertUnnicedLaunch({ priority: getPriority() });
   let directory, candidate, options, tier, key, installed, installedAt;
   if (previous) {
     directory = resolve(previous.directory);
