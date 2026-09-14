@@ -826,10 +826,22 @@ export function createWorkshopView(
     'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear',
   );
   const empty = element('div', 'empty-hint');
+  // The guided first build is offered where a newcomer must look; it calls the
+  // same launcher as the Learn & examples card and leaves with the first part.
+  const guideInvitation = button('Build a rolling machine with the guide', () => {
+    if (!frame || frame.metadata.mode !== 'build') return;
+    chooseExample(
+      { name: 'Build a rolling machine', command: { type: 'new' }, guide: true },
+      guideInvitation,
+    );
+  });
+  guideInvitation.dataset.command = 'start-guide-hint';
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
     element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Or let the guide walk you through one:'),
+    guideInvitation,
   );
   const stage = element('div', 'stage'),
     buildId = element(
