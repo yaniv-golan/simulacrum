@@ -3,6 +3,7 @@ import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
 import { assertLocalServerAccess, assertUnnicedLaunch } from './runtime-preflight.mjs';
+import { samplePressure } from './host-pressure.mjs';
 import { build, preview, createServer } from 'vite';
 import {
   readFileSync,
@@ -203,7 +204,12 @@ async function executeBrowserSuite(
     priorityFiles = [],
     priorityProvenance,
     seed = process.env.SIMULACRUM_BROWSER_SCHEDULE_SEED ?? 'tier',
-    host = { cores: cpus().length, load1: () => loadavg()[0], priority: () => getPriority() },
+    host = {
+      cores: cpus().length,
+      load1: () => loadavg()[0],
+      priority: () => getPriority(),
+      pressure: () => samplePressure(),
+    },
   },
   report,
   publish,
@@ -333,12 +339,16 @@ async function executeBrowserSuite(
             // workers from the host is admitted this way; a run without a tier context (the
             // hosted CI route, witnesses) or with an explicit worker count keeps today's
             // unconditional execution and records that it did.
-            const bound = Number(process.env.SIMULACRUM_TIMING_LOAD_BOUND);
+            const bound = Number(process.env.SIMULACRUM_TIMING_LOAD_BOUND),
+              // nightly and final can afford to wait out an indexer; a merge tier cannot.
+              waitMs = Number(process.env.SIMULACRUM_TIMING_WAIT_MS);
             report.timingAdmission = derived
               ? await admitQuietHost({
                   cores: host.cores,
                   ...(Number.isFinite(bound) && bound > 0 ? { bound } : {}),
+                  ...(Number.isFinite(waitMs) && waitMs > 0 ? { waitMs } : {}),
                   load1: host.load1,
+                  pressure: host.pressure ?? null,
                 })
               : {
                   admitted: true,
@@ -470,9 +480,13 @@ async function executeBrowserSuite(
             const runnerError = findRunnerError(error);
             const diagnostics = runnerError?.processDiagnostics;
             const appStatus = readAppStatus(row.evidenceDirectory);
+            // A row the host slept through is not evaluated: the sleep is named, not the check.
+            const slept = (error.failureKind ?? runnerError?.failureKind) === 'host-slept';
+            const notEvaluated = error.notEvaluated || slept;
             Object.assign(row, {
-              status: error.notEvaluated ? 'not evaluated' : 'failed',
-              ...(error.notEvaluated ? { reason: error.message } : {}),
+              status: notEvaluated ? 'not evaluated' : 'failed',
+              ...(notEvaluated ? { reason: runnerError?.summary ?? error.message } : {}),
+              ...(slept ? { hostSleptMs: runnerError?.hostSleptMs ?? error.hostSleptMs } : {}),
               ok: false,
               observedAt: performance.timeOrigin + performance.now(),
               elapsedMs: error.elapsedMs,
