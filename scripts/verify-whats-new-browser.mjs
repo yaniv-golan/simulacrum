@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { liveWait } from './browser-idle.mjs';
 import { RELEASE_NOTES } from '../src/application/release-notes.mjs';
 import { STORAGE_KEY } from '../src/presentation/whats-new.mjs';
 const out = browserArtifactPath('artifacts/whats-new');
@@ -79,8 +80,11 @@ try {
     // the rotate tool and the notice is still there; then ? opens Help, which marks seen.
     await page.evaluate(() => document.activeElement.blur());
     await page.keyboard.press('e');
-    await page.waitForFunction(
+    await liveWait(
+      page,
       () => window.workshopProbe.readInteractionState().tool === 'rotate',
+      null,
+      { label: 'rotate tool' },
     );
     assert.equal((await state(page)).noticeOpen, true, 'a tool key leaves the notice open');
     await page.keyboard.press('v');
@@ -131,12 +135,14 @@ try {
     await page.mouse.up();
     await notice(page).waitFor({ state: 'hidden' });
     assert.equal((await state(page)).badge, false);
-    await page.waitForFunction(
+    await liveWait(
+      page,
       (before) =>
         window.workshopProbe
           .readInteractionState()
           .camera.position.some((c, i) => Math.abs(c - before[i]) > 1e-6),
       cameraBefore,
+      { label: 'orbit after dismissal' },
     );
     return {};
   });
@@ -156,8 +162,11 @@ try {
     await seenBefore();
     const entry = page.locator('.whats-new li', { hasText: 'Machines make sound' });
     await entry.getByRole('button', { name: 'Try it', exact: true }).click();
-    await page.waitForFunction(
+    await liveWait(
+      page,
       () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length > 0,
+      null,
+      { label: 'example loaded' },
     );
     assert.equal(
       (await page.evaluate(() => window.workshopProbe.readLastCommandResult())).input.type,
