@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2eb7bd9c8206682b377bbab0316c6496103bd7204b0817a824ca78d5d3973ba6","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"73bbb7367e037451e7fafacf46fa6b4b147b4bda6bbb38477a6047614c501c50","disposition":"updated","rationale":"The merged section keeps main's compact Sound toggle, Volume popup, dismissal, preference and denied-audio retry text and adds the performance branch lifecycle notes: hidden Measurements suppress formatting while accumulation continues, inspector readouts replace DOM only when formatted values change, and the running health hint refreshes in 30-tick bands after tick 120 and drops its cached diagnosis on blueprint, session, epoch or mode change (verified in refreshHealth/refreshLive). No surface is added or displaced; before-draw errors reuse the existing status message and pause the clock while draw scheduling survives for the recovery controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"37466fe70ece3639ce44735b629f653ef38053b27d7e5e1c0c3fae6a1efb3b44","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1614ac6bd046a620b3408eedb70dfd8e2fc3bd6717ea0695184c2b3957584e68","disposition":"still accurate","rationale":"No surface is added or displaced; the verification harness only reads the status surfaces the UI already announces to assistive technology when a check fails."} -->
 
 
 

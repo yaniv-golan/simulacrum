@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"6371835a3688f76cc7182aaffa271d881a837a1f910537bddadf0f075afe8967","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"destinationStillMatches now distinguishes UNRESOLVED (the name no longer resolves, normal after a stacked branch is deleted once it fast-forwarded; confirm main against priority.destination instead) from false (the destination moved); the retained owner intent also carries the integrating branch. Completion tiers and evidence rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6ccc853eae785a41253a832ec10f0bc408934af42091872998f2349fa3c1675e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"64d61cfd5e3fc060737727b94f251ee7145e2686d540388a5e367ec789343350","disposition":"still accurate","rationale":"browser-session's failure capture now also records the application's announced status text; verification commands, completion tiers, same-source execution and the automation/human-acceptance distinction are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -155,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7d99099ddbcf6b5b094106144c976a761491f953e84a8085bdc101935da1fe08","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"82b9f75cb6cfa4e55d8b71a2dd313465c87e1b39e90c527dbc3041d124a1c194","disposition":"still accurate","rationale":"Integration of the window-intent/destination-drift branch with main: the regenerated reference now lists both the performance work's render-lifecycle and completed-state owners and this branch's validateIntent and destinationStillMatches owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"51d8373910a88cc73b7e746f265a428ed72aa72db3f4a14262dcd684558d99ec","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a1d537ff1152b22e3406a4cd9ada40e922f4c33fe698486301f2b9236a065d6d","disposition":"still accurate","rationale":"The regenerated reference lists the new bounded-process-ownership invariant (owner runProcess) and the readLiveStatus owner on verification-live-evidence; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"bed5b7a07ce306e7b58f7c302737f7326b0dc70b38bfd9cc08e6888bf53a648c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4ea05d5de6efdcc03c97986c67fb50dde5e320e5a845a7d13f5df1ba7a10be3e","disposition":"still accurate","rationale":"Thirteen metadata scope rows refreshed hashes after verify-remote-playtest changed its feedback-phase motor placement (snap off, explicit coordinates, part-count assertion); the verifier's own reads, dependencies, external imports, consumers, roots and checks were verified unchanged in the proposal and the review was applied with passing invariant-control witnesses. Selection, scheduling, exclusivity and coverage rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1546033b4ae2138b93adf20f7db87c413f9bd05bdc96b02e61a555de2971af5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"65a606e4fcd5980c4cc412a139941f8a9bc294c5874291c5ed6388b931f8b2e5","disposition":"updated","rationale":"Documented the failure diagnostics that failed rows now carry: processSnapshot from the process runner (bounded top-CPU/RSS rows, watched daemons, own tree, load averages at the moment; post-hoc without a tree on non-zero exit; platform %cpu semantics; context not attribution) and appStatus (visible role=status/live-region text echoed on the FAIL line). Selection, scheduling, exclusivity and scope-audit rules are unchanged; the manifest change is the new invariant plus consumer-hash refresh applied with witnesses."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -387,6 +387,18 @@ Reports preserve manifest order, all failures, worker configuration and source i
 Every check records its planned schedule index, dispatch time, active browser peers and
 host load averages. These describe admission conditions; they do not establish stable
 warmup, causal contention or comparable performance distributions across reordered runs.
+A failed row additionally carries `processSnapshot` from the
+[process runner](../../scripts/run-check.mjs#implementation): at a watchdog timeout, the
+same bounded process enumeration that terminates the owned tree also retains load
+averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
+Spotlight daemons regardless of rank, and the check's own tree (executable names only,
+never arguments or environment); a non-zero exit retains a post-hoc snapshot without a
+tree. macOS `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time`
+and `etime` accompany it. The snapshot is context for a person, never attribution, and a
+failure to take it is recorded without changing the outcome. Failed browser rows also
+carry `appStatus`: the visible `role="status"` and polite live-region texts the
+application was announcing when the failure was captured, echoed on the `FAIL` line, so a
+timeout on a disabled control names the application's own reason.
 Shared sensing remains exclusive. Its contact journey stops wall-clock progression
 while arming both receivers, then observes every fixed step within the existing physical horizon.
 Starter also remains exclusive because it checks
@@ -496,7 +508,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"2793d8a4b6ef075cc754a62875d7d3a702b7682af29ddf525f488807113c7993","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e9aa05c5267cb320210f311c7e97c756290dfa13145c8e03b9152595720f3ca9","disposition":"updated","rationale":"The wait notice now also names the owner's integrating branch and the stacking hint names it; intent values are validated as single-line printable strings. Serialization, inheritance, wait limits, admission marking and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ecd5cb934dfe7e18141777a614b68308a45665a9585aa61b2243d034417b6330","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"732e4c67e5b469992bb16675435264fe07565460398c73e1b7a784000678beb0","disposition":"still accurate","rationale":"The process runner gained a bounded diagnostic snapshot on its failure paths inside the existing 1 s enumeration bound; window serialization, inheritance, wait limits, intent publication and recovery are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -545,7 +557,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a353301317683638f824cfcd3d26502aae820e1c098c2a59ca8b321827780fa6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"fcde52deeafb3685545e50b006f0ead969f8d6ce853faf6f7adeebb687f241b5","disposition":"still accurate","rationale":"The manifest change is a source/consumer hash refresh applied through browser:scopes with witnesses; capture, isolation, attempt ownership, origin matching and the registry preflight that gates capture behave as documented."} -->
+<!-- doc-review {"version":1,"fingerprint":"57df3331f5836ab1d009a64fb8e11479d992e5e367e5d495d4157914b8b6070f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e6ec1ec45026a7bbe72dd4183739d80e9c50be6c8650ecf4d71d73bfac8f86d6","disposition":"still accurate","rationale":"Failed rows and receipts now carry processSnapshot/appStatus diagnostics; capture, isolation, attempt ownership, origin matching and which checks run are unchanged, and the manifest delta is the new runner invariant plus consumer-hash refresh applied through browser:scopes with passing witnesses."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

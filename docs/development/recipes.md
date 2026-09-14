@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"edef04441ade859f6df5b8b743eaa36829c4f2401657f39e54c328ebea2bc3c6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1663fc36a7e77bd5af90ffa3e757813a96071e8131b91dfcd1884c0752008c59","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: the physics-to-model observation import, typed native response vectors and the before-draw clock callback add no input handler or UI action; main's receiver input owner still excludes sound controls and releases held keys on their focus. Cursor guards, cancellation, receiver keys, history and preview ownership keep their boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"faae95d72b3e475723daa1dbf3f5f22a7cbc88c7749f02857df080fcb51b6777","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"b0d305533c50812ad54263ebd8df69f56aff43dd17611856202de5f0fb1d36a5","disposition":"still accurate","rationale":"browser-session's readLiveStatus reads ARIA announcements only at failure capture; it adds no input handler, changes no interaction owner, cursor guard, cancellation or preview behavior."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f4ca9b868b9608bd69119c98428d0c92c94d5a83a84fc9e374e08a7770f26df4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0590bb543ad110b2e1cea6f30e34e197d276908c49d43e9682d512860e3e56e3","disposition":"still accurate","rationale":"The remote-playtest verifier now authors its feedback-phase motor at an explicit free point instead of a snap-dependent catalog placement, and the manifest carries the resulting hash refresh; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"03e51742c0ceb7fdcb73abe92c3f7ff6407f5ee722bfe39c6359293ccd4ec93d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1df39bb0d2a5faa3cbce281f9f81e587b5ce12b6b8b18b66e921ccbd8e71df24","disposition":"still accurate","rationale":"The mechanical-audio gates now name the trial and measured values in their messages with unchanged predicates, and harness failure diagnostics were added; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"d432c2f7c90d71fb7d272c630378271099938db2eb630eb7883d82f0040d4e52","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1ea42be4d0e7ef9c09f66ce8bfd56e28845a9a46f85d8da9d761f5250fbd0a7c","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the finite constructor runs on completed physical values after compilation; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3d21cad4a01f9464fd95c9b257cdeeda9fe8387a3b68d30969540874a725524a","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"528ee529e81d3abdfecfe25020085c709a334111ae1deb2fb8da402d9e55aad5","disposition":"still accurate","rationale":"Failure capture now records announced status text; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +600,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"9b72cda3521fae83f55474c685af334fadf63ce92621487d0dc2105f64b2329c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8e209626d5d048b3a31891b235d608c4fdf85e1bb81abe5ecdafb9729b08ee58","disposition":"updated","rationale":"The merged guidance records both main's warmup retention of catalog and no-part-light shader variants (disposed with the view) and the performance branch rule that equal-content blueprint replacements retain the revision, with content comparison only on reference replacement while same-ID authored edits still invalidate dependent views; verified in workshop-view.mjs render(), where blueprintKey increments only when a replaced reference has different serialized content. Load Cell arrow, connection visibility and wiring preference owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a4084a758d9ec9c8fa3a9b4eebd0352280f2f475b673abdb441605bae5446e9b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2429eeaaf30f5df538d77609db7e96e7914416e8d102ced1005464f0ce490181","disposition":"still accurate","rationale":"The harness reads the overlays' role=status announcements at failure capture; overlay ownership, resource lifecycle and authored-change detection guidance are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

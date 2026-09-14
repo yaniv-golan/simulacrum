@@ -155,7 +155,8 @@ function readAppStatus(directory) {
       if (entry.isFile() && entry.name === 'failure-status.json')
         try {
           const rows = JSON.parse(readFileSync(join(entry.parentPath, entry.name), 'utf8'));
-          if (Array.isArray(rows)) for (const row of rows) if (typeof row === 'string') status.push(row);
+          if (Array.isArray(rows))
+            for (const row of rows) if (typeof row === 'string') status.push(row);
         } catch {
           status.push(`unreadable ${entry.name}`);
         }

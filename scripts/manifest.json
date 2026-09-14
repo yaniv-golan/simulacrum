@@ -4080,7 +4080,7 @@
       "id": "verification-live-evidence",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Live reports remain non-green until cleanup, retain attempt-owned evidence and distinguish skipped gates from executed failures. Browser load evidence waits for an initialized command probe before reads or upload and still requires a fresh matching completed receipt.",
+      "guarantee": "Live reports remain non-green until cleanup, retain attempt-owned evidence and distinguish skipped gates from executed failures. Browser load evidence waits for an initialized command probe before reads or upload and still requires a fresh matching completed receipt. Failed browser rows retain the runner’s process snapshot and the application’s announced status text.",
       "owners": [
         {
           "path": "scripts/verify-browser-suite.mjs",
@@ -4093,6 +4093,10 @@
         {
           "path": "scripts/browser-evidence.mjs",
           "anchor": "createBrowserEvidence"
+        },
+        {
+          "path": "scripts/browser-session.mjs",
+          "anchor": "readLiveStatus"
         }
       ],
       "checks": [
@@ -4111,6 +4115,14 @@
           {
             "path": "test/browser-evidence.test.mjs",
             "anchor": "load helper waits for the command probe before reading or submitting a save"
+          },
+          {
+            "path": "test/browser-evidence.test.mjs",
+            "anchor": "readLiveStatus keeps visible, unique, polite announcements only, whitespace collapsed and bounded"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "real suite owns cleanup inside failed receipts and preserves simultaneous causes"
           }
         ],
         "negative": [
@@ -4125,6 +4137,10 @@
           {
             "path": "test/browser-evidence.test.mjs",
             "anchor": "load helper propagates startup timeout without reading or submitting a save"
+          },
+          {
+            "path": "test/browser-evidence.test.mjs",
+            "anchor": "shared browser lifecycle captures request/page failures and closes owned context on failure"
           }
         ]
       },
@@ -4792,6 +4808,64 @@
           {
             "path": "test/verification-timing.test.mjs",
             "anchor": "timing"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "bounded-process-ownership",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "The shared process runner captures bounded output, enforces its deadline by terminating the owned process tree, distinguishes watchdog from check failure, retains ordered diagnostics, and records a bounded host snapshot (top processes, daemons, own tree, load) at a timeout or failure whose absence or error never changes the outcome.",
+      "owners": [
+        {
+          "path": "scripts/run-check.mjs",
+          "anchor": "runProcess"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "process runner captures output and kills descendants on timeout"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "termination covers the native spawn-to-registration gap and leaves no live worker"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "process diagnostics distinguish exit, close and watchdog signal outcomes"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "watchdog records a bounded process snapshot with the child in its tree"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "nested shared runners terminate their owned workers when process enumeration is unavailable"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "synchronous spawn rejection does not retain termination listeners"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "watchdog and nonzero exit retain different failure kinds"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "an unavailable ps records snapshotError and leaves the failure outcome unchanged"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "a non-zero exit records a post-hoc snapshot without a tree; success records none"
           }
         ]
       },
@@ -6971,7 +7045,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7023,7 +7097,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7126,7 +7200,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7277,7 +7351,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "3e9fbea99f3d7eab017bef248e76d0a84e2cb8edec2467f7fe0abe657a93ef03",
+      "consumerSourceHash": "9af538bbb0fa1ccbb3c99a8dd150b744181bc68ebb273aeef3fe22be26ed7268",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7480,7 +7554,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "92122e54717fdea18931da2c871567662054a41cb7e8b6d4566819ed2c501614"
+      "consumerSourceHash": "2f285d6082ce5b13ed58a5ea1c005ecc3a704e43c4e6f79cd8961f2e01ba2f98"
     },
     {
       "checks": [
@@ -7497,7 +7571,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7562,7 +7636,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7621,7 +7695,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7652,7 +7726,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7793,7 +7867,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a",
+      "consumerSourceHash": "08b1e45e1bca9d5db7a1ecba36f3b542bc1b3a63113f1c8b2d1cf39b394cb578",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7882,7 +7956,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "be0e53817076a6364565829366e55f1b3f584dfb311578344beb8d953d897090",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8133,7 +8207,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8205,7 +8279,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
+      "consumerSourceHash": "779e61afd1dd95b549b94410c63b8028f0caf83ec8b8f3381562ee436f85dedd"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8243,7 +8317,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
+      "consumerSourceHash": "779e61afd1dd95b549b94410c63b8028f0caf83ec8b8f3381562ee436f85dedd"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -8320,7 +8394,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7"
+      "consumerSourceHash": "c662799e0eb675b689256b11fd5cb1d5abea5f935ff337d21b5efd95a276a9a9"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -8390,7 +8464,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a"
+      "consumerSourceHash": "08b1e45e1bca9d5db7a1ecba36f3b542bc1b3a63113f1c8b2d1cf39b394cb578"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",

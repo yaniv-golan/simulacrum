@@ -120,7 +120,7 @@ These are registered commands and checks, not evidence that they passed.
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
 | ball-workshop-experience | [createRetry](../../src/application/retry.mjs), [contactProperties](../../src/model/contact-properties.mjs), [createImpactEvents](../../src/presentation/impact-sound.mjs) | invariant-controls, verify-ball-browser, verify-remote-playtest |
-| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs), [withCleanup](../../scripts/verification-cleanup.mjs), [createBrowserEvidence](../../scripts/browser-evidence.mjs) | verification-workflow |
+| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs), [withCleanup](../../scripts/verification-cleanup.mjs), [createBrowserEvidence](../../scripts/browser-evidence.mjs), [readLiveStatus](../../scripts/browser-session.mjs) | verification-workflow |
 | verification-priority-coverage | [prioritizeBrowserChecks](../../scripts/browser-selection.mjs), [runCI](../../scripts/ci.mjs), [returnBrowserHistory](../../scripts/browser-history.mjs) | verification-workflow |
 | documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
 | browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |
@@ -132,6 +132,7 @@ These are registered commands and checks, not evidence that they passed.
 | candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs) | verification-scope-configuration |
 | ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
 | verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |
+| bounded-process-ownership | [runProcess](../../scripts/run-check.mjs) | verification-scope-configuration |
 | merge-shadow-no-qualification | [mergeShadowReport](../../scripts/merge-shadow.mjs) | verification-scope-configuration |
 | tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
 | merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |
