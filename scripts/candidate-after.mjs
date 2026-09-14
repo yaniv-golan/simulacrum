@@ -85,23 +85,38 @@ export function classifyParentLeaves(parent) {
       'parent attempt report has no tier receipts to retry from (it failed before the tier completed); run a fresh candidate',
     );
   const passing = verification.checks.filter((r) => r.ok === true);
-  const failed = verification.checks.filter((r) => r.ok === false).map((r) => r.id);
-  // Files a budget-bound aggregate never admitted, keyed by the leaf that listed them.
+  // A leaf that ran and failed needs its own cause. A leaf the host slept through carries a
+  // receipt marked notEvaluated: it never ran, so it belongs beneath its phase like any
+  // unexecuted leaf and the phase cause may cover it.
+  const phaseOf = (id) => (id.startsWith('browser:') ? 'browser' : 'ci');
+  const failed = verification.checks
+    .filter((r) => r.ok === false && r.notEvaluated !== true)
+    .map((r) => r.id);
   const unexecutedBy = {};
-  for (const r of verification.checks)
+  const beneath = (phase, ids) => {
+    unexecutedBy[phase] = [...new Set([...(unexecutedBy[phase] ?? []), ...ids])].sort();
+  };
+  for (const r of verification.checks) {
+    // Files a budget-bound aggregate never admitted, keyed by the leaf that listed them.
     if (Array.isArray(r.unexecuted) && r.unexecuted.length)
-      unexecutedBy[r.id] = r.unexecuted.map((file) => `unit:${file}`).sort();
-  // Rows a phase refused before they ran (timing admission, a sleeping host) have no receipt;
-  // the phase row names them, and they count as unexecuted leaves beneath that phase.
+      beneath(
+        r.id,
+        r.unexecuted.map((file) => `unit:${file}`),
+      );
+    if (r.ok === false && r.notEvaluated === true) beneath(phaseOf(r.id), [r.id]);
+  }
+  // Rows a phase refused before they ran (timing admission) have no receipt at all; the phase
+  // row names them by check id (browser) or file (ci), and they count as unexecuted beneath it.
+  const leafOf = { browser: (id) => `browser:${id}`, ci: (file) => `unit:${file}` };
   for (const row of verification.results)
-    if (row.status === 'failed' && Array.isArray(row.notEvaluated) && row.notEvaluated.length)
-      unexecutedBy[row.id] = [
-        ...new Set([
-          ...(unexecutedBy[row.id] ?? []),
-          ...row.notEvaluated.map((id) => `browser:${id}`),
-        ]),
-      ].sort();
-  const unexecuted = [...new Set(Object.values(unexecutedBy).flat())].sort();
+    if (row.status === 'failed' && Array.isArray(row.notEvaluated) && row.notEvaluated.length) {
+      const leaf = leafOf[row.id];
+      if (!leaf) throw Error(`phase ${row.id} names not-evaluated rows it cannot own`);
+      beneath(row.id, row.notEvaluated.map(leaf));
+    }
+  const unexecuted = [...new Set(Object.values(unexecutedBy).flat())]
+    .filter((id) => !failed.includes(id))
+    .sort();
   const abortedAggregates = verification.results
     .filter((row) => row.status === 'failed')
     .map((row) => row.id)

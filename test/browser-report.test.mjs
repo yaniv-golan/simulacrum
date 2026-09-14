@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import {
   withBrowserReport,
   browserReceiptConfiguration,
+  browserSuiteFailure,
+  NOT_EVALUATED_STATUS,
 } from '../scripts/verify-browser-suite.mjs';
 import { createLeafLedger } from '../scripts/verification-resume.mjs';
 test('every attempt replaces old green reports, including build and server failures', async (t) => {
@@ -546,4 +548,34 @@ test('a browser receipt is bound to its registered row, not the worker count of 
     null,
     'a changed execution class still refuses reuse',
   );
+});
+
+test("the suite failure names refused rows apart from failed ones by the suite's own status", () => {
+  // The row status the suite writes for refused rows is the one the failure reads back.
+  assert.equal(NOT_EVALUATED_STATUS, 'not evaluated');
+  const outcomes = [
+    { id: 'a', ok: true },
+    { id: 'perf', ok: false, error: Error('not evaluated: host pressure') },
+    { id: 'ball', ok: false, error: Error('assertion') },
+    { id: 'audio', ok: false, error: Error('not evaluated: host pressure') },
+  ];
+  const runs = [
+    { id: 'a', status: 'passed' },
+    { id: 'perf', status: NOT_EVALUATED_STATUS },
+    { id: 'ball', status: 'failed' },
+    { id: 'audio', status: NOT_EVALUATED_STATUS },
+  ];
+  const error = browserSuiteFailure(outcomes, runs);
+  assert.ok(error instanceof AggregateError);
+  assert.equal(error.message, 'Browser checks failed: perf, ball, audio');
+  assert.deepEqual(error.notEvaluated, ['audio', 'perf']);
+  assert.deepEqual(error.failedChecks, ['ball']);
+  assert.equal(error.errors.length, 3);
+  // A failure without any refused row carries an empty list, and a row missing from the runs
+  // (never scheduled) counts as failed rather than silently refused.
+  const plain = browserSuiteFailure(outcomes.slice(0, 3), runs.slice(0, 3));
+  assert.deepEqual(plain.notEvaluated, ['perf']);
+  const unscheduled = browserSuiteFailure([{ id: 'ghost', ok: false, error: Error('x') }], []);
+  assert.deepEqual(unscheduled.notEvaluated, []);
+  assert.deepEqual(unscheduled.failedChecks, ['ghost']);
 });

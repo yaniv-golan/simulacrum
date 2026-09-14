@@ -672,9 +672,10 @@ no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the
 its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
 `ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
 (`ci`, `browser`) may record that the leaves beneath it never ran. Rows a phase refused before
-they ran — timing rows under a refused admission, rows a sleeping host skipped — leave no
-receipt; the phase row names them (`notEvaluated`) and they count as unexecuted leaves beneath
-that phase, so a cause on the phase covers them and the retry must observe each one executed and
+they ran (timing rows under a refused admission) leave no receipt and the phase row names them
+(`notEvaluated`); rows a sleeping host skipped carry a receipt marked not evaluated. Both count as
+unexecuted leaves beneath their phase rather than as failures, so a cause on the phase covers
+them (a cause per row is also accepted) and the retry must observe each one executed and
 passing. A plain `resume` of a retry
 report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
 parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused

@@ -271,6 +271,50 @@ test('rows a phase refused before they ran are unexecuted leaves beneath that ph
   const bare = parent();
   bare.verification.results[2] = { id: 'browser', status: 'failed', error: 'x' };
   assert.deepEqual(classifyParentLeaves(bare).unexecutedBy, {});
+  // Regression from review: the ci phase names unit FILES a sleeping host skipped; they are
+  // unit leaves beneath ci, never browser checks, so the retry's selection stays registered.
+  const slept = parent();
+  slept.verification.checks = slept.verification.checks.filter((r) => r.id !== 'browser:ball');
+  slept.verification.results = [
+    {
+      id: 'ci',
+      status: 'failed',
+      error: 'host slept: 2 unit tests not evaluated',
+      notEvaluated: ['test/late.test.mjs', 'test/later.test.mjs'],
+    },
+  ];
+  const sc = classifyParentLeaves(slept);
+  assert.deepEqual(sc.failed, []);
+  assert.deepEqual(sc.unexecutedBy, {
+    ci: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'],
+  });
+  assert.deepEqual(validateCauses(sc, new Map([['ci', 'host slept mid-CI']])), {
+    ci: { aggregate: true, covers: ['unit:test/late.test.mjs', 'unit:test/later.test.mjs'] },
+  });
+  assert.ok(
+    [...requiredReexecution({ classification: sc, manifest })].every((id) =>
+      id.startsWith('unit:'),
+    ),
+  );
+  // A phase that cannot own not-evaluated rows is refused rather than guessed at.
+  const odd = parent();
+  odd.verification.results = [{ id: 'selection', status: 'failed', notEvaluated: ['x'] }];
+  assert.throws(() => classifyParentLeaves(odd), /cannot own/);
+  // A browser row the host slept through carries a receipt marked not evaluated: it is an
+  // unexecuted leaf beneath the browser phase (the phase cause covers it), not a failure.
+  const hostSlept = parent();
+  hostSlept.verification.checks.find((r) => r.id === 'browser:ball').notEvaluated = true;
+  const hc = classifyParentLeaves(hostSlept);
+  assert.deepEqual(hc.failed, []);
+  assert.deepEqual(hc.unexecutedBy, { browser: ['browser:ball'] });
+  assert.deepEqual(validateCauses(hc, new Map([['browser', 'host slept']])).browser.covers, [
+    'browser:ball',
+  ]);
+  assert.deepEqual(validateCauses(hc, new Map([['browser:ball', 'host slept']]))['browser:ball'], {
+    aggregate: false,
+    covers: ['browser:ball'],
+  });
+  assert.ok(requiredReexecution({ classification: hc, manifest }).has('browser:ball'));
 });
 
 test('reexecution covers non-pass leaves, their registered controls and every always-fresh class', () => {

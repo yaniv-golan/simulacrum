@@ -6,7 +6,9 @@ import { join } from 'node:path';
  * defect cannot reach main through a local tier that never looked. Prettier's own cache keeps the
  * steady-state cost near a second; the first run of a fresh candidate pays the full scan. The
  * cache lives under artifacts/, never under node_modules: a candidate's installed dependencies are
- * digested byte for byte before and after the tier, and a cache file there would read as drift. */
+ * digested byte for byte before and after the tier, and a cache file there would read as drift.
+ * artifacts/ is not captured into a candidate clone, so every candidate tier pays the cold scan
+ * (about 3 s); the cache only speeds direct tiers in a worktree. */
 export const FORMAT_TARGETS = Object.freeze(['src', 'scripts', 'test']);
 export function checkFormat(root = process.cwd(), { timeoutMs = 60000 } = {}) {
   const bin = join(root, 'node_modules', 'prettier', 'bin', 'prettier.cjs');
