@@ -89,12 +89,14 @@ persisted), exports what is missing through the existing feedback and recording 
 writes `feedback/<receivedAt>-<id>/` with the validated export, `text.txt`, decoded voice and image
 files, `context.json` and `references.json`, plus `recordings/<session>/cutoff-<sequence>/` with one
 recording export per observed upload sequence and a derived `feedback.json` for combined review. The
-filesystem is the index: temporary directories are renamed into place only when complete, existing
-directories are never rewritten, a lock file rejects overlapping runs, and `status.json` records
+filesystem is the index: temporary directories are renamed into place only when complete, downloaded
+exports are never rewritten (only the derived `references.json`, per-cutoff `feedback.json` and
+`README.md` are regenerated each run), a lock file rejects overlapping runs, and `status.json` records
 each run with exit 0 (complete), 1 (configuration or authorization failure), 2 (some submissions
 failed) or 3 (another run holds the lock). Submissions that disappear between listing and export
-count as gone, not failed. The sync issues only GET requests and never deletes, drains or mutates
-hosted data. `--print-plist` emits an hourly launchd user agent for this Mac and `--print-readme`
+count as gone, not failed, as do referenced sessions that are no longer open; a recording export
+that hits a transient error is retried on the next run. The sync issues only GET requests and
+never deletes, drains or mutates hosted data. `--print-plist` emits an hourly launchd user agent for this Mac and `--print-readme`
 the operator notes; the data directory's `README.md` (rewritten each run) states how to check, stop
 (`launchctl bootout gui/$(id -u)/build.simulacrum.feedback-sync`, keeping the data) and uninstall the job.
 

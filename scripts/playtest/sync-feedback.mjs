@@ -55,12 +55,20 @@ const classified = (message, code, status) => Object.assign(Error(message), { co
 // Wraps a fetch: bounded retries for transport failures, 429 and 503 (honouring retry-after);
 // 404/410 and 401/403 become typed errors so callers classify them without parsing messages;
 // every other response is returned for the caller to judge.
-export function withRetry(fetcher, { attempts = 4, delayMs = 250, attemptMs = 15000 } = {}) {
+export function withRetry(
+  fetcher,
+  { attempts = 4, delayMs = 250, attemptMs = 15000, maxWaitMs = 30000, sleep: pause = sleep } = {},
+) {
   return async (url, init = {}) => {
     let wait = 0;
     for (let attempt = 0; attempt < attempts; attempt++) {
-      if (attempt) await sleep(wait);
-      const signal = AbortSignal.timeout(attemptMs);
+      if (attempt) {
+        if (init.signal?.aborted) throw init.signal.reason ?? Error('Request aborted');
+        await pause(wait);
+      }
+      const signal = init.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(attemptMs)])
+        : AbortSignal.timeout(attemptMs);
       let response;
       try {
         response = await fetcher(url, { ...init, signal });
@@ -69,7 +77,7 @@ export function withRetry(fetcher, { attempts = 4, delayMs = 250, attemptMs = 15
           ['AbortError', 'TimeoutError'].includes(error?.name) ||
           transientCodes.has(error?.cause?.code) ||
           transientCodes.has(error?.code);
-        if (!transient || attempt === attempts - 1) throw error;
+        if (!transient || attempt === attempts - 1 || init.signal?.aborted) throw error;
         wait = delayMs * 2 ** attempt;
         continue;
       }
@@ -78,8 +86,12 @@ export function withRetry(fetcher, { attempts = 4, delayMs = 250, attemptMs = 15
       if (response.status === 401 || response.status === 403)
         throw classified(`authorization failed (${response.status})`, 'AUTH', response.status);
       if ((response.status === 429 || response.status === 503) && attempt < attempts - 1) {
-        const header = Number(response.headers.get('retry-after'));
-        wait = Number.isFinite(header) && header >= 0 ? header * 1000 : delayMs * 2 ** attempt;
+        const raw = response.headers.get('retry-after');
+        const header = raw === null ? NaN : Number(raw);
+        wait =
+          Number.isFinite(header) && header >= 0
+            ? Math.min(header * 1000, maxWaitMs)
+            : delayMs * 2 ** attempt;
         continue;
       }
       return response;
@@ -120,7 +132,7 @@ const basicTime = (iso) => iso.replace(/[-:.]/g, '');
 const voiceExtension = (mime) =>
   ({ 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a' })[mime.split(';')[0]] ?? 'bin';
 const writeJson = async (path, value) => {
-  const tmp = `${path}.tmp-${process.pid}`;
+  const tmp = join(dirname(path), `.tmp-${basename(path)}-${process.pid}`);
   await writeFile(tmp, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
   await rename(tmp, path);
 };
@@ -136,13 +148,16 @@ async function acquireLock(directory, now) {
       return () => unlink(path).catch(() => {});
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
-      let startedAt = 0;
+      let startedAt = 0,
+        pid = 0;
       try {
-        startedAt = Date.parse(JSON.parse(await readFile(path, 'utf8')).startedAt) || 0;
+        const held = JSON.parse(await readFile(path, 'utf8'));
+        startedAt = Date.parse(held.startedAt) || 0;
+        pid = Number(held.pid) || 0;
       } catch {
         /* unreadable lock counts as stale */
       }
-      if (now() - startedAt < LOCK_STALE_MS) return null;
+      if (now() - startedAt < LOCK_STALE_MS || alive(pid)) return null;
       await unlink(path).catch(() => {});
     }
   }
@@ -161,7 +176,7 @@ async function listAll(fetchJson, origin, pageSize) {
     );
     if (!Array.isArray(page)) throw Error('Feedback listing is not an array');
     for (const row of page) {
-      if (!uuid.test(row.submissionId) || typeof row.receivedAt !== 'string')
+      if (!uuid.test(row.submissionId) || !receivedAtPattern.test(row.receivedAt))
         throw Error('Invalid feedback listing row');
       rows.push(row);
     }
@@ -186,10 +201,11 @@ async function writeAttachments(dir, envelope) {
     );
   if (envelope.image) {
     const match = /^data:image\/(jpeg|png|webp);base64,(.*)$/.exec(envelope.image.dataUrl);
-    if (match)
-      await writeFile(join(dir, `image.${match[1]}`), Buffer.from(match[2], 'base64'), {
-        mode: 0o600,
-      });
+    if (!match) throw Error('Unsupported feedback image in export');
+
+    await writeFile(join(dir, `image.${match[1]}`), Buffer.from(match[2], 'base64'), {
+      mode: 0o600,
+    });
   }
   if (envelope.context) await writeJson(join(dir, 'context.json'), envelope.context);
   const sessions = [...new Set(feedbackReferences(envelope).map((ref) => ref.sessionId))];
@@ -211,7 +227,7 @@ export async function syncFeedback({
   token,
   directory,
   fetcher = fetch,
-  home = homedir(),
+  configPath = null,
   scriptHead = null,
   pageSize = 1000,
   now = Date.now,
@@ -243,15 +259,18 @@ export async function syncFeedback({
     return response.json();
   };
   try {
+    if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1000)
+      throw Error('pageSize must be an integer between 1 and 1000');
     await mkdir(feedbackRoot, { recursive: true, mode: 0o700 });
     await mkdir(recordingsRoot, { recursive: true, mode: 0o700 });
+    await removeTemp(directory);
     await removeTemp(feedbackRoot);
     for (const name of await readdir(recordingsRoot)) await removeTemp(join(recordingsRoot, name));
     await writeFile(
       join(directory, 'README.md'),
       renderReadme({
         config: { origin, directory },
-        configPath: null,
+        configPath,
         script: fileURLToPath(import.meta.url),
       }),
       { mode: 0o600 },
@@ -260,7 +279,7 @@ export async function syncFeedback({
     summary.listed = rows.length;
     const existing = await localFeedback(feedbackRoot);
     for (const row of rows) {
-      const id = row.submissionId.toLowerCase();
+      const id = row.submissionId;
       if (existing.has(id)) continue;
       summary.new++;
       const tmp = join(feedbackRoot, `.tmp-${id}`);
@@ -274,8 +293,7 @@ export async function syncFeedback({
           fetcher: retrying,
         });
         const [entry] = await readFeedbackExports(tmp);
-        if (!entry || entry.envelope.id.toLowerCase() !== id)
-          throw Error('Feedback export identity mismatch');
+        if (!entry || entry.envelope.id !== id) throw Error('Feedback export identity mismatch');
         await writeAttachments(tmp, entry.envelope);
         const final = join(feedbackRoot, `${basicTime(row.receivedAt)}-${id}`);
         await rename(tmp, final);
@@ -284,11 +302,20 @@ export async function syncFeedback({
       } catch (error) {
         await rm(tmp, { recursive: true, force: true });
         if (error?.code === 'AUTH') throw error;
-        if (error?.code === 'GONE') summary.gone.push(id);
+        if (error?.code === 'GONE') summary.gone.push({ id, kind: 'feedback' });
         else summary.failed.push({ id, kind: 'feedback', error: String(error?.message ?? error) });
       }
     }
-    await syncRecordings({ origin, token, fetcher, fetchJson, existing, recordingsRoot, summary });
+    await syncRecordings({
+      origin,
+      token,
+      fetcher,
+      fetchJson,
+      existing,
+      recordingsRoot,
+      summary,
+      now,
+    });
   } catch (error) {
     summary.exit = 1;
     summary.error = String(error?.message ?? error);
@@ -301,6 +328,24 @@ export async function syncFeedback({
   return summary;
 }
 
+// Reads every local feedback export that references a session; a corrupt local file is reported
+// once as a `local` failure and skipped so one bad file cannot block the other sessions.
+async function localEntries(dirs, summary, reported) {
+  const entries = [];
+  for (const dir of dirs) {
+    try {
+      entries.push(...(await readFeedbackExports(dir)));
+    } catch (error) {
+      const id = dir.slice(-36);
+      if (!reported.has(id)) {
+        reported.add(id);
+        summary.failed.push({ id, kind: 'local', error: String(error?.message ?? error) });
+      }
+    }
+  }
+  return entries;
+}
+
 async function syncRecordings({
   origin,
   token,
@@ -309,12 +354,18 @@ async function syncRecordings({
   existing,
   recordingsRoot,
   summary,
+  now,
 }) {
   const referencing = new Map();
   for (const dir of existing.values()) {
-    const refs = JSON.parse(await readFile(join(dir, 'references.json'), 'utf8').catch(() => '[]'));
+    let refs = [];
+    try {
+      refs = JSON.parse(await readFile(join(dir, 'references.json'), 'utf8'));
+    } catch {
+      continue;
+    }
     for (const ref of refs) {
-      if (!sessionIdPattern.test(ref.sessionId)) continue;
+      if (!sessionIdPattern.test(ref?.sessionId)) continue;
       if (!referencing.has(ref.sessionId)) referencing.set(ref.sessionId, []);
       referencing.get(ref.sessionId).push(dir);
     }
@@ -323,41 +374,64 @@ async function syncRecordings({
   const sessions = new Map(
     (await fetchJson(`${origin}/admin/playtest/sessions`)).map((s) => [s.id, s]),
   );
+  const reported = new Set();
   for (const [sessionId, dirs] of referencing) {
-    const sessionRoot = join(recordingsRoot, sessionId);
-    await mkdir(sessionRoot, { recursive: true, mode: 0o700 });
-    const session = sessions.get(sessionId);
-    const cutoffs = await localCutoffs(sessionRoot);
-    const latest = cutoffs.length ? Math.max(...cutoffs) : -1;
-    if (session && Number.isSafeInteger(session.sequence) && session.sequence > latest) {
-      const tmp = join(sessionRoot, `.tmp-${session.sequence}`);
-      await rm(tmp, { recursive: true, force: true });
-      try {
-        await downloadCapture({ origin, sessionId, directory: tmp, token, fetcher });
-        await rename(tmp, join(sessionRoot, `cutoff-${session.sequence}`));
-        cutoffs.push(session.sequence);
-      } catch (error) {
+    try {
+      const sessionRoot = join(recordingsRoot, sessionId);
+      const session = sessions.get(sessionId);
+      const cutoffs = await localCutoffs(sessionRoot);
+      const latest = cutoffs.length ? Math.max(...cutoffs) : -1;
+      const exportable = session && session.state === 'open' && !(Number(session.expires) <= now());
+      if (exportable && Number.isSafeInteger(session.sequence) && session.sequence > latest) {
+        await mkdir(sessionRoot, { recursive: true, mode: 0o700 });
+        const tmp = join(sessionRoot, `.tmp-${session.sequence}`);
         await rm(tmp, { recursive: true, force: true });
-        if (error?.code === 'AUTH') throw error;
-        summary.failed.push({
-          id: sessionId,
-          kind: 'recording',
-          error: String(error?.message ?? error),
-        });
+        try {
+          const { cutoff } = await downloadCapture({
+            origin,
+            sessionId,
+            directory: tmp,
+            token,
+            fetcher,
+          });
+          const final = join(sessionRoot, `cutoff-${cutoff}`);
+          if (existsSync(final)) await rm(tmp, { recursive: true, force: true });
+          else {
+            await rename(tmp, final);
+            cutoffs.push(cutoff);
+          }
+        } catch (error) {
+          await rm(tmp, { recursive: true, force: true });
+          if (error?.code === 'AUTH') throw error;
+          summary.failed.push({
+            id: sessionId,
+            kind: 'recording',
+            error: String(error?.message ?? error),
+          });
+        }
+      } else if (!exportable && !cutoffs.length)
+        summary.gone.push({ id: sessionId, kind: 'recording' });
+      const exported = cutoffs.length > 0;
+      for (const dir of dirs) {
+        const refs = JSON.parse(await readFile(join(dir, 'references.json'), 'utf8'));
+        await writeJson(
+          join(dir, 'references.json'),
+          refs.map((r) => (r.sessionId === sessionId ? { ...r, exported } : r)),
+        );
       }
-    } else if (!session && !cutoffs.length) summary.gone.push(sessionId);
-    const exported = cutoffs.length > 0;
-    const entries = [];
-    for (const dir of dirs) {
-      const refs = JSON.parse(await readFile(join(dir, 'references.json'), 'utf8'));
-      await writeJson(
-        join(dir, 'references.json'),
-        refs.map((r) => (r.sessionId === sessionId ? { ...r, exported } : r)),
-      );
-      entries.push(...(await readFeedbackExports(dir)));
+      if (cutoffs.length) {
+        const entries = await localEntries(dirs, summary, reported);
+        for (const n of cutoffs)
+          await writeJson(join(sessionRoot, `cutoff-${n}`, 'feedback.json'), entries);
+      }
+    } catch (error) {
+      if (error?.code === 'AUTH') throw error;
+      summary.failed.push({
+        id: sessionId,
+        kind: 'recording',
+        error: String(error?.message ?? error),
+      });
     }
-    for (const n of cutoffs)
-      await writeJson(join(sessionRoot, `cutoff-${n}`, 'feedback.json'), entries);
   }
 }
 
@@ -411,6 +485,8 @@ only issues GET requests. Local copies stay until you delete them.
 - recordings/<sessionId>/cutoff-<sequence>/ — one recording export per observed upload sequence
   (session.json, events.ndjson, event-*.json, media *.bin) plus a derived feedback.json listing
   every feedback that references the session, so the existing review tooling can combine them
+- Downloaded exports (feedback.json, recording files) are written once and never rewritten;
+  references.json, each cutoff's derived feedback.json and this README are regenerated each run
 - status.json — the last run: counts, ids that were gone or failed, exit code (0 ok, 1 config/auth
   failure, 2 partial, 3 another run held the lock)
 - launchd.log — stdout/stderr of the scheduled runs; sync.lock exists only while a run is active
@@ -464,6 +540,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       origin: config.origin,
       token: config.adminToken,
       directory: config.directory,
+      configPath: resolve(configPath),
       scriptHead: scriptHeadOf(script),
     });
     const { failed, gone, ...rest } = summary;

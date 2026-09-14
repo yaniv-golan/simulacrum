@@ -54,7 +54,15 @@ async function harness(t) {
   };
   const { home, directory } = await privateRoot(t);
   const run = (extra = {}) =>
-    syncFeedback({ origin, token, directory, fetcher, home, scriptHead: 'abc1234', ...extra });
+    syncFeedback({
+      origin,
+      token,
+      directory,
+      fetcher,
+      configPath: '/etc/sync-config.json',
+      scriptHead: 'abc1234',
+      ...extra,
+    });
   const submit = async (e) => {
     const response = await f.request(endpoint, { method: 'POST', body: e });
     assert.equal(response.status, 201, await response.text());
@@ -126,7 +134,9 @@ test('sync saves every listed feedback across pages with text, media and context
   assert.equal(status.exit, 0);
   assert.equal(status.scriptHead, 'abc1234');
   assert.ok(!JSON.stringify(status).includes(token));
-  assert.ok(existsSync(join(h.directory, 'README.md')));
+  const readme = await readFile(join(h.directory, 'README.md'), 'utf8');
+  assert.ok(readme.includes('/etc/sync-config.json'), 'README names the config path of the run');
+  assert.ok(/regenerated each run/.test(readme));
 });
 
 test('a second run on unchanged server state exports nothing and exits 0', async (t) => {
@@ -149,6 +159,18 @@ test('a new submission whose id sorts below existing ids is still picked up', as
   const result = await h.run();
   assert.equal(result.saved, 1);
   assert.equal((await feedbackDirs(h.directory)).length, 2);
+});
+
+test('an uppercase submission id is exported verbatim and saved once', async (t) => {
+  const h = await harness(t);
+  const upper = 'ABCDEF01-2345-4678-8ABC-DEF012345678';
+  await h.submit(envelope({ id: upper }));
+  const result = await h.run();
+  assert.equal(result.saved, 1, JSON.stringify(result));
+  assert.deepEqual(result.gone, []);
+  const dirs = await feedbackDirs(h.directory);
+  assert.ok(dirs.some((n) => n.endsWith(upper)));
+  assert.equal((await h.run()).saved, 0);
 });
 
 test('an export whose receipt hash does not match is recorded as failed without a final directory', async (t) => {
@@ -289,6 +311,72 @@ test('a still-open recording is re-exported when its sequence grows and carries 
   assert.deepEqual(latest.map((x) => x.envelope.id).sort(), [a.id, b.id].sort());
 });
 
+test('a corrupt local export or an expired session does not poison the run', async (t) => {
+  const h = await harness(t);
+  const s = await h.session();
+  const s2 = await h.session();
+  await h.event(s.sessionId, 'e1');
+  await h.event(s2.sessionId, 'e1');
+  const good = await h.submit(envelope({ reference: { sessionId: s.sessionId, timeMs: 0 } }));
+  const late = await h.submit(envelope({ reference: { sessionId: s2.sessionId, timeMs: 0 } }));
+  const flaky = async (url, init) => {
+    if (String(url).includes(`/admin/playtest/${s2.sessionId}/snapshot`))
+      return new Response('down', { status: 500 });
+    return h.fetcher(url, init);
+  };
+  const first = await h.run({ fetcher: flaky });
+  assert.equal(first.exit, 2, 'the s2 recording export failed; both feedback saved');
+  assert.equal(first.saved, 2);
+  await writeFile(join(await dirFor(h.directory, good.id), 'feedback.json'), '{"broken":true}');
+  h.f.st.db.prepare("UPDATE sessions SET state='expired' WHERE id=?").run(s2.sessionId);
+  const result = await h.run();
+  assert.equal(result.exit, 2, JSON.stringify(result));
+  assert.deepEqual(
+    result.failed.map((f) => ({ id: f.id, kind: f.kind })),
+    [{ id: good.id, kind: 'local' }],
+    'the corrupt local export is reported, nothing else fails',
+  );
+  assert.deepEqual(result.gone, [{ id: s2.sessionId, kind: 'recording' }]);
+  assert.ok(
+    !existsSync(join(h.directory, 'recordings', s2.sessionId, 'cutoff-1')),
+    'no export for a session that is no longer open',
+  );
+  const refs = JSON.parse(
+    await readFile(join(await dirFor(h.directory, late.id), 'references.json'), 'utf8'),
+  );
+  assert.deepEqual(refs, [{ sessionId: s2.sessionId, exported: false }]);
+  assert.ok(existsSync(join(h.directory, 'recordings', s.sessionId, 'cutoff-1', 'session.json')));
+});
+
+test('a recording that grows during export is named by the exported cutoff', async (t) => {
+  const h = await harness(t);
+  const s = await h.session();
+  await h.event(s.sessionId, 'e1');
+  await h.submit(envelope({ reference: { sessionId: s.sessionId, timeMs: 0 } }));
+  let grown = false;
+  const racing = async (url, init) => {
+    if (!grown && String(url).includes('/admin/playtest/sessions')) {
+      const response = await h.fetcher(url, init);
+      grown = true;
+      await h.event(s.sessionId, 'e2');
+      return response;
+    }
+    return h.fetcher(url, init);
+  };
+  assert.equal((await h.run({ fetcher: racing })).exit, 0);
+  const cutoffs = (await readdir(join(h.directory, 'recordings', s.sessionId))).filter((n) =>
+    n.startsWith('cutoff-'),
+  );
+  assert.deepEqual(cutoffs, ['cutoff-2'], 'directory carries the cutoff the export actually used');
+  h.calls.length = 0;
+  assert.equal((await h.run()).exit, 0);
+  assert.equal(
+    h.calls.filter((c) => c.path.endsWith('/snapshot')).length,
+    0,
+    'no re-export of the same data',
+  );
+});
+
 test('sync issues only GET requests to admin feedback and session routes', async (t) => {
   const h = await harness(t);
   const s = await h.session();
@@ -394,6 +482,36 @@ test('withRetry retries transport errors and 503, treats 410 as gone, 403 as aut
   assert.equal(exhausted.status, 503, 'attempts are bounded');
 });
 
+test('withRetry backs off exponentially without retry-after, honours a capped retry-after and keeps the caller signal', async (t) => {
+  const waits = [];
+  const sleep = async (ms) => void waits.push(ms);
+  const seen = [];
+  const responses = [];
+  const fake = async (url, init) => {
+    seen.push(init.signal);
+    return responses.shift();
+  };
+  const retrying = withRetry(fake, { delayMs: 250, sleep });
+  responses.push(...Array.from({ length: 4 }, () => new Response('busy', { status: 503 })));
+  await retrying(`${origin}/a`);
+  assert.deepEqual(waits, [250, 500, 1000], 'no retry-after header means exponential backoff');
+  waits.length = 0;
+  responses.push(
+    new Response('busy', { status: 429, headers: { 'retry-after': '3600' } }),
+    new Response('ok'),
+  );
+  await retrying(`${origin}/b`);
+  assert.deepEqual(waits, [30000], 'retry-after is honoured but capped at 30 s');
+  const caller = new AbortController();
+  seen.length = 0;
+  responses.push(new Response('ok'));
+  await retrying(`${origin}/c`, { signal: caller.signal });
+  caller.abort();
+  assert.ok(seen[0].aborted, 'the request signal follows the caller signal');
+  responses.push(new Response('busy', { status: 503 }));
+  await assert.rejects(retrying(`${origin}/d`, { signal: caller.signal }), /abort/i);
+});
+
 test('a feedback that disappears between listing and export counts as gone, not failed', async (t) => {
   const h = await harness(t);
   const e = await h.submit(envelope());
@@ -403,9 +521,37 @@ test('a feedback that disappears between listing and export counts as gone, not 
   };
   const result = await h.run({ fetcher: vanishing });
   assert.equal(result.exit, 0);
-  assert.deepEqual(result.gone, [e.id]);
+  assert.deepEqual(result.gone, [{ id: e.id, kind: 'feedback' }]);
   assert.deepEqual(result.failed, []);
   assert.equal((await feedbackDirs(h.directory)).length, 0);
+});
+
+test('malformed listing rows and an oversized page size fail the run instead of touching disk', async (t) => {
+  const h = await harness(t);
+  await h.submit(envelope());
+  const malformed = async (url, init) => {
+    if (String(url).includes('/admin/playtest/feedback?'))
+      return new Response(
+        JSON.stringify([
+          {
+            submissionId: randomUUID(),
+            receivedAt: '../escape',
+            bytes: 1,
+            status: 'received',
+            references: [],
+          },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    return h.fetcher(url, init);
+  };
+  const result = await h.run({ fetcher: malformed });
+  assert.equal(result.exit, 1);
+  assert.match(result.error, /listing row/);
+  assert.equal((await feedbackDirs(h.directory)).length, 0);
+  const oversized = await h.run({ pageSize: 5000 });
+  assert.equal(oversized.exit, 1);
+  assert.match(oversized.error, /pageSize/);
 });
 
 test('an auth failure aborts the run with exit 1', async (t) => {
@@ -430,12 +576,20 @@ test('a concurrent run exits 3 while the lock is fresh and takes over a stale lo
   assert.equal((await feedbackDirs(h.directory).catch(() => [])).length, 0);
   await writeFile(
     join(h.directory, 'sync.lock'),
-    JSON.stringify({ pid: 1, startedAt: new Date(Date.now() - 7 * 3600000).toISOString() }),
+    JSON.stringify({ pid: 4194303, startedAt: new Date(Date.now() - 7 * 3600000).toISOString() }),
   );
   const taken = await h.run();
   assert.equal(taken.exit, 0);
   assert.equal(taken.saved, 1);
   assert.ok(!existsSync(join(h.directory, 'sync.lock')), 'lock released after the run');
+  await writeFile(
+    join(h.directory, 'sync.lock'),
+    JSON.stringify({
+      pid: process.pid,
+      startedAt: new Date(Date.now() - 7 * 3600000).toISOString(),
+    }),
+  );
+  assert.equal((await h.run()).exit, 3, 'a stale lock held by a live process is not taken over');
 });
 
 test('three references across two sessions and voice-only feedback are saved', async (t) => {
@@ -504,5 +658,6 @@ test('plist and README carry absolute paths, the node binary and the stop comman
   assert.ok(readme.includes(directory) && readme.includes(configPath));
   assert.ok(/never delet/i.test(readme));
   assert.ok(!readme.includes(token));
-  assert.equal(home.length > 0, true);
+  assert.ok(/regenerated each run/.test(readme));
+  assert.ok(home);
 });
