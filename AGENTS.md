@@ -183,7 +183,9 @@ source/build and experiment identity. Run final checks on the same final source.
 
 Publishing an experimental build is distinct from milestone qualification. For an
 initial side project with no established audience, an explicitly authorized release
-may defer hosted endurance/capacity qualification and pending F1 human acceptance.
+may defer hosted endurance/capacity qualification and pending F1 human acceptance, and
+may cite a byte-identical passed merge candidate's workshop browser receipts as described
+in release operations.
 F1 remains required to qualify its milestone; publication does not advance it or
 supply human evidence. This is a release category, not permission to ignore failed
 automation or to omit the local verification tier.

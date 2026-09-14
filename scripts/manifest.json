@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once here and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2521,6 +2521,14 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation cites an attested byte-identical merge parent and names every reused receipt"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "release package names every reused receipt and only an experimental release accepts one"
           }
         ],
         "negative": [
@@ -2535,6 +2543,14 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation cites an attested byte-identical merge parent and names every reused receipt"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "release package names every reused receipt and only an experimental release accepts one"
           }
         ]
       },

@@ -1,13 +1,26 @@
 import { sourceIdentity } from '../source-identity.mjs';
 import { assertPackageVerification, verificationHash } from './package-verification.mjs';
+import {
+  classifyParentLeaves,
+  reuseSet,
+  reuseSummary,
+  validateReuseReport,
+  verifyAttestation,
+} from '../candidate-after.mjs';
+import { readLeafRow } from '../verification-resume.mjs';
+import { dependencyDigest, readResumeDescriptor } from '../candidate-resume.mjs';
+import { candidateMatchesOrigin } from '../candidate.mjs';
+import { requireAttemptReport } from '../candidate-attempt.mjs';
+import { processIdentity } from '../verification-environment.mjs';
 // One frozen verification and package path shared by local and CI releases.
 import { readFile, writeFile, mkdir, readdir, copyFile, lstat } from 'node:fs/promises';
-import { resolve, join, relative } from 'node:path';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { resolve, join, relative, basename, dirname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const run = (command, args, cwd) =>
-  execFileSync(command, args, { cwd, stdio: 'inherit', env: process.env });
+const run = (command, args, cwd, env = process.env) =>
+  execFileSync(command, args, { cwd, stdio: 'inherit', env });
 const text = (command, args, cwd = process.cwd()) =>
   execFileSync(command, args, { cwd, encoding: 'utf8' }).trim();
 async function inventory(root) {
@@ -23,11 +36,141 @@ async function inventory(root) {
   await visit(root);
   return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
-export async function prepareRelease(destination) {
+// The tier's environment never inherits a resume ledger by accident: a plain release strips the
+// two variables, a citing release sets its own.
+function tierEnvironment(ledger) {
+  const env = { ...process.env };
+  delete env.SIMULACRUM_LEAF_LEDGER;
+  delete env.SIMULACRUM_VERIFICATION_ATTEMPT;
+  if (ledger)
+    Object.assign(env, {
+      SIMULACRUM_LEAF_LEDGER: ledger.path,
+      SIMULACRUM_VERIFICATION_ATTEMPT: ledger.attempt,
+    });
+  return env;
+}
+/** An experimental release may cite a passed merge candidate's workshop receipts. The parent is
+ * admitted through its own attestation and signed descriptor, never the editable report: same
+ * tree, same installed dependencies, same relevant environment, a merge tier, no hosted or
+ * measurement report, and its own origin still matching at its end. Every refusal names the
+ * field; nothing falls back to a plain run. */
+export async function admitReleaseParent(after, root) {
+  if (process.env.SIMULACRUM_HOST_PROFILE)
+    throw Error('Release reuse is refused under a host profile; unset SIMULACRUM_HOST_PROFILE');
+  const path = resolve(after);
+  const parent = JSON.parse(await readFile(path, 'utf8'));
+  verifyAttestation(parent, () => readFileSync(join(resolve(parent.directory), 'resume-key')));
+  const parentDirectory = resolve(parent.directory);
+  const parentKey = readFileSync(join(parentDirectory, 'resume-key'));
+  const descriptor = readResumeDescriptor(parentDirectory, parentKey);
+  if (!['passed', 'passed with reused receipts'].includes(parent.status))
+    throw Error(
+      `Release reuse needs a passed merge parent attempt; parent status is ${parent.status}`,
+    );
+  if (descriptor.tier !== 'merge' || parent.tier !== 'merge')
+    throw Error(
+      'Release reuse cites a merge parent attempt only; a local candidate is not release evidence',
+    );
+  if (!parent.verification || typeof parent.verification !== 'object')
+    throw Error('Parent attempt report has no tier receipts');
+  requireAttemptReport(parent.verification, parent.attempt);
+  if (existsSync(join(parentDirectory, 'active-attempt')))
+    throw Error('Parent candidate still has an active attempt');
+  if (parent.destinationStillMatches === false)
+    throw Error('Parent attempt destination moved before it finished');
+  if (parent.originStillMatches !== true)
+    throw Error('Parent attempt origin did not still match at its end');
+  for (const row of parent.verification.results ?? [])
+    if (row?.result?.hostProfile || row?.result?.measurement === true)
+      throw Error(
+        `Release reuse never cites a hosted-profile or measurement report (${row.id}: ${row.result.hostProfile ?? 'measurement'})`,
+      );
+  const classification = classifyParentLeaves(parent);
+  if (classification.kind !== 'reuse') throw Error('Release reuse needs a passed parent attempt');
+  const head = text('git', ['rev-parse', 'HEAD'], root);
+  if (descriptor.candidate?.head !== head)
+    throw Error(
+      `Parent attempt candidate head ${descriptor.candidate?.head} differs from the release HEAD ${head}; cite the merge attempt of this exact commit`,
+    );
+  const identity = processIdentity(),
+    parentIdentity = descriptor.identity ?? {};
+  for (const key of ['runtime', 'platform', 'arch', 'environmentDigest'])
+    if (identity[key] !== parentIdentity[key])
+      throw Error(
+        `Release environment identity differs from the parent attempt (${key}); prepare from the candidate's environment`,
+      );
+  if (!(await candidateMatchesOrigin(root, descriptor.candidate)))
+    throw Error('Release source bytes differ from the parent attempt candidate');
+  const manifest = JSON.parse(await readFile(join(root, 'scripts/manifest.json'), 'utf8'));
+  const { offered } = reuseSet({ classification, manifest });
+  if (!offered.length)
+    throw Error('Parent attempt offers no reusable workshop receipt; prepare without --after');
+  return { parent, parentDirectory, parentKey, descriptor, classification, offered };
+}
+// Cited evidence is copied into the frozen tree so the package outlives the candidate's temp dir.
+async function copyCitedEvidence(admitted, reused, snapshot) {
+  const leaves = join(admitted.parentDirectory, 'attempts', admitted.parent.attempt, 'leaves');
+  const reusedRoot = join(
+    snapshot,
+    'artifacts',
+    'browser-suite',
+    'reused',
+    admitted.parent.attempt,
+  );
+  for (const entry of reused) {
+    // The leaf is read with the ledger's own rules and trusted only under the parent's key and
+    // only for this receipt.
+    let row;
+    try {
+      row = readLeafRow(join(leaves, sha(entry.id) + '.json'), admitted.parentKey);
+    } catch {
+      throw Error(`Cited leaf for ${entry.id} is not signed by the parent candidate`);
+    }
+    if (!row) throw Error(`Cited evidence unavailable for ${entry.id}`);
+    if (row.payload?.id !== entry.id)
+      throw Error(`Cited leaf for ${entry.id} is not signed by the parent candidate`);
+    const checksums = row.payload.value?.evidenceChecksums;
+    if (!Array.isArray(checksums) || !checksums.length)
+      throw Error(`Cited receipt ${entry.id} carries no retained evidence`);
+    const directories = checksums.filter((c) => c?.directory === true);
+    if (directories.length !== 1 || typeof directories[0].path !== 'string')
+      throw Error(`Cited receipt ${entry.id} has no single evidence directory`);
+    const base = resolve(directories[0].path),
+      run = dirname(base),
+      target = join(reusedRoot, basename(base));
+    const copied = [];
+    for (const item of checksums) {
+      if (item.directory === true) continue;
+      const source = resolve(String(item.path));
+      // Retained evidence lives in the evidence directory or beside it (the run log); nothing
+      // outside the parent's run directory is ever read, and nothing lands outside the copy.
+      if (!source.startsWith(run + sep))
+        throw Error(`Cited evidence path outside the parent run for ${entry.id}: ${item.path}`);
+      const bytes = await readFile(source).catch(() => null);
+      if (!bytes || bytes.length !== item.bytes || sha(bytes) !== item.sha256)
+        throw Error(`Cited evidence altered or missing for ${entry.id}: ${item.path}`);
+      const destination = resolve(target, relative(base, source));
+      if (!destination.startsWith(reusedRoot + sep))
+        throw Error(`Cited evidence copy escapes the release for ${entry.id}`);
+      await mkdir(dirname(destination), { recursive: true, mode: 0o700 });
+      await writeFile(destination, bytes, { mode: 0o600, flag: 'wx' });
+      copied.push({
+        path: relative(snapshot, destination),
+        sha256: item.sha256,
+        bytes: item.bytes,
+      });
+    }
+    entry.evidenceChecksums = checksums;
+    entry.copiedTo = relative(snapshot, target);
+    entry.copiedChecksums = copied;
+  }
+}
+export async function prepareRelease(destination, { after = null } = {}) {
   const root = process.cwd(),
     out = resolve(destination);
   if (!relative(root, out).startsWith('.release-private/'))
     throw Error('Prepare destination must be a new .release-private/<release> directory');
+  const admitted = after ? await admitReleaseParent(after, root) : null;
   const head = text('git', ['rev-parse', 'HEAD']);
   const paths = text('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
     .split('\0')
@@ -58,20 +201,49 @@ export async function prepareRelease(destination) {
     mode: 0o600,
   });
   const timings = {};
-  const timed = (id, command, args) => {
+  const timed = (id, command, args, env) => {
     const start = performance.now();
     try {
-      return run(command, args, snapshot);
+      return run(command, args, snapshot, env);
     } finally {
       timings[id] = performance.now() - start;
     }
   };
   timed('install', 'npm', ['ci']);
+  let ledger = null,
+    offered = [];
+  if (admitted) {
+    // The candidate digests its dependencies with these scratch directories present.
+    for (const path of ['.vite-temp', '.cache/prettier'])
+      mkdirSync(join(snapshot, 'node_modules', path), { recursive: true });
+    if (dependencyDigest(snapshot) !== admitted.descriptor.installed)
+      throw Error('Release installed dependencies differ from the parent attempt');
+    const manifest = JSON.parse(await readFile(join(snapshot, 'scripts/manifest.json'), 'utf8'));
+    offered = reuseSet({ classification: admitted.classification, manifest }).offered;
+    if (JSON.stringify(offered) !== JSON.stringify(admitted.offered))
+      throw Error('Frozen manifest offers a different reuse set than the release root');
+    ledger = { path: join(out, 'ledger.json'), attempt: randomUUID() };
+    await writeFile(
+      ledger.path,
+      JSON.stringify({
+        key: randomBytes(32).toString('hex'),
+        output: join(out, 'leaves'),
+        previous: join(admitted.parentDirectory, 'attempts', admitted.parent.attempt, 'leaves'),
+        previousKey: admitted.parentKey.toString('hex'),
+        reuse: offered,
+        origin: {
+          attempt: ledger.attempt,
+          report: join(snapshot, 'artifacts', 'verification-final.json'),
+        },
+      }),
+      { mode: 0o600, flag: 'wx' },
+    );
+  }
   timed('format', 'npm', ['run', 'format:check']);
   // Qualification exit 2 is acceptable for release automation only when its report
   // confirms automation passed; human acceptance is never invented by deployment.
   try {
-    timed('verification', 'npm', ['run', 'verify:final']);
+    timed('verification', 'npm', ['run', 'verify:final'], tierEnvironment(ledger));
   } catch (error) {
     const report = JSON.parse(
       await readFile(join(snapshot, 'artifacts', 'verification-final.json'), 'utf8'),
@@ -85,6 +257,27 @@ export async function prepareRelease(destination) {
     throw Error('Complete release automation must pass');
   if (JSON.stringify(verification.source) !== JSON.stringify(sourceIdentity()))
     throw Error('Verification source does not match frozen candidate');
+  let reuse = null,
+    status = 'passed';
+  if (admitted) {
+    const summary = reuseSummary({
+      parent: admitted.parent,
+      mode: 'same-bytes',
+      sameBytes: { sameSource: true, sameDependencies: true, sameIdentity: true },
+      offered,
+      child: { status: 'passed', checks: verification.checks },
+    });
+    reuse = summary.after;
+    status = summary.status;
+    // The shared validator owns the block's internal consistency; the envelope check below
+    // only binds it to the receipts and to the experimental consumer.
+    validateReuseReport(
+      { status, tier: 'final', after: reuse, verification: { checks: verification.checks } },
+      { childTiers: ['final'] },
+    );
+    await copyCitedEvidence(admitted, reuse.reused, snapshot);
+  } else if (verification.checks.some((c) => c.resumed))
+    throw Error('Plain release verification resumed a receipt');
   const verifiedAssets = await inventory(join(snapshot, 'dist'));
   const payload = join(out, 'payload');
   await mkdir(payload);
@@ -146,6 +339,8 @@ export async function prepareRelease(destination) {
       runtime: verification.runtime,
       checks: verification.checks,
       timings,
+      status,
+      ...(reuse ? { reuse } : {}),
       bundleCoverage:
         'Backend source is checked by the full suite; Wrangler bundles that same frozen source after verification. Hosted smoke checks the deployed bundle. Local bundle execution is not claimed.',
     },
@@ -164,8 +359,15 @@ export async function prepareRelease(destination) {
     expires: Date.now() + 14 * 86400000,
   };
   manifest.verificationHash = verificationHash(manifest.verification);
-  assertPackageVerification(manifest);
+  assertPackageVerification(manifest, { allowReusedEvidence: Boolean(admitted) });
   await writeFile(join(out, 'release.json'), JSON.stringify(manifest, null, 2), { mode: 0o600 });
-  console.log(JSON.stringify({ directory: out, artifact }));
+  console.log(
+    JSON.stringify({
+      directory: out,
+      artifact,
+      status,
+      ...(reuse ? { reuse: reuse.counts, parentAttempt: reuse.parentAttempt } : {}),
+    }),
+  );
   return manifest;
 }

@@ -161,7 +161,8 @@ that owner's declared intent (tier, branch, destination, origin worktree) under
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green
-report after changing source or environment.
+report after changing source or environment. An experimental release may cite a byte-identical
+merge candidate's receipts only through the named release admission.
 
 The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
 `engines.node` from package.json. CI, the milestone gate, final verification, focused
@@ -706,7 +707,9 @@ expired automatically: establish the prior process tree has stopped before recov
 
 A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
 --after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
-only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
+only; `final` refuses `--after` because qualification evidence is always a fresh full run (the
+one named admission is an experimental release's `release:prepare -- … --after`, see
+[release operations](playtesting.md#release-operations)). The
 parent must be a `failed` report that completed its tier; an attempt that failed around the tier
 (window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
