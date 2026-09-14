@@ -195,7 +195,12 @@ globalThis.candidateTransport = {
                 throw Object.assign(Error('assertion failed'), { code: 1, output: 'boom' });
               // Retained evidence as the suite leaves it: a directory, a witness and a log.
               const attempt = options.env.SIMULACRUM_VERIFICATION_ATTEMPT;
-              const directory = join(options.cwd, 'artifacts/browser-suite/runs', attempt, id.slice(8));
+              const directory = join(
+                options.cwd,
+                'artifacts/browser-suite/runs',
+                attempt,
+                id.slice(8),
+              );
               mkdirSync(directory, { recursive: true });
               const witness = join(directory, 'witness.json'),
                 log = `${directory}.log`;

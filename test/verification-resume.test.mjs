@@ -256,14 +256,21 @@ test('retained evidence is accepted by digest and size, missing paths execute ag
     writeFileSync(join(dir, 'x.log'), 'log');
     const entry = (path) => {
       const bytes = readFileSync(path);
-      return { path, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length };
+      return {
+        path,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+        bytes: bytes.length,
+      };
     };
     const checksums = [
       { path: join(dir, 'x'), directory: true },
       entry(join(dir, 'x/witness.json')),
       entry(join(dir, 'x.log')),
     ];
-    const payload = (evidenceChecksums) => ({ id: 'browser:x', value: { code: 0, evidenceChecksums } });
+    const payload = (evidenceChecksums) => ({
+      id: 'browser:x',
+      value: { code: 0, evidenceChecksums },
+    });
     assert.equal(acceptRetainedEvidence(payload(checksums)), 'ok');
     assert.equal(acceptRetainedEvidence(payload(undefined)), 'missing', 'no checksums');
     assert.equal(acceptRetainedEvidence({ id: 'unit:test/a.test.mjs', value: { code: 0 } }), 'ok');

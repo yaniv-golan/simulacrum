@@ -716,11 +716,19 @@ test('across candidates only workshop browser journeys carry a receipt; smoke, t
   assert.equal(reusableAcrossCandidates('browser:verify-camera-browser', real), false);
   for (const c of real.browserChecks) {
     const reusable = reusableAcrossCandidates(`browser:${c.id}`, real);
-    if (c.mergeSmoke || c.timingSensitive || c.tier !== 'browser' || (c.environment ?? 'workshop') !== 'workshop')
+    if (
+      c.mergeSmoke ||
+      c.timingSensitive ||
+      c.tier !== 'browser' ||
+      (c.environment ?? 'workshop') !== 'workshop'
+    )
       assert.equal(reusable, false, c.id);
     else assert.equal(reusable, true, c.id);
   }
-  assert.ok(real.browserChecks.filter((c) => reusableAcrossCandidates(`browser:${c.id}`, real)).length >= 30);
+  assert.ok(
+    real.browserChecks.filter((c) => reusableAcrossCandidates(`browser:${c.id}`, real)).length >=
+      30,
+  );
   assert.deepEqual([...REUSE_TIERS], ['local', 'merge']);
 });
 
@@ -729,6 +737,14 @@ test('a passed parent classifies for reuse; a passed report carrying a failed le
   assert.equal(c.kind, 'reuse');
   assert.deepEqual(c.failed, []);
   assert.equal(classifyParentLeaves(parent()).kind, 'retry');
+  assert.equal(
+    classifyParentLeaves(passedParent({ status: 'passed with reused receipts' })).kind,
+    'reuse',
+  );
+  assert.throws(
+    () => classifyParentLeaves(passedParent({ status: 'passed after failure' })),
+    /--after needs|failed/,
+  );
   const inconsistent = passedParent();
   inconsistent.verification.checks.find((r) => r.id === 'browser:mirror').ok = false;
   assert.throws(() => classifyParentLeaves(inconsistent), /failed.*browser:mirror/);
@@ -737,7 +753,7 @@ test('a passed parent classifies for reuse; a passed report carrying a failed le
   assert.deepEqual(validateCauses(c, new Map()), {});
 });
 
-test('the offered set is the parent\'s own depth-0 workshop journeys; resumed or chained receipts are always fresh', () => {
+test("the offered set is the parent's own depth-0 workshop journeys; resumed or chained receipts are always fresh", () => {
   const p = passedParent();
   p.verification.checks.find((r) => r.id === 'browser:mirror').resumed = true;
   p.verification.checks.find((r) => r.id === 'browser:mirror').origin = {
@@ -752,7 +768,10 @@ test('the offered set is the parent\'s own depth-0 workshop journeys; resumed or
   assert.ok(set.alwaysFresh.includes('browser:hosted'));
   assert.ok(set.alwaysFresh.includes('browser:audio'));
   assert.ok(set.alwaysFresh.includes('unit:test/geometry.test.mjs'));
-  assert.throws(() => reuseSet({ classification: classifyParentLeaves(parent()), manifest }), /passed/);
+  assert.throws(
+    () => reuseSet({ classification: classifyParentLeaves(parent()), manifest }),
+    /passed/,
+  );
 });
 
 test('a reuse child is passed with reused receipts exactly when it resumed a receipt the parent offered and executed', () => {
@@ -780,11 +799,23 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
   assert.equal(summary.after.parentTier, 'local');
   // Nothing reused is plain passed; a failed child is failed.
   assert.equal(
-    reuseSummary({ parent: p, mode: 'delta', sameBytes: {}, offered: [], child: child([receipt('browser:ball', true)]) }).status,
+    reuseSummary({
+      parent: p,
+      mode: 'delta',
+      sameBytes: {},
+      offered: [],
+      child: child([receipt('browser:ball', true)]),
+    }).status,
     'passed',
   );
   assert.equal(
-    reuseSummary({ parent: p, mode: 'same-bytes', sameBytes: {}, offered: ['browser:ball'], child: child([], 'failed') }).status,
+    reuseSummary({
+      parent: p,
+      mode: 'same-bytes',
+      sameBytes: {},
+      offered: ['browser:ball'],
+      child: child([], 'failed'),
+    }).status,
     'failed',
   );
   // The report validator refuses every inconsistent shape.
@@ -795,21 +826,41 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
     verification: { checks: [receipt('browser:ball', true, { resumed: true, origin })] },
     ...overrides,
   });
-  assert.equal(validateReuseReport(report()), report());
-  assert.throws(() => validateReuseReport(report({ status: 'passed' })), /must be passed with reused receipts/);
+  const consistent = report();
+  assert.equal(validateReuseReport(consistent), consistent);
+  assert.throws(
+    () => validateReuseReport(report({ status: 'passed' })),
+    /must be passed with reused receipts/,
+  );
   assert.throws(
     () => validateReuseReport(report({ after: { ...summary.after, reused: [] } })),
     /at least one/,
   );
   assert.throws(() => validateReuseReport(report({ tier: 'final' })), /final/);
+  // A caller may admit other child tiers (release operations); the parent is never final.
+  const intoFinal = report({ tier: 'final' });
+  assert.equal(validateReuseReport(intoFinal, { childTiers: ['final'] }), intoFinal);
   assert.throws(
     () => validateReuseReport(report({ after: { ...summary.after, parentTier: 'final' } })),
-    /final/,
+    /local or merge parent/,
+  );
+  assert.throws(
+    () =>
+      validateReuseReport(report({ after: { ...summary.after, parentTier: 'final' } }), {
+        childTiers: ['final'],
+      }),
+    /local or merge parent/,
   );
   assert.throws(
     () =>
       validateReuseReport(
-        report({ verification: { checks: [receipt('browser:ball', true, { resumed: true, origin: { ...origin, depth: 2 } })] } }),
+        report({
+          verification: {
+            checks: [
+              receipt('browser:ball', true, { resumed: true, origin: { ...origin, depth: 2 } }),
+            ],
+          },
+        }),
       ),
     /depth-0/,
   );
@@ -831,7 +882,10 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
       ),
     /missing from the after block/,
   );
-  assert.throws(() => validateReuseReport(report({ after: { ...summary.after, kind: 'retry' } })), /consistent/);
+  assert.throws(
+    () => validateReuseReport(report({ after: { ...summary.after, kind: 'retry' } })),
+    /consistent/,
+  );
   // validateAfterReport dispatches on the block kind.
-  assert.equal(validateAfterReport(report()), report());
+  assert.equal(validateAfterReport(consistent), consistent);
 });

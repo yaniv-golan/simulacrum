@@ -10,7 +10,9 @@ const canonical = (v) =>
 import { CHAIN_DEPTH_LIMIT } from './candidate-after.mjs';
 /** Local key is held outside source. This detects modified receipts, not a hostile same-UID key owner.
  * `eligible` gates loads; `saveEligible` (a predicate, a list, or null for every leaf) gates saves
- * so a diagnosed retry can reuse leaves a plain resume never reads. `origin` names the attempt that produced fresh leaves. */
+ * so a diagnosed retry can reuse leaves a plain resume never reads. `origin` names the attempt that produced fresh leaves.
+ * `accept(payload)` inspects a receipt's retained evidence before it is offered: 'ok', 'missing'
+ * (the leaf executes again) or anything else (fails closed). */
 export function createLeafLedger({
   directory,
   key,
@@ -18,6 +20,7 @@ export function createLeafLedger({
   eligible,
   saveEligible,
   origin = null,
+  accept = null,
 }) {
   if (!Buffer.isBuffer(key) || key.length !== 32) throw Error('32-byte local resume key required');
   const allowed = new Set(eligible),
@@ -57,6 +60,11 @@ export function createLeafLedger({
       // Evidence carried through too many retries is not offered again.
       if (p.origin && !(Number.isInteger(p.origin.depth) && p.origin.depth < CHAIN_DEPTH_LIMIT))
         return null;
+      if (accept) {
+        const verdict = accept(p);
+        if (verdict === 'missing') return null;
+        if (verdict !== 'ok') throw Error(`resume receipt evidence ${verdict}: ${id}`);
+      }
       return p;
     },
     save(id, configuration, value, elapsedMs, leafOrigin = null) {

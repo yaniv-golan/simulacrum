@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { createLeafLedger } from './verification-resume.mjs';
 import { reusableLeaf } from './candidate-after.mjs';
 import {
@@ -126,6 +126,32 @@ export function readRetrySelection(value, { origin, attempt } = {}) {
     covered: list('covered') ?? [],
   };
 }
+/** A receipt from another candidate is offered only while the evidence it points at is intact:
+ * an absent file or directory means the leaf executes again; altered bytes fail closed. A browser
+ * receipt without checksums predates them and is never offered across candidates. */
+export function acceptRetainedEvidence(payload) {
+  const entries = payload.value?.evidenceChecksums;
+  if (!Array.isArray(entries) || !entries.length)
+    return payload.id.startsWith('browser:') ? 'missing' : 'ok';
+  for (const entry of entries) {
+    if (typeof entry?.path !== 'string') return 'malformed';
+    let stat;
+    try {
+      stat = statSync(entry.path);
+    } catch (error) {
+      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return 'missing';
+      throw error;
+    }
+    if (entry.directory === true) {
+      if (!stat.isDirectory()) return 'mismatch';
+      continue;
+    }
+    if (!stat.isFile() || stat.size !== entry.bytes) return 'mismatch';
+    if (createHash('sha256').update(readFileSync(entry.path)).digest('hex') !== entry.sha256)
+      return 'mismatch';
+  }
+  return 'ok';
+}
 export function initializeVerificationEnvironment() {
   assertRuntime();
   process.env.NODE_ENV ??= 'production';
@@ -162,6 +188,10 @@ export function createVerificationContext(options) {
         ? {
             resumeLedger: createLeafLedger({
               ...shared,
+              // Another candidate's receipts were signed with its key and point at its evidence.
+              ...(config.previousKey
+                ? { key: Buffer.from(config.previousKey, 'hex'), accept: acceptRetainedEvidence }
+                : {}),
               directory: config.previous,
               eligible: Array.isArray(config.reuse)
                 ? config.reuse

@@ -11,8 +11,9 @@ import {
   existsSync,
   renameSync,
   readdirSync,
+  statSync,
 } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { sourceIdentity } from './source-identity.mjs';
@@ -204,6 +205,27 @@ export async function verifyBrowserSuite(mode = 'all', options = {}) {
   return withBrowserReport(mode, options, (report, publish) =>
     executeBrowserSuite(mode, options, report, publish),
   );
+}
+/** What a later candidate must find intact before it may cite this run's evidence: the evidence
+ * directory, every file beneath it and the log, each with its digest and size. */
+function retainedEvidence(origin) {
+  const entries = [{ path: origin.evidenceDirectory, directory: true }];
+  const file = (path, bytes) => ({
+    path,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    bytes: bytes.length,
+  });
+  const visit = (directory) => {
+    for (const name of readdirSync(directory).sort()) {
+      const path = join(directory, name),
+        stat = statSync(path);
+      if (stat.isDirectory()) visit(path);
+      else if (stat.isFile()) entries.push(file(path, readFileSync(path)));
+    }
+  };
+  visit(origin.evidenceDirectory);
+  entries.push(file(origin.log, readFileSync(origin.log)));
+  return entries;
 }
 async function executeBrowserSuite(
   mode,
@@ -415,7 +437,11 @@ async function executeBrowserSuite(
                     () => probe?.close(),
                   );
                   writeFileSync(origin.log, result.output);
-                  return { ...result, evidenceOrigin: origin };
+                  return {
+                    ...result,
+                    evidenceOrigin: origin,
+                    evidenceChecksums: retainedEvidence(origin),
+                  };
                 } catch (error) {
                   error.evidenceOrigin = origin;
                   try {
