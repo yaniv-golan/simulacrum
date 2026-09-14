@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8c54e24826a26969dec5e4e7f4cd0ec0904c2711937c443410433122c6b6a0e2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1fd755ac7ee1f7ffdaa8cd2ca141fbb50eb2d52b733f14f0922533155c2ad317","disposition":"still accurate","rationale":"The recovery journey's capacity scenario now unticks the default context attachment before its send so the step reaches the server rejection it proves under the fixture's one-byte budget, and the manifest carries the re-reviewed scope hashes; no physics owner, law, integration step or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"7b23123833c1f50a7565995bc579f0570b00af322c88630bf5bdeb05beb5914f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bed4cc1b3ece87fb740220e44084fbe54dbde8e5b4ce4e2bf46bbc2b56dffe64","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
