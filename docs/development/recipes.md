@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"e746794ef8cc2d8d99dae56c6672c7b02219dc3801641bf39ddc4d4caf5cc31e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"e54a183215615b5eda4627ca03adfbdce3eccc265ebcf3ed84ac6ebde0d0b60e","disposition":"still accurate","rationale":"Harness diagnostics refinements only (timing split, first-exec hint, install age, wrapper-depth recovery); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b9ee5fa49215e7fa46d3bef38c48e48bc309d5cc981bcd1263b63c1bec3f491","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"13a0521b4e55395a100d0837abec24be133e2f793a97af45bff5da6b00b30343","disposition":"still accurate","rationale":"The browser-suite fixture now pins SIMULACRUM_CANDIDATE_INSTALLED_AT and its test asserts the install age positively; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
