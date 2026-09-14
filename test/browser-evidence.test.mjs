@@ -802,9 +802,14 @@ test('a failed action records its target geometry over the next frames and says 
   const browser = await evidence.launch({ profile: 'ui' }),
     p = await browser.newPage();
   await assert.rejects(p.locator('[data-command=pause]').click(), /Timeout 6000ms/);
-  await evidence.captureFailure(Error('check failed'));
+  await evidence.captureFailure(
+    Error(
+      'locator.click: Timeout 6000ms exceeded.\nCall log:\n  - waiting for element to be visible, enabled and stable\n  - element is visible, enabled and stable\n  - performing click action\n',
+    ),
+  );
   const geometry = records.find((r) => r.name === 'failure.json').value.targetGeometry;
   assert.equal(geometry.action.method, 'locator([data-command=pause]).click');
+  assert.equal(geometry.actionStage, 'performing');
   assert.equal(geometry.verdict, 'moved');
   assert.deepEqual(geometry.movedOn, [1, 2]);
   assert.equal(geometry.firstDifferingAncestor, 'div.run-controls');
@@ -812,4 +817,10 @@ test('a failed action records its target geometry over the next frames and says 
   // The verdict alone: one frame is starvation, equal boxes are stable.
   assert.equal(geometryVerdict([frame(0, 100, 90)]).verdict, 'starved');
   assert.equal(geometryVerdict([frame(0, 100, 90), frame(16, 100, 90)]).verdict, 'stable');
+  // The call-log stage tells "never stable" from "stable, then the click never landed".
+  const { actionStage } = await import('../scripts/browser-session.mjs');
+  assert.equal(actionStage('Call log:\n  - waiting for element to be visible, enabled and stable\n'), 'waiting');
+  assert.equal(actionStage('- element is not stable\n  - retrying click action'), 'not-stable');
+  assert.equal(actionStage('- performing click action\n  - waiting for scheduled navigations to finish'), 'navigations');
+  assert.equal(actionStage('Expected values to be strictly deep-equal'), null);
 });
