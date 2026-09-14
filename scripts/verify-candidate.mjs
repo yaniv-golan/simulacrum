@@ -65,11 +65,13 @@ const timing = createTiming({
   },
 });
 // Read selected prior report before overwriting the ordinary latest pointer.
-const afterArgs = parseAfterArgs(process.argv.slice(2));
-const argv = afterArgs.rest;
-let previous,
+let argv = process.argv.slice(2),
+  previous,
   retry = null;
 try {
+  // Argument errors must still publish a failed report rather than leave a stale green one.
+  const afterArgs = parseAfterArgs(argv);
+  argv = afterArgs.rest;
   previous =
     argv[0] === 'resume' && argv.length === 2 ? JSON.parse(readFileSync(argv[1], 'utf8')) : null;
   if (afterArgs.after) {
@@ -105,7 +107,9 @@ try {
     }
     retry.mode = afterMode({ sameSource, sameDependencies, sameIdentity });
     report.after.mode = retry.mode;
+    report.after.sameBytes = { sameSource, sameDependencies, sameIdentity };
     report.after.environment = environmentForensics();
+    if (parent.tier !== tier) throw Error('--after tier differs from the parent attempt tier');
     if (tier === 'merge') {
       const scope = mergeChanges(options);
       options.base = scope.refs.base;
@@ -122,6 +126,12 @@ try {
       ({ candidate, installed, installedAt } = descriptor);
       if (descriptor.tier !== tier)
         throw Error('--after tier differs from the parent attempt tier');
+      // The frozen clone was captured for one scope; a retry may not change it.
+      for (const key of ['base', 'incoming', 'destination'])
+        if ((descriptor.options?.[key] ?? null) !== (options[key] ?? null))
+          throw Error(`--after must repeat the parent attempt's --${key}`);
+      if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
+        throw Error('parent candidate bytes changed');
       if (resolve(candidate.destination) !== join(directory, 'source'))
         throw Error('candidate location mismatch');
       report.parentAttempt = parent.attempt;
@@ -144,10 +154,16 @@ try {
       // The byte delta between the two captured candidates drives selection under the tier's policy.
       const before = parent.candidate?.files ?? {},
         after = candidate.files ?? {};
-      options.changedFiles = [...new Set([...Object.keys(before), ...Object.keys(after)])]
-        .filter((path) => before[path]?.sha256 !== after[path]?.sha256)
+      const delta = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+        .filter(
+          (path) =>
+            before[path]?.sha256 !== after[path]?.sha256 ||
+            before[path]?.mode !== after[path]?.mode,
+        )
         .sort();
-      report.after.delta = options.changedFiles;
+      report.after.delta = delta;
+      // Only local and merge select by file list; final always runs its full coverage.
+      if (tier !== 'final') options.changedFiles = delta;
       write();
       await timing.measure('install', () =>
         runProcess('npm', ['ci', '--prefer-offline'], {
@@ -232,7 +248,9 @@ try {
   mkdirSync(attemptDirectory, { recursive: true, mode: 0o700 });
   attemptOutput = join(attemptDirectory, 'report.json');
   const ledger = join(attemptDirectory, 'ledger.json');
-  const manifest = retry ? JSON.parse(readFileSync('scripts/manifest.json', 'utf8')) : null;
+  const manifest = retry
+    ? JSON.parse(readFileSync(join(candidate.destination, 'scripts/manifest.json'), 'utf8'))
+    : null;
   if (retry) {
     retry.reexecute = reexecutionSet({ classification: retry.classification, manifest });
     retry.reuse =

@@ -8,8 +8,8 @@ const stable = (value) =>
 /** Environment that changes what a check does or selects. Terminal, cwd and private variables
  * must not change identity, or no two invocations ever share a receipt. */
 export const RELEVANT_ENVIRONMENT = Object.freeze({
-  names: Object.freeze(['NODE_ENV', 'FEEDBACK_SOURCE']),
-  prefixes: Object.freeze(['PLAYWRIGHT_', 'SIMULACRUM_BROWSER_']),
+  names: Object.freeze(['NODE_ENV', 'NODE_OPTIONS', 'FEEDBACK_SOURCE']),
+  prefixes: Object.freeze(['PLAYWRIGHT_', 'PLAYTEST_', 'SIMULACRUM_BROWSER_']),
 });
 const attemptScopedKeys = [
   'SIMULACRUM_VERIFICATION_WINDOW',
@@ -21,8 +21,11 @@ const digestEnvironment = (entries) =>
     .update(stable(Object.fromEntries(entries)))
     .digest('hex');
 export function relevantEnvironmentDigest(env = process.env) {
+  // The verification runtime defaults NODE_ENV to production before any check runs; digest the
+  // same default so the candidate command and the tier agree on identity.
+  const entries = Object.entries({ ...env, NODE_ENV: env.NODE_ENV ?? 'production' });
   return digestEnvironment(
-    Object.entries(env).filter(
+    entries.filter(
       ([k]) =>
         RELEVANT_ENVIRONMENT.names.includes(k) ||
         RELEVANT_ENVIRONMENT.prefixes.some((prefix) => k.startsWith(prefix)),

@@ -186,7 +186,10 @@ test('an unrestricted save policy is a predicate: non-process, aggregate and tim
     await run.check('browser:perf', {}, () => ({ code: 0 }));
     await run.check('browser:mirror', {}, () => ({ code: 0 }));
     await run.check('unit:test/a.test.mjs', {}, () => ({ code: 0 }));
-    assert.ok(run.receipts().every((r) => r.ok === true), 'no leaf failed because of the save policy');
+    assert.ok(
+      run.receipts().every((r) => r.ok === true),
+      'no leaf failed because of the save policy',
+    );
     const reader = (id) =>
       createLeafLedger({ directory: dir, key, identity, eligible: [id] }).load(id, {});
     assert.equal(reader('ci:budget'), null);

@@ -640,11 +640,15 @@ expired automatically: establish the prior process tree has stopped before recov
 
 A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
 --after <attempt-report.json> --cause <checkId>=<diagnosed cause>`. Every failed or
-unexecuted leaf of the parent needs its own cause; one cause on an aborted aggregate (for
-example `ci`) covers the leaves that never ran beneath it. On identical source bytes,
-installed dependencies and relevant identity (runtime, platform, browser runtime and the
-declared relevant environment — `NODE_ENV`, `FEEDBACK_SOURCE`, `PLAYWRIGHT_*`,
-`SIMULACRUM_BROWSER_*`; other variables are recorded forensically, not bound) the retry
+unexecuted leaf of the parent needs its own cause; one cause on the aggregate that listed
+unexecuted files (for example `ci:budget`) covers exactly those files, and a cause on an
+aborted phase (`ci`, `browser`) records that the leaves beneath it never ran. On identical
+source bytes, installed dependencies (which pin the browser runtime) and relevant identity
+(runtime, platform and the declared relevant environment — `NODE_ENV` defaulting to
+`production` as the tier does, `NODE_OPTIONS`, `FEEDBACK_SOURCE`, `PLAYWRIGHT_*` including
+`PLAYWRIGHT_BROWSERS_PATH`, `PLAYTEST_*`, `SIMULACRUM_BROWSER_*`; every other variable is
+recorded forensically, not bound, which also lets a plain `resume` accept a different
+terminal) the retry
 reuses the parent directory and the parent's passing unit and browser leaves through the
 signed ledger, each naming its origin attempt and bounded to three chained attempts. Non-pass
 leaves, the registered controls of their invariants, the checks of invariants a failed control
@@ -653,10 +657,14 @@ aggregates always execute. When bytes, dependencies or identity differ, the retr
 fresh candidate, loads no receipt, and passes the byte delta between the two candidates to the
 tier as `--changed-files`, which the tier's own selection policy classifies exactly as it would
 a git diff (risky paths and unknown inputs still select everything); leaves omitted that way are
-recorded as `skippedByDelta`, reasoning rather than evidence. A passing retry reports
-`passed after failure`, never plain `passed`, with the causes, reused origins, re-executed and
-always-fresh leaves in its `after` block; readers that admit candidate reports decide about that
-status explicitly. This is the diagnosed retry the norm above requires, not a retry-to-green.
+recorded as `skippedByDelta`, reasoning rather than evidence. A retry that reused a receipt
+or skipped a leaf by delta reports `passed after failure`, never plain `passed`; a retry that
+re-executed everything reports `passed` with the same `after` block. Either way every
+non-pass leaf of the parent must appear in the child as an executed passing receipt, or the
+retry fails. Tampered or oversized receipts fail closed. The `after` block carries the causes,
+reused origins with their attempt and chain depth (three attempts at most), the re-executed
+non-pass leaves, the controls they pulled in and the always-fresh leaves. This is the diagnosed
+retry the norm above requires, not a retry-to-green.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested

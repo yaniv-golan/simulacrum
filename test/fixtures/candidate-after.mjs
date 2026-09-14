@@ -21,7 +21,8 @@ const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, ''
 const [mode, rootArg, parentReport, ...flags] = process.argv.slice(2);
 const root = rootArg === 'new' ? mkdtempSync('/tmp/candidate-after-') : rootArg;
 const flag = (name) => flags.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1);
-const calls = [];
+const calls = [],
+  unitRuns = [];
 const manifest = {
   browserChecks: [
     { id: 'x', script: 'scripts/x.mjs', tier: 'browser' },
@@ -46,7 +47,11 @@ const filesOf = (dir) => {
       if (rel.startsWith('artifacts') || rel.startsWith('node_modules') || rel.startsWith('.git'))
         continue;
       if (statSync(p).isDirectory()) visit(p);
-      else out[rel] = { sha256: createHash('sha256').update(readFileSync(p)).digest('hex'), mode: 420 };
+      else
+        out[rel] = {
+          sha256: createHash('sha256').update(readFileSync(p)).digest('hex'),
+          mode: 420,
+        };
     }
   };
   visit(dir);
@@ -82,8 +87,13 @@ globalThis.candidateTransport = {
     return 'NOT_EVALUATED';
   },
   async run(binary, args, options) {
-    calls.push({ kind: 'process', binary, args, cwd: options.cwd });
+    calls.push({ kind: 'process', binary, args, cwd: options?.cwd });
     if (binary === 'npm') return { code: 0 };
+    // Unit leaves inside the emulated tier: record the execution, never spawn.
+    if (args[0] === '--test') {
+      unitRuns.push(`unit:${args[1]}`);
+      return { code: 0, output: `ran ${args[1]}` };
+    }
     const tier = args[1].match(/verify-(\w+)\.mjs/)[1];
     const previous = process.cwd(),
       env = { ...process.env };
@@ -124,7 +134,11 @@ globalThis.candidateTransport = {
           });
         });
         await phase('browser', async () => {
-          await context.check('build:browser', { mode: 'production' }, leaf('build:browser', { code: 0 }));
+          await context.check(
+            'build:browser',
+            { mode: 'production' },
+            leaf('build:browser', { code: 0 }),
+          );
           for (const id of ['browser:x', 'browser:perf']) {
             if (omit.includes(id)) continue;
             await context.check(id, { script: id }, () => {
@@ -147,7 +161,7 @@ globalThis.candidateTransport = {
           ...context.identity,
           results,
           checks: context.receipts(),
-          executed,
+          executed: [...executed, ...unitRuns],
           changedFiles: args.includes('--changed-files')
             ? args.slice(args.indexOf('--changed-files') + 1)
             : null,
@@ -180,12 +194,14 @@ registerHooks({
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
-      source = 'export function assertRuntime() {} export async function assertLocalServerAccess() {}';
+      source =
+        'export function assertRuntime() {} export async function assertLocalServerAccess() {}';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source =
         'export const runProcess=(...a)=>globalThis.candidateTransport.run(...a); export const runModuleCheck=async()=>({code:0});';
     if (url === `file://${repo}/scripts/source-identity.mjs`)
-      source = 'export function sourceIdentity() { return { head: "fixture", workingTreeDigest: "fixture" }; }';
+      source =
+        'export function sourceIdentity() { return { head: "fixture", workingTreeDigest: "fixture" }; }';
     if (url === `file://${repo}/scripts/app-fingerprint.mjs`)
       source = 'export function appFingerprint() { return "fixture-build"; }';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
@@ -212,7 +228,9 @@ try {
     report = JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8'));
   } catch {}
   process.chdir(repo);
-  console.log('TRANSPORT ' + JSON.stringify({ root, calls, report, exitCode: process.exitCode ?? 0 }));
+  console.log(
+    'TRANSPORT ' + JSON.stringify({ root, calls, report, exitCode: process.exitCode ?? 0 }),
+  );
   if (flag('cleanup') === 'yes') {
     if (report?.directory) rmSync(report.directory, { recursive: true, force: true });
     rmSync(root, { recursive: true, force: true });

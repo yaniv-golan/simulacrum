@@ -30,11 +30,21 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   assert.equal(bad.status, 1);
   assert.equal(bad.report.status, 'failed');
   assert.match(bad.report.error, /browser:x|browser:perf/);
-  assert.equal(bad.calls.some((c) => c.kind === 'process'), false, 'no process ran');
+  assert.equal(
+    bad.calls.some((c) => c.kind === 'process'),
+    false,
+    'no process ran',
+  );
 
   // Same bytes: the passing unit leaf is reused with its origin; the failure, its control and
   // every timing-sensitive or structural leaf execute; the status is distinct from plain passed.
-  const retry = run('after', first.root, parent, 'x=pass', '--cause=browser:x=late pause landed after the load fell');
+  const retry = run(
+    'after',
+    first.root,
+    parent,
+    'x=pass',
+    '--cause=browser:x=late pause landed after the load fell',
+  );
   assert.equal(retry.status, 0, retry.stderr);
   assert.equal(retry.report.status, 'passed after failure');
   assert.equal(retry.report.directory, first.report.directory, 'same candidate directory');
@@ -51,28 +61,52 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
     report: first.report.attemptReport,
     depth: 1,
   });
-  assert.deepEqual(retry.report.after.reused, [{ id: 'unit:test/a.test.mjs', origin: reused.origin }]);
+  assert.deepEqual(retry.report.after.reused, [
+    { id: 'unit:test/a.test.mjs', origin: reused.origin },
+  ]);
   const executed = retry.report.verification.executed;
-  for (const id of ['browser:x', 'unit:test/geometry.test.mjs', 'browser:perf', 'build:browser', 'check:layers', 'ci:budget'])
+  for (const id of [
+    'browser:x',
+    'unit:test/geometry.test.mjs',
+    'browser:perf',
+    'build:browser',
+    'check:layers',
+    'ci:budget',
+  ])
     assert.ok(executed.includes(id), `${id} executed`);
   assert.equal(executed.includes('unit:test/a.test.mjs'), false);
   assert.ok(retry.report.after.reexecuted.includes('browser:x'));
   assert.ok(retry.report.after.reexecuted.includes('unit:test/geometry.test.mjs'));
   assert.ok(retry.report.after.controls.includes('unit:test/geometry.test.mjs'));
-  assert.ok(retry.report.after.alwaysFresh.includes('browser:perf'));
+  assert.ok(retry.report.after.alwaysFresh.includes('build:browser'));
+  assert.ok(retry.report.after.alwaysFresh.includes('check:layers'));
   assert.equal(retry.report.after.causes['browser:x'], 'late pause landed after the load fell');
   assert.deepEqual(retry.report.after.chain, [first.report.attempt]);
   assert.equal(receipt(retry.report, 'ci:budget').ok, true, 'a non-process leaf still completes');
 
   // A retry whose child never observed the failed leaf executing cannot pass after failure.
-  const omitted = run('after', first.root, parent, 'x=pass', 'omit=browser:x', '--cause=browser:x=late pause');
+  const omitted = run(
+    'after',
+    first.root,
+    parent,
+    'x=pass',
+    'omit=browser:x',
+    '--cause=browser:x=late pause',
+  );
   assert.equal(omitted.status, 1);
   assert.equal(omitted.report.status, 'failed');
   assert.match(omitted.report.error, /browser:x/);
 
   // Different bytes: fresh capture, the byte delta reaches the tier, no receipt loads, and a
   // child that executed everything without reuse is plain passed with the after block present.
-  const delta = run('after', first.root, parent, 'x=pass', 'touch=src.mjs', '--cause=browser:x=late pause');
+  const delta = run(
+    'after',
+    first.root,
+    parent,
+    'x=pass',
+    'touch=src.mjs',
+    '--cause=browser:x=late pause',
+  );
   t.after(() => {
     if (delta.report?.directory) rmSync(delta.report.directory, { recursive: true, force: true });
   });
@@ -81,7 +115,10 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   assert.notEqual(delta.report.directory, first.report.directory);
   assert.deepEqual(delta.report.after.delta, ['src.mjs']);
   assert.deepEqual(delta.report.verification.changedFiles, ['src.mjs']);
-  assert.equal(delta.report.verification.checks.some((r) => r.resumed), false);
+  assert.equal(
+    delta.report.verification.checks.some((r) => r.resumed),
+    false,
+  );
   assert.deepEqual(delta.report.after.reused, []);
   assert.equal(delta.report.status, 'passed');
 });

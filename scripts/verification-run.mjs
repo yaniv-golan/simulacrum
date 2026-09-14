@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createLeafLedger } from './verification-resume.mjs';
+import { reusableLeaf } from './candidate-after.mjs';
 import {
   RELEVANT_ENVIRONMENT,
   relevantEnvironmentDigest,
@@ -120,7 +121,9 @@ export function createVerificationContext(options) {
         ...shared,
         directory: config.output,
         eligible: [],
-        saveEligible: null,
+        // Only leaves a diagnosed retry may reuse are saved: unit files and browser checks that
+        // are not timing-sensitive. Aggregates, gates and builds never enter the ledger.
+        saveEligible: (id) => reusableLeaf(id, manifest),
         origin: config.origin ?? null,
       }),
       ...(config.previous

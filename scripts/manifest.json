@@ -4785,7 +4785,7 @@
       "id": "candidate-resume-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, always-fresh checks, aggregates and unknown leaves execute, every non-pass leaf carries a diagnosed cause, and the report says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports.",
+      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, timing-sensitive checks, aggregates and unknown leaves execute and are observed as executed passing receipts, every non-pass leaf carries a diagnosed cause, tampered or oversized receipts fail closed, and a report that reused a receipt says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports.",
       "owners": [
         {
           "path": "scripts/verification-resume.mjs",

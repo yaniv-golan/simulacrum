@@ -9,8 +9,8 @@ const canonical = (v) =>
   );
 import { CHAIN_DEPTH_LIMIT } from './candidate-after.mjs';
 /** Local key is held outside source. This detects modified receipts, not a hostile same-UID key owner.
- * `eligible` gates loads; `saveEligible` (null = every leaf) gates saves so a diagnosed retry can
- * reuse leaves a plain resume never reads. `origin` names the attempt that produced fresh leaves. */
+ * `eligible` gates loads; `saveEligible` (a predicate, a list, or null for every leaf) gates saves
+ * so a diagnosed retry can reuse leaves a plain resume never reads. `origin` names the attempt that produced fresh leaves. */
 export function createLeafLedger({
   directory,
   key,
@@ -21,7 +21,12 @@ export function createLeafLedger({
 }) {
   if (!Buffer.isBuffer(key) || key.length !== 32) throw Error('32-byte local resume key required');
   const allowed = new Set(eligible),
-    savable = saveEligible === null ? null : new Set(saveEligible ?? eligible),
+    savable =
+      typeof saveEligible === 'function'
+        ? saveEligible
+        : saveEligible === null
+          ? () => true
+          : (id) => new Set(saveEligible ?? eligible).has(id),
     identityKey = canonical(identity);
   const path = (id) => join(directory, createHash('sha256').update(id).digest('hex') + '.json');
   const signature = (payload) => createHmac('sha256', key).update(canonical(payload)).digest();
@@ -55,7 +60,7 @@ export function createLeafLedger({
       return p;
     },
     save(id, configuration, value, elapsedMs, leafOrigin = null) {
-      if (savable && !savable.has(id)) return;
+      if (!savable(id)) return;
       if (value?.code !== 0) throw Error('only successful process leaves may be saved');
       const payload = {
         id,
