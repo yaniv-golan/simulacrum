@@ -1,5 +1,6 @@
 import { failureControlView } from './invariant-coverage.mjs';
 import { readManifest } from './validate-manifest.mjs';
+import { hostProfileStateLine } from './host-profile.mjs';
 const manifest = readManifest();
 const checks = [
   ...manifest.checks,
@@ -30,3 +31,4 @@ if (args.length && (args.length !== 1 || args[0] !== '--failures')) {
       `${rule.id} | ${rule.rule} | ${owners.length ? [...new Set(owners)].join(', ') : 'UNENFORCED'}`,
     );
   }
+if (!args.length && hostProfileStateLine(manifest)) console.log(hostProfileStateLine(manifest));

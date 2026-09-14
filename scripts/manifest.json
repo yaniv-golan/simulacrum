@@ -9712,5 +9712,25 @@
     "unit:test/control-bindings.test.mjs",
     "unit:test/connection-graph.test.mjs",
     "unit:test/power.test.mjs"
-  ]
+  ],
+  "hostProfiles": {
+    "github-ubuntu-2cpu": {
+      "measurement": true,
+      "measurementRuns": [],
+      "moduleTimeoutMs": 30000,
+      "unitTimeoutMs": 120000,
+      "unitWorkers": 2,
+      "ciBudgetMs": 900000,
+      "browserWorkers": 2,
+      "browserTimeoutMs": {
+        "default": {
+          "cap": 600000,
+          "factor": 5
+        }
+      },
+      "notEvaluated": [
+        "performance"
+      ]
+    }
+  }
 }

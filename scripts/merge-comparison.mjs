@@ -17,19 +17,29 @@ export function compareMergeCoverage({ full, source, scope, selection, checks })
     selection.some((id) => !ids.includes(id))
   )
     return unavailable('invalid comparison registry or selection');
+  // A hosted profile may register a tier as not evaluated on that platform; such rows are
+  // outcomes, listed apart. An interrupted lowercase 'not evaluated' row is not.
+  const registeredNotEvaluated = (row) =>
+    row.status === 'NOT_EVALUATED' && /^hosted profile [\w-]+: /.test(row.reason ?? '');
   if (
     !Array.isArray(full.runs) ||
     full.runs.length !== ids.length ||
     new Set(full.runs.map((row) => row.id)).size !== ids.length ||
-    full.runs.some((row) => !ids.includes(row.id) || !['passed', 'failed'].includes(row.status))
+    full.runs.some(
+      (row) =>
+        !ids.includes(row.id) ||
+        (!['passed', 'failed'].includes(row.status) && !registeredNotEvaluated(row)),
+    )
   )
     return unavailable('full check outcomes incomplete or invalid');
   const omittedFailures = full.runs
     .filter((row) => !selection.includes(row.id) && row.status === 'failed')
     .map((row) => row.id);
+  const notEvaluated = full.runs.filter(registeredNotEvaluated).map((row) => row.id);
   return {
     status: omittedFailures.length ? 'COVERAGE_GAP' : 'NO_OBSERVED_GAP',
     omittedFailures,
+    notEvaluated,
     limitation: 'One full run observes disagreement; it does not prove omission safety.',
   };
 }

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createLeafLedger } from './verification-resume.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
+import { readHostProfile, profileDeadline } from './host-profile.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { runProcess, runModuleCheck } from './run-check.mjs';
@@ -40,6 +41,7 @@ export function verificationIdentity() {
 }
 /** Invocation receipts may reconstruct audited same-candidate leaves. Every reuse revalidates identity. */
 export function createVerificationRun({
+  hostProfile = null,
   readIdentity = verificationIdentity,
   resumeLedger,
   writeLedger,
@@ -158,12 +160,17 @@ export function createVerificationContext(options) {
       throw error;
     }
   }
+  const hostProfile = readHostProfile(
+    JSON.parse(readFileSync('scripts/manifest.json', 'utf8')),
+  );
   const run = createVerificationRun({
+    hostProfile,
     ...ledgerOptions,
     ...options,
     assertAdmission: () => remaining(Infinity),
   });
   return Object.assign(run, {
+    hostProfile,
     async withDeadline(limit, execute) {
       const previous = deadline;
       deadline = Math.min(deadline, performance.now() + limit);
@@ -181,6 +188,7 @@ export function createVerificationContext(options) {
       );
     },
     module(id, path, exportName, args, timeoutMs = 5000) {
+      timeoutMs = profileDeadline(hostProfile, 'moduleTimeoutMs', timeoutMs);
       return run.check(id, { path, exportName, args, timeoutMs }, () =>
         boundedProcess(timeoutMs, (limit) =>
           runModuleCheck(resolve(path), exportName, args, { timeoutMs: limit }),
@@ -192,7 +200,7 @@ export function createVerificationContext(options) {
         failures = [],
         unexecuted = [];
       await Promise.all(
-        Array.from({ length: Math.min(4, queue.length) }, async () => {
+        Array.from({ length: Math.min(hostProfile?.unitWorkers ?? 4, queue.length) }, async () => {
           while (queue.length) {
             // Let process close/watchdog callbacks run before another admission.
             await yieldToProcesses();
@@ -203,7 +211,11 @@ export function createVerificationContext(options) {
             }
             const file = queue.shift();
             try {
-              await this.node(`unit:${file}`, ['--test', file], 30000);
+              await this.node(
+                `unit:${file}`,
+                ['--test', file],
+                profileDeadline(hostProfile, 'unitTimeoutMs', 30000),
+              );
             } catch (error) {
               if (error.code === 'ITERATION_BUDGET_EXHAUSTED' && !error.processDiagnostics)
                 unexecuted.push(file);

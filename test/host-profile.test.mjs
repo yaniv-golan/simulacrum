@@ -72,14 +72,14 @@ test('completion tiers refuse a hosted profile and hosted reports carry their la
   assert.deepEqual(hostedReportFields({ id: 'x', measurement: true }), { hostProfile: 'x', measurement: true });
   assert.deepEqual(ciBudget(null), { limitMs: 180000, deadlineMs: 180000 });
   assert.deepEqual(ciBudget({ id: 'x', ciBudgetMs: 900000 }), { limitMs: 180000, hostedLimitMs: 900000, deadlineMs: 900000 });
-  for (const tier of ['local']) {
-    const child = spawnSync(process.execPath, [`scripts/verify-${tier}.mjs`], {
-      encoding: 'utf8',
-      env: { ...process.env, SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu' },
-    });
-    assert.notEqual(child.status, 0);
-    assert.match(child.stderr + child.stdout, /completion tiers never run under a hosted profile/);
-  }
+  // verify-candidate refuses before writing any report; the tier scripts refuse in
+  // parseCompletionArgs (covered by assertNoHostProfile above without touching artifacts).
+  const child = spawnSync(process.execPath, ['scripts/verify-candidate.mjs', 'local'], {
+    encoding: 'utf8',
+    env: { ...process.env, SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu' },
+  });
+  assert.notEqual(child.status, 0);
+  assert.match(child.stderr + child.stdout, /completion tiers never run under a hosted profile/);
 });
 test('host profiles are registered facts: closed keys, bounded measurement, and per-check budgets once measured', () => {
   assert.doesNotThrow(() => validateManifest(manifest));

@@ -17,6 +17,7 @@ import {
   currentBranch,
 } from './candidate.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
+import { assertNoHostProfile } from './host-profile.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
   dependencyDigest,
@@ -33,6 +34,7 @@ import { runProcess } from './run-check.mjs';
 const origin = process.cwd(),
   originBranch = currentBranch(origin),
   started = performance.now();
+assertNoHostProfile();
 const report = {
   status: 'running',
   qualification: 'NOT_EVALUATED',

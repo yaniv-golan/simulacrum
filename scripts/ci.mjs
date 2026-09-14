@@ -5,10 +5,12 @@ import { createVerificationContext } from './verification-run.mjs';
 import { runStructuralChecks } from './gate-structural.mjs';
 import { invariantTestFiles } from './check-invariant-controls.mjs';
 import { buildModuleGraph } from './module-graph.mjs';
+import { ciBudget } from './host-profile.mjs';
 export async function runCI(context = createVerificationContext()) {
   await context.check('environment:localhost', {}, assertLocalServerAccess);
-  return context.check('ci:budget', { limitMs: 180000 }, () =>
-    context.withDeadline(180000, async () => {
+  const { deadlineMs, ...budget } = ciBudget(context.hostProfile ?? null);
+  return context.check('ci:budget', budget, () =>
+    context.withDeadline(deadlineMs, async () => {
       const start = performance.now();
       const structural = await runStructuralChecks(undefined, context, {
         stopOnFailure: true,
@@ -23,7 +25,7 @@ export async function runCI(context = createVerificationContext()) {
         ]),
       ]);
       const elapsedMs = performance.now() - start;
-      if (elapsedMs >= 180000) throw Error(`iteration-budget: ${elapsedMs}ms`);
+      if (elapsedMs >= deadlineMs) throw Error(`iteration-budget: ${elapsedMs}ms`);
       const resumed = context.receipts().filter((r) => r.resumed).length;
       const timingClaim = resumed
         ? 'resumed work only; not a fresh CI duration qualification'

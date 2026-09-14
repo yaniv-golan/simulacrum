@@ -288,7 +288,7 @@ comparison, not evidence that two branches were integrated. Neither command inst
 changes. For already frozen CI copies, `npm run verify:merge -- --base <commit>` is
 the direct equivalent. Selected and omitted browser checks include reasons.
 
-Full browser coverage remains scheduled and required for releases and qualification.
+Full browser coverage remains scheduled and required for releases and qualification. The scheduled hosted run executes under a registered host profile: deadlines are the profile's registered values (never shorter than the local ones), performance-tier checks are reported `NOT_EVALUATED` with the platform reason rather than executed, a profile in measurement mode labels every report `measurement` and is never evidence, and completion tiers refuse to run under any profile.
 CI preserves separate unit and browser jobs: pull requests use the pinned event tips
 and actual merge checkout, while missing push history selects full coverage. Scheduled
 full runs compare last-commit merge selection only when matching complete evidence is
