@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"927cc61d7590f1fcfe7ce6fbeb17071a3a1a04cd8e42971b9f68edc1b55b8670","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e9f096473e607a39d41b78461a173bb8796bb30ad2a8a6268fc27b320ac8d945","disposition":"still accurate","rationale":"AGENTS.md's verification paragraph now states that every browser check is executed, or reported NOT_EVALUATED with a registered platform reason, on a registered platform daily (the hosted nightly under hostProfiles) beside the phased-scheduler sentence; entry commands, layer table and ownership map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"62e473f146ef25ed2b58c28912ab708ff543caa0da39aa32b975edc6da81635d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b51347d6c15bb3f29f9876c1dd3efd59f0c8bcab3d135eb7710423f88fdc5153","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): AGENTS.md's verification paragraph was rewritten (timing-budget checks run in a merge tier only when the delta reaches what they measure); the guide's entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"75e32a00b62ee8afa69cb65adad1af9688a4a1b3c908136306cb4f8afe8b1ca8","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"56709387ad9170aa5e23bcf77210c811edfc1e7fbf9be36a56edaa96be3340bf","disposition":"still accurate","rationale":"The changed dependency is the playtesting remote-setup explanation rewritten for default-on feedback attachments; tiers, commands, window policy and evidence requirements here are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"ec7bab10b72ba33ef238dfb5c2babc761263b8afcb66e7c144d697cb866bc00e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"1a9b2b5c3a1aeb189f618fe16440ebf2a076177c129f6f8c8002d8590e9cad6e","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): runtime-preflight.mjs gained assertAwake (the tier keeps the host awake itself); the commands this section names and their semantics are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c362cbb1cebb8e246af782a802e4e547149945947b66ac005fdaf5f1eb7ef8e1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d40284d3bb8719cdac051bfb72f6774cc40c37c68d9e2c1555a1fb9e701a7add","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): only the mechanical-audio-truth invariant's guarantee text and a control anchor changed in scripts/manifest.json; browser selection, scope rows, scheduling and admission are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"289136f8df964ad3e108045ce98884a4181698a8023be5395ab18cd3609304fb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d725cd3a8d3850b7353f6252b04f30dd9314c16397b58197e1ddcc2ece00dbb","disposition":"updated","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): the scheduling paragraph now describes the timing admission's host-pressure sampling (CPU idle over one second and the busiest foreign processes, recorded in timingAdmission.pressure, enforced by SIMULACRUM_TIMING_PRESSURE), the launch admission before the CI phase with its not-evaluated refusal row, host-slept labelling of sleep-spanning leaves, and merge tiers selecting timing-budget rows by their manifest `measures` class or import closure with final and a local all-checks run executing every row. Verified against check-sequence.mjs, host-pressure.mjs, verification-tiers.mjs, run-check.mjs, merge-selection.mjs and browser-selection.mjs."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -556,7 +556,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6d41390ab605cb158779c3a325c5bc1d010e8a6f309b904e4371ade167b3e615","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4ee661668f8a134cc4cdc01a6b39570d78c574158974a885f3616d18d1dde0fc","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): run-check's process inventory moved to process-inventory.mjs and the runner gained a sleep heartbeat; the launch admission waits inside the window (≤ 60 s) — window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -605,7 +605,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0ec7bf41caf82a15875ae230c07c9220ede3245878a6e15d0d4b42db49a4a32b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"357c8e627cfee24a15cf70365162fa58d031faa838580820694d4710ef65cbd9","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): manifest changes are an invariant guarantee and control anchor; candidate capture, dependency validation, resume and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"50e4d73db815157e7fbf49433790d27d65073d2badec1524fb0b1f73bff97bfc","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1b08b9f589eca04b238d7fb5b2b501ee7e940e2a3a0dd05f16634acb288492d4","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): the candidate records launchNiceness and sleepAssertion and its tiers run a launch admission; capture, dependency validation, resume and what a report certifies are unchanged; the recipe already says caffeinate -dis."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

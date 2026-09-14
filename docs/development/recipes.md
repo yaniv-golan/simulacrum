@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"4304587a608fb07907cafa3141dc3d7a1103fa43195f95a7b6252460978c09fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5fff03b83ec21369f00d535d4cc92e47c14da6f8607454ab15a6917064e7e399","disposition":"still accurate","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is the presentation audio policy, its browser check and its unit test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"537a4512a1f711b0ba89f42f4c8fc2fc6de7665becddbb2220d9bf21a989f715","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"40ca5ce155fb021b392efc12d88e7caa68dd949ac25f29ec9ce40a572e1eb8f4","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (admission, selection by measured scope, sleep attribution, launch assertions) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected; a physics delta still selects every timing-budget check."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
