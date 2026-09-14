@@ -5975,7 +5975,7 @@
       "id": "independent-feedback-receipts",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification. A submission is stored once as the exact bytes behind its upload hash, with the envelope read back from them.",
       "owners": [
         {
           "path": "src/application/feedback-context.mjs",
@@ -6038,6 +6038,14 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "Send stays disabled while an attachment save is pending"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "frozen items persist their bytes once and read the envelope back from them"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "one stored copy leaves room the doubled copy did not"
           }
         ],
         "negative": [
@@ -6080,6 +6088,10 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "text-only stores attach nothing by default and keep the controls hidden"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "legacy rows read their bytes as truth and drop the second copy on write"
           }
         ]
       },
