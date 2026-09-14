@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementScope, footerModel } from '../src/presentation/workbench-content.mjs';
+import {
+  movementScope,
+  footerModel,
+  modeControlState,
+} from '../src/presentation/workbench-content.mjs';
 
 test('scope predicts multi-part direct dragging and rotation before the gesture', () => {
   assert.equal(
@@ -44,4 +48,24 @@ test('footer model composes mode, count and message and drops Next when nothing 
     footerModel({ mode: 'paused', status: 'ok', tick: 30, parts: 2 }).mode,
     'Paused · tick 30',
   );
+});
+test('mode switch state follows the frame mode and hides stepping in Build', () => {
+  assert.deepEqual(modeControlState('build'), {
+    build: true,
+    run: false,
+    stepping: false,
+    stepEnabled: false,
+  });
+  assert.deepEqual(modeControlState('run'), {
+    build: false,
+    run: true,
+    stepping: true,
+    stepEnabled: false,
+  });
+  assert.deepEqual(modeControlState('paused'), {
+    build: false,
+    run: true,
+    stepping: true,
+    stepEnabled: true,
+  });
 });

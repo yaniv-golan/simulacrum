@@ -5,6 +5,7 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
 import { createPart, createEmptyBlueprint } from '../src/model/blueprint.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { openTools } from './catalog-browser-actions.mjs';
 const assertMinimumPixels = ({
   pixelRatio,
   devicePixelRatio,
@@ -457,8 +458,10 @@ try {
   const measuredChassis = cartInitial.metadata.blueprint.parts.find((p) => p.type === 'chassis');
   await select(measuredChassis.id);
   const measurementsButton = page.getByRole('button', { name: 'Measurements', exact: true });
-  if ((await measurementsButton.getAttribute('aria-pressed')) !== 'true')
+  if ((await measurementsButton.getAttribute('aria-pressed')) !== 'true') {
+    await openTools(page);
     await measurementsButton.click();
+  }
   await page.locator('[data-command=run]').click();
   await page.keyboard.down('w');
   try {

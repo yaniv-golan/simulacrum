@@ -1,5 +1,5 @@
 import { liveWait } from './browser-idle.mjs';
-import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, browseAllParts, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
 import { CATALOG } from '../src/model/catalog.mjs';
@@ -325,6 +325,7 @@ try {
   evidence.assert('equal', [await wiring.isChecked(), true, 'resume retains run preference']);
   await page.locator('[data-command=build]').click();
   evidence.assert('equal', [await wiring.isChecked(), false, 'restores build preference']);
+  await openTools(page);
   await page.getByRole('button', { name: 'New', exact: true }).click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   evidence.assert('equal', [

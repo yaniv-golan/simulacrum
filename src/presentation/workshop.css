@@ -122,6 +122,72 @@ button.primary:hover:not(:disabled) {
   border-color: #f2b46a;
   color: #f2b46a;
 }
+/* One Build | Run switch: the pressed segment reads as the current mode, not as a disabled button. */
+.mode-switch {
+  display: inline-flex;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-switch button {
+  border-radius: 0;
+  margin: 0;
+}
+.mode-switch button[aria-pressed='true'] {
+  background: #f2b46a;
+  color: #17232b;
+  border-color: #ffcb8d;
+  font-weight: 700;
+  opacity: 1;
+}
+.modebar button[hidden] {
+  display: none;
+}
+/* Occasional tools under one summary; the list opens below and closes on pick, Escape or blur. */
+.tools-menu {
+  position: relative;
+}
+.tools-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  min-width: 79px;
+  padding: 8px 12px;
+  border: 1px solid #3b4d56;
+  border-radius: 8px;
+  background: #17232b;
+  color: #d5e3ea;
+  font-size: 12px;
+  text-align: center;
+  user-select: none;
+}
+.tools-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.tools-menu[open] > summary {
+  border-color: #f2b46a;
+  color: #f2b46a;
+}
+.tools-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid #627b77;
+  border-radius: 8px;
+  background: #172a32;
+  box-shadow: 0 8px 24px #0009;
+}
+.tools-list button {
+  width: 100%;
+  text-align: left;
+}
+.tools-list button[hidden] {
+  display: none;
+}
 .filebar button {
   font-size: 12px;
   background: transparent;

@@ -19,3 +19,9 @@ export async function placeCatalogPartByName(page, name) {
   await page.getByRole('button', { name: 'Place part', exact: true }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
 }
+
+/** Open the header's Tools menu, where the occasional commands live; idempotent. */
+export async function openTools(page) {
+  const menu = page.locator('details.tools-menu');
+  if (!(await menu.evaluate((node) => node.open))) await menu.locator('summary').click();
+}

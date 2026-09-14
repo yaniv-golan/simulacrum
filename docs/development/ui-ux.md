@@ -130,9 +130,13 @@ they do not automatically judge whether a new activity deserves admission.
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-document and run actions in the header; parts in the left catalogue; separate edit
-and view groups at the workbench edge; selected properties and operations in the
-inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
+in the header, one Build | Run switch (Pause and Step appear once the clock can run;
+Step acts only while paused), Undo, Redo, Save, Choose scene, Edit scene, Learn &
+examples and Help stay visible, and the occasional commands — Check machine,
+Measurements, Assemblies, New, Load — live under one Tools ⋯ menu that closes on pick,
+Escape or leaving it, each keeping its name and `data-command`; parts in the left
+catalogue; separate edit and view groups at the workbench edge; selected properties and
+operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 The selected part's header carries one summary line from
 [inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
@@ -159,7 +163,7 @@ Escape first cancels an active pickup, including when search has focus, and rest
 the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
 header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
 At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
-full width while Assemblies and recording remain retrievable.
+full width while Assemblies (in the Tools menu) and recording remain retrievable.
 Recent records accepted catalog placements. Expanded and compact catalogs are requested
 surfaces; picking closes them and cancellation restores the origin. The existing About
 window retains Overview and How to connect, with diagram links that reveal catalog
@@ -269,7 +273,7 @@ body, origin tick, window and sample count. New runs, selection and restored ses
 identity start a visibly new window; missing completed history makes the measurement
 unavailable. Closing measurements neither resets the plant nor hides boundary faults.
 
-Assemblies opens a bounded, searchable browser with rendered geometry and All assemblies,
+Assemblies (under the header's Tools menu) opens a bounded, searchable browser with rendered geometry and All assemblies,
 Built-in and My saved filters. Spring strut is supplied as a built-in definition by the
 application; it is not seeded into personal browser storage. Built-ins share the placement
 preview and have no rename/remove actions. The separate Spring strut palette button is removed.

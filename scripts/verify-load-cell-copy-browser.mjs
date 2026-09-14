@@ -9,6 +9,7 @@ import {
   placeLoadCellControl as place,
   wireLoadCellPart as wire,
 } from './load-cell-browser-actions.mjs';
+import { openTools } from './catalog-browser-actions.mjs';
 
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/load-cell-copy-browser');
@@ -31,6 +32,7 @@ try {
     await page.getByRole('checkbox', { name: `Include ${part.name}`, exact: true }).check();
   await page.getByLabel('Assembly name', { exact: true }).fill('Force stand');
   await page.getByRole('button', { name: 'Create and save assembly', exact: true }).click();
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Assemblies', exact: true });
   await dialog.getByRole('button', { name: 'Force stand', exact: true }).click();

@@ -18,7 +18,7 @@ import {
   applyGraphicsQuality,
   createGraphicsRenderer,
 } from './graphics-quality.mjs';
-import { footerModel, movementScope } from './workbench-content.mjs';
+import { footerModel, modeControlState, movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
@@ -162,6 +162,7 @@ export function createWorkshopView(
     copySequence = 0,
     followCenter = null,
     guideActive = false,
+    footerReady = false,
     editing,
     mirror,
     frame = null,
@@ -300,7 +301,33 @@ export function createWorkshopView(
   keyBadge(run, 'Space');
   keyBadge(pause, 'Space');
   keyBadge(stepButton, '.');
-  modebar.append(run, pause, build, stepButton);
+  // One Build | Run switch; Pause and Step appear only once the clock can run.
+  const modeSwitch = element('div', 'mode-switch');
+  modeSwitch.setAttribute('role', 'group');
+  modeSwitch.setAttribute('aria-label', 'Mode');
+  build.title = 'Return to Build restores the editable starting machine';
+  modeSwitch.append(build, run);
+  modebar.append(modeSwitch, pause, stepButton);
+  // Occasional tools live under one menu; each keeps its name and data-command.
+  const toolsMenu = element('details', 'tools-menu'),
+    toolsSummary = element('summary', '', 'Tools ⋯'),
+    toolsList = element('div', 'tools-list');
+  toolsSummary.setAttribute('aria-label', 'Tools');
+  toolsMenu.append(toolsSummary, toolsList);
+  toolsList.addEventListener('click', (event) => {
+    if (event.target.closest('button')) toolsMenu.open = false;
+  });
+  toolsMenu.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && toolsMenu.open) {
+      toolsMenu.open = false;
+      toolsSummary.focus();
+      event.stopPropagation();
+    }
+  });
+  toolsMenu.addEventListener('focusout', (event) => {
+    if (!toolsMenu.contains(event.relatedTarget)) toolsMenu.open = false;
+  });
+  modebar.append(toolsMenu);
   const filebar = element('div', 'filebar');
   const failureButton = button('Failure record', () => onFailure?.());
   failureButton.dataset.command = 'failure-record';
@@ -328,8 +355,8 @@ export function createWorkshopView(
     chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, newButton),
   );
   newButton.dataset.command = 'new';
+  const loadButton = button('Load', () => loadInput.click());
   filebar.append(
-    newButton,
     button('Save', async () => {
       try {
         await onSave();
@@ -337,8 +364,6 @@ export function createWorkshopView(
         setMessage('The machine could not be saved. Try again.');
       }
     }),
-    button('Load', () => loadInput.click()),
-    failureButton,
     loadInput,
   );
   const undo = button('Undo', () => send({ type: 'undo' })),
@@ -501,9 +526,30 @@ export function createWorkshopView(
     if (!examples.open) examples.showModal();
     cancelReplacement.focus();
   }
+  // The footer follows the guide as well as the frame: entering or leaving a guide changes
+  // "Next:" without a new frame.
+  function refreshFooter() {
+    if (!frame || !footerReady) return;
+    const blueprint = frame.metadata.blueprint;
+    const footerState = footerModel({
+      mode: frame.metadata.mode,
+      status: frame.status,
+      tick: frame.tick,
+      parts: blueprint.parts.length,
+      message: message.textContent,
+      next: guideActive
+        ? guideSteps.find((s) => !s.done(blueprint))?.label
+        : (healthSample?.next ?? null),
+    });
+    modeLabel.textContent = footerState.mode;
+    partsLabel.textContent = footerState.parts;
+    nextLabel.textContent = footerState.next;
+    nextLabel.hidden = !footerState.next;
+  }
   function refreshGuide() {
     // Static requested content must retain focus, disclosure and scroll during ticks.
     if (!guideActive && renderedGuideActive === false) return;
+    refreshFooter();
     renderedGuideActive = guideActive;
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
@@ -912,7 +958,8 @@ export function createWorkshopView(
       setMessage('Finish or cancel the assembly operation first.');
       return;
     }
-    savedAssemblies.open();
+    // The launcher lives in the Tools menu, closed by now; focus returns to the visible control.
+    savedAssemblies.open(toolsSummary);
   });
   const createAssembly = button('Create assembly…', () => {
     if (assemblyPlacement.active()) {
@@ -997,6 +1044,7 @@ export function createWorkshopView(
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
   footer.append(modeLabel, partsLabel, message, nextLabel);
+  footerReady = true;
   body.append(left, viewport, rightPanel);
   root.append(header, body, footer, partHelp.panel);
   const graphicsQuality = createGraphicsQuality();
@@ -1296,7 +1344,6 @@ export function createWorkshopView(
   const tools = element('div', 'edit-toolbar');
   const checkButton = button('Check machine', showMachineCheck);
   checkButton.dataset.command = 'check-machine';
-  modebar.append(checkButton);
   const editGroup = element('div', 'edit-tool-group');
   editGroup.setAttribute('role', 'group');
   editGroup.setAttribute('aria-label', 'Edit tools');
@@ -1431,7 +1478,7 @@ export function createWorkshopView(
     motionReadout.setVisible(open);
   });
   measurements.setAttribute('aria-pressed', 'false');
-  modebar.append(measurements);
+  toolsList.append(checkButton, measurements, savedLauncher, newButton, loadButton, failureButton);
   const machineControlRegion = element('div', 'machine-control-region');
   machinePanels.append(machineControlRegion);
   const vehicleControls = createVehicleControls({ send, select, container: machineControlRegion });
@@ -1592,9 +1639,8 @@ export function createWorkshopView(
         placeAnother.hidden = false;
         refreshAssemblyState();
       },
-      onCancel: () => savedAssemblies.open(savedLauncher),
+      onCancel: () => savedAssemblies.open(toolsSummary),
     });
-    left.insertBefore(savedLauncher, palette);
     rightPanel.insertBefore(createAssembly, machinePicker);
     rightPanel.insertBefore(assemblies.panel, right);
     rightPanel.insertBefore(placeAnother, right);
@@ -4014,29 +4060,20 @@ export function createWorkshopView(
     refreshHealth();
     failureButton.hidden = frame.status !== 'failed';
     empty.hidden = sceneEditor?.active() || blueprint.parts.length > 0 || guideActive;
-    const footerState = footerModel({
-      mode: frame.metadata.mode,
-      status: frame.status,
-      tick: frame.tick,
-      parts: blueprint.parts.length,
-      message: message.textContent,
-      next: guideActive
-        ? guideSteps.find((s) => !s.done(blueprint))?.label
-        : (healthSample?.next ?? null),
-    });
-    modeLabel.textContent = footerState.mode;
-    partsLabel.textContent = footerState.parts;
-    nextLabel.textContent = footerState.next;
-    nextLabel.hidden = !footerState.next;
+    refreshFooter();
     run.classList.toggle('keyed', frame.metadata.mode !== 'run');
     pause.classList.toggle('keyed', frame.metadata.mode === 'run');
     stepButton.classList.toggle('keyed', frame.metadata.mode === 'paused');
     retryButton.hidden = frame.metadata.mode === 'build';
     retryButton.disabled = !!retryCamera;
+    const modeState = modeControlState(frame.metadata.mode);
     run.disabled = frame.metadata.mode === 'run';
+    run.setAttribute('aria-pressed', String(modeState.run));
+    build.setAttribute('aria-pressed', String(modeState.build));
+    pause.hidden = stepButton.hidden = !modeState.stepping;
     pause.disabled = frame.metadata.mode !== 'run';
-    stepButton.disabled = frame.metadata.mode !== 'paused';
-    build.classList.toggle('active', frame.metadata.mode === 'build');
+    stepButton.disabled = !modeState.stepEnabled;
+    build.classList.toggle('active', modeState.build);
     for (const tool of (editToolNodes ??= tools.querySelectorAll('[data-edit-tool], .edit-hint')))
       tool.hidden = frame.metadata.mode !== 'build';
     surfaceSnapLabel.hidden = frame.metadata.mode !== 'build';

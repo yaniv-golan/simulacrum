@@ -1,4 +1,4 @@
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -23,6 +23,7 @@ try {
     await health.textContent(),
     'Not ready to run · power ✗ · axles ✗ · drive set ✓ · Check machine',
   ]);
+  await openTools(page);
   await page.locator('[data-command=check-machine]').click();
   const dialog = page.getByRole('dialog', { name: 'Check machine' });
   browserEvidence.assert('deepEqual', [
@@ -39,6 +40,7 @@ try {
     /Carries electrical power/,
   ]);
   await page.keyboard.press('Escape');
+  await openTools(page);
   await page.locator('[data-command=new]').click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
@@ -64,6 +66,7 @@ try {
   await drive.press('Tab');
   await health.filter({ hasText: /drive set ✗/ }).waitFor();
   browserEvidence.assert('match', [await health.textContent(), /^Ready to run · power ✓/]);
+  await openTools(page);
   await page.locator('[data-command=check-machine]').click();
   browserEvidence.assert('equal', [
     await dialog.locator('[data-diagnostic-code=COMMAND_OFF]').count(),

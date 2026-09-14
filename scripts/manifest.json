@@ -3274,7 +3274,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -3338,6 +3338,10 @@
           {
             "path": "test/starter-guide.test.mjs",
             "anchor": "the guide can still perform every step itself and never reuses an id"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "mode switch state follows the frame mode and hides stepping in Build"
           }
         ],
         "negative": [

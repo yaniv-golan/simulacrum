@@ -2,6 +2,7 @@ import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { openTools } from './catalog-browser-actions.mjs';
 
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/workbench-content');
@@ -127,10 +128,12 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
   await page.locator('[data-command=pause]').click();
   evidence.assert('equal', [await page.locator('.move-scope').isVisible(), false]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), true]);
   await page.locator('[data-command=build]').click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
@@ -199,6 +202,7 @@ try {
   await page.getByRole('button', { name: 'I saved the file — open example', exact: true }).click();
   evidence.assert('notDeepEqual', [(await read()).metadata.blueprint, preserved]);
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await page.getByText('What is measured?', { exact: true }).click();
@@ -263,6 +267,7 @@ try {
     }
   }
   await page.locator('[data-command=build]').click();
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   // Requested content must remain stable while the simulation updates.
   await page.locator('[data-command=run]').click();
@@ -292,6 +297,7 @@ try {
   evidence.assert('equal', [await learn.evaluate((el) => el === document.activeElement), true]);
   await page.locator('[data-command=build]').click();
   const stable = (await read()).metadata.blueprint;
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await uploadWorkshopFile(page, {
@@ -308,6 +314,7 @@ try {
   });
   await page.getByText('Machine opened. Choose Run to try it.', { exact: true }).waitFor();
   evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
 
   // A compact effective viewport exercises dialog reflow; this is not browser zoom.

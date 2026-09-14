@@ -16,3 +16,12 @@ export function footerModel({ mode, status, tick, parts, message, next }) {
     next: next ? `Next: ${next}` : '',
   };
 }
+/** The header mode switch: which segment is pressed and whether stepping controls apply. */
+export function modeControlState(mode) {
+  return {
+    build: mode === 'build',
+    run: mode !== 'build',
+    stepping: mode !== 'build',
+    stepEnabled: mode === 'paused',
+  };
+}
