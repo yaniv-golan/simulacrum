@@ -127,7 +127,7 @@ try {
   );
   await page.waitForFunction(
     () => !document.querySelector('.parts-browser').classList.contains('catalog-expanded'),
-    { timeout: 2000 },
+    { timeout: evidence.waitBudget(2000) },
   );
   await page.mouse.move(10, 40, { steps: 4 });
   await page.mouse.up();

@@ -10407,6 +10407,8 @@
       "unitWorkers": 2,
       "ciBudgetMs": 900000,
       "browserWorkers": 2,
+      "waitScale": 10,
+      "liveSliceMs": 10000,
       "browserTimeoutMs": {
         "default": {
           "cap": 600000,

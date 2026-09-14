@@ -16,8 +16,14 @@ const PROFILE_KEYS = [
   'browserWorkers',
   'browserTimeoutMs',
   'notEvaluated',
+  'waitScale',
+  'liveSliceMs',
 ];
 const CI_LIMIT_MS = 180000;
+/** Check children learn the platform's patience as numbers, never the profile id. */
+export const WAIT_SCALE_VARIABLE = 'SIMULACRUM_BROWSER_WAIT_SCALE';
+export const LIVE_SLICE_VARIABLE = 'SIMULACRUM_BROWSER_LIVE_SLICE_MS';
+const LOCAL_LIVE_SLICE_MS = 2000;
 export function readHostProfile(manifest, env = process.env) {
   const id = env.SIMULACRUM_HOST_PROFILE;
   if (!id) return null;
@@ -74,9 +80,43 @@ export function finalSuiteRuns(checks, executedRows, notEvaluated) {
 }
 /** Children under test never inherit the profile: it governs the harness, not the code under test. */
 export function childEnvironment(env = process.env) {
-  const { SIMULACRUM_HOST_PROFILE, ...rest } = env;
+  const {
+    SIMULACRUM_HOST_PROFILE,
+    [WAIT_SCALE_VARIABLE]: scale,
+    [LIVE_SLICE_VARIABLE]: slice,
+    ...rest
+  } = env;
   void SIMULACRUM_HOST_PROFILE;
+  void scale;
+  void slice;
   return rest;
+}
+/** A browser check child under a profile gets the registered wait scale and live slice as
+ * numbers; a local child gets neither, whatever the parent shell exported. */
+export function checkWaitEnvironment(env, profile) {
+  const rest = childEnvironment(env);
+  if (!profile) return rest;
+  return {
+    ...rest,
+    [WAIT_SCALE_VARIABLE]: String(profile.waitScale),
+    [LIVE_SLICE_VARIABLE]: String(profile.liveSliceMs),
+  };
+}
+/** The scale a check process runs under: 1 unless the suite passed a registered one. */
+export function waitScaleFromEnvironment(env = process.env) {
+  const raw = env[WAIT_SCALE_VARIABLE];
+  if (raw === undefined) return 1;
+  const scale = Number(raw);
+  if (!Number.isFinite(scale) || scale < 1) throw Error(`invalid ${WAIT_SCALE_VARIABLE}: ${raw}`);
+  return scale;
+}
+export function liveSliceFromEnvironment(env = process.env) {
+  const raw = env[LIVE_SLICE_VARIABLE];
+  if (raw === undefined) return LOCAL_LIVE_SLICE_MS;
+  const slice = Number(raw);
+  if (!Number.isFinite(slice) || slice < LOCAL_LIVE_SLICE_MS)
+    throw Error(`invalid ${LIVE_SLICE_VARIABLE}: ${raw}`);
+  return slice;
 }
 /** Rotation is schedule metadata: it never enters the priority reasons that size the prefix. */
 export function measurementRotation(checks, profile, env = process.env) {
@@ -94,6 +134,11 @@ export function assertNoHostProfile(env = process.env) {
     throw Error(
       `completion tiers never run under a hosted profile (SIMULACRUM_HOST_PROFILE=${env.SIMULACRUM_HOST_PROFILE}); unset it`,
     );
+  for (const key of [WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE])
+    if (env[key] !== undefined)
+      throw Error(
+        `completion tiers never run under a hosted wait scale (${key}=${env[key]}); unset it`,
+      );
 }
 export function ciBudget(profile) {
   if (!profile?.ciBudgetMs) return { limitMs: CI_LIMIT_MS, deadlineMs: CI_LIMIT_MS };
@@ -143,6 +188,12 @@ export function validateHostProfiles(manifest) {
     if (![1, 2, 3, 4].includes(profile.unitWorkers)) fail('unitWorkers must be 1 to 4');
     // More than two browser workers is reserved for explicit development probes.
     if (![1, 2].includes(profile.browserWorkers)) fail('browserWorkers must be 1 or 2');
+    // Patience is a measured host fact: how much slower the runner's page is than the developer
+    // host (startup, interaction) and how long a live renderer can go without a frame.
+    if (!Number.isFinite(profile.waitScale) || profile.waitScale < 1)
+      fail('waitScale must be a finite number >= 1 (measured page slowdown vs the local host)');
+    if (!Number.isFinite(profile.liveSliceMs) || profile.liveSliceMs < LOCAL_LIVE_SLICE_MS)
+      fail(`liveSliceMs must be a finite number >= ${LOCAL_LIVE_SLICE_MS}`);
     for (const tier of profile.notEvaluated ?? [])
       if (!tiers.has(tier)) fail(`unknown tier ${tier} in notEvaluated`);
     if (profile.measurement) {

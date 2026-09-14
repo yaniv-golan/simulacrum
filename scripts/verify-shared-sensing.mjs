@@ -418,8 +418,13 @@ try {
   evidence.assertUnchanged();
   writeFileSync(out + '/result.json', JSON.stringify(evidence.identity, null, 2));
 } catch (error) {
-  writeFileSync(out + '/failure-frame.json', JSON.stringify(await read(), null, 2));
-  await page.screenshot({ path: out + '/failure.png' });
+  // The frame is evidence, not a precondition: a failure before the app installed its probe
+  // (a startup timeout) must surface as itself, not as the read that tried to describe it.
+  try {
+    writeFileSync(out + '/failure-frame.json', JSON.stringify(await read(), null, 2));
+  } catch (frameError) {
+    writeFileSync(out + '/failure-frame.json', JSON.stringify({ unavailable: frameError.message }));
+  }
   await evidence.captureFailure(error);
   throw error;
 } finally {

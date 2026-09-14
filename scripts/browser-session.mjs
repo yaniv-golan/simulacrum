@@ -1,5 +1,7 @@
 import { createTiming } from './verification-timing.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { waitScaleFromEnvironment, WAIT_SCALE_VARIABLE } from './host-profile.mjs';
+import { recordLiveWaits } from './browser-idle.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, basename } from 'node:path';
@@ -92,11 +94,20 @@ export function attachBrowserSession(
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, file.endsWith('.json') ? JSON.stringify(value, null, 2) + '\n' : value);
     });
+  // The platform's patience: a hosted runner's page is `waitScale` times slower than the
+  // developer host, so every deadline a check writes is multiplied once, here, and recorded.
+  // Only the browser suite may set it (it also sets the execution policy); a shell export
+  // would silently loosen a development probe without leaving a trace.
+  const waitScale = waitScaleFromEnvironment();
+  const liveWaits = [];
+  const unrecordLiveWaits = recordLiveWaits((sample) => liveWaits.push(sample));
   const timing = createTiming({
     publish: () =>
       write('timing.json', {
         intervals: timing.snapshot(),
         scope: 'browser session; intervals may overlap',
+        waitScale,
+        liveWaits,
       }),
   });
   let browser,
@@ -105,7 +116,8 @@ export function attachBrowserSession(
     closed = false,
     captured = false,
     lastObservedFrame = null,
-    lastAction = null;
+    lastAction = null,
+    lastTarget = null;
   const expected = (record) =>
     expectedErrors.some(
       (rule) =>
@@ -147,8 +159,10 @@ export function attachBrowserSession(
         const value = Reflect.get(target, key);
         if (typeof value !== 'function') return value;
         return (...args) => {
-          if (actionMethods.has(key))
+          if (actionMethods.has(key)) {
             lastAction = { method: `${label}.${String(key)}`, args: copy(args) };
+            lastTarget = typeof target.boundingBox === 'function' ? target : null;
+          }
           const result = value.apply(target, args);
           return result && typeof result === 'object' && typeof result.then !== 'function'
             ? wrapDriver(result, `${label}.${String(key)}`)
@@ -187,6 +201,8 @@ export function attachBrowserSession(
             wrapDriver(target[key](...args), `${String(key)}(${args.map(String).join(',')})`);
         if (key === 'goto')
           return (...args) => timing.measure('navigation', () => target.goto(...args));
+        if (key === 'setDefaultTimeout' || key === 'setDefaultNavigationTimeout')
+          return (ms) => target[key](ms * waitScale);
         if (key === 'evaluate')
           return async (...args) => {
             const result = await target.evaluate(...args);
@@ -199,6 +215,13 @@ export function attachBrowserSession(
         return typeof value === 'function' ? value.bind(target) : value;
       },
     });
+    // A page that never sets its own deadline runs on Playwright's default; scale that too, but
+    // only under a profile so a local page is untouched (a context-level default, if one ever
+    // exists, keeps precedence there).
+    if (waitScale !== 1) {
+      page.setDefaultTimeout?.(30000 * waitScale);
+      page.setDefaultNavigationTimeout?.(30000 * waitScale);
+    }
     pages.push({ raw: page, proxy });
     return proxy;
   };
@@ -254,6 +277,28 @@ export function attachBrowserSession(
       }
       pageRecords.push(row);
     }
+    // Playwright's actionability waits for the target to be *stable* (the same box across two
+    // consecutive animation frames). Under a slow renderer a control whose neighbours re-lay
+    // out every frame is never stable; record the last action target's box across the next
+    // frames so the failure names the moving geometry instead of a bare timeout.
+    let targetGeometry = null;
+    if (lastTarget && pages.length)
+      try {
+        const page = pages.find((row) => !row.raw.isClosed?.())?.raw;
+        const boxes = [];
+        for (let frame = 0; frame < 5 && page; frame++) {
+          boxes.push(await lastTarget.boundingBox());
+          await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r())));
+        }
+        const key = (box) => (box ? [box.x, box.y, box.width, box.height].join(',') : 'none');
+        targetGeometry = {
+          action: copy(lastAction),
+          boxes,
+          moved: new Set(boxes.map(key)).size > 1,
+        };
+      } catch (e) {
+        targetGeometry = { action: copy(lastAction), error: e.message };
+      }
     try {
       const status = pageRecords.flatMap((record) => record.state?.status ?? []);
       if (status.length) write('failure-status.json', status);
@@ -263,10 +308,13 @@ export function attachBrowserSession(
         browser: browser?.version(),
         profile,
         configuration,
+        waitScale,
+        liveWaits: copy(liveWaits),
         error: copy(error),
         errors: copy(records),
         assertions: copy(assertions),
         lastObservedFrame,
+        targetGeometry,
         pages: pageRecords,
       });
     } catch (captureError) {
@@ -289,6 +337,7 @@ export function attachBrowserSession(
   async function close() {
     if (closed) return;
     closed = true;
+    unrecordLiveWaits();
     const failures = [];
     try {
       evidence.assertUnchanged();
@@ -316,6 +365,9 @@ export function attachBrowserSession(
 
   Object.assign(evidence, {
     errors: [],
+    waitScale,
+    /** A literal deadline a check must keep visible, scaled once for the platform. */
+    waitBudget: (ms) => ms * waitScale,
     measure: (name, execute) => timing.measure(name, execute),
     assert(method, args, description = {}) {
       const { frame, ...details } = description;
@@ -371,6 +423,10 @@ export function attachBrowserSession(
       const execution = process.env.SIMULACRUM_BROWSER_EXECUTION;
       if (execution && !['parallel', 'exclusive'].includes(execution))
         throw Error(`unknown browser execution policy: ${execution}`);
+      if (waitScale !== 1 && !execution)
+        throw Error(
+          `a wait scale (${WAIT_SCALE_VARIABLE}=${waitScale}) is accepted from only the browser suite, which also sets the execution policy; unset it for a development probe`,
+        );
       if (execution === 'parallel' && (selected !== 'ui' || configuration.headless !== true))
         throw Error('this browser configuration requires exclusive execution');
       const launch =

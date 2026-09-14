@@ -1,3 +1,4 @@
+import { waitScaleFromEnvironment, liveSliceFromEnvironment } from './host-profile.mjs';
 /** A settled window that can prove the renderer was alive while nothing changed.
  * "Nothing changed" is the assertion; "no animation frame ran" is starvation, and a starved
  * window would pass every nothing-changed assertion for the wrong reason. Alive means the
@@ -17,20 +18,35 @@ export async function liveWait(
   page,
   predicate,
   argument,
-  { sliceMs = 2000, maxMs = 30000, label = 'predicate' } = {},
+  { sliceMs = liveSliceFromEnvironment(), maxMs = 30000, label = 'predicate' } = {},
 ) {
+  // Patience scales with the platform (a slow runner is slower everywhere); the slice is the
+  // platform's own registered fact — starvation is "no frame in a slice" on any host.
+  const scale = waitScaleFromEnvironment();
+  const budgetMs = maxMs * scale;
   const ticks = () =>
     page.evaluate(() => window.workshopProbe.readInteractionState().rendering.loopTicks);
   const first = await ticks();
+  const sample = { label, sliceMs, maxMs: budgetMs, ticksPerSlice: [], outcome: null };
+  const record = (outcome) => {
+    sample.outcome = outcome;
+    sample.slices = sample.ticksPerSlice.length;
+    for (const sink of sinks) sink({ ...sample, ticksPerSlice: [...sample.ticksPerSlice] });
+  };
   let before = first;
-  for (let slices = 1; slices * sliceMs <= maxMs; slices++) {
+  for (let slices = 1; slices * sliceMs <= budgetMs; slices++) {
     try {
-      return await page.waitForFunction(predicate, argument, { timeout: sliceMs });
+      const result = await page.waitForFunction(predicate, argument, { timeout: sliceMs });
+      sample.ticksPerSlice.push(Math.max(0, (await ticks()) - before));
+      record('true');
+      return result;
     } catch (error) {
       if (error?.name !== 'TimeoutError') throw error;
     }
     const after = await ticks();
+    sample.ticksPerSlice.push(Math.max(0, after - before));
     if (after <= before) {
+      record('renderer-starved');
       const starved = Error(
         `renderer starved: no animation frame in a ${sliceMs} ms wait slice (slice ${slices}); the wait proves nothing`,
       );
@@ -39,9 +55,18 @@ export async function liveWait(
     }
     before = after;
   }
+  record('expired');
   throw Error(
-    `${label} stayed false for ${maxMs} ms (${Math.floor(maxMs / sliceMs)} slices) while the presentation loop ticked ${before - first} times`,
+    `${label} stayed false for ${budgetMs} ms (${Math.floor(budgetMs / sliceMs)} slices) while the presentation loop ticked ${before - first} times`,
   );
+}
+/** Every live wait reports its slices and per-slice loop ticks to registered sinks: the
+ * browser session writes them into its timing record so a hosted run measures the renderer
+ * cadence its `liveSliceMs` is later registered from. Returns the unregister function. */
+const sinks = new Set();
+export function recordLiveWaits(sink) {
+  sinks.add(sink);
+  return () => sinks.delete(sink);
 }
 export async function settledWindow(page, ms, { wait = (t) => page.waitForTimeout(t) } = {}) {
   const ticks = () =>
@@ -68,4 +93,22 @@ export async function settledWindow(page, ms, { wait = (t) => page.waitForTimeou
     observed: samples.at(-1) - samples[0],
     segments,
   };
+}
+/** Hold a drive and wait for a number of driven ticks: the count starts at the tick the page
+ * first reports the command (a source duty), not at the harness's key press, because the
+ * press reaches a slow page late and ticks are wall-clock accumulated — a read at an absolute
+ * tick would then measure harness latency, not the machine. Returns the tick the drive began. */
+export async function drivenTicks(page, ticks, { label = 'drive' } = {}) {
+  await liveWait(
+    page,
+    () =>
+      JSON.parse(window.render_game_to_text()).power.sources.some((source) => source.duty !== 0),
+    undefined,
+    { label: `${label}: command observed` },
+  );
+  const start = await page.evaluate(() => JSON.parse(window.render_game_to_text()).tick);
+  await liveWait(page, (t) => JSON.parse(window.render_game_to_text()).tick >= t, start + ticks, {
+    label: `${label}: ${ticks} driven ticks`,
+  });
+  return start;
 }

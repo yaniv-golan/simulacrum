@@ -5,9 +5,14 @@ import { readFileSync } from 'node:fs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 
+/** Local app startup (navigation end → `workshopProbe` installed) is ~1 s; the budget is
+ * generous locally and scaled by the platform's `waitScale` on a hosted runner (measured
+ * 10–20 s there), and it is the session's own — never the interaction deadline a check set. */
+export const STARTUP_MS = 15000;
 export function createBrowserEvidence({
   readBuild = appFingerprint,
   readSource = sourceIdentity,
+  startupMs = STARTUP_MS,
   ...sessionOptions
 } = {}) {
   const build = readBuild(),
@@ -22,11 +27,33 @@ export function createBrowserEvidence({
       },
       async goto(page, url) {
         await page.goto(url);
+        await this.awaitStartup(page);
         return this.assertServed(page);
       },
       async reload(page) {
         await page.reload();
+        await this.awaitStartup(page);
         return this.assertServed(page);
+      },
+      // A workshop page (its static `#app` root) is ready when the probe exists; any other
+      // served page is ready when navigation ends. A missing probe is a startup failure, named
+      // as such, not the first locator that happened to run afterwards.
+      async awaitStartup(page) {
+        const workshop = (await page.evaluate(() => document.getElementById('app') !== null)) === true;
+        if (!workshop) return;
+        const budgetMs = this.waitBudget ? this.waitBudget(startupMs) : startupMs;
+        try {
+          const ready = await page.waitForFunction(() => window.workshopProbe !== undefined, undefined, {
+            timeout: budgetMs,
+          });
+          await ready.dispose?.();
+        } catch (error) {
+          if (error?.name !== 'TimeoutError') throw error;
+          const startup = Error(`workshop startup: no probe within ${budgetMs} ms after navigation`);
+          startup.failureKind = 'startup';
+          startup.cause = error;
+          throw startup;
+        }
       },
       // This sends an ordinary pointer click; callers must assert what was picked.
       async clickPart(page, partId) {
