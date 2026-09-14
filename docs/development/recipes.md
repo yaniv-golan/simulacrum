@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f2a824b90d6a371bd582f36b45a21e4597f4bcfdf84ceb08dc5a84d1f67a386d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"a04ce1b40488de553653c687fa65eb76310bbde935b87498bf9ed8e5bb03375d","disposition":"still accurate","rationale":"This section's broad fan-out picked up the feedback client/store, four feedback browser checks, the manifest controls, the two documentation rewrites, and now workshop.css (the motor readout's reserved reason height) with the connection-test journey's geometry assertion around main's element-aimed pressAndHold; no physics owner, law, integration step or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"8c54e24826a26969dec5e4e7f4cd0ec0904c2711937c443410433122c6b6a0e2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1fd755ac7ee1f7ffdaa8cd2ca141fbb50eb2d52b733f14f0922533155c2ad317","disposition":"still accurate","rationale":"The recovery journey's capacity scenario now unticks the default context attachment before its send so the step reaches the server rejection it proves under the fixture's one-byte budget, and the manifest carries the re-reviewed scope hashes; no physics owner, law, integration step or evidence rule changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

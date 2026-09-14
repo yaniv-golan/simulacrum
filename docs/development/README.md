@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c4e7bb473cce824f59000d5775cb00f0932d9ad5f168c4101176fd55e6bd23ef","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"76a17d1c1b1f9860078d14d1f82a9468e88e4432607dc61f9a4f40def47eddbe","disposition":"still accurate","rationale":"scripts/manifest.json changed by the new unit-control pointers on independent-feedback-receipts (the feedback-attachments tests), the reviewed metadata-scope hashes for the four edited feedback journeys and the new test consumer, the stacked hosted-profile rows, and canonical relayout; scope rows, exclusion rules, the phased schedule and the proposal/apply flow described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"572996f66c824d1c1cac10cf8537126c236736d89c0a2ed4ee061a77cd754f70","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"aad00d26de2fd56bb30c70e5b8c717e21e3f3c7b5bf61df011bb5e75bd26605b","disposition":"still accurate","rationale":"scripts/manifest.json changed only by the re-reviewed metadata-scope hashes after verify-feedback-recovery's capacity scenario gained its untick step; scope rows, exclusion rules, the phased schedule and the proposal/apply flow described here are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -591,7 +591,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"3f26513ca9068070817b3ead5ef4f7b221094f5e00d570eec6e15c4aee79fef7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"58878aeb4b43dc03d61a0809bea3c94bdb603cbc8877246ea8cdcc8c54e75bdc","disposition":"still accurate","rationale":"Manifest control pointers and reviewed scope hashes were added for the feedback-attachments unit tests and the edited feedback journeys; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"8f79f01705278e35be936abf8dc1447c5b95204efbed68a207e074b81196a40a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d861da52b8545d07e71d487d6664c2f52a2674c2b10983c706a40846fe89f907","disposition":"still accurate","rationale":"Only reviewed scope hashes moved in the manifest; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

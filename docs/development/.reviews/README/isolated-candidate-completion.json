@@ -18,7 +18,7 @@
     "scripts/documentation.mjs": "5c3b3c3e9adb6ee472ac3e23c45ca64bdd5f787a40ef6fb0c1f0996edd30204a",
     "scripts/host-profile.mjs": "8c4dcf2322b5c83f6c10f1784b12f795cc88466073ccf7280775e98372b97fc6",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "1bf6cce9f2581e36ddda25978667fd2a6e2236b8fcab5997f67a3afb12899d4d",
+    "scripts/manifest.json": "533ab01c731fa07ad8b6c88d3a1328fbc9a58f87866194fc8b9faec1ce3bd060",
     "scripts/merge-selection.mjs": "dca8b98f74a0d369cc0702890353ad3d7b0979ce3325371cd6a61081cd0e16b2",
     "scripts/merge-shadow.mjs": "0a0cc14b0a9b3456923b6abab94abf9c8d0a1901b167147a5cc60641162f96a5",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
