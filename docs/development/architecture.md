@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e927567487d47103ec84a24a9a9ba651f039b6503055da54fd118204f473d21","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"4ae3ce3df4f910777695dfada1d2803d8a1873b56d38e66fd6a9f35c3577de55","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): AGENTS.md changed by one scheduling clause about the launch admission; layer ownership, the registry reader's role and the module map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d5d6c7ee65beceae1d5ff2124c84a0e33382e89c32c7251afd5d3f586ee1f0eb","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"eabf154d1935317bcbf2c2bf0a1e284f48b2a5a5a1ed6e501f8a5ac11c187730","disposition":"still accurate","rationale":"Relative to base 3a50c9e runtime-v1's delivery-order paragraph scopes M9's gates as those due by M9 and states that M10/M11 sit on the unchanged 1/120 s single-integration and replay contract with the time-scale decision and material-store mass rule recorded there before any orbital fixture; AGENTS.md names the new milestones and their shared-catalog authority rule. This overview identifies the manifest as allocation owner and the contract as clock/replay/state owner, both preserved."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

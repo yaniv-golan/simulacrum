@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"d0e79bc5287595c8211a64f4660b1685e410764fa58e57b8ad67a94485ccc677","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"442bd682ba6bdf942d068ab4e9fcf71caf3abe7cbe9c1f6f616b4a0e6e3e6074","disposition":"still accurate","rationale":"Parametric beam scope rows: the manifest change is scope metadata and test/browser-registry-live.test.mjs now expects the beam probe when messages.mjs changes; no law, phase or physics-door text in this recipe is affected."} -->
+<!-- doc-review {"version":1,"fingerprint":"502e65e6d193e8ebe3ef70f6e1bfae1a7db7435761542679d76bbaf456bb54a0","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2e99703ce47c4c47098d127a1965832eec5a96a825e8576d010689f2707928bf","disposition":"still accurate","rationale":"Relative to base 3a50c9e the new M10/M11 obligations require air, rotor thrust, drag, position-dependent gravity and ablation to be laws under simulation/physics/law fed by numeric inputs from ordinary catalog parts, keep one integration per 1/120 s tick, confine mass mutation to an owned material store, and route the energy ledger's potential through the gravity law; AGENTS.md forbids rig-only forces for those milestones. This recipe already prescribes exactly that (laws receive numbers not identities, no second clock or hidden support, resample after structure/thermal mutation, geometry via environment descriptors), so it is consistent and unchanged. No physics source changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
