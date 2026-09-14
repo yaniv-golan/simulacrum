@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8c0ff796016b59a9b73babf7158bb31befc20798ee2bf23dcc5a8916e21993ed","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"3b0c479aab8c08aa420dcd29b6df96fc31dc429d8984fefa99e19dc734aa4bab","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): workshop-view.mjs changed only by the loopTicks render probe; no lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decisions and admission criteria stand."} -->
+<!-- doc-review {"version":1,"fingerprint":"8ee09ab78ca814a11327362a92502ba8f5947e843f8b6a57a88f0dc26eca04d3","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1baa750e5f2df213da35fb369e3e9f4fe6b6b2b403fedc121210a70b578162a8","disposition":"still accurate","rationale":"Parametric beam: admission decision is extend (one part-help sentence and step); no lesson, example or workbench entry, and part settings stay in the inspector as the policy requires."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"da897d62c1ffdd1b48b8cfbade2d31565d625ab88c6fa4bcd071a18203ccb434","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8a63046a06bf500d156203c8a66cef87a23d1ff3e8cbbd5003ce3076b6ae489c","disposition":"updated","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): the sound-controls paragraph now states the level policy: levels derive from one registered nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 % default, less with distance; textures and actuators weighted against it), measured by the audio check against a calibration tone through the same output chain, and a slow motor keeps harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Verified against mechanical-audio-model.mjs and verify-mechanical-audio.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"3a729a54ab0d1d54f0e0907a0f40561de836c1cb9140882eb692c09c47fdd459","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"95c94df3f0fa2d8aab9847ab9f4311fb0a99905942e1e80b9185d5b2be36694e","disposition":"updated","rationale":"Parametric beam: a Beam paragraph beside the Ball one describes the selected-inspector length control (100–1000 mm, 10 mm slider steps, preview and obstruction copy, Escape), the detach-first rejection and out-of-bounds rejection, the no-edit-on-default rule, the 40 mm long-face pads and their markers, and the part-help extension with no lesson entry."} -->
 
 
 

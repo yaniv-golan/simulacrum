@@ -122,9 +122,7 @@ try {
   await liveWait(
     page,
     () =>
-      /Detach/.test(
-        document.querySelector('.primary-setting .parameter-help')?.textContent ?? '',
-      ),
+      /Detach/.test(document.querySelector('.primary-setting .parameter-help')?.textContent ?? ''),
     undefined,
     { label: 'detach copy shown' },
   );
