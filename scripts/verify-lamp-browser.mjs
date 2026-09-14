@@ -219,8 +219,9 @@ try {
       for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
     }, count);
   const floorWindow = async () => {
-    const lampPose = (await page.evaluate(() => window.workshopProbe.readRenderedTransforms()))
-      .find((row) => row.id === lamp.id);
+    const lampPose = (
+      await page.evaluate(() => window.workshopProbe.readRenderedTransforms())
+    ).find((row) => row.id === lamp.id);
     const direction = rotateVector(lampPose.rotation, [0, 0, 1]),
       lensOffset = rotateVector(lampPose.rotation, [0, 0, 0.045]),
       origin = lampPose.position.map((c, i) => c + lensOffset[i]);

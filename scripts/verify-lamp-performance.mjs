@@ -203,7 +203,10 @@ try {
   assert.equal(after.ui.lamps.length, 8);
   assert.ok(after.ui.lamps.every((l) => l.flux > 0));
   assert.equal(after.ui.rendering.quality.lampShadowSize, 0);
-  assert.ok(after.ui.lamps.every((l) => !l.shadows), 'reduced graphics drop lamp shadows');
+  assert.ok(
+    after.ui.lamps.every((l) => !l.shadows),
+    'reduced graphics drop lamp shadows',
+  );
   assert.deepEqual(after.frame.metadata.blueprint, sample.frame.metadata.blueprint);
   for (let i = 0; i < 8; i++) {
     assert.equal(after.frame.power.lamps[i].requestedW, sample.frame.power.lamps[i].requestedW);
