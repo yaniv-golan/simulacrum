@@ -580,8 +580,27 @@ test('timing-sensitive checks are a registered fact: declared rows run exclusive
   ]);
   for (const c of timingSensitiveChecks(m.browserChecks))
     assert.notEqual(c.execution, 'parallel', `${c.id} must run exclusively`);
-  // Source guard: a script that asserts a p95/quantile/budget must be declared.
   const { readFileSync } = await import('node:fs');
+  // What each budget measures is a declared fact; a physics row runs the engine in node with no
+  // browser at all (so a presentation change cannot move it), a render row drives the app.
+  for (const c of timingSensitiveChecks(m.browserChecks)) {
+    assert.ok(['physics', 'render'].includes(c.measures), `${c.id} declares what it measures`);
+    const source = readFileSync(c.script, 'utf8');
+    if (c.measures === 'physics')
+      assert.doesNotMatch(
+        source,
+        /\.launch\(|playwright|chromium/,
+        `${c.id} measures physics but launches a browser`,
+      );
+    else assert.match(source, /\.launch\(/, `${c.id} measures rendering but launches no browser`);
+  }
+  assert.deepEqual(
+    timingSensitiveChecks(m.browserChecks)
+      .filter((c) => c.measures === 'physics')
+      .map((c) => c.id),
+    ['measure-gears', 'measure-cameras'],
+  );
+  // Source guard: a script that asserts a p95/quantile/budget must be declared.
   for (const c of m.browserChecks)
     if (TIMING_ASSERTION.test(readFileSync(c.script, 'utf8')))
       assert.ok(
@@ -591,6 +610,19 @@ test('timing-sensitive checks are a registered fact: declared rows run exclusive
   assert.doesNotThrow(() => validateBrowserCoverage());
   for (const [mutate, message] of [
     [(x) => (x.browserChecks[0].timingSensitive = 'yes'), /invalid timingSensitive metadata/],
+    [
+      (x) => delete x.browserChecks.find((c) => c.id === 'measure-gears').measures,
+      /timing-sensitive check must declare what it measures/,
+    ],
+    [
+      (x) => (x.browserChecks.find((c) => !c.timingSensitive).measures = 'render'),
+      /measures is a timing-sensitive fact/,
+    ],
+    [
+      (x) =>
+        (x.browserChecks.find((c) => c.id === 'verify-adaptive-graphics').measures = 'physics'),
+      /a physics budget runs the engine in node, not a browser/,
+    ],
     [
       (x) => {
         const row = x.browserChecks.find((c) => c.id === 'verify-camera-browser');
