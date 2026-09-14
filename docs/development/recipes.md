@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"39fe637cad6a9d704ab1fe2ffc37749611b39bb522630683532d637c06e2f0fc","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ffb9f1ace2fc71641a2663adec4e700ed7c1a0699cfee3cb7ccc4022e9edc57d","disposition":"still accurate","rationale":"Parametric beam: no law, phase or physics-door change — mass still comes from partPrimitives volume times material density and inertia from the door's cuboid; the recipe's statements about laws receiving numbers, one integration and environment descriptors are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"d0e79bc5287595c8211a64f4660b1685e410764fa58e57b8ad67a94485ccc677","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"442bd682ba6bdf942d068ab4e9fcf71caf3abe7cbe9c1f6f616b4a0e6e3e6074","disposition":"still accurate","rationale":"Parametric beam scope rows: the manifest change is scope metadata and test/browser-registry-live.test.mjs now expects the beam probe when messages.mjs changes; no law, phase or physics-door text in this recipe is affected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

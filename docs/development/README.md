@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"a02590dcd980d9d3e252db8016b462ffd95c2a47d6c3caec90b4330be55b3358","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"33789b8ac2ecc64a6c24b08c709bddd2a662658ecc265fca5e6d3dc0e681933f","disposition":"still accurate","rationale":"Parametric beam: the manifest gains one parallel workshop-environment browser check (verify-beam-length-browser) and controls under three invariants; no scope row was hand-typed — the new check will be declared through the scope review flow this section describes, and catalog/geometry/surfaces edits select the full browser set as the section says. The probe's app-progress waits use liveWait from browser-idle.mjs, as this section's pooled-check guidance now requires."} -->
+<!-- doc-review {"version":1,"fingerprint":"8c0d3f3d7cebdb8f999c2ae5cbc878b7419aa6d1bf25dd351d90a67d3e758c9e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d8df096d47a73e01ca1b28a13c96f424ce9d7f91facdce25eb43b73c56240ba","disposition":"still accurate","rationale":"Parametric beam scope rows: the manifest's browserLocalScopes now declare verify-beam-length-browser on the messages.mjs local row it asserts against and acknowledge it as a reaching check on the rows it merely loads, recorded through the proposal/apply flow this section describes; consumer hashes moved for the shared model modules the change edited. The flow and its guarantees are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -618,7 +618,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"454a0f2eb648ebffdfb56f96a484e4ea1e763defb481c3e50df9b086ff3821e9","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"902ca95ff7f9611adfd914d935b7940ed6cc9d6a6f5bddca19a671c6935ee1e6","disposition":"still accurate","rationale":"Parametric beam: candidate tiers, watchdog and deadlines are unchanged; the change adds tests, a browser check and controls that the local tier picks up through the affected selection this section describes. The probe script changed only in how it waits (liveWait), not in what the tier runs."} -->
+<!-- doc-review {"version":1,"fingerprint":"b9d368b4ba0745d3f4bf8cd4dbe392205ead04f0abb357c34a990becb13b88c7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d2345ac4efd873a5f888a4c9604906395b31cd36cce204b97969919c81c9c04f","disposition":"still accurate","rationale":"Parametric beam scope rows: only browserLocalScopes metadata changed in the manifest (declared/acknowledged reaching checks and consumer hashes); tiers, watchdog and deadlines described here are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
