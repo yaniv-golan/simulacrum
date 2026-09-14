@@ -397,9 +397,10 @@ sends one parameter edit, and Escape restores the current value. A resize that w
 move a part attached to a beam end is rejected in place with "Detach it from the end
 first"; long-face mounts that no longer fit reject as out of bounds. Confirming the
 default on a beam that never stored a length is not an edit. Beam long faces mount
-through a 40 mm section pad, so a beam can lie on a plate or lap another beam and
-its pad markers show on those faces; end faces keep their whole face. Part help
-gains one sentence; no lesson or example entry.
+through a 40 mm section pad, so a beam can lie on a plate or lap another beam; the
+existing pad markers on those faces now show the 40 mm footprint; end faces keep
+their whole face. Part help gains one sentence and one step; no lesson or example
+entry.
 
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites
