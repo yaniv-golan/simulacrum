@@ -5975,7 +5975,7 @@
       "id": "independent-feedback-receipts",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification. A submission is stored once as the exact bytes behind its upload hash, with the envelope read back from them.",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification. A submission is stored once as the exact bytes behind its upload hash, with the envelope read back from them; a full local store names the player's actual outs and keeps the draft saved.",
       "owners": [
         {
           "path": "src/application/feedback-context.mjs",
@@ -6046,6 +6046,10 @@
           {
             "path": "test/feedback-store.test.mjs",
             "anchor": "one stored copy leaves room the doubled copy did not"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a storage-full send names the outs the player has and keeps the draft saved"
           }
         ],
         "negative": [
@@ -6092,6 +6096,10 @@
           {
             "path": "test/feedback-store.test.mjs",
             "anchor": "legacy rows read their bytes as truth and drop the second copy on write"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "the storage-full message names only the outs that exist"
           }
         ]
       },
