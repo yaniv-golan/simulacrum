@@ -6,7 +6,7 @@
     "test/workbench-content.test.mjs": "0ff4bd532d0b4756ba675db7e85dde4cc4d9bdb56ff36bbca224f4ac0534ff29",
     "scripts/verify-workbench-content.mjs": "b3ca07b348915d71c37e7377147fc9814135cd75624c4d7f28a79ef743afb94f",
     "scripts/verify-learning-examples.mjs": "a6fce8783c6e0a1b2a59de5dea26783b93384251dd8f412530d3fca652552224",
-    "scripts/verify-authorable-scenes.mjs": "89d0f746866d355ba212ec62f43409bf3b803ca72737ad2335c5678de5c6c0f3",
+    "scripts/verify-authorable-scenes.mjs": "0c1b8b84a6c0b26931fa86055e626739c9df98f24647a9654d01a9004a3c986f",
     "test/scene-editor.test.mjs": "7d90d18178f2f36b83e0e1134af6a98b22af37be21a5d760e7b9da20f8d8f5be",
     "docs/development/playtesting.md#remote-setup": "7d250624feaa30cae2a275c89312dcda373b6f72b91d41169b0e4a06922959cb",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"d70173be3b868c8f6f527c9730347f0bd48ebf34f8154fddd9b2d0489a981000","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"5cb95a013503c31a8afdfa53736d09b188f7e2e67916b608f5242433366c912d","disposition":"still accurate","rationale":"workshop-view.mjs changed only by replacing the Help, Learn & examples and Check machine dismissal controls with the shared × (plus main's already reviewed sound/performance edits). No lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decision and admission criteria stand."} -->
+<!-- doc-review {"version":1,"fingerprint":"8c0ff796016b59a9b73babf7158bb31befc20798ee2bf23dcc5a8916e21993ed","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"3b0c479aab8c08aa420dcd29b6df96fc31dc429d8984fefa99e19dc734aa4bab","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): workshop-view.mjs changed only by the loopTicks render probe; no lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decisions and admission criteria stand."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"d12b4c174c75aae7b1e89befb89552973ac8151d03a9b48911f70ced8ce7f8f3","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"ab08bb83f841936dcab32c5440deb43abc1059d7f2852672ffb20fb4c366c646","disposition":"still accurate","rationale":"browser-session.mjs only added a read of the visible status/live-region texts for failure evidence; no player-facing surface, region, visibility lifecycle or copy changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"00b56ddaacfe4fa3a72bd76c5c5ae9927ddc619a06046f7e76f8dcc9c0473e92","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3de3bffe9205d9cfa3d5cb39ddfa7263e1524f8d4a1c0bc8ad831d954c22b8aa","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no player-facing surface changed: workshop-view.mjs's loopTicks is an internal probe and browser-session.mjs is verifier tooling; the surface inventory and lifecycle text remain accurate."} -->
 
 
 
@@ -458,7 +458,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"562bd0148b11842e1caef5a750b6f9a1330130f58fa29b2b292b9b124c0c9e53","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"8ae6df8746e033d9007641796985f0e508a24273d767f99f159cdd2e9242fefe","disposition":"updated","rationale":"The workbench content journey now asserts the examples header × stays inside the dialog, keeps a 36px target and keeps its unscrolled inset after scrolling at 640×360; the sentence describing that journey was extended accordingly. Main's other verification guidance in this section is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d9aba086c226353ae4ff49e3037f356bde2b3b3bcb42ef1d64eff0db2f44a5de","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"fcf77946b7c8a884faa9d45dd104c98f2f90eb3403ace60212eb86fb950185f1","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-authorable-scenes.mjs changed only its launch profile literal (headless ui on Metal); the UI verification order (rendered/simulated agreement, text state, pixels) and review steps are unchanged."} -->
 
 
 

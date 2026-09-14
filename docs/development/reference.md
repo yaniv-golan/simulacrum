@@ -53,6 +53,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run test:all | node scripts/verification-window.mjs scripts/test-affected.mjs --all |
 | npm run test:browser | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs |
 | npm run test:browser:affected | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs |
+| npm run test:browser:serial | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs all --workers 1 |
 | npm run test:browser:smoke | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs smoke |
 | npm run test:determinism | node scripts/verification-window.mjs scripts/verify-m1.mjs |
 | npm run test:performance | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs performance |

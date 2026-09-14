@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"38b802c16fecd731d5de7ee30330b519251e4769d38f03550c684f4895e8ff4c","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"aacce92f6e6958dadfb7ea52c754c31ad3f5ac6dd424510b9bb9f95c25f43d8e","disposition":"still accurate","rationale":"workshop-view.mjs's only delta relative to main's reviewed state is the shared dialog close control for its three dialogs; recording, playtest protocol and evidence guidance in this section reference no dismissal control and remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"19efbfe0b77529bdacfd6166bc814fb5493670fdcdf779ad6ee73ed8821bfd7d","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"c2f9fa235a78e52f5b296e880d2434947f51988cf504635e6d299129c55eaf04","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): workshop-view.mjs's loopTicks counter is a presentation probe read by browser checks; recording, upload, review and release operations are unchanged."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 

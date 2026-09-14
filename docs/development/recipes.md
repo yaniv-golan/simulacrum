@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"ddbc90f28a93ac8dafce407f44ce13b0cae27b2825e0e1466a9ba5e8c53bf3c6","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ec9c8b5f6da0d199089fef57fe0c4f3ab9bfc20d46da3641e04219efc38dae89","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: neither side adds a part. The finite body constructor copies after physical construction and door reads are cached per physical state; mechanicalSound is a UI feature with no catalog row, schema, compiler or physical configuration change. Catalog selection, schema admission, authored material, lamp limits, geometry and milestone declarations are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d7d0691d434a1f77007a920235afb28c2265a9f0c64c2a0c5fe646c7eda0cfd6","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"de7a62f8ef8ef938e5d971293eae581778486484caaa0fdadc69738477b971d2","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-load-cell-browser.mjs changed only its launch profile literal (focus → headless ui, now GPU-backed); the part recipe's steps and the check's assertions are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"586039eee8b3b67cad263b95d4a9c912d314af504d6092d5f96363b06d144575","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"224e804fef95c4e7da0510f73388231c52fa0fb57f591df128b6e0ddfd281d5a","disposition":"still accurate","rationale":"The diagnostics change touched harness files only (browser-session.mjs live-status read, browser-evidence consumers); the listed model/presentation dependencies carry main's refreshed digests after the merge and the interaction recipe's owners, controls and verification steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d81e821309cbcdc4adbab54222f5a901032e30b6503ca000cacf4802fa48eef8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"19f6cfd39ab752c0b73b2898e024d33af5cc314bd1c32f47870ddbbfc2a18ac6","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs gained the ui profile's GPU args and verify-mirror-browser.mjs changed only its launch profile literal; the interaction recipe (sensor → controller → telemetry → rendered/simulated agreement) is unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"33bd3c9b10e86d075e8f5fc7b43d79b95a7d2e81628fff3f8f7f880a7b346a8f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"21f9fcc56c48c6b229f026b0fab1077de35b6a3a3b039771e6671c3ffb8be038","disposition":"still accurate","rationale":"test/assembly-partitions.test.mjs now expects the 120 s watchdog on the assembly UX partition (measured 71–89 s, killed in teardown at 90 s) and still binds the library partition to 90 s; the bounded-probe guarantee and everything this section describes are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8955f1b2dbb204c8bcf8472977bd219e868ef2f78348005f2595a847d2b0a8b9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59d9c07aeafed285d0733c2af679103c95d474b3c6af855c296e7d77df3404df","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scheduler, timing registration, profile literals, liveness windows) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"cd5895d1e35c35359756efccbfcad3d231acda5d1a8289588f4677cc4e393650","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"be3e8267f765385012605a7efb37fc7a7fa8a00640f121d49c947b7adb06ffa4","disposition":"still accurate","rationale":"No authoring, assembly-library or model owner changed; the browser harness dependencies (browser-session.mjs, browser-evidence.mjs) gained failure diagnostics only, and the recipe's steps and evidence requirements stand."} -->
+<!-- doc-review {"version":1,"fingerprint":"0f3e241c93d2eb536fe98f9cde92ff0150c47d65c128da416cfd98744413467f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"81e83220e01889a9f5e842fe9c39050909c270b4537d8b56b3764498a3949633","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs's profile change does not touch assembly authoring; the recipe is unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +600,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"319628c5b813d2bc423b45f6ae549b00b6ae3d5a68604b0b87f8f6eeaca0fda3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"90c46ba390bcedc1bed21b5f8386181f0f332a1f75f8efac3de8bb3c0d05c198","disposition":"still accurate","rationale":"No presentation or overlay owner changed; the browser harness dependencies gained failure diagnostics only (live-status capture, snapshot timing), and the recipe's owners, controls and journey verification are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4b696756e55e57de9d123aca251e5be654f81d5954c2bcf3763a508a5e185071","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0c455133fd47d2dbccfed551170a8a780ca2e6f2fdcb837438d91288d53a8f14","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-rope-browser.mjs changed only its launch profile literal and browser-session.mjs its ui profile args; overlay ownership and the recipe's verification steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -71,7 +71,7 @@
     "src/presentation/part-help-content.mjs": "58c71431d49fae649010ed1ded01d8a6c035fdd072fa4ef1745623df06e447bc",
     "src/presentation/part-search.mjs": "547b3b69f2b9994d16446af0525f90818b62b9a2e4693a1d81798b5832a640dc",
     "test/load-cell-authoring.test.mjs": "a62b4b99665596d0b52e712be568594f176d5c5eb7f67c7623f0a332ecd8fe14",
-    "scripts/verify-load-cell-browser.mjs": "2551e13b20498b258cce93baf1e544b43a7ae07e1fe9273da7f62a1fe10f3f38",
+    "scripts/verify-load-cell-browser.mjs": "9a660c84e71acc527e7dd6fbdc35f692deae0b3e8ffab86b9ad3cb1bc33c7f73",
     "test/camera-integration.test.mjs": "6f269eb1308fd48fcab4ffd0a72b1945293047cf2898c1b32e4bfffbb0211920"
   }
 }

@@ -3,7 +3,7 @@
   "dependencies": {
     "assessments/protocol/F1.md": "1639ce944c2b24ef6d6715394c9aa306c09e610d87e41b22f3226a3d61ee990c",
     "src/application/workshop-app.mjs": "a2fba1eecf82e1dccd4745eefc5c042c56211ebc8b649febd3ef63c31e53d154",
-    "src/presentation/workshop-view.mjs": "5c2f7955ddd6d2bdca25d0c02d762c898bb20653c87895a49bb2d7bab0c2f6fd",
+    "src/presentation/workshop-view.mjs": "4b53743903e30e47112c07e6e53deae874382cdea9c741a04b23de24c4600d2f",
     "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=preview": "734491675c009f724e200a102cac97cd540c2e284972825fa04649d9ca611b23"
   }
