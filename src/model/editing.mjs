@@ -1,6 +1,7 @@
 import { mechanicalGroup } from './connection-graph.mjs';
 import { transformPoseBetweenFrames } from './transforms.mjs';
 import { validateBlueprint } from './blueprint.mjs';
+import { resolveSurfaceEndpoint } from './surfaces.mjs';
 function reject(reasonCode, path) {
   throw Object.assign(Error(reasonCode), { reasonCode, path });
 }
@@ -20,4 +21,27 @@ export function transformGroup(blueprint, id, position, rotation) {
       Object.assign(part, transformPoseBetweenFrames(part, original, { position, rotation }));
     }
   return next;
+}
+/** A dimension edit may not move a surface attachment of any connection kind: the peer
+ * keeps its pose, so the pair would compile misaligned and separate in Run. Bindings the
+ * new geometry cannot host are left to blueprint validation (SURFACE_OUT_OF_BOUNDS). */
+export function resizeMovesMount(blueprint, id, parameters) {
+  const part = blueprint.parts.find((p) => p.id === id);
+  if (!part) reject('UNKNOWN_PART', 'id');
+  const resized = { ...part, parameters };
+  const local = (subject, endpoint) => {
+    try {
+      return resolveSurfaceEndpoint(subject, endpoint).position;
+    } catch {
+      return null;
+    }
+  };
+  return blueprint.connections.some((connection) =>
+    [connection.a, connection.b].some((endpoint) => {
+      if (endpoint.part !== id || !endpoint.surface) return false;
+      const before = local(part, endpoint),
+        after = local(resized, endpoint);
+      return !!before && !!after && before.some((x, i) => Math.abs(x - after[i]) > 1e-9);
+    }),
+  );
 }

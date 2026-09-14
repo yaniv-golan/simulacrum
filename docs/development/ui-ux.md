@@ -391,6 +391,16 @@ details. Bounciness and Grip may inherit Material default or use Custom values;
 changing material preserves visibly custom values, and choosing Material default
 removes the corresponding override. These edits are Build-only.
 
+The Beam uses the same selected-inspector size edit for length (100–1000 mm, 10 mm
+slider steps): the preview shows the new size and names an obstruction, confirming
+sends one parameter edit, and Escape restores the current value. A resize that would
+move a part attached to a beam end is rejected in place with "Detach it from the end
+first"; long-face mounts that no longer fit reject as out of bounds. Confirming the
+default on a beam that never stored a length is not an edit. Beam long faces mount
+through a 40 mm section pad, so a beam can lie on a plate or lap another beam and
+its pad markers show on those faces; end faces keep their whole face. Part help
+gains one sentence; no lesson or example entry.
+
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites
 moving the catcher and adjusting spring preload. Roll onto a spring extends the

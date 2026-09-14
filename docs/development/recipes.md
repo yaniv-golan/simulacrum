@@ -26,6 +26,11 @@ The [compiler](../../src/model/assembly.mjs) derives configuration; the renderer
 the same geometry. Do not select material or forces by name, role or fixture identity.
 
 Worked example: wheel diameter changes radius while keeping axle position and width.
+Beam length is the second authored dimension: [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives)
+scales the box along local X, faces and pads follow, and a dimension edit is refused by
+[resizeMovesMount](../../src/model/editing.mjs#symbol=resizeMovesMount) when any surface
+attachment of the edited part would move; the optional parameter's default must equal
+the canonical primitive ([assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)).
 Trace `partPrimitives`, then read [wheel diameter tests](../../test/wheel-diameter.test.mjs)
 and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, material/mass,
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated

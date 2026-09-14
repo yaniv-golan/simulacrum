@@ -7,7 +7,7 @@ import {
   connectAssembly,
 } from '../model/reusable-assemblies.mjs';
 import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
-import { transformGroup } from '../model/editing.mjs';
+import { transformGroup, resizeMovesMount } from '../model/editing.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import { ENVIRONMENT_PRESETS } from '../model/environment.mjs';
@@ -540,6 +540,8 @@ export async function createWorkshop(
             !Object.hasOwn(CATALOG[part.type].parameterDefinitions, command.key)
           )
             return result(false, 'INVALID_COMMAND', 'key');
+          if (resizeMovesMount(next, part.id, { ...part.parameters, [command.key]: command.value }))
+            return result(false, 'SURFACE_RESIZE_MOVES_MOUNT', 'value');
           part.parameters[command.key] = command.value;
           break;
         }

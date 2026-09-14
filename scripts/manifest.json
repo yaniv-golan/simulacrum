@@ -893,6 +893,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-beam-length-browser",
+      "script": "scripts/verify-beam-length-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "measure-gears",
       "script": "scripts/measure-gears.mjs",
       "execution": "exclusive",
@@ -1160,6 +1171,10 @@
           {
             "path": "test/scene-capacity.test.mjs",
             "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change keeps long-face mounts that still fit and rejects the rest atomically"
           }
         ],
         "negative": [
@@ -1383,7 +1398,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
+      "guarantee": "Authored wheel, sphere and beam-length geometry drives physical dimensions, mass, inertia and mounting faces; a dimension edit never moves an existing surface attachment; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1407,7 +1422,8 @@
         "verify-property-focus",
         "verify-surface-browser",
         "verify-ball-browser",
-        "verify-authorable-scenes"
+        "verify-authorable-scenes",
+        "verify-beam-length-browser"
       ],
       "controls": {
         "positive": [
@@ -1442,6 +1458,18 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "length scales the beam along its axis: half extent, mass and end faces follow, section does not"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "beam long faces mount through a section-sized pad; end faces keep their whole face"
+          },
+          {
+            "path": "test/component-contract.test.mjs",
+            "anchor": "dimensioned beam uses authored length through save, compiler and physics"
           }
         ],
         "negative": [
@@ -1476,6 +1504,14 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change that would move a surface peer is rejected, then admitted once detached"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length that would intersect a neighbour is rejected on the command path"
           }
         ]
       },
@@ -1507,12 +1543,20 @@
           {
             "path": "test/assembly.test.mjs",
             "anchor": "authored selectable material is copied without identity inference"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a committed save without length loads unchanged and compiles to the same configuration"
           }
         ],
         "negative": [
           {
             "path": "test/assembly.test.mjs",
             "anchor": "renaming and rig placement never select material mass or contact properties"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "renaming and rig placement never change a beam whose length and material are fixed"
           }
         ]
       },

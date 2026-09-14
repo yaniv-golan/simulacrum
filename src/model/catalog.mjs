@@ -205,10 +205,19 @@ export const CATALOG = freeze({
   },
   beam: {
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
+    // Long faces mount through the 40 mm section so a beam can lie on a plate or lap
+    // another beam; end faces keep their whole face.
+    mountingPads: {
+      top: [0.02, 0.02],
+      bottom: [0.02, 0.02],
+      front: [0.02, 0.02],
+      back: [0.02, 0.02],
+    },
     type: 'beam',
     name: 'Beam',
     milestone: 'M2',
-    parameterDefinitions: {},
+    // Optional: an absent length is the canonical primitive, so existing saves load unchanged.
+    parameterDefinitions: { length: { ...rating(0.4, 0.1, 1, 'm'), optional: true } },
     primitives: [
       {
         id: 'body',
@@ -629,3 +638,13 @@ export const CATALOG = freeze({
     mountingPads: { left: [0.02, 0.03] },
   },
 });
+/** An authored length default must equal the canonical primitive it replaces, so "absent"
+ * and "default" are the same geometry. Checked at load for every dimensioned definition. */
+export function assertDimensionDefaults(catalog) {
+  for (const [type, definition] of Object.entries(catalog)) {
+    const length = definition.parameterDefinitions?.length;
+    if (length && length.default !== 2 * definition.primitives[0].halfExtents[0])
+      throw Error(`${type}: length default disagrees with its canonical primitive`);
+  }
+}
+assertDimensionDefaults(CATALOG);
