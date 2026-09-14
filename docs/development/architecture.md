@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"cb5930f54f24dea063ace01ff3296e5d0f7333414c1afe11ecf3ef5a2ed9b333","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"3f0f9b5e39a9bbe6a38ef5de9a7025d2a33460e5f9645e44e3cba0d209669c6a","disposition":"still accurate","rationale":"Diagnosed-retry change set (reviewed LAND at 57559f1) stacked on the frozen admission-and-scope candidate 845c3d0 with main up to cac1282 merged in; markers re-recorded on the stacked text after the scope application. validate-manifest.mjs still loads and validates the canonical manifest for milestone allocation and check metadata; beside the scheduler and admission rules it admits browserChannel (\"chrome\") and requires performance-tier checks to be timingSensitive. AGENTS.md changes one verification-table row for this change set. Layer ownership and the registry reader's role are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3cf1f7b9f5a00f1f8d384b036cea478de5d9c2920d6641d46f82c7e02e8b3794","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"57d8ae540c6960399928bfb60966140112959cec98bdb9613252b9f2ea163cb3","disposition":"still accurate","rationale":"AGENTS.md changed only by the verification-table row for receipt reuse; no layer, owner or import rule in the overview changed."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
