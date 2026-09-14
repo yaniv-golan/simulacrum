@@ -36,17 +36,21 @@ export async function mountFeedbackClient({
   reference = () => undefined,
   onChange = () => {},
   stopTabRecording = async () => {},
+  openStore = openFeedbackStore,
 }) {
   let store,
     storageError = '';
   try {
-    store = await openFeedbackStore({ durable: !!navigator.locks?.request });
+    store = await openStore({ durable: !!navigator.locks?.request });
   } catch (error) {
     storageError = error.message;
-    store = await openFeedbackStore({ durable: false });
+    store = await openStore({ durable: false });
   }
   const cancelled = new Set();
   const attachmentEpoch = { image: 0, context: 0 };
+  // The player's latest choice per attachment while its save is pending. render() shows it
+  // instead of the committed draft, so a slower save for the other box cannot undo a click.
+  const attachmentIntent = { image: null, context: null };
   let draft = null,
     items = [],
     config = null,
@@ -279,7 +283,7 @@ export async function mountFeedbackClient({
     q('[data-playback]').hidden = !key;
     q('[data-attachments]').hidden = store.mode !== 'durable';
     for (const kind of ['image', 'context']) {
-      q(`[data-${kind}]`).checked = !!draft?.[kind];
+      q(`[data-${kind}]`).checked = attachmentIntent[kind] ?? !!draft?.[kind];
       q(`[data-${kind}]`).disabled = !editable();
       q(`[data-${kind}-preview]`).hidden = !draft?.[kind];
     }
@@ -706,6 +710,7 @@ export async function mountFeedbackClient({
     if (!editable()) return;
     const expectedId = draft?.id,
       epoch = ++attachmentEpoch[kind];
+    attachmentIntent[kind] = checked;
     try {
       await persistText();
       if (draft?.id !== expectedId || attachmentEpoch[kind] !== epoch || !editing || !dialog.open)
@@ -745,6 +750,8 @@ export async function mountFeedbackClient({
       q('[data-attachment-status]').textContent = '';
     } catch (e) {
       q('[data-attachment-status]').textContent = e.message;
+    } finally {
+      if (attachmentEpoch[kind] === epoch) attachmentIntent[kind] = null;
     }
     render();
   }

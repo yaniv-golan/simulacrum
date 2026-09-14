@@ -5495,6 +5495,10 @@
           {
             "path": "test/feedback-load.test.mjs",
             "anchor": "synthetic corpus preserves feedback envelopes separately from capture media and detects corruption"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "unchecking both attachments never re-checks the second while the first save is pending"
           }
         ],
         "negative": [
@@ -5525,6 +5529,10 @@
           {
             "path": "test/feedback-load.test.mjs",
             "anchor": "feedback load retries the exact v1 envelope, rebinds references, and rejects malformed receipts"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a failed attachment reverts its box to the committed draft once the intent clears"
           }
         ]
       },
