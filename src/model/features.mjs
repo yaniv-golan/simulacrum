@@ -50,4 +50,5 @@ export const UI_FEATURES = Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/workshop-view.mjs',
   }),
+  whatsNew: Object.freeze({ milestone: 'M3b', entrypoint: 'src/presentation/whats-new.mjs' }),
 });

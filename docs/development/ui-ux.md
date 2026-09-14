@@ -425,12 +425,32 @@ Give feedback shares the existing workshop footer before, during and after recor
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
-readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
-is currently implemented. Future optional hints require an explicit trigger,
-dismissal/completion condition and retrieval route, with no timer hiding required
-instructions. Honor dismissal where persistence exists; local resets are not proof
-that someone wants another tour. Errors and consequential state are never dismissed
-by a teaching preference.
+readable and copyable here; the served marker remains for assessment evidence.
+
+Help also owns [What's new](../../src/presentation/whats-new.mjs#symbol=createWhatsNew):
+the player's task is to learn what changed since this device's last visit and where
+to try it. Notes are a tracked application module bound to the served build; the
+last-seen note id is stored per device. A returning device with unseen notes gets a
+dot on the Help button (the button's name stays "Help"; the state is described for
+assistive technology) and, once per new notes head, a compact non-modal notice — a
+section with the dialog role, never a `<dialog>`, so workshop keys stay alive whenever
+focus is outside it. The notice is the one automatic surface: its trigger is a new
+notes head on this device; it is dismissed by its ×, Escape or a click outside;
+opening it or Help marks the notes seen; it never opens while a dialog is open, a
+placement is active, the mode is Run or Paused, a recording is active, the scene is
+being edited or anything already has focus, and it yields to an open dialog by
+re-checking once that dialog closes. Its only invitation is one "Open Learn &
+examples" button, to existing admitted content. The Help section lists new and
+seen-before notes with "Try it" for entries that name an example; Try it runs that
+card's own launcher, so the Build-only rule and replacement confirmation apply. A
+first visit and a rolled-back build (unknown cursor) show nothing automatically; a
+browser that cannot store the cursor gets no badge or notice and a visible sentence
+in Help. Learning-content disposition: **no entry**. No other automatic hint or tour
+exists; future optional hints require an explicit trigger, dismissal/completion
+condition and retrieval route, with no timer hiding required instructions. Honor
+dismissal where persistence exists; local resets are not proof that someone wants
+another tour. Errors and consequential state are never dismissed by a teaching
+preference.
 
 The [motion panel](../../src/presentation/motion-readout.mjs#source) separates requested
 measurements from boundary warnings. Stopping preserves the last run for inspection.

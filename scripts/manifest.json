@@ -201,6 +201,15 @@
       "timeoutMs": 1000
     },
     {
+      "id": "release-notes",
+      "dueAt": "M3b",
+      "description": "tracked release notes bind to this build's features, parts and dates",
+      "ruleId": "gate-integrity",
+      "module": "scripts/check-release-notes.mjs",
+      "export": "checkReleaseNotes",
+      "timeoutMs": 3000
+    },
+    {
       "id": "verification-scope-configuration",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
@@ -776,6 +785,17 @@
       "smoke": false,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-whats-new-browser",
+      "script": "scripts/verify-whats-new-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "player-authority",
       "mergeSmoke": false
     },
     {

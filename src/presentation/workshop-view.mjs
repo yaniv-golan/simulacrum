@@ -70,6 +70,7 @@ import {
   sceneObjectDescriptors,
 } from '../model/environment.mjs';
 import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
+import { createWhatsNew } from './whats-new.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -137,6 +138,7 @@ export function createWorkshopView(
     sceneLibrary,
     onExportScene,
     learning,
+    releaseNotes = [],
     controllerHistory,
     cameraSession,
     builtInAssemblies = [],
@@ -799,7 +801,9 @@ export function createWorkshopView(
   recordingExport.dataset.command = 'export-session';
   recordingPanel.append(recordingToggle, recordingExport, recordingStatus);
   left.append(recordingPanel);
+  let recordingActive = false;
   function setRecordingState(state) {
+    recordingActive = Boolean(state.recording);
     recordingToggle.textContent = state.recording ? 'Stop recording' : 'Start recording';
     recordingExport.disabled = !state.available;
     recordingPanel.firstChild.textContent = state.recording
@@ -1353,12 +1357,13 @@ export function createWorkshopView(
   viewport.append(tools);
   const help = element('dialog', 'workshop-dialog');
   help.setAttribute('aria-label', 'Help');
+  const buildHeading = element('h3', '', 'Build');
   help.append(
     createDialogHeader(
       element('h2', '', 'Controls'),
       createDialogClose('Close help', () => help.close()),
     ),
-    element('h3', '', 'Build'),
+    buildHeading,
     element(
       'p',
       '',
@@ -1408,7 +1413,44 @@ export function createWorkshopView(
   );
   help.append(buildInfo);
   root.append(help);
-  filebar.append(button('Help', () => help.showModal()));
+  // One opener for the button and the ? shortcut: opening Help counts as seeing the notes.
+  function openHelp() {
+    whatsNew.markSeen();
+    help.showModal();
+  }
+  const helpButton = button('Help', openHelp);
+  filebar.append(helpButton);
+  const whatsNew = createWhatsNew({
+    root,
+    helpButton,
+    help,
+    // Above the fold: the badge promised new content, so it comes before Controls.
+    insertBefore: buildHeading,
+    notes: releaseNotes,
+    storage: {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
+    buildId: buildId.textContent,
+    learnButton,
+    findExample: (example) => examples.querySelector(`[data-command="${CSS.escape(example)}"]`),
+    openExamples: () => {
+      exampleMessage.textContent = '';
+      if (!examples.open) examples.showModal();
+    },
+    // The notice is automatic, so it yields to anything the player is already doing.
+    gate: () => {
+      const dialog = document.querySelector('dialog[open]');
+      if (dialog) return { reason: 'dialog', dialog };
+      if (partPlacement?.active()) return { reason: 'placement' };
+      if (frame?.metadata.mode !== 'build') return { reason: 'run' };
+      if (recordingActive) return { reason: 'recording' };
+      if (sceneEditor?.active()) return { reason: 'scene' };
+      const active = document.activeElement;
+      if (active && active !== document.body) return { reason: 'focus' };
+      return null;
+    },
+  });
   const machinePanels = element('div', 'machine-panels');
   viewport.append(machinePanels);
   const motionReadout = createMotionReadout(machinePanels);
@@ -4166,7 +4208,7 @@ export function createWorkshopView(
     if (key === '?') {
       event.preventDefault();
       if (help.open) help.close();
-      else help.showModal();
+      else openHelp();
       return;
     }
     if (
@@ -4478,7 +4520,9 @@ export function createWorkshopView(
       }),
     clearMeasurements: () => motionReadout.clear(),
     ingestMeasurements: (observation) => motionReadout.ingest(observation),
+    considerWhatsNew: () => whatsNew.consider(),
     readInteractionState: () => ({
+      whatsNew: whatsNew.read(),
       lamps: [...meshes]
         .filter(([, m]) => m.userData.lamp)
         .map(([id, m]) => ({
@@ -4617,6 +4661,7 @@ export function createWorkshopView(
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
+      whatsNew.dispose();
       graphicsRenderer.dispose();
       finishEnvironment.dispose();
       renderer.dispose();

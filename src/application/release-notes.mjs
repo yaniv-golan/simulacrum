@@ -1,7 +1,124 @@
-/** Wrong-trace stub: accepts everything. Replaced by the real module in the next commit. */
-export const RELEASE_NOTES = Object.freeze([
-  { id: '2026-09-13-dialog-close', date: '2026-09-13', name: 'x', summary: 'x' },
-]);
-export function validateReleaseNotes() {
-  return [];
+/**
+ * Player-facing release notes, newest first. Tracked and imported by the app, so the
+ * served notes are the notes of the served build: this file is hashed into the build id
+ * and bundled with the assets. A note lands in the same candidate as the change it
+ * describes, written by that change's implementer in player language and reviewed as
+ * player copy. Only player-visible behaviour earns an entry: a control, a part or
+ * setting, a sound, a fix the player could have noticed. Tooling, verification,
+ * documentation and refactors never do.
+ *
+ * Fields: `id` (landing date + slug, unique, ordering key), `date` (the landing date,
+ * never the writing date), `name`, `summary` (≤ 140 characters, no URL), optional
+ * `feature` (a UI_FEATURES key or catalog part type that must exist in this build) and
+ * optional `example` (an existing Learn & examples card command, validated by the
+ * browser check). `scripts/check-release-notes.mjs` enforces the shape.
+ */
+export const RELEASE_NOTES = Object.freeze(
+  [
+    {
+      id: '2026-09-13-dialog-close',
+      date: '2026-09-13',
+      name: 'One close control for every dialog',
+      summary: 'Every dialog closes from the × in its top-right corner or with Escape.',
+    },
+    {
+      id: '2026-09-13-mechanical-sound',
+      date: '2026-09-13',
+      name: 'Machines make sound',
+      summary:
+        'Motors, rolling and impacts have sound. It starts off; turn it on beside Try again.',
+      feature: 'mechanicalSound',
+      example: 'spring-launcher-example',
+    },
+    {
+      id: '2026-09-13-authorable-scenes',
+      date: '2026-09-13',
+      name: 'Edit the scene',
+      summary: 'Choose or edit the scene: ramps, bumps, steps and your own boxes.',
+      feature: 'authorableScenes',
+    },
+    {
+      id: '2026-09-13-powered-lamp',
+      date: '2026-09-13',
+      name: 'Powered Lamp',
+      summary: 'A lamp part with colour, brightness and beam spread.',
+      feature: 'poweredLamp',
+    },
+    {
+      id: '2026-09-13-camera',
+      date: '2026-09-13',
+      name: 'Camera',
+      summary: 'A camera part that takes photos you can view and save.',
+      feature: 'cameraPhotos',
+    },
+    {
+      id: '2026-09-13-load-cell',
+      date: '2026-09-13',
+      name: 'Load Cell',
+      summary: 'A sensor that measures the force through a mount.',
+      feature: 'loadCellSensor',
+    },
+    {
+      id: '2026-09-13-release-coupler',
+      date: '2026-09-13',
+      name: 'Release Coupler',
+      summary: 'A mount that lets go when powered — drop cargo or stage a launch.',
+      feature: 'releaseCoupler',
+    },
+    {
+      id: '2026-09-12-rope',
+      date: '2026-09-12',
+      name: 'Rope',
+      summary: 'A rope connection with real stretch and sag.',
+      feature: 'ropeWorkshop',
+    },
+    {
+      id: '2026-09-12-part-finishes',
+      date: '2026-09-12',
+      name: 'Part finishes',
+      summary: 'Parts have material finishes in the catalogue and workshop.',
+    },
+  ].map(Object.freeze),
+);
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const FIELDS = new Set(['id', 'date', 'name', 'summary', 'feature', 'example']);
+const ID = /^(\d{4}-\d{2}-\d{2})-[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Pure shape check. `latestDate` is the newest date a note may carry (ISO). */
+export function validateReleaseNotes(notes, { featureKeys, partTypes, latestDate }) {
+  const errors = [];
+  if (!Array.isArray(notes) || notes.length === 0) return ['release notes: empty'];
+  const bound = new Set([...featureKeys, ...partTypes]);
+  const ids = new Set();
+  let previousDate = null;
+  for (const note of notes) {
+    const id = typeof note?.id === 'string' ? note.id : '<no id>';
+    const fail = (field, why) => errors.push(`${id}: ${field} ${why}`);
+    for (const key of Object.keys(note ?? {}))
+      if (!FIELDS.has(key)) fail(key, 'is not a release note field');
+    const idMatch = ID.exec(id);
+    if (!idMatch) fail('id', 'must be <date>-<slug> in lowercase');
+    if (ids.has(id)) fail('id', 'is a duplicate id');
+    ids.add(id);
+    if (typeof note.date !== 'string' || !ISO_DATE.test(note.date) || isNaN(Date.parse(note.date)))
+      fail('date', 'must be an ISO date');
+    else {
+      if (idMatch && idMatch[1] !== note.date) fail('id', 'must start with its date');
+      if (note.date > latestDate) fail('date', 'is in the future of this build');
+      if (previousDate !== null && note.date > previousDate)
+        fail('date', 'breaks newest-first order');
+      previousDate = note.date;
+    }
+    if (typeof note.name !== 'string' || note.name.length < 1 || note.name.length > 60)
+      fail('name', 'must be 1 to 60 characters');
+    if (typeof note.summary !== 'string' || note.summary.length < 1 || note.summary.length > 140)
+      fail('summary', 'must be 1 to 140 characters');
+    else if (/:\/\/|www\./i.test(note.summary)) fail('summary', 'must not carry a URL');
+    if (note.feature !== undefined && !bound.has(note.feature))
+      fail('feature', 'must name a UI feature or catalog part of this build');
+    if (note.example !== undefined && (typeof note.example !== 'string' || !note.example))
+      fail('example', 'must name a Learn & examples card command');
+  }
+  return errors;
 }
