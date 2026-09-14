@@ -111,7 +111,10 @@ try {
         'rendered lamp origin follows completed body',
       );
   }
-  assert.ok(sample.lamps.every((l) => l.flux > 0 && l.intensity > 0 && !l.shadows));
+  // Shadow casting follows the live graphics level; lit lamps refresh their maps.
+  const shadowed = sample.rendering.quality.lampShadowSize > 0;
+  assert.ok(sample.lamps.every((l) => l.flux > 0 && l.intensity > 0));
+  assert.ok(sample.lamps.every((l) => l.shadows === shadowed && l.shadowPass === true));
   assert.equal(sample.frame.status, 'ready');
   assert.ok(report.cadenceP95 <= 40, `cadence ${report.cadenceP95}`);
   assert.ok(report.renderP95 <= 6, `render ${report.renderP95}`);
@@ -173,8 +176,9 @@ try {
   assert.ok(pixels.brightened > 300, 'powered beams must illuminate floor beyond the lenses');
   assert.ok(
     (await page.evaluate(() => window.workshopProbe.readInteractionState().lamps)).every(
-      (l) => l.flux === 0 && l.emission === 0,
+      (l) => l.flux === 0 && l.emission === 0 && l.shadowPass === false,
     ),
+    'unlit lamps skip their shadow pass',
   );
   await page.keyboard.down('w');
   await waitTicks();
@@ -196,6 +200,8 @@ try {
   }));
   assert.equal(after.ui.lamps.length, 8);
   assert.ok(after.ui.lamps.every((l) => l.flux > 0));
+  assert.equal(after.ui.rendering.quality.lampShadowSize, 0);
+  assert.ok(after.ui.lamps.every((l) => !l.shadows), 'reduced graphics drop lamp shadows');
   assert.deepEqual(after.frame.metadata.blueprint, sample.frame.metadata.blueprint);
   for (let i = 0; i < 8; i++) {
     assert.equal(after.frame.power.lamps[i].requestedW, sample.frame.power.lamps[i].requestedW);
