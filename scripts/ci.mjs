@@ -5,7 +5,7 @@ import { createVerificationContext } from './verification-run.mjs';
 import { runStructuralChecks } from './gate-structural.mjs';
 import { invariantTestFiles } from './check-invariant-controls.mjs';
 import { buildModuleGraph } from './module-graph.mjs';
-import { ciBudget } from './host-profile.mjs';
+import { ciBudget, hostedReportFields } from './host-profile.mjs';
 export async function runCI(context = createVerificationContext()) {
   await context.check('environment:localhost', {}, assertLocalServerAccess);
   const { deadlineMs, ...budget } = ciBudget(context.hostProfile ?? null);
@@ -27,13 +27,20 @@ export async function runCI(context = createVerificationContext()) {
       const elapsedMs = performance.now() - start;
       if (elapsedMs >= deadlineMs) throw Error(`iteration-budget: ${elapsedMs}ms`);
       const resumed = context.receipts().filter((r) => r.resumed).length;
-      const timingClaim = resumed
-        ? 'resumed work only; not a fresh CI duration qualification'
-        : 'fresh CI duration';
+      const hosted = hostedReportFields(context.hostProfile ?? null);
+      const timingClaim = hosted.hostProfile
+        ? `hosted profile ${hosted.hostProfile}${hosted.measurement ? ' (measurement, not evidence)' : ''}; not a local CI duration`
+        : resumed
+          ? 'resumed work only; not a fresh CI duration qualification'
+          : 'fresh CI duration';
       mkdirSync('artifacts', { recursive: true });
       writeFileSync(
         'artifacts/ci.json',
-        JSON.stringify({ ...context.identity, elapsedMs, resumed, timingClaim }, null, 2) + '\n',
+        JSON.stringify(
+          { ...context.identity, ...hosted, elapsedMs, resumed, timingClaim },
+          null,
+          2,
+        ) + '\n',
       );
       console.log(
         `every-commit checks passed in ${elapsedMs.toFixed(1)}ms; ${timingClaim}; ${resumed} resumed leaves`,

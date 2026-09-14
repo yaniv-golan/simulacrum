@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createLeafLedger } from './verification-resume.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
-import { readHostProfile, profileDeadline } from './host-profile.mjs';
+import { readHostProfile, profileDeadline, childEnvironment } from './host-profile.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { runProcess, runModuleCheck } from './run-check.mjs';
@@ -41,7 +41,6 @@ export function verificationIdentity() {
 }
 /** Invocation receipts may reconstruct audited same-candidate leaves. Every reuse revalidates identity. */
 export function createVerificationRun({
-  hostProfile = null,
   readIdentity = verificationIdentity,
   resumeLedger,
   writeLedger,
@@ -165,7 +164,6 @@ export function createVerificationContext(options) {
     ? readHostProfile(JSON.parse(readFileSync('scripts/manifest.json', 'utf8')))
     : null;
   const run = createVerificationRun({
-    hostProfile,
     ...ledgerOptions,
     ...options,
     assertAdmission: () => remaining(Infinity),
@@ -184,7 +182,7 @@ export function createVerificationContext(options) {
     node(id, args, timeoutMs = 30000) {
       return run.check(id, { args, timeoutMs }, () =>
         boundedProcess(timeoutMs, (limit) =>
-          runProcess(process.execPath, args, { timeoutMs: limit }),
+          runProcess(process.execPath, args, { timeoutMs: limit, env: childEnvironment() }),
         ),
       );
     },

@@ -34,7 +34,8 @@ import { errorMessages, withCleanup } from './verification-cleanup.mjs';
 import {
   browserBudget,
   partitionHostedChecks,
-  rotateSchedule,
+  measurementRotation,
+  finalSuiteRuns,
   hostedReportFields,
 } from './host-profile.mjs';
 const stamp = 'dist/.verification-source.json';
@@ -224,14 +225,17 @@ async function executeBrowserSuite(
     ? { cores: host.cores, load1: load1AtStart, derived: true }
     : { explicit: workers, load1: load1AtStart, derived: false };
   report.workers = workers;
-  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
-  if (!derived && workers > 2 && (context || !Array.isArray(mode)))
-    throw Error('more than two workers requires explicit development probes');
+  // The hosted route has no tier context, so its workers are the profile's registered value
+  // (never derived from the runner's load); tiers ignore the profile entirely (they refuse it).
   context ??= createVerificationContext();
+  const hostProfile = context.hostProfile ?? null;
+  if (hostProfile && !derived) workers = hostProfile.browserWorkers ?? workers;
+  report.workers = workers;
+  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
+  if (!derived && workers > 2 && (tierContext || !Array.isArray(mode)))
+    throw Error('more than two workers requires explicit development probes');
   if (selection && JSON.stringify(selection.source) !== JSON.stringify(sourceIdentity()))
     throw Error('browser selection does not match current source');
-  const hostProfile = context.hostProfile ?? null;
-  if (hostProfile) workers = hostProfile.browserWorkers ?? workers;
   Object.assign(report, hostedReportFields(hostProfile));
   const hosted = partitionHostedChecks(selectChecks(mode), hostProfile);
   const checks = hosted.run,
@@ -254,13 +258,10 @@ async function executeBrowserSuite(
         reason: 'previous failed browser check; ordering hint only',
       })),
   );
-  if (hostProfile?.measurement) {
-    // A measurement run must eventually complete every check even when the job is cut
-    // short, so each run starts from a different point of the registered order.
-    const seed = Number.parseInt(process.env.GITHUB_RUN_NUMBER ?? '0', 10) || 0;
-    priority.checks = rotateSchedule(priority.checks, seed);
-    priority.reasons.push({ id: 'schedule', reason: `measurement rotation seed ${seed}` });
-  }
+  // A measurement run must eventually complete every check even when the job is cut
+  // short, so each run starts from a different point of the registered order.
+  const rotation = measurementRotation(priority.checks, hostProfile);
+  priority.checks = rotation.checks;
   report.priority = { ...priority, checks: priority.checks.map((c) => c.id) };
   const priorityCount = new Set(priority.reasons.map((row) => row.id)).size;
   const plan = planBrowserPhases(priority.checks, {
@@ -270,6 +271,7 @@ async function executeBrowserSuite(
   });
   const scheduled = plan.order;
   report.schedule = {
+    ...(rotation.note ? { rotation: rotation.note } : {}),
     policy:
       'phased: headless pool (longest first, priority as queue order), serialized lane, timing-sensitive last',
     priorityCount,
@@ -499,7 +501,7 @@ async function executeBrowserSuite(
         );
     },
     async () => {
-      report.runs = checks.flatMap((c) => runs.filter((r) => r.id === c.id));
+      report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);
       report.notRun = checks
         .filter((c) => !runs.some((r) => r.id === c.id && typeof r.ok === 'boolean'))
         .map((c) => c.id);

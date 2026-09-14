@@ -64,6 +64,22 @@ export function partitionHostedChecks(checks, profile) {
 }
 /** Measurement runs rotate the schedule so a job cut short still completes every check
  * across runs; seeded by the run number, never by history. */
+/** The persisted run list: executed rows in schedule order, then the registered NOT_EVALUATED rows. */
+export function finalSuiteRuns(checks, executedRows, notEvaluated) {
+  return [...checks.flatMap((c) => executedRows.filter((r) => r.id === c.id)), ...notEvaluated];
+}
+/** Children under test never inherit the profile: it governs the harness, not the code under test. */
+export function childEnvironment(env = process.env) {
+  const { SIMULACRUM_HOST_PROFILE, ...rest } = env;
+  void SIMULACRUM_HOST_PROFILE;
+  return rest;
+}
+/** Rotation is schedule metadata: it never enters the priority reasons that size the prefix. */
+export function measurementRotation(checks, profile, env = process.env) {
+  if (!profile?.measurement) return { checks, note: null };
+  const seed = Number.parseInt(env.GITHUB_RUN_NUMBER ?? '0', 10) || 0;
+  return { checks: rotateSchedule(checks, seed), note: `measurement rotation seed ${seed}` };
+}
 export function rotateSchedule(items, seed) {
   if (!items.length) return [];
   const offset = ((seed % items.length) + items.length) % items.length;
@@ -106,8 +122,11 @@ export function validateHostProfiles(manifest) {
     for (const key of Object.keys(profile))
       if (!PROFILE_KEYS.includes(key)) fail(`unknown field ${key}`);
     if (typeof profile.measurement !== 'boolean') fail('measurement must be a boolean');
-    if (!Array.isArray(profile.measurementRuns ?? []))
-      fail('measurementRuns must list run identifiers');
+    if (
+      !Array.isArray(profile.measurementRuns ?? []) ||
+      (profile.measurementRuns ?? []).some((id) => typeof id !== 'string' || !id.trim())
+    )
+      fail('measurementRuns entries must be run identifiers (workflow run id strings)');
     if (profile.measurement && (profile.measurementRuns ?? []).length > 3)
       fail('at most three measurement runs before per-check budgets are registered');
     for (const site of DEADLINE_SITES) {
@@ -117,8 +136,9 @@ export function validateHostProfiles(manifest) {
     }
     if (!Number.isFinite(profile.ciBudgetMs) || profile.ciBudgetMs < CI_LIMIT_MS)
       fail(`ciBudgetMs must be a finite number no shorter than ${CI_LIMIT_MS}`);
-    for (const workers of ['unitWorkers', 'browserWorkers'])
-      if (![1, 2, 3, 4].includes(profile[workers])) fail(`${workers} must be 1 to 4`);
+    if (![1, 2, 3, 4].includes(profile.unitWorkers)) fail('unitWorkers must be 1 to 4');
+    // More than two browser workers is reserved for explicit development probes.
+    if (![1, 2].includes(profile.browserWorkers)) fail('browserWorkers must be 1 or 2');
     for (const tier of profile.notEvaluated ?? [])
       if (!tiers.has(tier)) fail(`unknown tier ${tier} in notEvaluated`);
     if (profile.measurement) {
