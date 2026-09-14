@@ -48,18 +48,22 @@ export function browserBudget(profile, check) {
     `no hostedTimeoutMs registered for ${check.id} under host profile ${profile.id}; register it from measurement runs`,
   );
 }
+/** Hosted runs have no tier context and therefore no quiet-host admission, so timing-sensitive
+ * checks are not evaluated there whatever their tier, alongside the profile's excluded tiers. */
 export function partitionHostedChecks(checks, profile) {
   if (!profile) return { run: checks, notEvaluated: [] };
   const excluded = new Set(profile.notEvaluated ?? []);
+  const reason = (check) =>
+    excluded.has(check.tier)
+      ? `hosted profile ${profile.id}: ${check.tier} tier is not evaluated on this platform`
+      : check.timingSensitive === true
+        ? `hosted profile ${profile.id}: timing-sensitive check has no quiet-host admission on this platform`
+        : null;
   return {
-    run: checks.filter((check) => !excluded.has(check.tier)),
+    run: checks.filter((check) => !reason(check)),
     notEvaluated: checks
-      .filter((check) => excluded.has(check.tier))
-      .map((check) => ({
-        id: check.id,
-        status: 'NOT_EVALUATED',
-        reason: `hosted profile ${profile.id}: ${check.tier} tier is not evaluated on this platform`,
-      })),
+      .filter((check) => reason(check))
+      .map((check) => ({ id: check.id, status: 'NOT_EVALUATED', reason: reason(check) })),
   };
 }
 /** Measurement runs rotate the schedule so a job cut short still completes every check
@@ -149,7 +153,12 @@ export function validateHostProfiles(manifest) {
       if (profile.browserTimeoutMs) fail('registered profiles carry no provisional browser rule');
       const excluded = new Set(profile.notEvaluated ?? []);
       const missing = (manifest.browserChecks ?? [])
-        .filter((check) => !excluded.has(check.tier) && !Number.isFinite(check.hostedTimeoutMs))
+        .filter(
+          (check) =>
+            !excluded.has(check.tier) &&
+            check.timingSensitive !== true &&
+            !Number.isFinite(check.hostedTimeoutMs),
+        )
         .map((check) => check.id);
       if (missing.length)
         fail(
