@@ -159,16 +159,27 @@ try {
   await plus.focus();
   await page.keyboard.down('Enter');
   await duty(1);
-  await page.waitForFunction(() => {
-    const frame = window.workshopProbe.observe().frames[0];
-    return frame.power.motors.some((motor) => Math.abs(motor.current) > 0.001);
-  });
-  await page.waitForFunction(() => {
-    const match = document
-      .querySelector('.connection-test-live')
-      ?.textContent.match(/shaft (-?[0-9.]+) rad/);
-    return match && Math.abs(Number(match[1])) > 0.01;
-  });
+  // Simulation progress under a held key is app work, not a timing budget: live waits.
+  await liveWait(
+    page,
+    () => {
+      const frame = window.workshopProbe.observe().frames[0];
+      return frame.power.motors.some((motor) => Math.abs(motor.current) > 0.001);
+    },
+    null,
+    { label: 'motor current under the held key' },
+  );
+  await liveWait(
+    page,
+    () => {
+      const match = document
+        .querySelector('.connection-test-live')
+        ?.textContent.match(/shaft (-?[0-9.]+) rad/);
+      return match && Math.abs(Number(match[1])) > 0.01;
+    },
+    null,
+    { label: 'shaft readout under the held key' },
+  );
   await page.keyboard.up('Enter');
   await duty(0);
   evidence.assert('match', [
@@ -199,9 +210,11 @@ try {
   await page.keyboard.down('w');
   const beforeKeyRelease = (await read()).tick;
   await page.keyboard.up('w');
-  await page.waitForFunction(
+  await liveWait(
+    page,
     (tick) => window.workshopProbe.observe().frames[0].tick > tick + 2,
     beforeKeyRelease,
+    { label: 'two ticks after key release' },
   );
   await duty(1);
   await page.mouse.up();
