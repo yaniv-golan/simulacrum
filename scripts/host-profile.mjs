@@ -35,7 +35,11 @@ export function browserBudget(profile, check) {
   if (!profile) return { timeoutMs: check.timeoutMs };
   const base = { registeredTimeoutMs: check.timeoutMs, hostProfile: profile.id };
   if (Number.isFinite(check.hostedTimeoutMs))
-    return { timeoutMs: check.hostedTimeoutMs, ...base, ...(profile.measurement ? { measurement: true } : {}) };
+    return {
+      timeoutMs: check.hostedTimeoutMs,
+      ...base,
+      ...(profile.measurement ? { measurement: true } : {}),
+    };
   if (profile.measurement && profile.browserTimeoutMs?.default) {
     const { cap, factor } = profile.browserTimeoutMs.default;
     return { timeoutMs: Math.min(cap, factor * check.timeoutMs), ...base, measurement: true };
@@ -73,7 +77,11 @@ export function assertNoHostProfile(env = process.env) {
 }
 export function ciBudget(profile) {
   if (!profile?.ciBudgetMs) return { limitMs: CI_LIMIT_MS, deadlineMs: CI_LIMIT_MS };
-  return { limitMs: CI_LIMIT_MS, hostedLimitMs: profile.ciBudgetMs, deadlineMs: profile.ciBudgetMs };
+  return {
+    limitMs: CI_LIMIT_MS,
+    hostedLimitMs: profile.ciBudgetMs,
+    deadlineMs: profile.ciBudgetMs,
+  };
 }
 export function hostedReportFields(profile) {
   return profile ? { hostProfile: profile.id, measurement: profile.measurement === true } : {};
@@ -93,7 +101,8 @@ export function validateHostProfiles(manifest) {
     const fail = (message) => {
       throw Error(`host profile ${id}: ${message}`);
     };
-    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) fail('must be an object');
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile))
+      fail('must be an object');
     for (const key of Object.keys(profile))
       if (!PROFILE_KEYS.includes(key)) fail(`unknown field ${key}`);
     if (typeof profile.measurement !== 'boolean') fail('measurement must be a boolean');
@@ -123,11 +132,16 @@ export function validateHostProfiles(manifest) {
         .filter((check) => !excluded.has(check.tier) && !Number.isFinite(check.hostedTimeoutMs))
         .map((check) => check.id);
       if (missing.length)
-        fail(`registered profiles need hostedTimeoutMs on every evaluated browser check; missing: ${missing.join(', ')}`);
+        fail(
+          `registered profiles need hostedTimeoutMs on every evaluated browser check; missing: ${missing.join(', ')}`,
+        );
     }
   }
   for (const check of manifest.browserChecks ?? [])
-    if (check.hostedTimeoutMs !== undefined && (!Number.isFinite(check.hostedTimeoutMs) || check.hostedTimeoutMs < check.timeoutMs))
+    if (
+      check.hostedTimeoutMs !== undefined &&
+      (!Number.isFinite(check.hostedTimeoutMs) || check.hostedTimeoutMs < check.timeoutMs)
+    )
       throw Error(`${check.id}: hostedTimeoutMs must be a finite number no shorter than timeoutMs`);
   return manifest;
 }

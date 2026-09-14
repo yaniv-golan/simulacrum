@@ -160,9 +160,10 @@ export function createVerificationContext(options) {
       throw error;
     }
   }
-  const hostProfile = readHostProfile(
-    JSON.parse(readFileSync('scripts/manifest.json', 'utf8')),
-  );
+  // Only a hosted workflow sets the profile; local runs and fixtures never read the manifest here.
+  const hostProfile = process.env.SIMULACRUM_HOST_PROFILE
+    ? readHostProfile(JSON.parse(readFileSync('scripts/manifest.json', 'utf8')))
+    : null;
   const run = createVerificationRun({
     hostProfile,
     ...ledgerOptions,

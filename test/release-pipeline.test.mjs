@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { releaseEligible, assertVerificationJobs } from '../scripts/playtest/ci-verification.mjs';
 test('release routing preserves independent PR checks and rejects missing required work', () => {
-  assert.equal(releaseEligible('push', 'main'), false, 'main pushes verify; releases are dispatched');
+  assert.equal(
+    releaseEligible('push', 'main'),
+    false,
+    'main pushes verify; releases are dispatched',
+  );
   for (const event of ['pull_request', 'schedule'])
     assert.equal(releaseEligible(event, 'main'), false);
   assert.equal(releaseEligible('push', 'other'), false);

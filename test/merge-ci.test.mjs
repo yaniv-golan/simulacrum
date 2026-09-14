@@ -58,7 +58,8 @@ test('registered NOT_EVALUATED rows are listed, not treated as missing outcomes'
       {
         id: 'other',
         status: 'NOT_EVALUATED',
-        reason: 'hosted profile github-ubuntu-2cpu: performance tier is not evaluated on this platform',
+        reason:
+          'hosted profile github-ubuntu-2cpu: performance tier is not evaluated on this platform',
       },
     ],
   };
