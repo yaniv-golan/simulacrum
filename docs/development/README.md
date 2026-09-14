@@ -155,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"6cfcb27eea1eb67bba4d47ff8ad45365715dbeb5f959a8b21173d1b67393c24f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb1f6b5fa31892c2a6af1946448bebaa1c6e25c9663c6d4352b57c8dc841e6c2","disposition":"still accurate","rationale":"Only the generated reference.md changed, gaining the new src/presentation/dialog-close.mjs module and test/dialog-close.test.mjs in its discovery tables; the documentation workflow (prepare, review, batch, check) described here is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6cfcb27eea1eb67bba4d47ff8ad45365715dbeb5f959a8b21173d1b67393c24f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb1f6b5fa31892c2a6af1946448bebaa1c6e25c9663c6d4352b57c8dc841e6c2","disposition":"still accurate","rationale":"Only the generated reference.md changed, gaining the dialog-close-consistency row in its Invariant owners table (owners createDialogClose, .dialog-header and the feedback/recording-setup close labels); the documentation workflow (prepare, review, batch, check) described here is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
