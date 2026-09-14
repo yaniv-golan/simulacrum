@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createLeafLedger } from '../scripts/verification-resume.mjs';
 import { createVerificationRun } from '../scripts/verification-run.mjs';
+import { reusableLeaf } from '../scripts/candidate-after.mjs';
 
 const id = 'unit:test/pure.test.mjs';
 const configuration = { args: ['--test', 'test/pure.test.mjs'], timeoutMs: 30000 };
@@ -138,11 +139,26 @@ test('malformed, tampered, oversized and nonregular receipts fail closed without
   }
 });
 
-test('aggregate and unaudited checks run on every attempt and never enter the ledger', async (t) => {
+test('plain resume never reads aggregate, timing-sensitive or unaudited leaves, whatever the production save policy stored', async (t) => {
   const { identity, ledger } = fixture(t);
-  const output = ledger('output');
-  for (const other of ['ci:budget', 'browser:performance', 'unit:test/unaudited.test.mjs']) {
-    output.save(other, {}, { code: 0 }, 20);
+  // The production save policy: unit leaves and browser checks that are neither
+  // timing-sensitive nor merge smoke are stored for a diagnosed retry; nothing else is.
+  const manifest = {
+    browserChecks: [
+      { id: 'performance', timingSensitive: true },
+      { id: 'mirror' },
+      { id: 'smoke', mergeSmoke: true },
+    ],
+  };
+  const output = ledger('output', { saveEligible: (leaf) => reusableLeaf(leaf, manifest) });
+  const stored = (leaf) => ledger('output', { eligible: [leaf] }).load(leaf, {}) !== null;
+  for (const other of [
+    'ci:budget',
+    'browser:performance',
+    'browser:smoke',
+    'browser:mirror',
+    'unit:test/unaudited.test.mjs',
+  ]) {
     let calls = 0;
     for (let attempt = 0; attempt < 2; attempt++) {
       const run = createVerificationRun({
@@ -154,9 +170,16 @@ test('aggregate and unaudited checks run on every attempt and never enter the le
         calls++;
         return { code: 0 };
       });
-      assert.equal(run.receipts()[0].resumed, undefined);
+      // The audited resume list gates every load: an unaudited leaf executes on each attempt.
+      assert.equal(run.receipts()[0].resumed, undefined, other);
     }
-    assert.equal(calls, 2);
-    assert.equal(output.load(other, {}), null);
+    assert.equal(calls, 2, other);
+    assert.equal(output.load(other, {}), null, `${other} is not resumable by plain resume`);
   }
+  // What the policy stores is readable only by a ledger that names the leaf explicitly — the
+  // reuse list a diagnosed retry is given; aggregates, timing-sensitive and smoke rows are absent.
+  assert.equal(stored('unit:test/unaudited.test.mjs'), true);
+  assert.equal(stored('browser:mirror'), true);
+  for (const never of ['ci:budget', 'browser:performance', 'browser:smoke'])
+    assert.equal(stored(never), false, never);
 });

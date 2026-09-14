@@ -9,6 +9,7 @@ export const SURFACE_REASON_CODES = Object.freeze([
   'SURFACE_OUT_OF_BOUNDS',
   'SURFACE_OVERLAP',
   'MOUNT_HELD_BY_ANOTHER_CONNECTION',
+  'SURFACE_RESIZE_MOVES_MOUNT',
   'STALE_PROPOSAL',
 ]);
 function reject(reasonCode) {

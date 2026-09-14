@@ -44,7 +44,7 @@ jobs:
           node-version: 24.18.0
           cache: npm
       - run: npm ci
-      - run: npm run format:check
+      # `npm run ci` runs the same prettier --check through the every-commit format gate.
       - run: npm run ci
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
