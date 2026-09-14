@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { settledWindow, SEGMENTS } from '../scripts/browser-idle.mjs';
+import { settledWindow, liveWait, SEGMENTS } from '../scripts/browser-idle.mjs';
 
 // Four reads per window: before, after each third.
 const fakePage = (ticksPerRead) => {
@@ -39,4 +39,62 @@ test('a window with a stalled third is refused rather than proving nothing chang
   await assert.rejects(settledWindow(fakePage([7, 7, 7, 7]), 350), /third 1 of a 350 ms/);
   // A counter that went backwards (a reload) is not liveness either.
   await assert.rejects(settledWindow(fakePage([100, 101, 0, 1]), 350), /third 2/);
+});
+
+// A page whose predicate becomes true after `trueAfter` slices; loopTicks advance per read
+// unless the renderer is declared stalled.
+const waitingPage = ({ trueAfter, stalledFrom = Infinity, giveUpAfter = 40 }) => {
+  let reads = 0,
+    slices = 0;
+  const timeout = Object.assign(Error('Timeout 2000ms exceeded'), { name: 'TimeoutError' });
+  return {
+    evaluate: async () => (reads++ < stalledFrom ? reads : stalledFrom),
+    // The real slice must be forwarded (a wait without it would fall back to the page's private
+    // default — the old behaviour) along with the predicate's argument; a fake that is asked
+    // more than `giveUpAfter` times fails closed instead of hanging the test.
+    waitForFunction: async (predicate, argument, options) => {
+      assert.equal(typeof predicate, 'function');
+      assert.equal(argument, 'sentinel');
+      assert.deepEqual(options, { timeout: 2000 });
+      if (++slices > giveUpAfter) throw Error('fake page asked too often');
+      if (slices >= trueAfter) return { slices };
+      throw timeout;
+    },
+    slices: () => slices,
+  };
+};
+
+test('a live wait outlasts a private deadline while the loop ticks, and refuses a stalled one', async () => {
+  // Slow but alive: true on the fourth slice (8 s at 2 s slices — beyond the old 8 s deadline).
+  const slow = waitingPage({ trueAfter: 4 });
+  assert.deepEqual(await liveWait(slow, () => true, 'sentinel'), { slices: 4 });
+  // Stalled: no tick across a slice → renderer-starved, not a timeout.
+  await assert.rejects(
+    liveWait(waitingPage({ trueAfter: 99, stalledFrom: 2 }), () => true, 'sentinel'),
+    (error) => {
+      assert.match(error.message, /renderer starved: no animation frame in a 2000 ms wait slice/);
+      assert.equal(error.failureKind, 'renderer-starved');
+      return true;
+    },
+  );
+  // Alive but the predicate never becomes true: bounded by maxMs, failing inside the check with
+  // its evidence rather than by the row watchdog (which would lose the failure artifacts).
+  await assert.rejects(
+    liveWait(waitingPage({ trueAfter: 99 }), () => true, 'sentinel', {
+      maxMs: 6000,
+      label: 'duty 1',
+    }),
+    /duty 1 stayed false for 6000 ms \(3 slices\) while the presentation loop ticked 3 times/,
+  );
+  // Any other driver error passes through unchanged.
+  const broken = {
+    evaluate: async () => 1,
+    waitForFunction: async () => {
+      throw Error('Target closed');
+    },
+  };
+  await assert.rejects(
+    liveWait(broken, () => true, 'sentinel'),
+    /Target closed/,
+  );
 });

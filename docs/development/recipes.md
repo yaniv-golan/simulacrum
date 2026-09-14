@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"e2c04e86d03301c379bb8f718e5c85cdcdc13a38fbad9f5ed9683dbe144b8985","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9470255b4d5de68d246cd424743c77bd305467704d1b0079af054d535876fd44","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its fourth adversarial review (same main 421a2b1). No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (report attestation, retry selection metadata, moved-ref tests) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"5be945d12fe10e1e77b4e9b60db13a410a8b1d25503d3ec6c9b3354d10b5517f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7b3f43f684adb0b321f5482192adc0a84b0e1aee212bf51dbc94866aa2f8acb7","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): verify-connection-test-browser.mjs now aims its drive-button presses at the element at press time and confirms the hold; no simulation, physics-door, power, checkpoint or contact behavior changed. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

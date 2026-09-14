@@ -1,8 +1,8 @@
-import { loadavg, cpus } from 'node:os';
+import { loadavg, cpus, getPriority } from 'node:os';
 import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
-import { assertLocalServerAccess } from './runtime-preflight.mjs';
+import { assertLocalServerAccess, assertUnnicedLaunch } from './runtime-preflight.mjs';
 import { build, preview, createServer } from 'vite';
 import {
   readFileSync,
@@ -216,7 +216,7 @@ async function executeBrowserSuite(
     priorityFiles = [],
     priorityProvenance,
     seed = process.env.SIMULACRUM_BROWSER_SCHEDULE_SEED ?? 'tier',
-    host = { cores: cpus().length, load1: () => loadavg()[0] },
+    host = { cores: cpus().length, load1: () => loadavg()[0], priority: () => getPriority() },
   },
   report,
   publish,
@@ -234,9 +234,13 @@ async function executeBrowserSuite(
   const load1AtStart = host.load1();
   if (derived) workers = tierWorkers({ cores: host.cores, load1: load1AtStart });
   else if (workers === undefined) workers = 2;
+  const niceness = host.priority?.() ?? null;
+  // Derived workers assume the host's ordinary priority; a niced tier loses to every other
+  // process regardless of idle cores, so the derivation would mean nothing.
+  if (derived) assertUnnicedLaunch({ priority: niceness ?? 0 });
   report.workersBasis = derived
-    ? { cores: host.cores, load1: load1AtStart, derived: true }
-    : { explicit: workers, load1: load1AtStart, derived: false };
+    ? { cores: host.cores, load1: load1AtStart, niceness, derived: true }
+    : { explicit: workers, load1: load1AtStart, niceness, derived: false };
   report.workers = workers;
   if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
   if (!derived && workers > 2 && (context || !Array.isArray(mode)))

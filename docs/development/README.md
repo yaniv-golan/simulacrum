@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"ad6d539e32f207c7a6a0f00e6031f5cb3dd2f11c3ede3fe1773fbff5f1046a3e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af9e14c44c6cd1507e36d3bacde8ae2cf0917dc00d55b9d322acfd61e220de04","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): package.json gained the test:browser:serial script and browser-session.mjs gained the ui profile's GPU args; the commands this section names (test:unit, test:browser:affected, verify:local/merge) and their semantics are unchanged; the serial control is documented in the browser-execution section, not here."} -->
+<!-- doc-review {"version":1,"fingerprint":"763ebe58a477840ddb427099e58af61b1fdb28c158d7d606021f2dbf59b1021e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"a9fa17cbb6e655ff452c9a604c0fa5c8a33fdb58291339b8b2bddbaddc36b801","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs gained assertUnnicedLaunch, used by the tiers; the commands this section names and their semantics are unchanged; the launch recipe is documented in the candidate section."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"78427428197dd4ac2fa7d5311fad4f32b16bcdad8030d3c3c7d859910bf7559e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c88431e1ab3e7e484d6661affb0825c4ef3124bb0040e2d7b3dce719f6169fcd","disposition":"still accurate","rationale":"Diagnosed-retry change set amended after its fourth adversarial review (same main 421a2b1). The resolved retry selection now keeps the fresh policy metadata (scope, files, fallback) and reports the delta scope under `delta`; the merge tier labels rows only the delta reached with the delta reason. Which checks run is unchanged from the previous review: fresh policy ∪ delta ∪ required minus covered-and-unreached, read from the attempt ledger only."} -->
+<!-- doc-review {"version":1,"fingerprint":"13229f245e642a1fa060ec47d14cce246c3e6a45c8347123e29aaa29885a9cd9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ca38e9b21b25cc443a39f71eede2b9922fde4ec22a851119b381d3090ec5cc22","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests in scripts/manifest.json changed (consumer closures that include verify-connection-test-browser.mjs); the scheduling and admission text recorded in the previous review is unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -392,8 +392,12 @@ run in three phases: the headless pool (checks declared `execution: parallel`), 
 serialized lane (exclusive checks that are not timing-sensitive), then timing-sensitive
 checks last. A completion tier derives its pool workers from the host at start — one per
 two idle cores (a GPU-backed headless check is about two runnable threads), at most four,
-recorded as `workersBasis` — and admits the timing phase only on a
-quiet host: one bounded wait, then the remaining timing rows are recorded `not evaluated`
+recorded as `workersBasis` with the launch niceness; a tier that derives workers refuses a
+niced launch (zsh nices every `&` job unless `bgnice` is unset; `nice`; an already-niced
+parent), because a niced tier loses to every other process regardless of idle cores. It
+admits the timing phase only on a
+quiet host: one bounded wait that tracks the one-minute load average's decay (up to 180 s,
+refusing early when the load is not falling), then the remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. A run without a tier context (the hosted CI route,
 scope witnesses) keeps two workers and unconditional timing execution. Explicit `--workers 1..4`
 remain for development probes and for `test:browser:serial`; an explicit count skips host
@@ -538,7 +542,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"dc44282df63250fd9d3ebf2bda45968748f7f25474da782a32396c6ba1a20fa4","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"53289dc48cb438ed48ab61803ad72a5d58e1f868549fe9ad16f0810805ba0c9f","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): package.json's new test:browser:serial script runs through the same verification-window wrapper; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -587,14 +591,16 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"465424ea2f141c3f146f86428e12e7e96507001c7ecb2a6a03dc3150adf619a3","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"87614d00661c70db01a98e91957be74ba3513dd834ef4324b6ade40a40b26ba5","disposition":"updated","rationale":"Diagnosed-retry change set amended after its fourth adversarial review (same main 421a2b1). Added that every candidate report carries an HMAC attestation under the candidate resume key and --after admits a parent report only when it verifies (an edited report is refused before anything is read from it), which is what makes the coverage set the retry reads from the report trustworthy; the rest of the paragraph (coverage-bounded delta, resolved refs, signed descriptor, resume refusal) is unchanged. Verified against candidate-after.mjs attestReport/verifyAttestation and verify-candidate.mjs write()."} -->
+<!-- doc-review {"version":1,"fingerprint":"56317f90f6b2e680abdc1cd4a295294918757917f9547c30d12bdedaa38a848a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4613b05038a27d9324d372d43c1d41ab6f35d1fe0e37d538fafd0d3693db8968","disposition":"still accurate","rationale":"Connection-test press hardening on the live-wait branch (main 421a2b1): only scope-row digests changed; capture, dependency validation, the niced-launch refusal and the launch recipe are as reviewed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
-(or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
+(or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
+job by default (`unsetopt bgnice` first, e.g. `zsh -c "unsetopt bgnice; nohup caffeinate -i npm
+run verify:candidate -- local &"`), and the command refuses a niced launch. For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
 replace local base selection or final required coverage. Candidate browser runs also read
