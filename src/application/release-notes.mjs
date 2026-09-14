@@ -16,6 +16,49 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-14-motor-connections',
+      date: '2026-09-14',
+      name: 'New motors show what to connect',
+      summary:
+        'Selecting a motor or hinge with nothing connected opens Connect & test with its missing power, control and shaft.',
+    },
+    {
+      id: '2026-09-14-lift-with-shift',
+      date: '2026-09-14',
+      name: 'Lift parts with Shift and the arrows',
+      summary:
+        'Shift with the up/down arrows raises and lowers the selected part; Page Up/Down still work.',
+    },
+    {
+      id: '2026-09-14-guided-first-build',
+      date: '2026-09-14',
+      name: 'Guided first build from the empty workshop',
+      summary: 'An empty workshop offers a button that starts the rolling-machine guide.',
+    },
+    {
+      id: '2026-09-14-copies-beside-original',
+      date: '2026-09-14',
+      name: 'Copies land beside the original',
+      summary:
+        'Copy (C) now places the copy right next to the original on the grid and keeps your view when the copy is already in sight.',
+    },
+    {
+      id: '2026-09-14-lamp-shadows',
+      date: '2026-09-14',
+      name: 'Lamps cast shadows',
+      summary:
+        'A lit lamp now throws shadows from the parts in its beam while the view runs smoothly.',
+      feature: 'poweredLamp',
+    },
+    {
+      id: '2026-09-14-beam-length',
+      date: '2026-09-14',
+      name: 'Beams with a length you choose',
+      summary:
+        'Set a selected beam’s length, 100 to 1000 mm, in the inspector; mass follows. Beams can lie flat on a plate or lap across each other.',
+      feature: 'beam',
+    },
+    {
       id: '2026-09-13-dialog-close',
       date: '2026-09-13',
       name: 'One close control for every dialog',
