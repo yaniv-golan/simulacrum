@@ -139,7 +139,8 @@ export function actionStage(message) {
  * box differs, naming the first differing ancestor (nearest first); else 'stable'. */
 export function geometryVerdict(frames) {
   const same = (a, b) => a && b && ['x', 'y', 'w', 'h'].every((k) => a[k] === b[k]);
-  if (!Array.isArray(frames) || frames.length < 2) return { frames: frames ?? [], verdict: 'starved' };
+  if (!Array.isArray(frames) || frames.length < 2)
+    return { frames: frames ?? [], verdict: 'starved' };
   for (let i = 1; i < frames.length; i++) {
     if (same(frames[i - 1].target, frames[i].target)) continue;
     const before = frames[i - 1].ancestors ?? [],

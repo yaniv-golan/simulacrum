@@ -741,16 +741,25 @@ test('goto and reload wait for the workshop probe under the startup budget, inde
     readSource: () => ({}),
     startupMs: 200,
   });
-  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 60 }), 'http://fixture/'), 'app-current');
+  assert.equal(
+    await evidence.goto(startupPage({ probeAfterMs: 60 }), 'http://fixture/'),
+    'app-current',
+  );
   assert.equal(await evidence.reload(startupPage({ probeAfterMs: 60 })), 'app-current');
   // A page that is not the workshop (no `#app` root) is served the moment navigation ends.
-  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 1e9, app: false }), 'http://f/'), 'app-current');
+  assert.equal(
+    await evidence.goto(startupPage({ probeAfterMs: 1e9, app: false }), 'http://f/'),
+    'app-current',
+  );
   // A workshop whose probe never appears fails as a startup failure, named as such.
-  await assert.rejects(evidence.goto(startupPage({ probeAfterMs: 1e9 }), 'http://fixture/'), (error) => {
-    assert.equal(error.failureKind, 'startup');
-    assert.match(error.message, /workshop startup: no probe within 200 ms/);
-    return true;
-  });
+  await assert.rejects(
+    evidence.goto(startupPage({ probeAfterMs: 1e9 }), 'http://fixture/'),
+    (error) => {
+      assert.equal(error.failureKind, 'startup');
+      assert.match(error.message, /workshop startup: no probe within 200 ms/);
+      return true;
+    },
+  );
 });
 test('the startup budget scales with the hosted wait scale', async (t) => {
   const { WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
@@ -761,7 +770,10 @@ test('the startup budget scales with the hosted wait scale', async (t) => {
     startupMs: 100,
   });
   // 100 ms locally would miss a 200 ms startup; ×3 = 300 ms admits it.
-  assert.equal(await evidence.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'), 'app-current');
+  assert.equal(
+    await evidence.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'),
+    'app-current',
+  );
 });
 test('a failed action records its target geometry over the next frames and says whether it moved or starved', async () => {
   const { geometryVerdict } = await import('../scripts/browser-session.mjs');
@@ -778,7 +790,12 @@ test('a failed action records its target geometry over the next frames and says 
     scrollWidth: 1280,
     innerWidth: 1280,
   });
-  const sampled = [frame(0, 100, 90), frame(210, 100, 90), frame(430, 117, 107), frame(640, 117, 107)];
+  const sampled = [
+    frame(0, 100, 90),
+    frame(210, 100, 90),
+    frame(430, 117, 107),
+    frame(640, 117, 107),
+  ];
   f.page.locator = () => ({
     boundingBox: async () => box(100),
     evaluate: async (fn, arg, options) => {
@@ -819,8 +836,14 @@ test('a failed action records its target geometry over the next frames and says 
   assert.equal(geometryVerdict([frame(0, 100, 90), frame(16, 100, 90)]).verdict, 'stable');
   // The call-log stage tells "never stable" from "stable, then the click never landed".
   const { actionStage } = await import('../scripts/browser-session.mjs');
-  assert.equal(actionStage('Call log:\n  - waiting for element to be visible, enabled and stable\n'), 'waiting');
+  assert.equal(
+    actionStage('Call log:\n  - waiting for element to be visible, enabled and stable\n'),
+    'waiting',
+  );
   assert.equal(actionStage('- element is not stable\n  - retrying click action'), 'not-stable');
-  assert.equal(actionStage('- performing click action\n  - waiting for scheduled navigations to finish'), 'navigations');
+  assert.equal(
+    actionStage('- performing click action\n  - waiting for scheduled navigations to finish'),
+    'navigations',
+  );
   assert.equal(actionStage('Expected values to be strictly deep-equal'), null);
 });

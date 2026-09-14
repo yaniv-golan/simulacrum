@@ -39,7 +39,8 @@ export function createBrowserEvidence({
       // served page is ready when navigation ends. A missing probe is a startup failure, named
       // as such, not the first locator that happened to run afterwards.
       async awaitStartup(page) {
-        const workshop = (await page.evaluate(() => document.getElementById('app') !== null)) === true;
+        const workshop =
+          (await page.evaluate(() => document.getElementById('app') !== null)) === true;
         if (!workshop) return;
         const budgetMs = this.waitBudget(startupMs);
         const measure = this.measure ?? ((name, execute) => execute());
@@ -54,7 +55,9 @@ export function createBrowserEvidence({
           });
         } catch (error) {
           if (error?.name !== 'TimeoutError') throw error;
-          const startup = Error(`workshop startup: no probe within ${budgetMs} ms after navigation`);
+          const startup = Error(
+            `workshop startup: no probe within ${budgetMs} ms after navigation`,
+          );
           startup.failureKind = 'startup';
           startup.cause = error;
           throw startup;

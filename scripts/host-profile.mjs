@@ -118,7 +118,8 @@ export function scaledWait(ms, env = process.env) {
   const raw = env[ROW_BUDGET_VARIABLE];
   if (raw === undefined) return scaled;
   const budget = Number(raw);
-  if (!Number.isFinite(budget) || budget <= 0) throw Error(`invalid ${ROW_BUDGET_VARIABLE}: ${raw}`);
+  if (!Number.isFinite(budget) || budget <= 0)
+    throw Error(`invalid ${ROW_BUDGET_VARIABLE}: ${raw}`);
   return Math.min(scaled, Math.floor(budget * ROW_BUDGET_SHARE));
 }
 /** The scale a check process runs under: 1 unless the suite passed a registered one. */

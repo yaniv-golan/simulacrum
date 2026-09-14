@@ -59,31 +59,31 @@ export async function liveWait(
   sample.gapsMs = gaps;
   let before = first;
   try {
-  for (let slices = 1; slices * sliceMs <= budgetMs; slices++) {
-    try {
-      const result = await page.waitForFunction(predicate, argument, { timeout: sliceMs });
-      sample.ticksPerSlice.push(Math.max(0, (await ticks()) - before));
-      record('true');
-      return result;
-    } catch (error) {
-      if (error?.name !== 'TimeoutError') throw error;
+    for (let slices = 1; slices * sliceMs <= budgetMs; slices++) {
+      try {
+        const result = await page.waitForFunction(predicate, argument, { timeout: sliceMs });
+        sample.ticksPerSlice.push(Math.max(0, (await ticks()) - before));
+        record('true');
+        return result;
+      } catch (error) {
+        if (error?.name !== 'TimeoutError') throw error;
+      }
+      const after = await ticks();
+      sample.ticksPerSlice.push(Math.max(0, after - before));
+      if (after <= before) {
+        record('renderer-starved');
+        const starved = Error(
+          `renderer starved: no animation frame in a ${sliceMs} ms wait slice (slice ${slices}); the wait proves nothing`,
+        );
+        starved.failureKind = 'renderer-starved';
+        throw starved;
+      }
+      before = after;
     }
-    const after = await ticks();
-    sample.ticksPerSlice.push(Math.max(0, after - before));
-    if (after <= before) {
-      record('renderer-starved');
-      const starved = Error(
-        `renderer starved: no animation frame in a ${sliceMs} ms wait slice (slice ${slices}); the wait proves nothing`,
-      );
-      starved.failureKind = 'renderer-starved';
-      throw starved;
-    }
-    before = after;
-  }
-  record('expired');
-  throw Error(
-    `${label} stayed false for ${budgetMs} ms (${Math.floor(budgetMs / sliceMs)} slices) while the presentation loop ticked ${before - first} times`,
-  );
+    record('expired');
+    throw Error(
+      `${label} stayed false for ${budgetMs} ms (${Math.floor(budgetMs / sliceMs)} slices) while the presentation loop ticked ${before - first} times`,
+    );
   } finally {
     clearInterval(poller);
   }

@@ -116,9 +116,12 @@ test('live waits scale their patience from the hosted environment, never their s
   process.env[LIVE_SLICE_VARIABLE] = '10000';
   // Slice comes from the profile (10 s), patience from the scale (30 s × 10 = 300 s = 30 slices):
   // a predicate true on the 20th slice (200 s) is still inside the budget.
-  assert.deepEqual(await liveWait(waitingPage({ trueAfter: 20, sliceMs: 10000 }), () => true, 'sentinel'), {
-    slices: 20,
-  });
+  assert.deepEqual(
+    await liveWait(waitingPage({ trueAfter: 20, sliceMs: 10000 }), () => true, 'sentinel'),
+    {
+      slices: 20,
+    },
+  );
   // An explicit maxMs is scaled the same way (2000 → 20000 = 2 slices of 10 s).
   await assert.rejects(
     liveWait(waitingPage({ trueAfter: 99, sliceMs: 10000 }), () => true, 'sentinel', {
@@ -129,7 +132,11 @@ test('live waits scale their patience from the hosted environment, never their s
   );
   // Starvation is still "no frame in a slice" — the slice is the platform's, the verdict is not.
   await assert.rejects(
-    liveWait(waitingPage({ trueAfter: 99, stalledFrom: 2, sliceMs: 10000 }), () => true, 'sentinel'),
+    liveWait(
+      waitingPage({ trueAfter: 99, stalledFrom: 2, sliceMs: 10000 }),
+      () => true,
+      'sentinel',
+    ),
     (error) => {
       assert.match(error.message, /renderer starved: no animation frame in a 10000 ms wait slice/);
       assert.equal(error.failureKind, 'renderer-starved');
