@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"62e473f146ef25ed2b58c28912ab708ff543caa0da39aa32b975edc6da81635d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b51347d6c15bb3f29f9876c1dd3efd59f0c8bcab3d135eb7710423f88fdc5153","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): AGENTS.md's verification paragraph was rewritten (timing-budget checks run in a merge tier only when the delta reaches what they measure); the guide's entry points, layer pointers and working loop are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"79c3ab44bd111c84ec6e550f0cedebf91d33807d17872e26c54a12474d6c553e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e214ea4177e7c64909109c8b1f83de7fca505980d5c9a84289b1447634f0cf09","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8, stacked on codex/evidence-reuse): AGENTS.md's scheduling sentence gained one clause (the launch admission applies the foreign-process bound only to tiers that will reach a timing phase); the guide's entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"73101de62d7ee3e0083bbb5ace09be09f503844f69cd737b96a3885bfc5a47ca","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea9066920fcd1d3be32d9f20d31a2e731f107fd3e441889a5bf7bdf870686110","disposition":"updated","rationale":"The scheduled-coverage paragraph now describes the hosted profile: registered deadlines never shorter than local, performance-tier and timing-sensitive checks reported NOT_EVALUATED and listed apart by the coverage comparison, measurement-mode labelling and its hand-recorded run bookkeeping, unscaled in-script deadlines, tiers refusing any profile, and a dispatched release-package staying unprofiled. Review, check and batch commands are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7e1ca5a59197f02d118eaba813b7cf9cfbf23a2b6fef27ef0dae9d33a0d41e37","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7d98fa42a3ee64738f26326c6f973e5c1958ef885fbcb88dbb79822fefd811cc","disposition":"still accurate","rationale":"Re-recorded after stacking on the refused-phase candidate f1008a7 (refused phases become unexecuted leaves for --after; local format gate); the reuse text below is unchanged by that stack. reference.md was regenerated for the reuse change (command/check facts only); the prepare → review → check workflow this section describes is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"ff104ce57e7b8799e668880ec8ffad881b0f5b2697ad2bf64f4dc041c7c8a047","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"307b982839439b3cc5cd1e2fbec74c7482042f2557b7146046774714458e06b7","disposition":"updated","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): PRESSURE_POLICY now defaults to enforce with SIMULACRUM_TIMING_PRESSURE=observe as the opt-out, the bounds (idle 80 %, foreign 40 %) read from the local tier's resting records (idle 86.5–88 %, busiest foreign 16 %); the scheduling paragraph now states the bounds and the opt-out instead of an enforce switch. The manifest change records the first hosted measurement run under hostProfiles and changes no selection or scheduling fact."} -->
+<!-- doc-review {"version":1,"fingerprint":"7ae20d25c9d92df415881bfbbfb5e5350a1839b8fd8ee3f454cc62b7360a33b6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d0b32411db91e295cbefda3deb5e0400e3d92d478ed816de1dd933bb7529f199","disposition":"updated","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): the launch-admission paragraph now states that the foreign-process bound applies only when the tier's resolved selection reaches a timing row (reach recorded on the tier and on the row's policy, with mode and bounds), that a structural-reach tier launches on load and idle alone, that the selection phase refuses a reach that moved after launch, and that WindowServer pressure is cured by hiding the drawing apps, never a laxer bound or a dark display (the focus lane checks are headed, hence caffeinate -d). Verified against verification-tiers.mjs (selectionReach, launchAdmission, assertSelectionReach), verify-merge.mjs, verify-local.mjs and verify-final.mjs."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -407,7 +407,15 @@ remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
 inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
 deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
-is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+is a failed attempt whose only row is `launch-admission`, not evaluated. The launch applies the
+foreign-process bound only to a tier whose resolved selection reaches a timing row (`reach:
+timing`, recorded on the tier and on the row's `policy`); a tier that will measure nothing
+launches on load and idle alone (`reach: structural` — a window server at 55 % of one core does
+not starve a 5 s gate), and its selection phase refuses if the reach moved after launch, so no
+timing phase ever follows a lax launch. `WindowServer` in a refusal means someone's windows
+are drawing (an editor, a chat app); the cure is hiding or quitting them, never a laxer bound
+and never a dark display — the `focus` lane checks are headed and stall once macOS marks their
+window invisible, which is why the tier holds `caffeinate -d`. A leaf the host slept
 through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
 `host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
 tier a timing-budget check runs only when the delta can reach what it measures (its manifest
@@ -510,7 +518,10 @@ comparisons. This reduces repeated parsing without removing byte-based drift che
 
 CI completes structural prerequisites, then admits invariant-control and remaining unit
 files through one four-worker pool. The standalone structural gate still runs its invariant
-unit controls. The 180-second CI obligation is unchanged.
+unit controls. The structural prerequisites include the `format` gate — the same
+`prettier --check` over `src`, `scripts` and `test` that the hosted `format:check` job runs,
+cached under `artifacts/format-gate` (never under `node_modules`, whose bytes the candidate
+digests) — so a layout defect cannot reach `main` through a local tier. The 180-second CI obligation is unchanged.
 
 The unit runner stops admitting queued tests when the iteration budget expires and
 reports their paths as `unexecuted`; they are not failed test executions. A started child
@@ -611,11 +622,14 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"abe9df19c5a86df23b3cd56893a313dbc113605c6451134ad815f2c5f686b5da","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"69078cedd29df75edea4fd20499da32b3362cc91d90cf1a87a68c20f42394797","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): check-sequence.mjs only flipped the pressure policy default to enforce and the manifest recorded a hosted measurement run; candidate capture, dependency validation, resume, the launch niceness/sleep assertions and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"92b2fcd6d8e65c63425ab4e6c4202872af88d33f71b49b31f7f5763356c431db","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4da75b52c179b0dc41810a7c43681aaa5ceb0c1700fc9ced326cd6f9b803a984","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): verification-tiers.mjs gained selectionReach/assertSelectionReach and a reach argument to launchAdmission; candidate capture, dependency validation, resume, the launch niceness/sleep assertions (caffeinate -dis unchanged) and what a report certifies are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
+Every candidate copy (and the frozen release snapshot) carries a `.metadata_never_index`
+marker at its root so Spotlight does not index the fresh tree while the tier runs; the
+marker sits above `source` and never enters the candidate's identity.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
@@ -663,6 +677,89 @@ attempt retains its own report and parent link. Reused checks retain original ex
 duration and report lookup duration separately; resumed CI does not qualify a fresh
 full-CI duration. A candidate ownership lock refuses concurrent attempts and is never
 expired automatically: establish the prior process tree has stopped before recovery.
+
+A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
+--after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
+only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
+parent must be a `failed` report that completed its tier; an attempt that failed around the tier
+(window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
+no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
+its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
+`ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
+(`ci`, `browser`) may record that the leaves beneath it never ran. Rows a phase refused before
+they ran (timing rows under a refused admission) leave no receipt and the phase row names them
+(`notEvaluated`); rows a sleeping host skipped carry a receipt marked not evaluated. Both count as
+unexecuted leaves beneath their phase rather than as failures, so a cause on the phase covers
+them (a cause per row is also accepted) and the retry must observe each one executed and
+passing. A plain `resume` of a retry
+report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
+parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused
+rather than re-pinned — and the parent's bytes, identity and installed dependencies are read
+from its signed candidate descriptor, never from the report; the report itself, whose receipts
+and coverage the retry classifies, is admitted only under the attestation the candidate wrote
+with its resume key (every candidate report carries one), so an edited report is refused. On identical source bytes, installed dependencies
+and relevant identity (runtime, platform and the declared relevant environment — `NODE_ENV`
+defaulting to `production` as the tier does, `NODE_OPTIONS`, `POWER_BASELINE_SOURCE`,
+`FEEDBACK_*`, `LOAD_CELL_MATRIX_*`, `PLAYWRIGHT_*` including `PLAYWRIGHT_BROWSERS_PATH`,
+`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`, `SIMULACRUM_HOST_PROFILE`; every other variable the project's own code reads under
+`scripts`, `src`, `test` and the root configuration is listed with its reason in
+`ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound — variables consumed only by
+libraries, such as `CI`, `TZ`, `DEBUG` or `NODE_TLS_*`, are forensic too — which also lets a
+plain `resume` accept a different terminal) the retry reuses the parent directory and the parent's
+passing unit and browser leaves through the signed ledger, each naming its origin attempt and
+bounded to three chained attempts. Installed dependencies pin only the bundled Playwright
+browsers; checks registered `browserChannel: "chrome"` launch the system browser, directly or
+through a module they load, and its version is bound into that check's configuration so a
+browser update refuses those receipts alone.
+Non-pass leaves, the registered controls of their invariants, the checks of invariants a failed
+control guards (together the `required` set), checks registered `timingSensitive` or
+`mergeSmoke` in the manifest, structural gates, builds and aggregates always execute; the
+required browser checks are added to whatever the tier selects, a widening the tier reads from
+the attempt's private ledger configuration. When bytes, dependencies or identity differ, the
+retry captures a fresh candidate and loads no receipt. If only source bytes differ
+(`deltaSelection: source-only`), the byte delta between the two candidates reaches the tier
+through the same ledger configuration — never as a command-line flag; `--changed-files` is
+refused everywhere — together with the browser checks the parent chain already passed
+(`covered`). The tier still applies its own policy to the candidate's base diff and runs
+everything that selects, except a covered check the byte delta does not reach (classified by
+the same policy; risky paths and unknown inputs still select everything): those are recorded as
+`skippedByDelta`, reasoning rather than evidence, and validation refuses a skipped check that
+is not covered or that ran. A parent whose browser phase never ran covers nothing, so its retry
+runs the full fresh selection. If the runtime, platform, relevant
+environment or installed dependencies changed (`deltaSelection: fresh-policy`), every parent
+browser pass is stale and the tier runs its ordinary selection with nothing skipped. A retry
+that reused a receipt or skipped a leaf by delta reports `passed after failure`, never plain
+`passed`; a retry that re-executed everything reports `passed` with the same `after` block, and
+a resumed receipt without an origin attempt fails the report. Either way every required leaf
+must appear in the child as an executed passing receipt, and nothing re-executed may also be
+skipped, or the retry fails. Tampered or oversized receipts fail closed. The `after` block
+carries the causes, the chain (recorded before capture, three attempts at most), reused
+origins with their attempt and depth, the covered and skipped checks, the required and
+re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
+diagnosed retry the norm above requires, not a retry-to-green.
+
+The same `--after <attempt-report.json>` with a **passed** parent (status `passed` or
+`passed with reused receipts`; no `--cause`) is receipt reuse across candidates: an author's
+`local` attempt lending its workshop browser receipts to the reviewer's `merge` (or `local`)
+candidate on identical bytes. The child is its own candidate with its own capture, install,
+descriptor and key; it admits the parent only after its attestation verifies, it is a finished
+attempt (no `active-attempt` lock, a terminal tier report) on a `local` or `merge` tier, and it
+is not a hosted-profile or measurement report; `final` refuses reuse on either side. Reuse
+happens only when the child's frozen source, its installed dependencies and its relevant
+identity equal the parent's signed descriptor; otherwise the child runs plainly with nothing
+reused and no delta narrowing. The offered set is derived from manifest facts, never a list:
+browser rows of tier `browser` and environment `workshop` that are neither `mergeSmoke` nor
+`timingSensitive`, and only receipts the parent executed itself (depth 0 — a receipt is never
+cited twice). The child selects its own checks; CI, unit leaves, smoke, timing-sensitive,
+hosted and probe checks always execute. The ledger names the parent's leaves and key
+(`previous`, `previousKey`, `reuse`), and a browser receipt is offered only while the
+evidence it points at is intact: its value records the evidence directory, every file and the
+log with digests and sizes, an absent path executes the check again, altered bytes fail
+closed. A child that reused anything reports `passed with reused receipts` with an `after`
+block naming the offered, reused (with origin attempt and depth) and executed leaves;
+validation refuses a resumed receipt the parent did not offer or that is not depth 1 from
+that parent. Nothing here changes what a landing needs: candidate evidence still applies only
+to its recorded bytes.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested

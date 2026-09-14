@@ -1,33 +1,71 @@
 import { normalizeSelectedFiles } from './test-selection.mjs';
 import { assertNoHostProfile } from './host-profile.mjs';
 import { cpus, loadavg } from 'node:os';
-import { admitQuietHost } from './check-sequence.mjs';
+import { admitQuietHost, PRESSURE_POLICY } from './check-sequence.mjs';
 import { samplePressure } from './host-pressure.mjs';
 
+/** What a tier's browser selection will reach: `timing` when any selected row is a timing
+ * budget, else `structural`. Taken from the resolved selection (a diagnosed retry's required
+ * timing row counts), never from the raw delta. */
+export function selectionReach(selection) {
+  return selection?.checks?.some((check) => check.timingSensitive) ? 'timing' : 'structural';
+}
+export const REACHES = Object.freeze(['timing', 'structural']);
 /** The structural gates run first, at t = 0, against 5 s deadlines; an updater or indexer that
  * fires at launch fails them before anything was measured. One short admission — the same
  * load/pressure rule as the timing phase, inside the window, immediately before the CI
  * phase — waits that out or refuses by name. A refusal is a failed attempt whose only row is
  * `launch-admission`, not evaluated: nothing ran, nothing is a defect. CPU pressure sees only
- * part of a disk-bound burst; that limit is recorded, not hidden. */
+ * part of a disk-bound burst; that limit is recorded, not hidden.
+ * The foreign-process bound is a timing-phase detector (one loud process moved a 2 ms p95);
+ * the structural gates need CPU availability, which load1 and idle measure. So a tier whose
+ * selection reaches no timing row is admitted on load1 and idle alone — a window server at
+ * 55 % of one core does not starve a 5 s gate — while a tier that will measure launches under
+ * the full policy, so no timing phase ever follows a lax launch. The reach and the bounds
+ * applied are recorded on the row; the foreign rows seen stay in the pressure sample. */
 export async function launchAdmission({
+  reach,
   admit = admitQuietHost,
   host = { cores: cpus().length, load1: () => loadavg()[0], pressure: () => samplePressure() },
   waitMs = 60000,
   trendMs = 20000,
+  policy = PRESSURE_POLICY,
 } = {}) {
+  if (!REACHES.includes(reach))
+    throw Error(`launch admission needs the tier's reach (${REACHES.join('|')}), got ${reach}`);
+  const applied = reach === 'timing' ? policy : { ...policy, foreignBound: Infinity };
+  const record = {
+    reach,
+    mode: applied.mode,
+    bounds: {
+      idle: applied.idleBound,
+      foreign: Number.isFinite(applied.foreignBound) ? applied.foreignBound : null,
+    },
+  };
   const admission = await admit({
     cores: host.cores,
     waitMs,
     trendMs,
     load1: host.load1,
     pressure: host.pressure ?? null,
+    policy: applied,
   });
   return admission.admitted
-    ? { ok: true, admission }
-    : { ok: false, notEvaluated: true, reason: admission.reason, admission };
+    ? { ok: true, policy: record, admission }
+    : { ok: false, notEvaluated: true, policy: record, reason: admission.reason, admission };
 }
 export const LAUNCH_ADMISSION_ID = 'launch-admission';
+/** The selection phase runs after the launch admission; a selection whose reach differs from
+ * the one the launch was admitted under is refused, so a lax launch never precedes a timing
+ * phase. */
+export function assertSelectionReach(selection, reach) {
+  const actual = selectionReach(selection);
+  if (actual !== reach)
+    throw Error(
+      `selection reach changed after launch admission: admitted as ${reach}, selection reaches ${actual}`,
+    );
+  return actual;
+}
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(
   phases,
@@ -45,6 +83,9 @@ export async function runVerificationPhases(
     } catch (error) {
       row.ok = false;
       row.error = error.message;
+      // Rows a phase never evaluated are recorded by id so a retry can require them.
+      if (Array.isArray(error.notEvaluated) && error.notEvaluated.length)
+        row.notEvaluated = [...error.notEvaluated];
       console.error(`${id}: ${error.stack}`);
     }
     row.status = row.ok ? 'passed' : 'failed';

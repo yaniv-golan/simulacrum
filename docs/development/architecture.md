@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"2d53e265be9c16040d0ad7bb847c1309b233593759ad2fec1bd0a584c23d0913","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"48b0c6a1caab8fd839d6b85887d325ee5c0658fc573b7fa0abab771d92417210","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): validate-manifest.mjs additionally requires `measures` on timing-sensitive rows (physics only for node-only self rows); AGENTS.md's selection sentence was rewritten; layer ownership and the registry reader's role are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e927567487d47103ec84a24a9a9ba651f039b6503055da54fd118204f473d21","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"4ae3ce3df4f910777695dfada1d2803d8a1873b56d38e66fd6a9f35c3577de55","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): AGENTS.md changed by one scheduling clause about the launch admission; layer ownership, the registry reader's role and the module map are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

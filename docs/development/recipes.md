@@ -202,7 +202,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"00881b4b9aad8659e4fcbda8ac70a60888b8e52d0af8b35bc51d2aa8e3f63060","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef79ef18a6c46f6a244f9402a75ee2bc12cae389c8165d8f2e4b7524d1d23c39","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): the drift is the pressure policy default (enforce), its test, the README scheduling paragraph and a hosted measurement-run record in the manifest; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still selects every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"0cc48149419adbdfb29b9e9816ebe7568a5e43f76146c92737bc54ef9bc3f8bd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c3dc2947db180322cac07f236661169bd06c3d26a173d5411aaeadcc591309ee","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): the drift is verification tooling — which pressure bound the launch admission applies, decided from the resolved browser selection — and its tests and documentation; no simulation, physics-door, power, checkpoint or contact behavior changed, and a physics delta still reaches every timing-budget check, so its tiers launch under the full policy."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
