@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8955f1b2dbb204c8bcf8472977bd219e868ef2f78348005f2595a847d2b0a8b9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59d9c07aeafed285d0733c2af679103c95d474b3c6af855c296e7d77df3404df","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scheduler, timing registration, profile literals, liveness windows) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ff9132fe800fc88ba952cc97db942061bc5b0937e9f0a204ac318c25fd29b7a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1b203b583dacd9fc83964b526909108951f958924955e39f4f8a34dc28d9da46","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): no simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (launch refusal, liveWait in browser-idle and the connection test, admission decay) and its documentation. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

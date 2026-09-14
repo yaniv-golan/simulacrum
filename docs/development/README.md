@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"ad6d539e32f207c7a6a0f00e6031f5cb3dd2f11c3ede3fe1773fbff5f1046a3e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af9e14c44c6cd1507e36d3bacde8ae2cf0917dc00d55b9d322acfd61e220de04","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): package.json gained the test:browser:serial script and browser-session.mjs gained the ui profile's GPU args; the commands this section names (test:unit, test:browser:affected, verify:local/merge) and their semantics are unchanged; the serial control is documented in the browser-execution section, not here."} -->
+<!-- doc-review {"version":1,"fingerprint":"763ebe58a477840ddb427099e58af61b1fdb28c158d7d606021f2dbf59b1021e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"a9fa17cbb6e655ff452c9a604c0fa5c8a33fdb58291339b8b2bddbaddc36b801","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs gained assertUnnicedLaunch, used by the tiers; the commands this section names and their semantics are unchanged; the launch recipe is documented in the candidate section."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"df6bcb07daa76f4fdef2e434219a24f25b16c8b7b5728b6c0191afd2e68f092e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"75ad4e0622c8e6d1c247231a2f7a4f7b39720713cabb8b34140167369be37486","disposition":"updated","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): the section now describes the three phases, derived workers (one per two idle cores, at most four, recorded as workersBasis) and quiet-host admission with its not-evaluated refusal, no-context runs keeping two workers and unconditional timing execution, explicit --workers semantics, the timingSensitive registration and source guard, the relaxed self-row rule with its isolation conditions (port 0, browserArtifactPath, no Vite dev server), and the shared launch boundary; the watchdog paragraph was adjusted for the pooled rows. Verified against verify-browser-suite.mjs, check-sequence.mjs, browser-registry.mjs, validate-manifest.mjs and browser-session.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f10742a870381a037eae11ff4401354634d1efce758fdac3eb9afed27ae8b2f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"996db26c647110b292fdd4b07ccb46e4dab75e7750a3fb79198785bbc2ca009b","disposition":"updated","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): the scheduling paragraph now says workersBasis records the launch niceness, a tier that derives workers refuses a niced launch (zsh nices every backgrounded job unless bgnice is unset), and the timing admission's bounded wait tracks the one-minute load average's decay up to 180 s, refusing early when the load is not falling. Verified against verify-browser-suite.mjs, check-sequence.mjs (admitQuietHost) and runtime-preflight.mjs."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -542,7 +542,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"dc44282df63250fd9d3ebf2bda45968748f7f25474da782a32396c6ba1a20fa4","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"53289dc48cb438ed48ab61803ad72a5d58e1f868549fe9ad16f0810805ba0c9f","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): package.json's new test:browser:serial script runs through the same verification-window wrapper; window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56b9f1b8adb34a33b99d1b4177cfbaa347aca55da0e85a16fa6c5d8783026a0c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4f664a8764e5635a713efc82e67da03867c2f2e901270d6672b90d777155d236","disposition":"still accurate","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): runtime-preflight.mjs's new refusal runs inside the tier, after the window is taken; window ownership, wait notices and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -591,7 +591,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"8cf4e125f9613c083105c3b640d766c6913f3a339389a8c2f272af625a02a9e8","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"78fdbe87aa414e59e5c67430cc08551e55a8e25e04519850e58352f409b7c333","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): the registry, manifest, validate-manifest and browser-session changes alter how a tier schedules and launches browser checks, not candidate capture, dependency validation, resume, priority hints or what a candidate report certifies; a tier's report gains schedule/workersBasis/timingAdmission fields alongside the unchanged candidate contract."} -->
+<!-- doc-review {"version":1,"fingerprint":"7a8a2037f699b567622a6ef721c26efddd900d6637161a61f52dbd548add013d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7e40b4a0df17a04ff54fcfd98c96d1ce2e20342ff58104715cd8e92a2ecec3ab","disposition":"updated","rationale":"Niced-launch refusal, live waits and decay-aware timing admission (tooling-niced-launch-liveness on main 421a2b1): the candidate section now states the launch recipe (unsetopt bgnice; nohup caffeinate) and that the candidate command refuses a niced launch (verify-candidate.mjs records launchNiceness); capture, dependency validation, resume and what a report certifies are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
