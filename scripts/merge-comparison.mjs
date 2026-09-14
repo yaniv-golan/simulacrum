@@ -40,7 +40,9 @@ export function compareMergeCoverage({ full, source, scope, selection, checks })
     status: omittedFailures.length ? 'COVERAGE_GAP' : 'NO_OBSERVED_GAP',
     omittedFailures,
     notEvaluated,
-    ...(full.hostProfile ? { hostProfile: full.hostProfile, measurement: full.measurement === true } : {}),
+    ...(full.hostProfile
+      ? { hostProfile: full.hostProfile, measurement: full.measurement === true }
+      : {}),
     limitation: 'One full run observes disagreement; it does not prove omission safety.',
   };
 }

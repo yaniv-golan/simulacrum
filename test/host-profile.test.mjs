@@ -119,7 +119,7 @@ test('host profiles are registered facts: closed keys, bounded measurement, and 
   };
   assert.throws(() => validateManifest(withProfile((p) => (p.extra = 1))), /host profile/);
   assert.throws(
-    () => validateManifest(withProfile((p) => (p.measurementRuns = [1, 2, 3, 4]))),
+    () => validateManifest(withProfile((p) => (p.measurementRuns = ['1', '2', '3', '4']))),
     /at most three measurement runs/,
   );
   assert.throws(
@@ -167,21 +167,41 @@ test('persisted suite rows keep NOT_EVALUATED entries and children never inherit
     { id: 'a', status: 'passed', ok: true },
     { id: 'b', status: 'failed', ok: false },
   ];
-  const notEvaluated = [{ id: 'p', status: 'NOT_EVALUATED', reason: 'hosted profile x: performance tier is not evaluated on this platform' }];
+  const notEvaluated = [
+    {
+      id: 'p',
+      status: 'NOT_EVALUATED',
+      reason: 'hosted profile x: performance tier is not evaluated on this platform',
+    },
+  ];
   assert.deepEqual(
     finalSuiteRuns([{ id: 'b' }, { id: 'a' }], executed, notEvaluated).map((r) => r.id),
     ['b', 'a', 'p'],
   );
-  assert.deepEqual(finalSuiteRuns([{ id: 'a' }], executed, []).map((r) => r.id), ['a']);
-  const env = childEnvironment({ PATH: '/bin', SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu', OTHER: '1' });
+  assert.deepEqual(
+    finalSuiteRuns([{ id: 'a' }], executed, []).map((r) => r.id),
+    ['a'],
+  );
+  const env = childEnvironment({
+    PATH: '/bin',
+    SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu',
+    OTHER: '1',
+  });
   assert.deepEqual(env, { PATH: '/bin', OTHER: '1' });
   assert.equal(Object.hasOwn(env, 'SIMULACRUM_HOST_PROFILE'), false);
 });
 test('an empty hosted run set reports only NOT_EVALUATED rows instead of crashing the packer', async () => {
   const { measurementRotation } = await import('../scripts/host-profile.mjs');
   // The rotation note is schedule metadata, never a priority reason that inflates the prefix.
-  const rotated = measurementRotation([{ id: 'a' }, { id: 'b' }], { id: 'x', measurement: true }, { GITHUB_RUN_NUMBER: '1' });
-  assert.deepEqual(rotated.checks.map((c) => c.id), ['b', 'a']);
+  const rotated = measurementRotation(
+    [{ id: 'a' }, { id: 'b' }],
+    { id: 'x', measurement: true },
+    { GITHUB_RUN_NUMBER: '1' },
+  );
+  assert.deepEqual(
+    rotated.checks.map((c) => c.id),
+    ['b', 'a'],
+  );
   assert.equal(rotated.note, 'measurement rotation seed 1');
   const empty = measurementRotation([], { id: 'x', measurement: true }, { GITHUB_RUN_NUMBER: '5' });
   assert.deepEqual(empty.checks, []);
@@ -194,7 +214,15 @@ test('registered profiles clamp browser workers and require recorded measurement
     mutate(m.hostProfiles['github-ubuntu-2cpu'], m);
     return m;
   };
-  assert.throws(() => validateManifest(withProfile((p) => (p.browserWorkers = 4))), /browserWorkers must be 1 or 2/);
-  assert.throws(() => validateManifest(withProfile((p) => (p.measurementRuns = [1]))), /measurementRuns entries must be run identifiers/);
-  assert.doesNotThrow(() => validateManifest(withProfile((p) => (p.measurementRuns = ['34799855458']))));
+  assert.throws(
+    () => validateManifest(withProfile((p) => (p.browserWorkers = 4))),
+    /browserWorkers must be 1 or 2/,
+  );
+  assert.throws(
+    () => validateManifest(withProfile((p) => (p.measurementRuns = [1]))),
+    /measurementRuns entries must be run identifiers/,
+  );
+  assert.doesNotThrow(() =>
+    validateManifest(withProfile((p) => (p.measurementRuns = ['34799855458']))),
+  );
 });
