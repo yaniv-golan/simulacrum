@@ -82,7 +82,7 @@ not execute or convert historical opaque checkpoints.
 
 ## Release operations
 
-<!-- doc-review {"version":1,"fingerprint":"2f25c75e1ec9d7843e060953a0a521f313a318909a97bd0fd84e0bf46c315827","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"d8b0f5298e79426ea22e75dce87b5e145465fbef6f7cc902b122cc2693bccf3b","disposition":"updated","rationale":"The workflow sentence now says an explicit workflow_dispatch on the release branch runs the frozen preparation job while pushes, PRs and scheduled runs take the automated/browser jobs under the registered hosted profile and are never selected as release runs; the publisher's latestReleaseRun and provenance checks are dispatch-only accordingly. Package admission, predecessor, privacy and cleanup rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c841ddc23faee9c57f83472fef9bc7efd9f73cc33e3b69aedd4a3fb6c6f4eca","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"28659fa5edf3327597f9c84b036da59b6f989a7ec3297f28a031653f57896d55","disposition":"still accurate","rationale":"prepare-release now writes a `.metadata_never_index` marker at the release root before cloning the snapshot so Spotlight does not index the frozen copy; the marker sits outside the `source` map and the packaged payload, and every release rule in this section (frozen inputs, single verification pass, exception path, publisher ownership) is unchanged."} -->
 
 The app names its release from package.json's `version`, read at build time into the served
 `app-version` meta; the last candidate of a release carries the version bump (a minor bump for
