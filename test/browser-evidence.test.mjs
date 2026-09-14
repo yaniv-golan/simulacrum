@@ -763,14 +763,30 @@ test('the startup budget scales with the hosted wait scale', async (t) => {
   // 100 ms locally would miss a 200 ms startup; ×3 = 300 ms admits it.
   assert.equal(await evidence.goto(startupPage({ probeAfterMs: 200 }), 'http://fixture/'), 'app-current');
 });
-test('a failed action records its target box across frames so a never-stable control names its moving geometry', async () => {
+test('a failed action records its target geometry over the next frames and says whether it moved or starved', async () => {
+  const { geometryVerdict } = await import('../scripts/browser-session.mjs');
   const f = fakeBrowser(),
     records = [];
-  let frame = 0;
-  f.page.evaluate = async (fn) =>
-    String(fn).includes('requestAnimationFrame') ? ++frame : { frame: null, cursor: null };
+  const box = (y) => ({ x: 10, y, w: 80, h: 24 });
+  const frame = (t, y, controlsY) => ({
+    t,
+    target: box(y),
+    ancestors: [
+      { selector: 'div.run-controls', x: 0, y: controlsY, w: 400, h: 40 },
+      { selector: 'main.workshop', x: 0, y: 0, w: 1280, h: 800 },
+    ],
+    scrollWidth: 1280,
+    innerWidth: 1280,
+  });
+  const sampled = [frame(0, 100, 90), frame(210, 100, 90), frame(430, 117, 107), frame(640, 117, 107)];
   f.page.locator = () => ({
-    boundingBox: async () => ({ x: 10, y: 100 + frame * 17, width: 80, height: 24 }),
+    boundingBox: async () => box(100),
+    evaluate: async (fn, arg, options) => {
+      assert.equal(typeof fn, 'function');
+      assert.equal(arg.frames, 10);
+      assert.ok(options.timeout >= arg.budgetMs);
+      return sampled;
+    },
     click: async () => {
       throw Object.assign(Error('locator.click: Timeout 6000ms exceeded.'), {
         name: 'TimeoutError',
@@ -789,10 +805,11 @@ test('a failed action records its target box across frames so a never-stable con
   await evidence.captureFailure(Error('check failed'));
   const geometry = records.find((r) => r.name === 'failure.json').value.targetGeometry;
   assert.equal(geometry.action.method, 'locator([data-command=pause]).click');
-  assert.equal(geometry.boxes.length, 5);
-  assert.equal(geometry.moved, true);
-  assert.deepEqual(
-    geometry.boxes.map((b) => b.y),
-    [100, 117, 134, 151, 168],
-  );
+  assert.equal(geometry.verdict, 'moved');
+  assert.deepEqual(geometry.movedOn, [1, 2]);
+  assert.equal(geometry.firstDifferingAncestor, 'div.run-controls');
+  assert.equal(geometry.frames.length, 4);
+  // The verdict alone: one frame is starvation, equal boxes are stable.
+  assert.equal(geometryVerdict([frame(0, 100, 90)]).verdict, 'starved');
+  assert.equal(geometryVerdict([frame(0, 100, 90), frame(16, 100, 90)]).verdict, 'stable');
 });
