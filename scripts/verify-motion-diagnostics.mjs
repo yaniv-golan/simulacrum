@@ -19,6 +19,7 @@ try {
   const health = page.locator('.machine-health');
   browserEvidence.assert('equal', [await health.isVisible(), false], 'empty bench: no line');
   await placeCatalogPart(page, 'poweredMotor');
+  await health.filter({ hasText: /^Not ready to run/ }).waitFor();
   browserEvidence.assert('equal', [
     await health.textContent(),
     'Not ready to run · power ✗ · axles ✗ · drive set ✓ · Check machine',

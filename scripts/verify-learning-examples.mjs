@@ -20,6 +20,7 @@ try {
   evidence.assert('match', [await page.locator('.guide-next').innerText(), /^Next: Place Chassis/]);
   // The player performs the first step by hand; the guide ticks it and moves on.
   await placeCatalogPart(page, 'chassis');
+  await page.locator('.guide-progress').filter({ hasText: '1 / 16 steps' }).waitFor();
   evidence.assert('equal', [await page.locator('.guide-progress').innerText(), '1 / 16 steps']);
   evidence.assert('match', [await page.locator('.guide-next').innerText(), /^Next: Place Motor/]);
   for (let i = 0; i < 15; i++) await page.locator('[data-command=guide-step]').click();

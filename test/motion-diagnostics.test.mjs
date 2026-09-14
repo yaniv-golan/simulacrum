@@ -166,6 +166,15 @@ test('build readiness line defers to other issues and says nothing on an empty b
   assert.equal(line(), 'No motor yet · Check machine');
   f.metadata.blueprint.parts.push(createPart('poweredHinge', 'hinge', [0, 1, 0]));
   assert.equal(line(), null, 'hinge-only machines are not "missing" a motor');
+  f.metadata.blueprint.parts = [createPart('linearActuator', 'ram', [0, 1, 0])];
+  assert.equal(line(), null, 'an actuator the diagnosis does not check gets no verdict');
+  const g = fixture();
+  g.metadata.blueprint.parts.push(createPart('poweredHinge', 'hinge', [0, 1, 0]));
+  assert.equal(
+    readinessLine(diagnoseMotion(g), g.metadata.blueprint),
+    null,
+    '"power ✓" must not speak for an unchecked hinge beside a ready motor',
+  );
   f.metadata.blueprint.parts = [];
   assert.equal(line(), null, 'the empty bench explains itself');
 });
@@ -182,6 +191,8 @@ test('the next step names the first missing readiness class and nothing else', (
   const shaft = f.metadata.blueprint.connections.find((c) => c.kind === 'shaft');
   f.metadata.connections.find((c) => c.id === shaft.id).reasonCode = 'AXIS_MISMATCH';
   assert.equal(next(), null, 'an alignment blocker is the health line’s story');
+  f.metadata.blueprint.parts = [createPart('linearActuator', 'ram', [0, 1, 0])];
+  assert.equal(next(), null, 'no "add a motor" for a machine built on another actuator');
   f.metadata.blueprint.parts = [];
   assert.equal(next(), null);
 });

@@ -359,7 +359,7 @@ export function createWorkshopView(
     loadInput.value = '';
   });
   const newButton = button('New', () =>
-    chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, newButton),
+    chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, toolsSummary),
   );
   newButton.dataset.command = 'new';
   const loadButton = button('Load', () => loadInput.click());

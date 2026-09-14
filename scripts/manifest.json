@@ -6652,7 +6652,7 @@
       "id": "build-readiness-honesty",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "The Build-mode machine health line is derived only from the motion diagnosis owner and never claims more than it checked: it reads Ready to run only when every remaining issue is a zero drive setting, shows one glyph per checked class (power, axles, drive set), keeps an issue's own title for any blocker outside those classes, says nothing on an empty bench or a hinge-only machine, and opens Check machine with the same cards.",
+      "guarantee": "The Build-mode machine health line is derived only from the motion diagnosis owner and never claims more than it checked: it reads Ready to run only when every remaining issue is a zero drive setting, shows one glyph per checked class (power, axles, drive set), keeps an issue's own title for any blocker outside those classes, says nothing on an empty bench or for a machine holding an actuator the diagnosis does not check (hinge, linear actuator), and opens Check machine with the same cards.",
       "owners": [
         {
           "path": "src/model/motion-diagnostics.mjs",

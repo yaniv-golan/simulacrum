@@ -481,7 +481,8 @@ paused reason can still shift them). The machine
 health line has two faces from one diagnosis owner: in Build it is the readiness line
 ("Ready to run · power ✓ · axles ✓ · drive set ✓ · Check machine"), re-derived per
 edit, claiming readiness only when every remaining issue is a zero drive setting and
-deferring to an issue's own title outside those three classes; while running it refreshes
+deferring to an issue's own title outside those three classes, and saying nothing for a
+machine holding an actuator the diagnosis does not check (hinge, linear actuator); while running it refreshes
 in 30-tick bands after tick 120 with the first blocker. Both invalidate the cached
 diagnosis when blueprint, session, epoch or operating mode changes; clicking either
 opens Check machine.

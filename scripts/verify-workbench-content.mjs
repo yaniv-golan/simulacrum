@@ -36,9 +36,16 @@ try {
   await evidence.reload(page);
   await page.waitForFunction(() => window.workshopProbe);
   evidence.assert('equal', [await chooser.count(), 0, 'the answer is remembered on this device']);
+  // The launcher runs from the dialog's queued close event; wait for its effect, never read once.
   for (const [command, expect] of [
-    ['first-run-guide', (p) => p.locator('.starter-guide.active-guide').isVisible()],
-    ['first-run-example', async (p) => (await read(p)).metadata.blueprint.parts.length > 0],
+    ['first-run-guide', (p) => p.locator('.starter-guide.active-guide').waitFor()],
+    [
+      'first-run-example',
+      (p) =>
+        p.waitForFunction(
+          () => JSON.parse(window.render_game_to_text()).metadata.blueprint.parts.length > 0,
+        ),
+    ],
   ]) {
     const fresh = await browser.newPage({ viewport: { width: 1280, height: 720 }, firstRun: true });
     await evidence.goto(fresh, url);
@@ -47,7 +54,8 @@ try {
     await fresh.locator(`[data-command=${command}]`).click();
     await fresh.locator('dialog.first-run').waitFor({ state: 'detached' });
     evidence.assert('equal', [await fresh.locator('dialog.first-run').count(), 0]);
-    evidence.assert('equal', [await expect(fresh), true, `${command} runs its launcher`]);
+    await expect(fresh);
+    evidence.assert('ok', [true, `${command} ran its launcher`]);
     await fresh.close();
   }
   const footer = page.locator('.workshop-footer');
@@ -113,6 +121,7 @@ try {
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
+  await footer.locator('.next-step').filter({ hasText: 'Next: Place Chassis' }).waitFor();
   evidence.assert('equal', [
     await footer.locator('.next-step').textContent(),
     'Next: Place Chassis',
@@ -155,13 +164,38 @@ try {
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.screenshot({ path: `${out}/build.png` });
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), false]);
-  await page.locator('[data-command=run]').click();
+  // Pause and Step appear only once the clock can run; the switch marks the current mode.
+  const pauseButton = page.locator('[data-command=pause]'),
+    stepControl = page.locator('[data-command=step]'),
+    runButton = page.locator('[data-command=run]'),
+    buildButton = page.locator('[data-command=build]');
+  evidence.assert('equal', [await pauseButton.isVisible(), false, 'no Pause in Build']);
+  evidence.assert('equal', [await stepControl.isVisible(), false, 'no Step in Build']);
+  evidence.assert('equal', [await buildButton.getAttribute('aria-pressed'), 'true']);
+  await runButton.click();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
-  await page.locator('[data-command=pause]').click();
+  await pauseButton.waitFor({ state: 'visible' });
+  evidence.assert('equal', [await runButton.getAttribute('aria-pressed'), 'true']);
+  evidence.assert('equal', [await stepControl.isDisabled(), true, 'Step acts only while paused']);
+  await pauseButton.click();
+  await page.waitForFunction(() => !document.querySelector('[data-command=step]').disabled);
   evidence.assert('equal', [await page.locator('.move-scope').isVisible(), false]);
+  const toolsMenu = page.locator('details.tools-menu');
   await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+  evidence.assert('equal', [
+    await toolsMenu.evaluate((node) => node.open),
+    false,
+    'the Tools menu closes on pick',
+  ]);
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), true]);
+  await openTools(page);
+  await page.keyboard.press('Escape');
+  evidence.assert('equal', [
+    await toolsMenu.evaluate((node) => node.open),
+    false,
+    'Escape closes the Tools menu',
+  ]);
   await page.locator('[data-command=build]').click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await openTools(page);

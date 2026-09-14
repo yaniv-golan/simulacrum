@@ -55,6 +55,8 @@ export function starterSteps() {
       commands: (bp) => {
         // The player's k-th part of each type stands in for the vehicle's k-th.
         const stand = (id) => ofType(bp, vehiclePart(id).type)[ordinal(vehiclePart(id)) - 1]?.id;
+        // Steps run parts-then-connections, so both stand-ins exist; guard a future reorder.
+        if (!stand(c.a.part) || !stand(c.b.part)) return [];
         return [
           {
             type: 'connect',
