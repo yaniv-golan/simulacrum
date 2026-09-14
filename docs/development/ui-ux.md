@@ -437,7 +437,10 @@ measurements closed. No measurement is permission to invent physical causality.
 Closing Measurements suppresses formatting of hidden readings while completed-tick
 measurement accumulation continues. Reopening displays the retained window and
 current readings. Boundary warnings remain independent of this preference.
-Inspector readouts update their DOM only when formatted values change. The running
+Inspector readouts update their DOM only when formatted values change, and a live readout
+that shows a shaft speed reserves two lines for its reason line, so the hold buttons and
+sections below it stay put whether the command reads zero or "Powered" (a three-line
+paused reason can still shift them). The running
 health hint refreshes in 30-tick bands after tick 120 and invalidates its cached
 diagnosis when blueprint, session, epoch or operating mode changes.
 
