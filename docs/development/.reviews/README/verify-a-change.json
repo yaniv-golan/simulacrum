@@ -4,7 +4,7 @@
     "scripts/verification-outcome.mjs": "15a7e2f488042a0e636a1f352362956a3cf12240cc1970ca72263a722c9fd2ba",
     "docs/development/playtesting.md#release-operations": "f71fdcf8896057ce3f32feed6c51a5d545fdfb01e54d72db0295b85e1be2e67a",
     "docs/development/playtesting.md#remote-setup": "404b4ce99f014b4a283a22aa8f8c1b1aeb3f36830db0750a2040a58781acafc8",
-    "package.json": "5952122efe8031d4f0190b27cafa2ab62b869efa25e52d70227cd1781037424a",
+    "package.json": "cfea1114d02cc69c6c41dca9bae09e8f9162e9bc5f5d66ea48ec397798051e25",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
     "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",
