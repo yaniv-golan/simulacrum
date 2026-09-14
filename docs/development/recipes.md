@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"edef04441ade859f6df5b8b743eaa36829c4f2401657f39e54c328ebea2bc3c6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1663fc36a7e77bd5af90ffa3e757813a96071e8131b91dfcd1884c0752008c59","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: the physics-to-model observation import, typed native response vectors and the before-draw clock callback add no input handler or UI action; main's receiver input owner still excludes sound controls and releases held keys on their focus. Cursor guards, cancellation, receiver keys, history and preview ownership keep their boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"528dca8bd3c258cdff6d1905b9f2ad1c1ce02f9ec6dd0fd26a35ac7f85704e78","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6c1756314b1ce93496891ae7bcb0b03734697223a99e17076a57cef004161f59","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery skips nested worktrees; input handlers, cursor guards, cancellation and preview ownership are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"2199b0a14f1084f1542180c6b514804c2774596d5a8e97675fe93219592860ac","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5533de954a7995ba4fe2e8c3ba46b29163ef872cc23488666dc87f885ea07815","disposition":"still accurate","rationale":"Only the manifest validator, its test, .prettierignore and README formatting wording changed, reached through this section's evidence scripts; no physics law, fixture, evidence script or reset policy changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5ad82b2deff40a4f50eeb3f812ede2c2540b0e7e62b5b5bcbf3b5ccbac922877","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8c1156958e88677636c3de2a95511a373d43ab636273f1a59baefb4bd572bab0","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is verification tooling (scope rows, waiver enumeration, manifest layout guard) and its documentation. The recipe’s analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"f595dfd9cf5974deedc06d316465f48df83df4ac7b342b79628050da6d084018","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"07ec581345a730acdaee9956e20ef02291ae55737cf6e52f266b9f7715a4942c","disposition":"still accurate","rationale":"The model/boundary dependencies listed changed on main and were reviewed there; my delta is the assembly browser adopting the shared × (accessible name 'Close assemblies') and the check clicking that name. Proposal, placement, mirror, library and transaction guidance is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ca60d7731a0856583982c65f9767e39cd221b7312e2d118e0479e6285273c85b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"b0265720ac8c3732ba4007a6735bfa8d13abb534e03fba9e3520f96474a540f6","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery excludes nested worktrees; assembly, mirror and scene authoring owners and their admission rules are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +600,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"9b72cda3521fae83f55474c685af334fadf63ce92621487d0dc2105f64b2329c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8e209626d5d048b3a31891b235d608c4fdf85e1bb81abe5ecdafb9729b08ee58","disposition":"updated","rationale":"The merged guidance records both main's warmup retention of catalog and no-part-light shader variants (disposed with the view) and the performance branch rule that equal-content blueprint replacements retain the revision, with content comparison only on reference replacement while same-ID authored edits still invalidate dependent views; verified in workshop-view.mjs render(), where blueprintKey increments only when a replaced reference has different serialized content. Load Cell arrow, connection visibility and wiring preference owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b599db7d13da161fd08d1c5e8f1bd5086a8155e823963d1b32847b291a7e2e2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8ccce7ef9e610100ae3faaee2e67e7e8e3a6f2b6f6edd6330fd631e8d0ce8941","disposition":"still accurate","rationale":"Combined landing on main f48c1ba of three reviewed change sets: reaching-check scope rows (6783ff8), waived-tier affected enumeration (f43c2ee) and the manifest layout guard (972da11); the phased scheduler was dropped from this landing after its first instrumented run failed three pool checks. module-graph.mjs discovery excludes nested worktrees; overlay owners, warmup retention and blueprint reference guidance are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
