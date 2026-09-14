@@ -439,13 +439,23 @@ try {
       })(),
     };
   });
+  // Retain the synthetic timings before the first gate reads them, so a failure
+  // leaves the measured numbers on disk; the messages name them as well.
+  writeFileSync(`${out}/synthetic-timings.json`, JSON.stringify(timings, null, 2));
   for (const trial of timings.trials)
     if (trial.enabled) {
       const baseline = timings.trials.find(
         (t) => t.motorCount === trial.motorCount && t.trial === trial.trial && !t.enabled,
       );
-      assert.ok(trial.p95 <= 1, 'adapter and scheduler p95 <=1 ms');
-      assert.ok(trial.p95 - baseline.p95 <= 2, 'added measured callback CPU <=2 ms');
+      const where = `synthetic trial ${trial.trial} motors ${trial.motorCount}`;
+      assert.ok(
+        trial.p95 <= 1,
+        `${where}: adapter and scheduler p95 ${trial.p95.toFixed(3)} ms <=1 ms`,
+      );
+      assert.ok(
+        trial.p95 - baseline.p95 <= 2,
+        `${where}: added measured callback CPU ${(trial.p95 - baseline.p95).toFixed(3)} ms <=2 ms (baseline p95 ${baseline.p95.toFixed(3)})`,
+      );
     }
   const frameTrials = [];
   for (let trial = 0; trial < 3; trial++)
@@ -485,8 +495,15 @@ try {
   for (const trial of frameTrials)
     if (trial.enabled) {
       const baseline = frameTrials.find((t) => t.trial === trial.trial && !t.enabled);
-      assert.ok(trial.audioP95 <= 1, 'real completed-frame adapter and scheduler p95 <=1 ms');
-      assert.ok(trial.frameP95 - baseline.frameP95 <= 2, 'real added render CPU p95 <=2 ms');
+      const where = `real trial ${trial.trial} enabled`;
+      assert.ok(
+        trial.audioP95 <= 1,
+        `${where}: completed-frame adapter and scheduler p95 ${trial.audioP95.toFixed(3)} ms <=1 ms (${trial.samples.length} samples, ${trial.samples.filter((s) => s.audioCpuMs > 1).length} above 1 ms)`,
+      );
+      assert.ok(
+        trial.frameP95 - baseline.frameP95 <= 2,
+        `${where}: added render CPU p95 ${(trial.frameP95 - baseline.frameP95).toFixed(3)} ms <=2 ms (baseline frame p95 ${baseline.frameP95.toFixed(3)})`,
+      );
     }
   evidence.assertUnchanged();
   writeFileSync(
