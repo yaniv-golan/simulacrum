@@ -8,6 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
+<!-- doc-review {"version":1,"fingerprint":"5e0915b74ac90576dd8140485a4c122f66db11d788aba731b9e29051b27f751f","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"6dcc1ad7223a253c9fe9c78c62c7e30c07ab1e715bbed17abfdde43267ce2af4","disposition":"updated","rationale":"New section: the qualification facts the root README no longer carries (current construction loop, WASM-bounded programs, implementation-versus-qualification, manifest declaring M3b with F1 pending and S1/feasibility/rover/legged incomplete, manifest and gate ownership, AGENTS.md and both contracts owning architecture and qualification, green smoke is not acceptance, the v1 archive tag/branch and import caveat, releases experimental until the milestones are met) moved here verbatim with relative links; re-read against scripts/manifest.json milestone allocation, AGENTS.md and both contracts at this revision."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.

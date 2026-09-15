@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"86ce96c4be05f6b8c38c3109c2b8392da75b3ce15c03b856f43c6396236849d7","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f45f907b4623f1815eea2ca5698db0e5d69c3674de4c3552f500a5c5fd36222a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no physics, tick, contact or telemetry change; the listed dependencies are the What's new presentation/application modules, its checks, the version bump and the docs it cites."} -->
+<!-- doc-review {"version":1,"fingerprint":"9c67ea264b2b64dd0e161d45cb04b7103dcf5268a584e4481e80aab4b28f97fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"57aca44e6fd20a58efc230ced6d5c5ba07098255cf1cffc437bc0a8531e6fbe3","disposition":"still accurate","rationale":"The recipe's dependency on the root README and the developer guide is documentary: the README was rewritten for players (what it is, status, install) and the developer guide gained the milestone-status section that received the README's qualification paragraph; neither change alters physics ownership, the simulation door, law inputs, the invariants the recipe names or its verification steps, which were re-read against src/simulation at this revision."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
