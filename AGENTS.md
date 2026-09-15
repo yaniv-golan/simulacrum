@@ -128,6 +128,7 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | Release or milestone qualification | `npm run verify:candidate -- final` |
 | Diagnosed retry of a failed local/merge candidate | `npm run verify:candidate -- <tier> --after <report> --cause <id>=<cause>` |
 | Receipt reuse from a passed local/merge candidate on identical bytes | `npm run verify:candidate -- <tier> --after <passed report>` |
+| Wait for a quiet host before any candidate tier | `npm run verify:candidate -- <tier> [...] --when-quiet <maxWaitMs>` |
 | A release's `final` on byte-identical code as merge evidence | `npm run verify:candidate -- merge --base <commit> --incoming <commit> --destination <ref> --satisfied-by <release directory>` |
 | Authorized experimental publication | Existing release preparation and exception policy |
 

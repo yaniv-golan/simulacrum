@@ -5,7 +5,9 @@
 // never runs), omit=<ids>, touch=<file>, drift=yes (origin edited after the tier so the candidate
 // itself fails), refuse=timing (the timing-sensitive row is refused by admission before it runs
 // and leaves no receipt), tier=<tier>, base=<ref>, moved=yes (the base ref now names another commit),
-// cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>
+// quiet=refuse (the launch admission the --when-quiet poller consults refuses every sample) or
+// quiet=admit (admits at once; default), cleanup=yes, --cause=<id>=<text>, --arg=<extra tier argument>,
+// --when-quiet=<ms>
 // Stubs keep capture, preflight and processes local; the tier is emulated with a real
 // verification context and leaf ledger so receipts, reuse and origins are the production ones.
 import { registerHooks } from 'node:module';
@@ -54,6 +56,17 @@ if (flag('extra') === 'yes')
     { id: 'smoke', script: 'scripts/smoke.mjs', tier: 'browser', mergeSmoke: true },
     { id: 'hosted', script: 'scripts/hosted.mjs', tier: 'browser', environment: 'self' },
   );
+// A merge registry the real merge policy accepts (exactly three merge-smoke rows), for the
+// --when-quiet merge-reach scenarios: the poll expires before any row runs.
+if (flag('smokes') === '3')
+  manifest.browserChecks.push(
+    ...['a', 'b', 'c'].map((n) => ({
+      id: `smoke-${n}`,
+      script: `scripts/smoke-${n}.mjs`,
+      tier: 'browser',
+      mergeSmoke: true,
+    })),
+  );
 const filesOf = (dir) => {
   const out = {};
   const visit = (d) => {
@@ -81,6 +94,7 @@ if (mode === 'first') {
 }
 if (flag('touch')) writeFileSync(join(root, flag('touch')), `changed ${Date.now()}`);
 globalThis.candidateTransport = {
+  admissions: 0,
   // Refs resolve by name; moved=yes models the same name now pointing at another commit.
   resolveBase(base) {
     const resolved = base.startsWith('resolved-') ? base : `resolved-${base}`;
@@ -176,6 +190,8 @@ globalThis.candidateTransport = {
             status: 'failed',
             error: error.message,
             ...(Array.isArray(error.notEvaluated) ? { notEvaluated: error.notEvaluated } : {}),
+            // As runVerificationPhases does: the refusal behind refused rows rides the row.
+            ...(error.refusal ? { refusal: error.refusal } : {}),
           });
           throw error;
         }
@@ -196,7 +212,10 @@ globalThis.candidateTransport = {
             { mode: 'production' },
             leaf('build:browser', { code: 0 }),
           );
-          const refused = [];
+          // Like the suite: every scheduled row gets its turn (no fail-fast), a refused timing
+          // row leaves no receipt, and one failure at the end names the failed and refused ids.
+          const refused = [],
+            failedRows = [];
           for (const check of manifest.browserChecks) {
             const id = `browser:${check.id}`;
             if (omit.includes(id) || !selected(check)) continue;
@@ -205,6 +224,34 @@ globalThis.candidateTransport = {
               refused.push(check.id);
               continue;
             }
+            try {
+              await runRow(check, id);
+            } catch (error) {
+              failedRows.push({ id: check.id, error });
+            }
+          }
+          if (refused.length || failedRows.length)
+            throw Object.assign(
+              Error(
+                `Browser checks failed: ${[...failedRows.map((f) => f.id), ...refused].join(', ')}`,
+              ),
+              {
+                notEvaluated: refused,
+                failedChecks: failedRows.map((f) => f.id),
+                ...(refused.length
+                  ? {
+                      refusal: {
+                        phase: 'timing',
+                        failureKind: 'host-load',
+                        reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+                        ids: refused,
+                        suiteReport: 'artifacts/browser-suite/last-run.json',
+                      },
+                    }
+                  : {}),
+              },
+            );
+          async function runRow(check, id) {
             await context.check(id, { script: id }, () => {
               executed.push(id);
               if (id === 'browser:x' && flag('x') === 'fail')
@@ -235,11 +282,6 @@ globalThis.candidateTransport = {
               };
             });
           }
-          if (refused.length)
-            throw Object.assign(Error(`Browser checks failed: ${refused.join(', ')}`), {
-              notEvaluated: refused,
-              failedChecks: [],
-            });
         });
       } catch {
         code = 1;
@@ -285,7 +327,7 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch"; export const resolveCandidateBase=(root,base)=>globalThis.candidateTransport.resolveBase(base);';
+        'export const captureCandidate=(...a)=>globalThis.candidateTransport.capture(...a); export const candidateMatchesOrigin=(...a)=>globalThis.candidateTransport.matches(...a); export const destinationStillMatches=(...a)=>globalThis.candidateTransport.drift(...a); export const currentBranch=()=>"fixture-branch"; export const resolveCandidateBase=(root,base)=>globalThis.candidateTransport.resolveBase(base); export const candidateSelection=()=>["src.mjs"];';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
@@ -293,15 +335,44 @@ registerHooks({
         'export function assertRuntime() {} export async function assertLocalServerAccess() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; } export function assertAwake() { return { method: "fixture", pid: process.pid }; }';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source =
-        'export const runProcess=(...a)=>globalThis.candidateTransport.run(...a); export const runModuleCheck=async()=>({code:0});';
+        'export const runProcess=(...a)=>globalThis.candidateTransport.run(...a); export const runModuleCheck=async()=>({code:0}); export const SLEEP_GAP_MS=60000;';
     if (url === `file://${repo}/scripts/source-identity.mjs`)
       source =
         'export function sourceIdentity() { return { head: "fixture", workingTreeDigest: "fixture" }; }';
     if (url === `file://${repo}/scripts/app-fingerprint.mjs`)
       source = 'export function appFingerprint() { return "fixture-build"; }';
-    if (url === `file://${repo}/scripts/merge-selection.mjs`)
+    // The launch admission the --when-quiet poller consults, scripted by flag; the rest of the
+    // module (check sequencing, pressure policy) stays real.
+    if (url === `file://${repo}/scripts/check-sequence.mjs`)
+      source = `export * from './check-sequence.mjs?real'; export async function admitQuietHost(){ globalThis.candidateTransport.admissions++; return ${flag('quiet') === 'refuse' ? "{admitted:false, reason:'host load 9 above bound 7 after 0 ms; host pressure: WindowServer 55 % (foreign ≥ 40 %)', load1:9, waitedMs:0, samples:[9], trend:null, pressure:null}" : '{admitted:true, load1:2, waitedMs:0, samples:[2], trend:null, pressure:null}'} }`;
+    // The origin reach the poller needs: the fixture's own registry and a selection over it.
+    if (url === `file://${repo}/scripts/browser-registry.mjs`)
+      source = `import { readFileSync } from 'node:fs'; export function browserChecks(){ return JSON.parse(readFileSync('scripts/manifest.json','utf8')).browserChecks; }`;
+    if (url === `file://${repo}/scripts/browser-selection.mjs`)
+      source = `import { readFileSync } from 'node:fs'; export { measuredScopeReached } from './browser-selection.mjs?real'; export function affectedBrowserChecks(files){ const checks = JSON.parse(readFileSync('scripts/manifest.json','utf8')).browserChecks; const reached = checks.filter((c) => files.includes(c.script)); return { files, scope: reached.length ? 'local-contract' : 'documentation', checks: reached, reasons: reached.map((c) => ({ id: c.id, reason: 'fixture reach' })) }; }`;
+    // The poller's cadence: the real 5 s interval would put six expiring cases' waits (30 s)
+    // alone past the tier's 30 s per-file unit budget. The interval is scheduling, not policy —
+    // the scripted host below is what each case asserts — so the fixture polls every 20 ms.
+    if (url === `file://${repo}/scripts/when-quiet.mjs`)
       source =
-        'export function mergeChanges(options) { return { refs: { base: `resolved-${options.base}`, incoming: null, destination: null, destinationName: null } }; }';
+        "export * from './when-quiet.mjs?real'; import { pollUntilQuiet as poll } from './when-quiet.mjs?real'; export const pollUntilQuiet = (options) => poll({ ...options, intervalMs: 20 });";
+    // The verification window is host-wide (one per uid under tmpdir): the poller reads a scripted
+    // state here so another session's unit run never holds this fixture's poll.
+    if (url === `file://${repo}/scripts/verification-window.mjs`)
+      source = `export * from './verification-window.mjs?real'; export function windowState(){ return ${
+        flag('window') === 'owned'
+          ? "{ state: 'owned', owner: { pid: 4242, cwd: '/w', intent: { tier: 'local', head: 'x' } } }"
+          : flag('window') === 'abandoned'
+            ? "{ state: 'abandoned', owner: { pid: 1, token: 't' } }"
+            : "{ state: 'free' }"
+      }; }`;
+    if (url === `file://${repo}/scripts/host-pressure.mjs`)
+      source =
+        'export async function samplePressure(){ return { method: "fixture", idlePercent: 99, foreign: [] }; }';
+    // The merge policy stays real; the scope is scripted: `merge-files=<a,b>` is the delta the
+    // poller's reach must run through it.
+    if (url === `file://${repo}/scripts/merge-selection.mjs`)
+      source = `export { mergeSelection } from './merge-selection.mjs?real'; export function mergeChanges(options) { return { refs: { base: \`resolved-\${options.base}\`, incoming: null, destination: null, destinationName: null }, files: ${JSON.stringify((flag('merge-files') ?? '').split(',').filter(Boolean))}, reviewOnlyFiles: [], metadataOnlyFiles: [] }; }`;
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
   },
 });
@@ -317,6 +388,9 @@ process.argv = [
     : [tier, ...(tier === 'final' ? [] : ['--base', flag('base') ?? 'HEAD~1'])]),
   ...(mode === 'after' ? ['--after', parentReport] : []),
   ...flags.filter((f) => f.startsWith('--cause=')).flatMap((f) => ['--cause', f.slice(8)]),
+  ...flags
+    .filter((f) => f.startsWith('--when-quiet='))
+    .flatMap((f) => ['--when-quiet', f.slice(13)]),
   ...flags.filter((f) => f.startsWith('--arg=')).map((f) => f.slice(6)),
 ];
 let report = null;
@@ -328,7 +402,14 @@ try {
   } catch {}
   process.chdir(repo);
   console.log(
-    'TRANSPORT ' + JSON.stringify({ root, calls, report, exitCode: process.exitCode ?? 0 }),
+    'TRANSPORT ' +
+      JSON.stringify({
+        root,
+        calls,
+        report,
+        exitCode: process.exitCode ?? 0,
+        admissions: globalThis.candidateTransport.admissions,
+      }),
   );
   if (flag('cleanup') === 'yes') {
     if (report?.directory) rmSync(report.directory, { recursive: true, force: true });

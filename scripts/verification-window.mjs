@@ -48,6 +48,13 @@ export function currentWindowOwner(directory = defaultDirectory()) {
   const owner = readOwner(directory);
   return owner && alive(owner.pid) ? owner : null;
 }
+/** Read-only window state for a poller: free, owned by a live process, or abandoned (an owner
+ * file whose process is gone — the tier would refuse it, recovery is explicit). */
+export function windowState(directory = defaultDirectory()) {
+  const owner = readOwner(directory);
+  if (!owner) return { state: 'free' };
+  return alive(owner.pid) ? { state: 'owned', owner } : { state: 'abandoned', owner };
+}
 function removeOwned(directory, token) {
   const owner = readOwner(directory);
   if (owner?.token !== token) throw Error('verification window owner changed; refusing removal');

@@ -4,7 +4,7 @@ import {
   returnBrowserHistory,
   browserHistoryRunId,
 } from './browser-history.mjs';
-import { mergeChanges } from './merge-selection.mjs';
+import { mergeChanges, mergeSelection } from './merge-selection.mjs';
 import { parseCompletionArgs } from './verification-tiers.mjs';
 import {
   mkdtempSync,
@@ -56,6 +56,7 @@ import {
   validateAfterReport,
   attestReport,
   verifyAttestation,
+  expandRefusalCauses,
 } from './candidate-after.mjs';
 import { environmentForensics, processIdentity } from './verification-environment.mjs';
 import {
@@ -70,6 +71,12 @@ import {
 } from './candidate-cite.mjs';
 import { currentWindowOwner } from './verification-window.mjs';
 import { deriveStack, landingOrderText } from './candidate-stack.mjs';
+import { parseWhenQuietArgs, pollUntilQuiet, CITATION_REFUSAL } from './when-quiet.mjs';
+import { affectedBrowserChecks } from './browser-selection.mjs';
+import { browserChecks } from './browser-registry.mjs';
+import { selectionReach } from './verification-tiers.mjs';
+import { withRequiredChecks } from './candidate-after.mjs';
+import { candidateSelection } from './candidate.mjs';
 /** Spotlight indexes every fresh copy under /var/folders (three mdworker_shared workers per
  * candidate, observed tripping 30 s unit watchdogs); the marker at the candidate root, above
  * `source`, keeps the tree out of the index without entering the candidate's identity. */
@@ -124,7 +131,70 @@ const timing = createTiming({
 let argv = process.argv.slice(2),
   previous,
   retry = null,
-  cite = null;
+  cite = null,
+  whenQuiet = null;
+/** The reach the tier will have, computed the way verify-local/merge select — on the origin (or
+ * the frozen candidate for a resume) before anything is captured. A merge delta goes through the
+ * merge policy, not the bare affected selection: a risky path widens to every functional row and
+ * a timing row runs only when the delta reaches what it measures, so the bare selection would
+ * poll structural before a timing launch (or the reverse). A wrong direction costs a refused
+ * launch after capture, never a lax launch before a timing phase. */
+function reachFor({ root, tier, options, required = [] }) {
+  if (tier === 'final') return { value: 'timing', basis: 'final always measures', files: null };
+  const previous = process.cwd();
+  process.chdir(root);
+  try {
+    const registry = browserChecks();
+    let selection, basis, files;
+    if (tier === 'merge') {
+      const scope = mergeChanges(options);
+      files = scope.files;
+      selection = mergeSelection({
+        checks: registry,
+        selection: affectedBrowserChecks(
+          files.filter((path) => !scope.metadataOnlyFiles?.includes(path)),
+        ),
+        files,
+        reviewOnlyFiles: scope.reviewOnlyFiles,
+        metadataOnlyFiles: scope.metadataOnlyFiles,
+      });
+      basis = 'merge selection';
+    } else {
+      files = candidateSelection(root, options.base ?? 'HEAD');
+      selection = affectedBrowserChecks(files);
+      basis = 'origin selection';
+    }
+    const resolved = withRequiredChecks(selection, required, registry);
+    return {
+      value: selectionReach(resolved),
+      basis,
+      files: files.length,
+      ...(selection.fullReason ? { fullReason: selection.fullReason } : {}),
+    };
+  } finally {
+    process.chdir(previous);
+  }
+}
+async function waitForQuiet(reachInput) {
+  if (whenQuiet === null) return;
+  let reach = reachFor(reachInput);
+  for (;;) {
+    const result = await pollUntilQuiet({ maxWaitMs: whenQuiet, reach: reach.value });
+    report.whenQuiet = {
+      maxWaitMs: whenQuiet,
+      ...result,
+      reach,
+      sleepAssertion: report.sleepAssertion,
+    };
+    write();
+    if (!result.admitted)
+      throw Error(`--when-quiet expired after ${result.waitedMs} ms of waiting: ${result.reason}`);
+    // The origin may have changed during hours of polling: a reach that grew stricter polls again.
+    const again = reachFor(reachInput);
+    if (again.value === reach.value) return;
+    reach = again;
+  }
+}
 try {
   // Argument errors must still publish a failed report rather than leave a stale green one.
   if (argv[0] === 'cite-final') {
@@ -186,6 +256,14 @@ try {
   }
   const citeArgs = parseCiteArgs(argv);
   argv = citeArgs.rest;
+  // Scheduling only: --when-quiet never reaches the tier, the descriptor or the priority record.
+  const quietArgs = parseWhenQuietArgs(argv);
+  argv = quietArgs.rest;
+  whenQuiet = quietArgs.whenQuiet;
+  // Refused here, after the citation arguments were stripped, so the check sees them: a citation
+  // runs nothing on the host, so there is nothing to wait for (cite-final is refused above by
+  // its argument count).
+  if (whenQuiet !== null && citeArgs.satisfiedBy) throw Error(CITATION_REFUSAL);
   const afterArgs = parseAfterArgs(argv);
   argv = afterArgs.rest;
   previous =
@@ -214,8 +292,14 @@ try {
       chain: [...(parent.after?.chain ?? []), parent.attempt ?? null],
     };
     const classification = classifyParentLeaves(parent);
-    const coverage = validateCauses(classification, afterArgs.causes);
-    retry = { parent, classification, coverage, causes: afterArgs.causes };
+    // `@refusal` is expanded from the attested parent only, after attestation and before the
+    // causes are validated; the typed text stays on a refused report, the expanded text and
+    // its source on an admitted one.
+    const { causes, sources: causeSources } = expandRefusalCauses(afterArgs.causes, parent);
+    const coverage = validateCauses(classification, causes);
+    retry = { parent, classification, coverage, causes };
+    report.after.causes = Object.fromEntries(causes);
+    if (Object.keys(causeSources).length) report.after.causeSources = causeSources;
     report.after.kind = classification.kind;
     if (classification.kind === 'reuse') {
       // A passed parent offers receipts only from a terminal, owned, current attempt.
@@ -290,6 +374,22 @@ try {
       ['runtime', 'platform', 'arch', 'environmentDigest'].every(
         (k) => identity[k] === parentIdentity[k],
       );
+    // Ready pre-check on the origin (seconds) before a possibly long wait; bytes are compared
+    // only after the wait, so an origin edited meanwhile is seen.
+    if (whenQuiet !== null) await assertVerificationReady(origin);
+    await waitForQuiet({
+      root: origin,
+      tier,
+      options,
+      required: [
+        ...requiredReexecution({
+          classification: retry.classification,
+          manifest: JSON.parse(readFileSync(join(origin, 'scripts/manifest.json'), 'utf8')),
+        }),
+      ]
+        .filter((id) => id.startsWith('browser:'))
+        .map((id) => id.slice('browser:'.length)),
+    });
     const sameSource = await candidateMatchesOrigin(origin, parentDescriptor.candidate);
     let sameDependencies = false;
     try {
@@ -393,7 +493,6 @@ try {
   } else if (previous) {
     directory = resolve(previous.directory);
     key = readFileSync(join(directory, 'resume-key'));
-    attestKey = key;
     const descriptor = readResumeDescriptor(directory, key);
     ({ candidate, options, tier, installed, installedAt } = descriptor);
     if (resolve(candidate.destination) !== join(directory, 'source'))
@@ -402,6 +501,11 @@ try {
     if (!/^[\da-f-]{36}$/.test(previous.attempt ?? '')) throw Error('invalid parent attempt');
     if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
       throw Error('resume source/index changed');
+    await waitForQuiet({ root: candidate.destination, tier, options });
+    // The key attests only from here: an expired wait — and the three refusals above, which run
+    // nothing either — publish an unattested failed report. (A retry's same refusals are
+    // attested under the parent's key; that difference is stated, not load-bearing.)
+    attestKey = key;
     await timing.measure('preflight', () => assertVerificationReady(candidate.destination));
     if (
       (await timing.measure('dependency-validation', () =>
@@ -442,6 +546,8 @@ try {
       // capture began, so a later reader can tell whether the capture ran beside the final.
       if (waiting) report.citedBeside = currentWindowOwner();
     }
+    if (whenQuiet !== null) await assertVerificationReady(origin);
+    await waitForQuiet({ root: origin, tier, options });
     await timing.measure('preflight', () => assertVerificationReady(origin));
     directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
     excludeFromIndexing(directory);

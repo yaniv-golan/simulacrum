@@ -53,7 +53,7 @@ export const NOT_EVALUATED_STATUS = 'not evaluated';
 /** The suite's failure names both classes of non-pass row: rows that ran and failed, and rows
  * refused before they ran (an admission refusal leaves no receipt at all), so a diagnosed retry
  * can require the refused rows without a receipt to read. */
-export function browserSuiteFailure(outcomes, runs) {
+export function browserSuiteFailure(outcomes, runs, timingAdmission = null, suiteReport = null) {
   const failures = outcomes.filter((outcome) => outcome.ok === false);
   const error = new AggregateError(
     failures.map((outcome) => outcome.error),
@@ -73,6 +73,17 @@ export function browserSuiteFailure(outcomes, runs) {
     .map((outcome) => outcome.id)
     .filter((id) => !error.notEvaluated.includes(id))
     .sort();
+  // A refused timing admission rides the failure with its reason, the refused ids and the
+  // suite report that recorded it: the phase row keeps it inside the attested attempt report,
+  // the only record a diagnosed retry may cite for its cause.
+  if (timingAdmission && timingAdmission.admitted === false && error.notEvaluated.length)
+    error.refusal = {
+      phase: 'timing',
+      failureKind: 'host-load',
+      reason: timingAdmission.reason ?? 'timing admission refused',
+      ids: [...error.notEvaluated],
+      suiteReport,
+    };
   return error;
 }
 export function browserReceiptConfiguration(check, budget = { timeoutMs: check.timeoutMs }) {
@@ -600,7 +611,12 @@ async function executeBrowserSuite(
         { workers, failFast },
       );
       if (outcomes.some((outcome) => outcome.ok === false))
-        throw browserSuiteFailure(outcomes, runs);
+        throw browserSuiteFailure(
+          outcomes,
+          runs,
+          report.timingAdmission ?? null,
+          report.reportPath,
+        );
     },
     async () => {
       report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);

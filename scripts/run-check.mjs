@@ -21,7 +21,7 @@ const SNAPSHOT_LIST_ROWS = 32;
 // A beat every second; a gap of more than a minute between beats is a host sleep, never a
 // busy scheduler (timer lateness on a loaded host is measured in seconds).
 const HEARTBEAT_MS = 1000;
-const SLEEP_GAP_MS = 60_000;
+export const SLEEP_GAP_MS = 60_000;
 /** H1 signal (unverified hypothesis): a freshly installed binary still carrying
  * quarantine/provenance attributes is a candidate for a first-exec assessment stall.
  * macOS only; bounded; never throws. */

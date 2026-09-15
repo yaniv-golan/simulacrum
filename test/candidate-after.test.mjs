@@ -17,6 +17,8 @@ import {
   resolveRetrySelection,
   attestReport,
   verifyAttestation,
+  expandRefusalCauses,
+  REFUSAL_CAUSE,
   reusableAcrossCandidates,
   reuseSet,
   reuseSummary,
@@ -1059,4 +1061,66 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
   );
   // validateAfterReport dispatches on the block kind.
   assert.equal(validateAfterReport(consistent), consistent);
+});
+
+test("@refusal expands only the browser phase cause, only from the attested parent's recorded refusal", () => {
+  const refusal = {
+    phase: 'timing',
+    failureKind: 'host-load',
+    reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+    ids: ['spring-perf', 'audio'],
+    suiteReport: '/tmp/suite/report.json',
+  };
+  const refused = parent();
+  refused.verification.checks = refused.verification.checks.filter(
+    (r) => !r.id.startsWith('browser:'),
+  );
+  refused.verification.results[2] = {
+    id: 'browser',
+    status: 'failed',
+    error: 'Browser checks failed: spring-perf, audio',
+    notEvaluated: ['spring-perf', 'audio'],
+    refusal,
+  };
+  assert.equal(REFUSAL_CAUSE, '@refusal');
+  const expanded = expandRefusalCauses(new Map([['browser', '@refusal']]), refused);
+  assert.deepEqual([...expanded.causes], [['browser', refusal.reason]]);
+  assert.deepEqual(expanded.sources, { browser: 'parent refusal' });
+  // A literal cause passes through untouched and unsourced.
+  const literal = expandRefusalCauses(new Map([['browser', 'desktop was drawing']]), refused);
+  assert.deepEqual([...literal.causes], [['browser', 'desktop was drawing']]);
+  assert.deepEqual(literal.sources, {});
+  // Only the phase id `browser` may cite the refusal.
+  for (const id of ['browser:spring-perf', 'unit:test/a.test.mjs', 'candidate', 'ci'])
+    assert.throws(
+      () => expandRefusalCauses(new Map([[id, '@refusal']]), refused),
+      /only the phase id browser/,
+    );
+  // A parent that records no refusal (a check that ran and failed; a pre-link parent) refuses
+  // the shorthand: a cause must be a diagnosis, never a template.
+  const failedRow = parent();
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), failedRow),
+    /records no admission refusal/,
+  );
+  const noReason = structuredClone(refused);
+  delete noReason.verification.results[2].refusal;
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), noReason),
+    /records no admission refusal/,
+  );
+  // The refusal must name exactly the rows the phase recorded as not evaluated.
+  const mismatch = structuredClone(refused);
+  mismatch.verification.results[2].refusal = { ...refusal, ids: ['spring-perf'] };
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), mismatch),
+    /does not match/,
+  );
+  // The refused rows still classify as unexecuted beneath the phase, so the expanded cause
+  // covers them and nothing else changes.
+  const c = classifyParentLeaves(refused);
+  assert.deepEqual(validateCauses(c, expanded.causes).browser.covers, [
+    'browser:audio',
+    'browser:spring-perf',
+  ]);
 });

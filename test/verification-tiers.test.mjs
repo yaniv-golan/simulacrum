@@ -196,6 +196,33 @@ test('a phase that refused rows before running them records their ids on its row
   const browser = rows.find((r) => r.id === 'browser');
   assert.equal(browser.status, 'failed');
   assert.deepEqual(browser.notEvaluated, ['perf', 'audio']);
+  // A refusal the phase attached travels with the row, so a retry can cite the admission
+  // reason from the attested report rather than from a template or an unbound suite file.
+  assert.equal(browser.refusal, undefined);
+  const refusedWithReason = Object.assign(Error('Browser checks failed: perf'), {
+    notEvaluated: ['perf'],
+    failedChecks: [],
+    refusal: {
+      phase: 'timing',
+      failureKind: 'host-load',
+      reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+      ids: ['perf'],
+      suiteReport: '/tmp/suite/report.json',
+    },
+  });
+  const [withReason] = await runVerificationPhases(
+    [
+      [
+        'browser',
+        async () => {
+          throw refusedWithReason;
+        },
+      ],
+    ],
+    { onProgress: () => {} },
+  );
+  assert.deepEqual(withReason.refusal, refusedWithReason.refusal);
+  assert.deepEqual(withReason.notEvaluated, ['perf']);
   assert.equal(rows.find((r) => r.id === 'ci').notEvaluated, undefined);
   // A plain failure carries no list.
   const plain = await runVerificationPhases(

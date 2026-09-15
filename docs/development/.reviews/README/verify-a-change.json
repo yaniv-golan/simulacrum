@@ -3,7 +3,7 @@
   "dependencies": {
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
     "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",
-    "scripts/candidate-after.mjs": "082d862e8431abb2e96e9a9b61f41fa5e7ec909494845658e4074789f0d846b5",
+    "scripts/candidate-after.mjs": "954a519feec57a607e7a45b83a4c8a8c7d053bf7de8b76e720e98a440bf94aec",
     "scripts/land.mjs": "25da0a80b46a142c4843d72aa7fa8eb30b2ae7d5f6f1dd4ed54b87750a013255",
     "docs/development/playtesting.md#remote-setup": "9d5bef5012be1ca2226f1bb760960b936c70d09596bd048a43d9bec1705c48ff",
     "package.json": "4e8a1a4d3a6a3f2fc8a407f60333479f84eb8f7c2f4e1f4a78e0667474f4681e",

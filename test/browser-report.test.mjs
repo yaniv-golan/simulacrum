@@ -673,6 +673,12 @@ test('a timing phase refused by admission marks its rows and names them on the s
   assert.ok(thrown, 'the suite fails when its only row is refused');
   assert.deepEqual(thrown.notEvaluated, [timingRow.id]);
   assert.deepEqual(thrown.failedChecks, []);
+  // The refusal itself rides the failure: reason, the refused ids and the suite report that
+  // recorded the admission, so the phase row (and the attested attempt report) can cite it.
+  assert.equal(thrown.refusal?.phase, 'timing');
+  assert.equal(thrown.refusal?.failureKind, 'host-load');
+  assert.deepEqual(thrown.refusal?.ids, [timingRow.id]);
+  assert.match(thrown.refusal?.reason ?? '', /load|pressure/);
   const report = JSON.parse(readFileSync('artifacts/browser-suite/last-run.json', 'utf8'));
   runId = report.runId;
   const row = report.runs.find((r) => r.id === timingRow.id);
@@ -680,4 +686,41 @@ test('a timing phase refused by admission marks its rows and names them on the s
   assert.equal(row.failureKind, 'host-load');
   assert.match(row.reason, /not evaluated/);
   assert.equal(report.timingAdmission.admitted, false);
+  assert.equal(thrown.refusal.reason, report.timingAdmission.reason);
+  assert.equal(thrown.refusal.suiteReport, report.reportPath);
+});
+
+test('a suite failure without an admission refusal carries no refusal record', () => {
+  const failure = browserSuiteFailure(
+    [{ id: 'ball', ok: false, error: Error('assertion') }],
+    [{ id: 'ball', status: 'failed' }],
+  );
+  assert.equal(failure.refusal, undefined);
+  const withRefusal = browserSuiteFailure(
+    [
+      {
+        id: 'perf',
+        ok: false,
+        error: Object.assign(Error('not evaluated: x'), { notEvaluated: true }),
+      },
+    ],
+    [{ id: 'perf', status: NOT_EVALUATED_STATUS }],
+    { admitted: false, reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)' },
+    '/tmp/suite/report.json',
+  );
+  assert.deepEqual(withRefusal.refusal, {
+    phase: 'timing',
+    failureKind: 'host-load',
+    reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+    ids: ['perf'],
+    suiteReport: '/tmp/suite/report.json',
+  });
+  // An admitted timing phase never records a refusal even if a timing row failed its budget.
+  const admitted = browserSuiteFailure(
+    [{ id: 'perf', ok: false, error: Error('p95 exceeds budget') }],
+    [{ id: 'perf', status: 'failed' }],
+    { admitted: true },
+    '/tmp/suite/report.json',
+  );
+  assert.equal(admitted.refusal, undefined);
 });

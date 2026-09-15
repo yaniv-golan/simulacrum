@@ -84,12 +84,12 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=(...args)=>globalThis.candidateTransport.drift(...args); export const resolveCandidateBase=(root,base)=>base; export const currentBranch=()=>"fixture-branch";';
+        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=(...args)=>globalThis.candidateTransport.drift(...args); export const resolveCandidateBase=(root,base)=>base; export const candidateSelection=()=>[]; export const currentBranch=()=>"fixture-branch";';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/merge-selection.mjs`)
       source =
-        'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; }';
+        'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; } export function mergeSelection() { throw Error("fixture: no merge selection is scripted"); }';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       // The fixture models an un-niced launch; the refusal itself is unit-tested on the real module.
       source =
@@ -99,7 +99,8 @@ registerHooks({
       source =
         'export function deriveStack(ref){ if(ref!=="target") throw Error("--stack "+ref+": unexpected"); return { stack: ref, destinationName: ref, destination: "sha-target", incoming: "feature", base: "HEAD~1", head: "sha-head", chain: { stack: ref, destination: "sha-target", incoming: "feature", base: "HEAD~1", head: "sha-head" }, landingOrder: ["target @ sha-tar", "this candidate @ sha-hea"] }; } export const landingOrderText = ({ landingOrder }) => "landing order: " + landingOrder.join(", then ");';
     if (url === `file://${repo}/scripts/run-check.mjs`)
-      source = 'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args);';
+      source =
+        'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args); export const SLEEP_GAP_MS=60000;';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
   },
 });

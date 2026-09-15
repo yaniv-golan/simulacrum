@@ -116,6 +116,10 @@ export async function runVerificationPhases(
       // Rows a phase never evaluated are recorded by id so a retry can require them.
       if (Array.isArray(error.notEvaluated) && error.notEvaluated.length)
         row.notEvaluated = [...error.notEvaluated];
+      // The admission refusal behind those rows stays with the row: the attested attempt report
+      // is the only source a retry may cite the reason from.
+      if (error.refusal && typeof error.refusal === 'object')
+        row.refusal = JSON.parse(JSON.stringify(error.refusal));
       console.error(`${id}: ${error.stack}`);
     }
     row.status = row.ok ? 'passed' : 'failed';

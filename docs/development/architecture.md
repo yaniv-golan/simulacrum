@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"c1ab3dc1a00e8d5681a94516a363ac2d0df5d25ff1d26670722b0f90f9e3bd80","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"44ddf7745c6a98bfff9ab650703cc6312d6f226ee83040e29de52bcf012f51dc","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): AGENTS.md changed only the landing sentence; layers and ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a75adc1689f59153057d9b1ac4048fa8acbf7935c783e17f3cc2e205c381f054","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"7b28350205f5ec59d718fde532649a66abaa83a435dfb8b1e6106a05dfec5b11","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). AGENTS.md's layer table and ownership are untouched by the verification-table row; when-quiet.mjs is a scripts/ tooling module beside the other candidate tooling, not a runtime layer."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
