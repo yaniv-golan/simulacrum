@@ -369,7 +369,7 @@ test('sample targets are the owned descendants blocked in uninterruptible wait, 
     { pid: 1, ppid: 0, stat: 'Ss', comm: 'node' },
     { pid: 2, ppid: 1, stat: 'S+', comm: 'workerd' },
     { pid: 3, ppid: 1, stat: 'U', comm: 'esbuild' },
-    { pid: 4, ppid: 3, stat: 'D+', comm: 'child' },
+    { pid: 4, ppid: 1, stat: 'D+', comm: 'child' },
     { pid: 9, ppid: 0, stat: 'U', comm: 'ls' },
   ];
   assert.deepEqual(
@@ -378,7 +378,10 @@ test('sample targets are the owned descendants blocked in uninterruptible wait, 
     'only the tree, only an uninterruptible state, never a foreign process, one target',
   );
   assert.deepEqual(
-    selectSampleTargets(rows.filter((row) => row.pid !== 3), 1).map((row) => row.pid),
+    selectSampleTargets(
+      rows.filter((row) => row.pid !== 3),
+      1,
+    ).map((row) => row.pid),
     [4],
     'Linux spells the state D',
   );
