@@ -103,6 +103,11 @@ try {
   await place('Beam', [0, 0.32, 0]);
   await place('Spacer block', [0.4725, 0.315, 0]);
   await requestRope();
+  // End A defaults to the selected block; end B defaults to the first other part, here a
+  // cell whose faces do not include 'right', so name the beam explicitly.
+  await page
+    .getByRole('combobox', { name: 'Rope end B', exact: true })
+    .selectOption({ label: 'Beam' });
   await page.getByRole('combobox', { name: 'End A surface', exact: true }).selectOption('top');
   await page.getByRole('combobox', { name: 'End B surface', exact: true }).selectOption('right');
   await page.getByRole('spinbutton', { name: 'Rope length (m)', exact: true }).fill('.25');
