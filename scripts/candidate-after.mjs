@@ -219,8 +219,7 @@ export function validateCauses(
 
 const browserId = (id) => (id.startsWith('browser:') ? id.slice('browser:'.length) : null);
 const unitFile = (id) => (id.startsWith('unit:') ? id.slice('unit:'.length) : null);
-const structuralId = (id) =>
-  id.startsWith('structural:') ? id.slice('structural:'.length) : null;
+const structuralId = (id) => (id.startsWith('structural:') ? id.slice('structural:'.length) : null);
 /** Only unit leaves and browser checks registered neither timing-sensitive nor as merge smoke
  * may carry a receipt forward. Always-fresh is derived: the registered timingSensitive and
  * mergeSmoke facts plus the structural classes (gates, builds, aggregates, hosted and human bars). */

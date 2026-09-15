@@ -639,7 +639,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
   );
 });
 
-test('a failed unit control requires its invariant\'s structural check under the receipt key the gate writes, so a passing child validates', () => {
+test("a failed unit control requires its invariant's structural check under the receipt key the gate writes, so a passing child validates", () => {
   // Item 52: a failed unit file that controls an invariant naming a structural check
   // (mirror.test.mjs → mirror-truth → layers) must require `structural:layers` — the id
   // gate-structural.mjs keys the receipt by — never `check:layers`, which no child can carry.
@@ -657,7 +657,10 @@ test('a failed unit control requires its invariant\'s structural check under the
   const required = requiredReexecution({ classification, manifest });
   assert.ok(required.has('structural:layers'));
   assert.ok(required.has('browser:mirror'));
-  assert.equal([...required].some((id) => id.startsWith('check:')), false);
+  assert.equal(
+    [...required].some((id) => id.startsWith('check:')),
+    false,
+  );
   const reexecute = reexecutionSet({ classification, manifest });
   const causes = new Map([
     ['unit:test/mirror.test.mjs', 'host pressure: 0 tests ran in 30 s'],
@@ -706,7 +709,11 @@ test('a failed unit control requires its invariant\'s structural check under the
   });
   assert.throws(
     () =>
-      validateAfterReport({ status: partial.status, after: partial.after, verification: withoutGate }),
+      validateAfterReport({
+        status: partial.status,
+        after: partial.after,
+        verification: withoutGate,
+      }),
     /non-pass leaf structural:layers was not re-executed/,
   );
 });
