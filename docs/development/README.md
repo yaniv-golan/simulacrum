@@ -7,6 +7,32 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 `nvm install && nvm use && npm ci` (with nvm installed). The checked `.nvmrc` pins a version inside the package-owned range. `npm run dev` serves the workshop; `npm run build` and `npm run preview`
 serve a stable build. The page displays its build identity.
 
+## Milestone status
+<!-- doc-review {"version":1,"fingerprint":"980c6dd91ab7249b6cf76e3603523688c3a20ab6e97347f0b1c749bc6651dc6c","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"33144ef038984651fb72fe784f84e619f6bcda0b83adb2951aa4899a33c9c19b","disposition":"still accurate","rationale":"The manifest changed only through the Bench, assembly-ux focus-wait and package-verification launch-row landings (scope rows, timeouts and the release-verification-single-pass controls); milestone allocation still declares M3b with F1 pending and S1, physical feasibility, rover and legged Course incomplete, and the manifest and gate remain the owners this section names; re-read at cd8109aa."} -->
+
+The current construction loop includes motors, cells, keyboard receivers, surface
+mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
+Player-authored rules and a restricted TypeScript subset execute through bounded WASM
+programs. Shared sensing, gears, springs, rope, reusable assemblies, powered cameras
+and lamps extend the construction loop.
+
+Implementation is distinct from qualification. Focused automated checks cover these
+capabilities, but only source-bound completion evidence establishes verification for
+a particular build. The manifest currently declares M3b; designated-player F1 acceptance
+remains pending. The broader hostile-program S1 qualification, physical feasibility
+probe, rover Course and legged Course qualification remain incomplete. The
+[manifest](../../scripts/manifest.json) owns current allocation and registered checks;
+`npm run gate` evaluates it rather than inferring progress from available features.
+[AGENTS.md](../../AGENTS.md), the [runtime contract](../contracts/runtime-v1.md),
+[Course contract](../contracts/course-v1.md) and the manifest own architecture and
+qualification. A green smoke test is not Course or human acceptance. The `main` branch
+contains the v2 workshop; the previous implementation is retained at the
+[`v1-final-2026-09-11` tag](https://github.com/yaniv-golan/simulacrum/tree/v1-final-2026-09-11)
+and `archive/v1` branch for reference, and legacy v1 machine files are not a supported
+import format for v2 (keep their originals and use v1 to open them). Published
+[releases](https://github.com/yaniv-golan/simulacrum/releases) are experimental until the
+milestones above are met; each v2 release's notes name its deferred checks.
+
 ## Working loop
 
 <!-- doc-review {"version":1,"fingerprint":"96ec854d7c9bb7de55f5f2ce367f006708b8225ac90b05ac19e816e94e3ac04c","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"100fe5c738cf156112b1a06eae8025f10351baf676498a05c1dc9498b51f7b95","disposition":"still accurate","rationale":"Only the linked ui-ux before-changing-player-facing-ui section re-fingerprinted (its placement paragraph gained the anchoring rule); the loop's steps are unchanged."} -->
