@@ -23,7 +23,7 @@
     "scripts/host-pressure.mjs": "151fd3b44edc39b54f2c57136755cff4571b9dcaa2f8623fe73db1d710cdfd9e",
     "scripts/host-profile.mjs": "bed35e396ad688822432484013295953fa25ffe331af9bfd57d97a1c1500aed4",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "47068b0aa5c6adcac01c7cf1cbb6af9882df9bba1ffd968561d9737e62a995ab",
+    "scripts/manifest.json": "35a7910f7e850b2ac3cdacaad116339fe2e62a306a0188d3185d024f7b16f5ba",
     "scripts/merge-selection.mjs": "9c92b1d891265cb8f8df22c0242b53092a9da877994bdfb12b30d2727e2f53aa",
     "scripts/merge-shadow.mjs": "0a0cc14b0a9b3456923b6abab94abf9c8d0a1901b167147a5cc60641162f96a5",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
