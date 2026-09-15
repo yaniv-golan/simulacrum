@@ -3517,7 +3517,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Edit scene lives under Tools.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -5685,7 +5685,7 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
       "owners": [
         {
           "path": "src/presentation/part-search.mjs",
@@ -5698,6 +5698,10 @@
         {
           "path": "src/presentation/part-placement.mjs",
           "anchor": "createPartPlacement"
+        },
+        {
+          "path": "src/presentation/workbench-content.mjs",
+          "anchor": "paletteKeyOpens"
         }
       ],
       "checks": [
@@ -5709,6 +5713,14 @@
           {
             "path": "test/part-search.test.mjs",
             "anchor": "everyday words and roles find the intended part before incidental references"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "summoning opens the overlay with the search focused and names it as a dialog"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
           }
         ],
         "negative": [
@@ -5723,6 +5735,18 @@
           {
             "path": "test/part-placement-pending.test.mjs",
             "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a cancelled placement restores the browse snapshot but never re-summons the overlay"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "Escape belongs to an active placement, not to the overlay"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "P summons the parts only in Build and never from a text field"
           }
         ]
       },
@@ -7073,7 +7097,7 @@
       "id": "dialog-close-consistency",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Every custom dialog and the Teach a controller panel dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
+      "guarantee": "Every custom dialog, the Teach a controller panel and the summoned Parts overlay dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
       "owners": [
         {
           "path": "src/presentation/dialog-close.mjs",
@@ -7090,6 +7114,10 @@
         {
           "path": "src/application/remote-playtest.mjs",
           "anchor": "createDialogClose('Close recording setup'"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createDialogClose('Close parts'"
         }
       ],
       "checks": [
@@ -7118,6 +7146,10 @@
           {
             "path": "test/camera-controls.test.mjs",
             "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "the compact catalogue no longer carries its own expand toggle"
           }
         ],
         "negative": [

@@ -53,8 +53,10 @@ feedback and recording controls there and keeps protected feedback dialogs outsi
 the workshop root. Ordinary offline feedback does not add a second workbench row. That
 footer is otherwise a status line (mode, part count, status message, the pending step)
 composed by [footerModel](../../src/presentation/workbench-content.mjs#symbol=footerModel);
-the header holds one Build | Run switch and a Tools menu (Check machine, Measurements,
-Assemblies, New, Load), so the left column is the parts catalogue alone; and the
+the header holds + Add part (the parts are summoned by it or by P into a non-modal
+overlay), one Build | Run switch and a Tools menu (Check machine, Measurements,
+Assemblies, New, Load, Edit scene), so the left column is the compact parts catalogue
+alone; and the
 application offers the one-time first-run choice through `view.offerFirstRun()` only after
 the remote playtest's `setupClosed` promise resolves, keeping recording consent first. Optional
 [feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)

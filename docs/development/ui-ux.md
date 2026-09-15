@@ -133,13 +133,14 @@ they do not automatically judge whether a new activity deserves admission.
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-in the header, one Build | Run switch (Pause and Step appear once the clock can run;
-Step acts only while paused), Undo, Redo, Save, Choose scene, Edit scene, Learn &
-examples and Help stay visible, and the occasional commands — Check machine,
-Measurements, Assemblies, New, Load — live under one Tools ⋯ menu that closes on pick,
-Escape or leaving it, each keeping its name and `data-command`; parts in the left
-catalogue; separate edit and view groups at the workbench edge; selected properties and
-operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
+in the header, **+ Add part** first (the one way to summon the parts; P is its key), one
+Build | Run switch (Pause and Step appear once the clock can run; Step acts only while
+paused), Undo, Redo, Save, Choose scene, Learn & examples and Help stay visible, and the
+occasional commands — Check machine, Measurements, Assemblies, New, Load, Edit scene —
+live under one Tools ⋯ menu that closes on pick, Escape or leaving it, each keeping its
+name and `data-command`; the compact parts catalogue in the left column (the summoned
+overlay is its expanded state, see below); separate edit and view groups at the workbench
+edge; selected properties and operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 The selected part's header carries one summary line from
 [inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
@@ -163,12 +164,19 @@ with optional coordinates under Precise position. Confirmation sends one ordinar
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
 Escape first cancels an active pickup, including when search has focus, and restores
-the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
+the originating query, category, focus and scroll even after browsing changes, without
+re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
 header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
-At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
-full width while Assemblies (in the Tools menu) and recording remain retrievable.
-Recent records accepted catalog placements. Expanded and compact catalogs are requested
-surfaces; picking closes them and cancellation restores the origin. The existing About
+The parts are **summoned**: + Add part or P opens the catalogue's expanded state as a
+non-modal overlay at every width (`role=dialog`, named "Parts", search focused; the
+compact sidebar keeps its landmark name), and it goes away on a pick, a drag onto the
+bench, Escape (focus returns to whatever summoned it), the shared × or entering Run; it
+reopens where it was left (search, category, scroll). Cancelling a placement restores
+that browse snapshot for the next open but never re-summons the overlay — the player
+decides when the parts come back. At narrow widths the compact catalogue shows nothing
+and the overlay is the only catalogue, leaving the canvas full width while Assemblies
+(in the Tools menu) and recording remain retrievable. Recent records accepted catalog
+placements. The existing About
 window retains Overview and How to connect, with diagram links that reveal catalog
 parts without placing them. Feedback and recording controls share the existing workshop footer.
 The canvas, catalog and inspector retain their own pointer regions without per-control
@@ -239,8 +247,8 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose Choose scene and Edit scene in place of the old
-Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+The document controls expose Choose scene in the header and Edit scene under Tools in
+place of the old Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
 replaces catalogue and inspector content while Editing scene is active; Done restores
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
