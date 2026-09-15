@@ -388,7 +388,9 @@ export function attachBrowserSession(
         try {
           return await timing.measure('context-setup', async () => {
             const context = await browser.newContext(options);
-            if (!firstRun) await context.addInitScript(markReturningDevice);
+            // Unit fakes have no init scripts; a real context always does.
+            if (!firstRun && typeof context.addInitScript === 'function')
+              await context.addInitScript(markReturningDevice);
             return wrapContext(context);
           });
         } catch (error) {
