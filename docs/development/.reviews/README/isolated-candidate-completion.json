@@ -34,7 +34,7 @@
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
     "scripts/validate-manifest.mjs": "ad4ec4b9d78bce53a0a646a3cf71c767431eba7f11750ee3b9f12d4bc8e68316",
-    "scripts/verification-environment.mjs": "c159c60b5f0eefc518f0a88714a839cd72c140bb36a13f51eccdd6cb017d10d1",
+    "scripts/verification-environment.mjs": "ac9fce8e6f586bb7aec08684151066405a48a71820de04b2da09b1bd286cbfe2",
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
     "scripts/verification-preparation.mjs": "1080956f000008e3f52f2b004a139bfa426627941a8b0ec33270fd1a1659f341",
     "scripts/verification-tiers.mjs": "6aa90dd9e5a6eb96626ada161b951b9f9f3bc6192f8b912e14db2b5ada22d004",

@@ -191,7 +191,7 @@
     "scripts/tick-attribution.mjs": "017f28dabef47c92e8d215f2656f5c37273200bf8773a0a413a1208b8e473eb1",
     "scripts/validate-manifest.mjs": "ad4ec4b9d78bce53a0a646a3cf71c767431eba7f11750ee3b9f12d4bc8e68316",
     "scripts/verification-cleanup.mjs": "d2b5324a5cf51ad4d3a8be443f307b4de07d380c67e17dbe4e185e1ff3e35f65",
-    "scripts/verification-environment.mjs": "c159c60b5f0eefc518f0a88714a839cd72c140bb36a13f51eccdd6cb017d10d1",
+    "scripts/verification-environment.mjs": "ac9fce8e6f586bb7aec08684151066405a48a71820de04b2da09b1bd286cbfe2",
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
     "scripts/verification-preparation.mjs": "1080956f000008e3f52f2b004a139bfa426627941a8b0ec33270fd1a1659f341",
     "scripts/verification-resume.mjs": "cc12555b28aaa0f6f5e877d80f710ed17396ff6bb7341c67ada4701be1f3fabe",
