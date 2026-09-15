@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"2151b0c212818db7e653bc7a05f94a5c11e29060b286267c8120a49856634490","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f5394eae17dc2ad682481cdfe6d03bf8b94135f3247025b00c9bdf631fcd09da","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): This section's broad fan-out picked up the bench refresh's presentation, journey and documentation changes; no physics owner, law, integration step or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"e18960b229775fee9542858b86bdd275290699a351e613c666a8c123b2ebd530","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8c2668f507ddd42c3c23ccbdb0375843a898a58bb11f37a9193ed2d39ab2f62f","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -514,7 +514,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"d1681c486f3f08726db9588a65c95a54b76134e57ebb25d538775f033373381e","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"bb1ff2a4373dc751eb75bed965d5b35ae2444a7862748d6e306c9d5c0408848f","disposition":"still accurate","rationale":"The Assemblies launcher now opens from the Tools menu (assembly journeys open it through openTools and its focus returns to the Tools control); assembly authoring, placement and library rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"84574a57634607a158e5c015705d66eb9ade6d7287bfc9a10be34ddb490b58c9","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1cfeb1003e885d1f323024ed21186fab45c106e279fe3003721121b36356db67","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored

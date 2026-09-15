@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"61da447ed61506892d4316e3ec520678317166a82ed69dac1dd73acaa9feebea","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c2346b22299bdb17ddcde8871cc8da5b7f8cf723f76833f07f21e43af9057bd0","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Dependencies moved because the browser harness marks every context a returning device (an init script stores the first-run cursor) unless a check passes firstRun: true, and 18 journeys open the header's Tools menu through the shared openTools helper before clicking a moved control, and the manifest gained the build-readiness-honesty invariant plus new controls; scope rows, exclusion rules, the phased schedule and the proposal/apply flow described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"82ec3bd22b7171a70b994dafee1cc3d9067d893018ca7572d4e0ef3617da5f64","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1f4c9d8f253b4e0938b3d90fe0418ec7cad1d14b7b6f264ed6e8615f30f75c17","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -622,7 +622,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"100daaee6975f7f9591fdad568c33226e9dc224538f87ea1c8367af72c4da9e9","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cabd49ad9864f5d60b95cd467e3fa22077204221148c2718d2eab0c30669cbf8","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Dependencies moved because the browser harness marks every context a returning device (an init script stores the first-run cursor) unless a check passes firstRun: true, and 18 journeys open the header's Tools menu through the shared openTools helper before clicking a moved control; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"fedaf593daea3d4c5e69dec044ba4cf78b45d49e6c14d166f05e1d3610f9fbb7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cb1f84c19a7f92c5f46ae9ba1448ea2f6dd7a162d62c4f3e5012fb28fce8425d","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

@@ -75,7 +75,7 @@
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-assemblies-browser.mjs": "4d02109b07f8f9cac4a77089ffd700c6dd0799658bf91b030466181955b7dd76",
     "scripts/assembly-scenarios.mjs": "b42cdd927d1f748ad70c32bb4b4d269f1d44aebb687026cea2b746f358b771fb",
-    "scripts/assembly-ux-cases.mjs": "5331fb2a715757b93303edcdf92f7d843389be1a1ae0697e9c2e13fc62886af0",
+    "scripts/assembly-ux-cases.mjs": "381f7fa1d99c6a5fc461bb63907aa658892da537c138e7001d1002638fb4b551",
     "scripts/verify-assembly-ux-browser.mjs": "6139dbb003c2ecc3107274b07c218e6722b41ddf0a34e3c2ce1321328dcd03f2",
     "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8",
     "scripts/verify-assembly-library-browser.mjs": "0bac480d6f75c39fe850e21caddef40e89013c96373fac6d9293a78b2bfdc64f"
