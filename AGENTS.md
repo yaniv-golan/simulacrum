@@ -86,7 +86,14 @@ requires the playable build loop and real F1 plus instrumented F2. M4 attacks th
 sandbox. M4b demonstrates standing, weight transfer, clearance, alternating contact
 and stopping after repairs; listing blockers does not authorize M5. M5 qualifies
 the rover on the frozen Course before legged qualification. M7 requires L1a/L1b/L1c.
-M8 adds product completion, M8b WebMCP, M9 the full robust legged circuit.
+M8 adds product completion, M8b WebMCP, M9 the full robust legged circuit. M10 adds
+flight (V1 hover, V2 circuit) from air, rotor and drag laws with an ordinary IMU; M11
+adds orbital flight (O1 insertion, O2 return) from position-dependent gravity, owned
+propellant mass, ablation and a recorded clock decision. The legged subject for M4b,
+M7 and M9 is a legged machine built from ordinary parts. Every part these milestones
+need enters the shared catalog and is placed, connected, commanded and configured
+exactly as in any player design; no legged, flight or orbital milestone admits a
+demo-only part, rig-only force or sequence its machine could not author.
 
 Parts and UI features declare a milestone. Do not introduce future breadth to escape
 a physical blocker. Initial contract reconciliation may implement acceptance predicates
@@ -118,6 +125,8 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | Local completion | `npm run verify:candidate -- local` |
 | Routine merge readiness | `npm run verify:candidate -- merge --base <commit>` |
 | Release or milestone qualification | `npm run verify:candidate -- final` |
+| Diagnosed retry of a failed local/merge candidate | `npm run verify:candidate -- <tier> --after <report> --cause <id>=<cause>` |
+| Receipt reuse from a passed local/merge candidate on identical bytes | `npm run verify:candidate -- <tier> --after <passed report>` |
 | Authorized experimental publication | Existing release preparation and exception policy |
 
 Direct tiers remain for already frozen CI/release copies. Complete source-writing
@@ -143,7 +152,8 @@ release/qualification. Every browser check is executed, or reported NOT_EVALUATE
 registered platform reason, on a registered platform at least once per day (hosted nightly
 under `hostProfiles`), and its outcome is read; critical-module mutation runs weekly.
 Tiers schedule the browser suite in phases (headless pool on one worker per two idle cores, at
-most four; policy-serialized checks; timing-sensitive checks last on an admitted quiet host) and the
+most four; policy-serialized checks; timing-sensitive checks last on an admitted quiet host; the
+launch admission applies the foreign-process bound only to tiers that will reach a timing phase) and the
 `test:browser:serial` and a rotated `SIMULACRUM_BROWSER_SCHEDULE_SEED` are the controls a
 nightly run uses so contention or order can never be the reason a check passes.
 Use `npm run verify:local` for local completion (CI plus conservatively affected browser checks;

@@ -1,0 +1,575 @@
+/** Diagnosed retry of a failed candidate attempt, or receipt reuse from a passed one. Pure decisions;
+ * the candidate command wires them. A retry applies the tier's own policy to what changed: non-pass
+ * leaves, the registered controls of their invariants and every always-fresh class execute; only
+ * unit and non-always-fresh browser leaves that passed on identical bytes and relevant identity are
+ * reused, each naming its origin. When bytes differ, the tier's selection sees the byte delta only
+ * if identity and dependencies still match; otherwise it runs its fresh policy. Reuse from a passed
+ * parent is narrower still: only workshop browser journeys, only receipts the parent executed
+ * itself, into a local or merge child that selects its own checks. */
+import { createHmac, timingSafeEqual } from 'node:crypto';
+export const CHAIN_DEPTH_LIMIT = 3;
+const attestationOf = (report, key) => {
+  const { attestation, ...rest } = report;
+  return createHmac('sha256', key).update(JSON.stringify(rest)).digest('hex');
+};
+/** HMAC of the report under the candidate's resume key; the report is published with it. The key
+ * lives 0600 in the candidate directory: this is the same same-UID trust class as the signed
+ * descriptor and leaf receipts (see verification-resume.mjs) — it refuses an edited or re-pointed
+ * report unless the editor holds the candidate's key, not proof against the key's owner. */
+export function attestReport(report, key) {
+  return attestationOf(report, key);
+}
+/** A parent report is admitted only when the key in its own candidate directory attests it. */
+export function verifyAttestation(parent, readKey) {
+  if (typeof parent?.attestation !== 'string' || typeof parent.directory !== 'string')
+    throw Error('parent attempt report is not attested by its candidate; run a fresh candidate');
+  let key;
+  try {
+    key = readKey();
+  } catch {
+    throw Error('parent candidate directory or resume key is unavailable; run a fresh candidate');
+  }
+  const expected = Buffer.from(attestationOf(parent, key), 'hex'),
+    given = Buffer.from(parent.attestation, 'hex');
+  if (expected.length !== given.length || !timingSafeEqual(expected, given))
+    throw Error('parent attempt report attestation does not match its candidate key');
+  return true;
+}
+export const CANDIDATE_CAUSE = 'candidate';
+const usage =
+  'Usage: verify:candidate -- <tier> [tier options] --after <attemptReport.json> --cause <checkId>=<diagnosed cause> [--cause ...]';
+const attemptId = (v) => /^[\da-f-]{36}$/.test(v ?? '');
+
+/** Strip --after/--cause from the tier arguments. Causes keep their order and refuse empty text. */
+export function parseAfterArgs(argv) {
+  const rest = [],
+    causes = new Map();
+  let after = null;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--after') {
+      if (after !== null || !argv[i + 1] || argv[i + 1].startsWith('-'))
+        throw Error(`${usage}\n--after needs one report path`);
+      after = argv[++i];
+    } else if (arg === '--cause') {
+      const value = argv[++i] ?? '',
+        eq = value.indexOf('=');
+      const id = value.slice(0, eq).trim(),
+        text = value.slice(eq + 1).trim();
+      if (eq <= 0 || !id || !text || causes.has(id))
+        throw Error(`${usage}\n--cause needs <checkId>=<non-empty diagnosed cause>, once per id`);
+      causes.set(id, text);
+    } else rest.push(arg);
+  }
+  if (after === null && causes.size) throw Error(`${usage}\n--cause needs --after`);
+  if (after !== null && rest[0] === 'resume')
+    throw Error('--after cannot be combined with resume; retry from the failed attempt report');
+  if (after !== null && rest[0] === 'final')
+    throw Error('--after is refused for final; qualification evidence is always a fresh full run');
+  return { rest, after, causes: after === null ? null : causes };
+}
+
+/** Passing, failed and unexecuted leaves of a completed attempt, plus aborted aggregates and
+ * whether the candidate itself failed around the tier (drift, dependencies, window). A failed
+ * parent classifies for a diagnosed retry; a passed parent, for receipt reuse. */
+export function classifyParentLeaves(parent) {
+  // A child that itself reused receipts may still lend the ones it executed: reuseSet offers
+  // depth-0 receipts only, so no receipt is ever cited twice.
+  const kind = ['passed', 'passed with reused receipts'].includes(parent?.status)
+    ? 'reuse'
+    : 'retry';
+  if (kind === 'retry' && parent?.status !== 'failed')
+    throw Error(
+      '--after needs a failed attempt report to retry or a passed one to reuse; a passed-after-failure attempt has nothing to retry',
+    );
+  if (kind === 'retry' && (parent.after?.chain?.length ?? 0) >= CHAIN_DEPTH_LIMIT)
+    throw Error(`retry chain exceeds ${CHAIN_DEPTH_LIMIT} attempts; run a fresh candidate`);
+  const verification = parent.verification;
+  if (
+    !Array.isArray(verification?.checks) ||
+    !Array.isArray(verification.results) ||
+    !attemptId(parent.attempt) ||
+    typeof parent.directory !== 'string'
+  )
+    throw Error(
+      'parent attempt report has no tier receipts to retry from (it failed before the tier completed); run a fresh candidate',
+    );
+  const passing = verification.checks.filter((r) => r.ok === true);
+  // A leaf that ran and failed needs its own cause. A leaf the host slept through carries a
+  // receipt marked notEvaluated: it never ran, so it belongs beneath its phase like any
+  // unexecuted leaf and the phase cause may cover it.
+  const phaseOf = (id) => (id.startsWith('browser:') ? 'browser' : 'ci');
+  const failed = verification.checks
+    .filter((r) => r.ok === false && r.notEvaluated !== true)
+    .map((r) => r.id);
+  const unexecutedBy = {};
+  const beneath = (phase, ids) => {
+    unexecutedBy[phase] = [...new Set([...(unexecutedBy[phase] ?? []), ...ids])].sort();
+  };
+  for (const r of verification.checks) {
+    // Files a budget-bound aggregate never admitted, keyed by the leaf that listed them.
+    if (Array.isArray(r.unexecuted) && r.unexecuted.length)
+      beneath(
+        r.id,
+        r.unexecuted.map((file) => `unit:${file}`),
+      );
+    if (r.ok === false && r.notEvaluated === true) beneath(phaseOf(r.id), [r.id]);
+  }
+  // Rows a phase refused before they ran (timing admission) have no receipt at all; the phase
+  // row names them by check id (browser) or file (ci), and they count as unexecuted beneath it.
+  const leafOf = { browser: (id) => `browser:${id}`, ci: (file) => `unit:${file}` };
+  for (const row of verification.results)
+    if (row.status === 'failed' && Array.isArray(row.notEvaluated) && row.notEvaluated.length) {
+      const leaf = leafOf[row.id];
+      if (!leaf) throw Error(`phase ${row.id} names not-evaluated rows it cannot own`);
+      beneath(row.id, row.notEvaluated.map(leaf));
+    }
+  const unexecuted = [...new Set(Object.values(unexecutedBy).flat())]
+    .filter((id) => !failed.includes(id))
+    .sort();
+  const abortedAggregates = verification.results
+    .filter((row) => row.status === 'failed')
+    .map((row) => row.id)
+    .sort();
+  // A candidate-level failure (drift, dependency change, window) leaves no failed leaf behind;
+  // it is a cause of its own, named `candidate`.
+  const candidateFailure =
+    typeof parent.error === 'string' && parent.error.trim() ? parent.error.trim() : null;
+  if (kind === 'reuse' && (failed.length || unexecuted.length || abortedAggregates.length))
+    throw Error(
+      `passed parent attempt carries failed or unexecuted leaves: ${[...failed, ...unexecuted, ...abortedAggregates].join(', ')}`,
+    );
+  // A hosted-profile or measurement report is never evidence for another candidate; candidates
+  // refuse the profile themselves, so this names the refusal rather than relying on it.
+  if (kind === 'reuse' && (verification.hostProfile || verification.measurement === true))
+    throw Error(
+      `receipt reuse never cites a hosted-profile or measurement report (${verification.hostProfile ?? 'measurement'})`,
+    );
+  return { kind, passing, failed, unexecuted, unexecutedBy, abortedAggregates, candidateFailure };
+}
+
+/** Every failed or unexecuted leaf needs its own cause; a failed aggregate may carry one for the
+ * leaves that never ran beneath it (optional: each such leaf may carry its own instead). A
+ * candidate-level failure needs `--cause candidate=<reason>`. Unknown targets are refused. */
+export function validateCauses(
+  {
+    kind = 'retry',
+    failed,
+    unexecuted,
+    unexecutedBy = {},
+    abortedAggregates,
+    candidateFailure = null,
+  },
+  causes,
+) {
+  if (kind === 'reuse') {
+    // A passed parent has nothing to diagnose; a cause here names a leaf that did not fail.
+    if (causes instanceof Map && causes.size)
+      throw Error(
+        `--cause names leaves but nothing failed in the parent attempt: ${[...causes.keys()].join(', ')}`,
+      );
+    return {};
+  }
+  if (!(causes instanceof Map)) throw Error('--after needs --cause entries');
+  const coverage = {};
+  if (candidateFailure) {
+    if (!causes.has(CANDIDATE_CAUSE))
+      throw Error(
+        `--cause ${CANDIDATE_CAUSE}=<reason> required: the parent attempt failed around the tier (${candidateFailure})`,
+      );
+    coverage[CANDIDATE_CAUSE] = { aggregate: false, covers: [], candidateFailure };
+  } else if (causes.has(CANDIDATE_CAUSE))
+    throw Error(`--cause ${CANDIDATE_CAUSE} names a candidate failure the parent did not report`);
+  if (!failed.length && !unexecuted.length) {
+    const extra = [...causes.keys()].filter((id) => id !== CANDIDATE_CAUSE);
+    if (extra.length)
+      throw Error(
+        `--cause names leaves but nothing failed in the parent attempt: ${extra.join(', ')}`,
+      );
+    if (!candidateFailure)
+      throw Error(
+        'the parent attempt reports no failed leaf and no candidate failure; nothing to retry (a cause on an aborted phase only accompanies failed leaves)',
+      );
+    return coverage;
+  }
+  // An unexecuted file is covered by its own cause or by a cause on the leaf that listed it.
+  const coveredByAggregate = new Set(
+    Object.entries(unexecutedBy).flatMap(([id, files]) => (causes.has(id) ? files : [])),
+  );
+  const missing = [
+    ...failed.filter((id) => !causes.has(id)),
+    ...unexecuted.filter((id) => !causes.has(id) && !coveredByAggregate.has(id)),
+  ];
+  if (missing.length) throw Error(`--cause required for each non-pass leaf: ${missing.join(', ')}`);
+  for (const [id, text] of causes) {
+    if (id === CANDIDATE_CAUSE) continue;
+    if (!text.trim()) throw Error(`--cause ${id} needs a diagnosed cause`);
+    if (failed.includes(id))
+      coverage[id] = unexecutedBy[id]
+        ? { aggregate: true, covers: unexecutedBy[id] }
+        : { aggregate: false, covers: [id] };
+    else if (unexecuted.includes(id)) coverage[id] = { aggregate: false, covers: [id] };
+    else if (abortedAggregates.includes(id))
+      coverage[id] = { aggregate: true, covers: unexecutedBy[id] ?? [] };
+    else
+      throw Error(`--cause ${id} names a leaf that passed or does not exist in the parent attempt`);
+  }
+  return coverage;
+}
+
+const browserId = (id) => (id.startsWith('browser:') ? id.slice('browser:'.length) : null);
+const unitFile = (id) => (id.startsWith('unit:') ? id.slice('unit:'.length) : null);
+/** Only unit leaves and browser checks registered neither timing-sensitive nor as merge smoke
+ * may carry a receipt forward. Always-fresh is derived: the registered timingSensitive and
+ * mergeSmoke facts plus the structural classes (gates, builds, aggregates, hosted and human bars). */
+export function reusableLeaf(id, manifest) {
+  if (unitFile(id)) return true;
+  const check = browserId(id);
+  if (!check) return false;
+  const row = manifest.browserChecks.find((c) => c.id === check);
+  return !!row && row.timingSensitive !== true && row.mergeSmoke !== true;
+}
+/** Across candidates only workshop browser journeys carry a receipt: the child's own unit selection
+ * decides unit leaves, and smoke, timing-sensitive, hosted and probe checks always execute. */
+export function reusableAcrossCandidates(id, manifest) {
+  const check = browserId(id);
+  if (!check || !reusableLeaf(id, manifest)) return false;
+  const row = manifest.browserChecks.find((c) => c.id === check);
+  return (
+    row.tier === 'browser' &&
+    (row.environment ?? 'workshop') === 'workshop' &&
+    row.mergeSmoke !== true
+  );
+}
+export const REUSE_TIERS = Object.freeze(['local', 'merge']);
+/** Receipts a passed parent may offer a later candidate: executed by the parent itself (never
+ * resumed, depth 0) and eligible across candidates. Everything else the child selects executes. */
+export function reuseSet({ classification, manifest }) {
+  if (classification.kind !== 'reuse') throw Error('reuse needs a passed parent attempt');
+  const offered = [],
+    alwaysFresh = [];
+  for (const r of classification.passing) {
+    if (r.resumed || (r.origin?.depth ?? 0) !== 0 || !reusableAcrossCandidates(r.id, manifest))
+      alwaysFresh.push(r.id);
+    else offered.push(r.id);
+  }
+  return { offered: offered.sort(), alwaysFresh: alwaysFresh.sort() };
+}
+
+/** Leaves a retry must observe executing and passing: non-pass leaves, the registered controls
+ * of their invariants and the checks of invariants a failed control guards. */
+export function requiredReexecution({ classification, manifest }) {
+  const set = new Set([...classification.failed, ...classification.unexecuted]);
+  const invariants = manifest.invariants ?? [];
+  const controlsOf = (invariant) =>
+    [...invariant.controls.positive, ...invariant.controls.negative].map((c) => `unit:${c.path}`);
+  const leafOfCheck = (checkId) =>
+    manifest.browserChecks.some((c) => c.id === checkId)
+      ? `browser:${checkId}`
+      : `check:${checkId}`;
+  for (const id of [...set]) {
+    const check = browserId(id) ?? (id.startsWith('check:') ? id.slice(6) : null),
+      file = unitFile(id);
+    for (const invariant of invariants) {
+      if (check && invariant.checks?.includes(check))
+        for (const c of controlsOf(invariant)) set.add(c);
+      if (
+        file &&
+        [...invariant.controls.positive, ...invariant.controls.negative].some(
+          (c) => c.path === file,
+        )
+      )
+        for (const checkId of invariant.checks ?? []) set.add(leafOfCheck(checkId));
+    }
+  }
+  return set;
+}
+
+/** The required set plus every passing leaf that never carries a receipt (always fresh). */
+export function reexecutionSet({ classification, manifest }) {
+  const set = requiredReexecution({ classification, manifest });
+  for (const r of classification.passing) if (!reusableLeaf(r.id, manifest)) set.add(r.id);
+  return set;
+}
+
+export function afterMode({ sameSource, sameDependencies, sameIdentity }) {
+  return sameSource && sameDependencies && sameIdentity ? 'same-bytes' : 'delta';
+}
+/** In delta mode the tier's selection sees the byte delta only when identity and installed
+ * dependencies are unchanged; a new runtime, platform, dependency set or relevant environment
+ * invalidates every parent browser pass, so the tier runs its ordinary fresh policy. */
+export function deltaSelection({ sameDependencies, sameIdentity }) {
+  return sameDependencies && sameIdentity ? 'source-only' : 'fresh-policy';
+}
+
+/** A source-only delta retry never runs less than the tier's fresh policy would, except for checks
+ * the parent attempt already passed (`covered`) that the delta does not reach: those are skipped
+ * by reasoning and named. `fresh` is the tier's own selection for the candidate's base diff,
+ * `narrow` the same policy applied to the byte delta between the two candidates, `required` the
+ * re-execution the retry must observe. Anything the fresh policy selects that the parent never
+ * passed executes; fallbacks (unknown inputs, risky paths) in either selection select everything. */
+export function resolveRetrySelection({ fresh, narrow, required = [], covered = [], checks }) {
+  const registry = new Map(checks.map((c) => [c.id, c]));
+  const freshIds = fresh.checks.map((c) => c.id);
+  const narrowIds = new Set(narrow.checks.map((c) => c.id));
+  const coveredIds = new Set(covered),
+    requiredIds = new Set(required);
+  const keep = (id) => narrowIds.has(id) || requiredIds.has(id) || !coveredIds.has(id);
+  const skippedByDelta = freshIds.filter((id) => !keep(id)).sort();
+  const ids = [...freshIds.filter(keep), ...[...narrowIds].filter((id) => !freshIds.includes(id))];
+  const rows = ids.map(
+    (id) => registry.get(id) ?? [...fresh.checks, ...narrow.checks].find((c) => c.id === id),
+  );
+  // The resolved selection keeps the fresh policy's own metadata (scope, files, fallback); the
+  // delta's is reported under `delta` so nothing downstream mistakes Δ for the base scope.
+  const widened = withRequiredChecks(
+    {
+      ...fresh,
+      fresh: { scope: fresh.scope, fallback: fresh.fallback ?? null, checks: freshIds },
+      delta: {
+        scope: narrow.scope ?? null,
+        fallback: narrow.fallback ?? null,
+        files: narrow.files ?? null,
+        checks: [...narrowIds].sort(),
+      },
+      checks: rows,
+    },
+    required,
+    checks,
+  );
+  return {
+    ...widened,
+    reasons: [
+      ...(fresh.reasons ?? []).filter((r) => keep(r.id)),
+      ...(narrow.reasons ?? []).filter((r) => !freshIds.includes(r.id)),
+      ...(widened.reasons ?? []).filter((r) => /required re-execution/.test(r.reason)),
+    ],
+    skippedByDelta,
+    covered: [...coveredIds].sort(),
+  };
+}
+
+/** Browser check ids the tier must add to its own selection: required re-execution is a widening
+ * of the tier's policy, never a narrowing. Rows are the registered checks. */
+export function withRequiredChecks(selection, required, checks) {
+  const ids = new Set((selection.checks ?? []).map((c) => c.id));
+  const added = [];
+  for (const id of [...new Set(required)].sort()) {
+    if (ids.has(id)) continue;
+    const row = checks.find((c) => c.id === id);
+    if (!row) throw Error(`required re-execution names an unregistered browser check: ${id}`);
+    added.push(row);
+  }
+  if (!added.length) return selection;
+  return {
+    ...selection,
+    checks: [...(selection.checks ?? []), ...added],
+    reasons: [
+      ...(selection.reasons ?? []),
+      ...added.map((row) => ({ id: row.id, reason: 'diagnosed retry: required re-execution' })),
+    ],
+    required: added.map((row) => row.id),
+  };
+}
+
+/** The after block and the candidate status of a reuse child. Every resumed receipt must come from
+ * the parent's own executions; a child that reused anything is never plain passed. */
+export function reuseSummary({ parent, mode, sameBytes, offered, child }) {
+  const receipts = child.checks ?? [];
+  const reused = receipts
+    .filter((r) => r.resumed && r.origin)
+    .map((r) => ({ id: r.id, origin: r.origin }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const executed = receipts
+    .filter((r) => !r.resumed)
+    .map((r) => r.id)
+    .sort();
+  const selected = new Set(receipts.map((r) => r.id));
+  const after = {
+    kind: 'reuse',
+    parentAttempt: parent.attempt,
+    parentReport: parent.attemptReport ?? null,
+    parentTier: parent.tier ?? null,
+    mode,
+    sameBytes,
+    offered: [...offered].sort(),
+    reused,
+    notSelected: offered.filter((id) => !selected.has(id)).sort(),
+    executed,
+    counts: { offered: offered.length, reused: reused.length, executed: executed.length },
+    chain: [],
+  };
+  const status =
+    child.status !== 'passed' ? 'failed' : reused.length ? 'passed with reused receipts' : 'passed';
+  return { status, after };
+}
+
+/** The after block and the candidate status. Reuse is evidence only with an origin receipt. */
+export function afterSummary({
+  parent,
+  mode,
+  causes,
+  coverage,
+  reexecute,
+  required,
+  child,
+  skippedByDelta = [],
+  covered = [],
+  deltaSelection: deltaKind = null,
+}) {
+  const chain = [...(parent.after?.chain ?? []), parent.attempt];
+  if (chain.length > CHAIN_DEPTH_LIMIT)
+    throw Error(`retry chain exceeds ${CHAIN_DEPTH_LIMIT} attempts; run a fresh candidate`);
+  const receipts = child.checks ?? [];
+  // Every resumed receipt counts as reuse, with or without an origin; validation refuses the
+  // ones that cannot name theirs.
+  const reused = receipts
+    .filter((r) => r.resumed)
+    .map((r) => ({ id: r.id, origin: r.origin ?? null }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const classification = classifyParentLeaves(parent);
+  const parentPassing = new Set(classification.passing.map((r) => r.id));
+  const nonPass = new Set([...classification.failed, ...classification.unexecuted]);
+  const executed = new Set(receipts.filter((r) => !r.resumed).map((r) => r.id));
+  // Split what re-executed and why: the parent's failures, the controls they pulled in, and
+  // the timing-sensitive or structural classes that never carry a receipt.
+  const alwaysFresh = [...reexecute]
+    .filter((id) => parentPassing.has(id) && !required.has(id))
+    .sort();
+  const controls = [...required].filter((id) => id.startsWith('unit:') && !nonPass.has(id)).sort();
+  const noReceipt =
+    mode === 'same-bytes'
+      ? [...parentPassing].filter((id) => !reexecute.has(id) && executed.has(id)).sort()
+      : [];
+  // Re-executed is what the child observed running, never the plan; planned always-fresh
+  // leaves the tier's own policy did not select are named separately.
+  const after = {
+    parentAttempt: parent.attempt,
+    parentReport: parent.attemptReport ?? null,
+    mode,
+    ...(mode === 'delta' ? { deltaSelection: deltaKind } : {}),
+    causes: Object.fromEntries(causes),
+    coverage,
+    reexecuted: [...reexecute].filter((id) => executed.has(id)).sort(),
+    notSelected: [...reexecute].filter((id) => !executed.has(id) && !required.has(id)).sort(),
+    required: [...required].sort(),
+    nonPass: [...nonPass].sort(),
+    controls,
+    alwaysFresh,
+    reused,
+    noReceipt,
+    skippedByDelta,
+    covered: [...covered].sort(),
+    chain,
+  };
+  const status =
+    child.status !== 'passed'
+      ? 'failed'
+      : reused.length || skippedByDelta.length
+        ? 'passed after failure'
+        : 'passed';
+  return { status, after };
+}
+
+/** A reuse report says passed with reused receipts exactly when a receipt was resumed, and every
+ * resumed receipt is one the parent offered and executed itself (depth 1 in the child). The parent
+ * is always a local or merge attempt; the child tiers a caller admits default to the same two
+ * (a candidate never reuses into final; release operations may name their own). */
+const canonicalOrigin = (o) =>
+  o ? JSON.stringify({ attempt: o.attempt, report: o.report, depth: o.depth }) : null;
+export function validateReuseReport(report, { childTiers = REUSE_TIERS } = {}) {
+  const after = report.after,
+    receipts = new Map((report.verification?.checks ?? []).map((r) => [r.id, r]));
+  if (after?.kind !== 'reuse' || !attemptId(after.parentAttempt) || !Array.isArray(after.reused))
+    throw Error('a reuse report needs a consistent after block');
+  if (!REUSE_TIERS.includes(after.parentTier))
+    throw Error('receipt reuse needs a local or merge parent attempt');
+  if (!childTiers.includes(report.tier))
+    throw Error(
+      `receipt reuse into ${report.tier} is not admitted here; final always executes within candidates`,
+    );
+  const resumed = [...receipts.values()].filter((r) => r.resumed).map((r) => r.id);
+  if (report.status === 'passed' && (after.reused.length || resumed.length))
+    throw Error('status must be passed with reused receipts when a receipt was reused');
+  if (report.status === 'passed with reused receipts' && !after.reused.length)
+    throw Error('passed with reused receipts needs at least one reused receipt');
+  if (!['passed', 'passed with reused receipts', 'failed'].includes(report.status))
+    throw Error(`unknown reuse status ${report.status}`);
+  const offered = new Set(after.offered ?? []);
+  for (const { id, origin } of after.reused) {
+    const r = receipts.get(id);
+    // The receipt's own origin is the evidence; the block must repeat it exactly.
+    if (
+      !r?.resumed ||
+      r.origin?.attempt !== after.parentAttempt ||
+      r.origin?.depth !== 1 ||
+      canonicalOrigin(origin) !== canonicalOrigin(r.origin)
+    )
+      throw Error(`reused leaf ${id} is not a depth-0 receipt of the parent attempt`);
+    if (!offered.has(id)) throw Error(`reused leaf ${id} was not offered by the parent`);
+  }
+  for (const id of resumed)
+    if (!after.reused.some((x) => x.id === id))
+      throw Error(`resumed leaf ${id} is missing from the after block`);
+  return report;
+}
+
+/** A passed-after-failure report must carry a block consistent with the child receipts. */
+export function validateAfterReport(report, options) {
+  const after = report.after,
+    receipts = new Map((report.verification?.checks ?? []).map((r) => [r.id, r]));
+  if (after?.kind === 'reuse') return validateReuseReport(report, options);
+  if (report.status !== 'passed after failure') {
+    if (after && report.status === 'passed') {
+      if (after.reused?.length || after.skippedByDelta?.length)
+        throw Error(
+          'status must be passed after failure when receipts were reused or leaves skipped',
+        );
+      for (const [id, r] of receipts)
+        if (r.resumed) throw Error(`retry reports passed with a resumed receipt: ${id}`);
+      observeReexecution(after, receipts);
+    }
+    return report;
+  }
+  if (!after || !attemptId(after.parentAttempt) || !Array.isArray(after.reused))
+    throw Error('passed after failure needs a consistent after block');
+  observeReexecution(after, receipts);
+  for (const { id, origin } of after.reused)
+    if (!receipts.get(id)?.resumed || !attemptId(origin?.attempt))
+      throw Error(`reused leaf ${id} has no resumed receipt with an origin attempt`);
+  for (const [id, r] of receipts)
+    if (r.resumed && !after.reused.some((x) => x.id === id))
+      throw Error(`resumed leaf ${id} is missing from the after block`);
+  return report;
+}
+/** Re-execution is an observation: every non-pass leaf of the parent, every leaf a cause covers
+ * and every invariant-derived leaf must appear in the child as an executed, passing receipt,
+ * never merely as a plan; nothing re-executed may also be listed as skipped by delta. */
+function observeReexecution(after, receipts) {
+  for (const id of after.reexecuted ?? []) {
+    const r = receipts.get(id);
+    if (r && r.resumed) throw Error(`re-executed leaf ${id} was resumed instead of executed`);
+  }
+  const skipped = new Set((after.skippedByDelta ?? []).map((row) => row.id));
+  for (const id of after.reexecuted ?? [])
+    if (skipped.has(id)) throw Error(`leaf ${id} is both re-executed and skipped by delta`);
+  // A skipped leaf is reasoning on a parent receipt: it must be one the parent covered, and
+  // the child must not have run it.
+  const covered = new Set(after.covered ?? []);
+  for (const id of skipped) {
+    if (!covered.has(id)) throw Error(`leaf ${id} was skipped by delta without parent coverage`);
+    if (receipts.has(id)) throw Error(`leaf ${id} was skipped by delta but has a child receipt`);
+  }
+  for (const id of Object.keys(after.causes ?? {}))
+    if (!after.coverage?.[id]) throw Error(`cause ${id} has no recorded coverage`);
+  const mustRun = new Set([
+    ...(after.nonPass ?? []),
+    ...(after.required ?? []),
+    ...Object.values(after.coverage ?? {}).flatMap((entry) => entry.covers ?? []),
+  ]);
+  for (const id of mustRun) {
+    const r = receipts.get(id);
+    if (!(after.reexecuted ?? []).includes(id) || !r || r.resumed || r.ok !== true)
+      throw Error(`non-pass leaf ${id} was not re-executed by this attempt`);
+  }
+}

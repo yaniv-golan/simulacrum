@@ -73,6 +73,26 @@
       "dueAt": "M8b",
       "human": true,
       "contract": "A player, using their own browser agent, gets an actionable answer to 'why isn't this working' without leaving the game. Judged by watching a person."
+    },
+    "V1": {
+      "dueAt": "M10",
+      "human": false,
+      "contract": "Flight annex hover: from rest on the pad, lift off under authored control, hold inside the annex's hover box for 20 seconds within its attitude and altitude bands, land inside the pad, and reach the annex-defined ground hold; all whole-run invariants as redefined by the flight annex (fall, support eligibility, hold) apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "V2": {
+      "dueAt": "M10",
+      "human": false,
+      "contract": "Flight annex circuit: take off, pass the annex's ordered airborne gates in route order without ground contact, complete an approach inside its corridor, land, and reach the annex-defined ground hold; complete within the annex's time limit; all whole-run invariants as redefined by the flight annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "O1": {
+      "dueAt": "M11",
+      "human": false,
+      "contract": "Space annex insertion: from the pad, reach the annex's apogee band and complete one full orbit above its atmosphere floor using only authored burns and onboard propellant, with ascent plus one orbit completing within the runtime-v1 qualification bound; expelled mass accounted; all whole-run invariants as redefined by the space annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "O2": {
+      "dueAt": "M11",
+      "human": false,
+      "contract": "Space annex return: from the annex's declared initial orbital state, execute an authored de-orbit burn, traverse its re-entry corridor with heat-shield ablation within rated mass, and reach the annex-defined ground hold; all whole-run invariants as redefined by the space annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
     }
   },
   "rules": [
@@ -126,7 +146,9 @@
     "M7",
     "M8",
     "M8b",
-    "M9"
+    "M9",
+    "M10",
+    "M11"
   ],
   "checks": [
     {
@@ -190,6 +212,16 @@
       "module": "scripts/runtime-preflight.mjs",
       "export": "assertRuntime",
       "timeoutMs": 1000
+    },
+    {
+      "id": "format",
+      "dueAt": "M0",
+      "description": "src, scripts and test in prettier layout (the hosted format:check, run on every commit)",
+      "ruleId": "gate-integrity",
+      "module": "scripts/check-format.mjs",
+      "export": "checkFormat",
+      "args": [],
+      "timeoutMs": 60000
     },
     {
       "id": "verification-workflow",
@@ -390,7 +422,14 @@
         "ruleId": "course-contract"
       }
     ],
-    "M7": [],
+    "M7": [
+      {
+        "id": "inertial-sensor-part",
+        "how": "an ordinary catalog inertial sensor part with player-selectable material, mass and ratings adds specific-force channels; the existing sensing contract (sampled at t, consumed at t+1, status separate from readings, powered-shared-sensing invariant) applies unchanged, and the part is allocated here so the M9 legged subject and the M10 flight machines can use it -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "runtime-contract"
+      }
+    ],
     "M8": [],
     "M9": [],
     "M8b": [
@@ -423,6 +462,124 @@
         "how": "tool results carry closed-enum reason codes; player-authored strings appear only in delimited data fields",
         "check": null,
         "ruleId": "player-authority"
+      }
+    ],
+    "M10": [
+      {
+        "id": "air-environment-owned",
+        "how": "air density and wind are environment quantities with one writing owner in the environment/forces phase; the workshop default is sea-level air, drag is an authored per-part selection defaulting to none under the same authority rule as mass and ratings, and a recorded projection baseline for named existing fixtures on the base commit is reproduced unchanged after the change -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "flight-parts-player-authorable",
+        "how": "every part flight needs (rotor, inertial sensor from M7, regulator/mixer, structure, power) is a catalog entry a player picks up, connects, commands and configures exactly as in any other design, with player-selectable material, mass and ratings; the V1/V2 machines are built only from catalog parts and pass the identity-invariance check -- no demo-only part, rig-only force or blueprint-identity dispatch",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "flight-forces-from-law",
+        "how": "rotor thrust and reaction torque, and whole-body drag, are computed only by laws under simulation/physics/law from the authored geometry or stored drag selection, shaft speed, air density and relative velocity of ordinary catalog parts any player can place and connect -- no lift from part name, role, blueprint identity or a rig-only force",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "mass-budget-before-flight",
+        "how": "thrust-to-weight, total mass and centre of mass derive from authored mass and geometry and are visible to the player before a run -- a machine that cannot lift its own authored mass does not fly",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "no-engine-attitude-hold",
+        "how": "every hover, altitude or attitude hold is an authored controller or an ordinary catalog regulator/mixer part the player wires, reading declared sensors through the same commands any player program may use; the engine owns no stabilization, and the stock quad is an ordinary blueprint of catalog parts that flies on keys through such parts without a program",
+        "check": null,
+        "ruleId": "player-authority"
+      },
+      {
+        "id": "impact-is-structural-failure",
+        "how": "a crash produces break events through the M5 structural-failure model from transmitted loads; no scripted reset or damage table keyed on machine type",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "course-evaluator-flight-annex",
+        "how": "the Course v1 flight annex is added defining the liftoff, hover box, ordered airborne gate, approach corridor, landing and ground-hold predicates, the redefined fall and hold invariants, the evaluator and eligible-support bindings for airborne fixtures",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "flight-annex-frozen",
+        "how": "pad position, hover box, attitude and altitude bands, airborne gate order, approach corridor and time limit are recorded and fingerprinted in the Course v1 flight annex as requirements, not tuning parameters, BEFORE the V1/V2 attempt and not changed to accommodate the machine",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "flight-annex-falsified",
+        "how": "every flight annex predicate (liftoff, hover box, ordered airborne gates, approach corridor, landing, ground hold, redefined fall) has BOTH an accepting trace and a deliberately-wrong trace it rejects -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "course-contract"
+      }
+    ],
+    "M11": [
+      {
+        "id": "clock-decision-recorded",
+        "how": "runtime-v1 records the replay-safe time scale declared by the authored environment/scene and implemented strictly as N ticks per rendered frame, stored in save and replay so replay reproduces the recorded cadence and projection hashes are unaffected by the scale; tick size 1/120 s and one integration per tick are unchanged for every scene, P1's overload policy is extended for scaled scenes, and the record exists before any orbital fixture is admitted",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "space-parts-player-authorable",
+        "how": "every part orbital flight needs (propellant tank, propellant feed connection, thruster, reaction control, navigation/altitude sensor, heat shield, the existing release coupler for staging under an authored command) is a catalog entry or connection kind a player picks up, connects, commands and configures exactly as in any other design, with player-selectable material, mass and ratings; the O1/O2 machines are built only from catalog parts and pass the identity-invariance check -- no demo-only part, rig-only force, scripted staging sequence or blueprint-identity dispatch",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "gravity-position-dependent",
+        "how": "the planet is an environment body admitted through an explicit scene schema extension inside model/simulation, gravity is a position-dependent per-body law under simulation/physics/law with the world's constant gravity zero for planet scenes, and the energy ledger's potential term is the law's potential; the renderer reads telemetry only and no scene class carries its own physics package; scenes without a planet keep the constant workshop vector and every existing projection hash is unchanged -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "propellant-mass-owned",
+        "how": "a propellant tank or ablative layer is an ordinary catalog part whose material store is the single writer of its body's mass, inertia and centre of mass; for such bodies both the per-tick structure-failure assertion and checkpoint admission become mass = initial mass - released by store, every other body keeps the strict equal-to-initial check, the writing phase is fixed by the runtime-v1 amendment, and a phase that only asserts initial mass does not satisfy it",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "thrust-from-mass-flow",
+        "how": "thruster and reaction-control parts from the catalog produce force equal to authored mass flow times exhaust velocity while connected propellant remains, and zero after -- no thrust from part name, role, an empty tank or a rig-only force",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "reentry-heating-law",
+        "how": "the thermal/ablation phase computes heat flux from atmosphere density and relative speed and mass loss through laws under simulation/physics/law on a catalog heat-shield part with player-selected ablative material and rated mass, writing through the owned store; a spent shield stops absorbing flux and the protected body then heats and breaks through the M5 structural-failure model; a phase that computes nothing does not satisfy ablation within rated mass",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "large-coordinate-determinism",
+        "how": "two processes and both production clock drivers produce identical projection hashes over ascent plus one full orbit at the declared time scale, and a workshop-scale sub-fixture placed at orbital radius reproduces its workshop projection within the space annex's declared band -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "course-evaluator-space-annex",
+        "how": "the Course v1 space annex is added defining the apogee band, atmosphere floor, full-orbit, de-orbit, re-entry corridor, ablation-within-rating and ground-hold predicates, the redefined fall and hold invariants, the initial orbital state vector that supersedes ground-hold setup for O2, the evaluator and eligible-support bindings for orbital fixtures",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "space-annex-frozen",
+        "how": "planet body and orbit sized so ascent plus one full orbit complete within the runtime-v1 qualification bound (an Earth-scale planet is a free-play scene, never a qualification fixture), atmosphere floor, apogee band, de-orbit window, re-entry corridor, O2 initial orbital state and shield rating are recorded and fingerprinted in the Course v1 space annex as requirements, not tuning parameters, BEFORE the O1/O2 attempt and not changed to accommodate the machine",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "space-annex-falsified",
+        "how": "every space annex predicate (apogee band, atmosphere floor, full orbit, de-orbit, re-entry corridor, ablation within rating, ground hold, redefined fall) has BOTH an accepting trace and a deliberately-wrong trace it rejects -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "course-contract"
       }
     ]
   },
@@ -534,7 +691,8 @@
       "smoke": true,
       "timeoutMs": 150000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-guide-feedback",
@@ -622,7 +780,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-selection-browser",
@@ -809,7 +968,8 @@
       "smoke": false,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-cloud-runtime",
@@ -893,6 +1053,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-beam-length-browser",
+      "script": "scripts/verify-beam-length-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "measure-gears",
       "script": "scripts/measure-gears.mjs",
       "execution": "exclusive",
@@ -969,7 +1140,8 @@
       "smoke": true,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-lifecycle",
@@ -980,7 +1152,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-feedback-recovery",
@@ -991,7 +1164,8 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
-      "mergeSmoke": false
+      "mergeSmoke": false,
+      "browserChannel": "chrome"
     },
     {
       "id": "verify-parts-catalog",
@@ -1160,6 +1334,10 @@
           {
             "path": "test/scene-capacity.test.mjs",
             "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change keeps long-face mounts that still fit and rejects the rest atomically"
           }
         ],
         "negative": [
@@ -1383,7 +1561,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
+      "guarantee": "Authored wheel, sphere and beam-length geometry drives physical dimensions, mass, inertia and mounting faces; a dimension edit never moves an existing surface attachment; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1407,7 +1585,8 @@
         "verify-property-focus",
         "verify-surface-browser",
         "verify-ball-browser",
-        "verify-authorable-scenes"
+        "verify-authorable-scenes",
+        "verify-beam-length-browser"
       ],
       "controls": {
         "positive": [
@@ -1442,6 +1621,18 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "length scales the beam along its axis: half extent, mass and end faces follow, section does not"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "beam long faces mount through a section-sized pad; end faces keep their whole face"
+          },
+          {
+            "path": "test/component-contract.test.mjs",
+            "anchor": "dimensioned beam uses authored length through save, compiler and physics"
           }
         ],
         "negative": [
@@ -1476,6 +1667,14 @@
           {
             "path": "test/scene-contact.test.mjs",
             "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length change that would move a surface peer is rejected, then admitted once detached"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a length that would intersect a neighbour is rejected on the command path"
           }
         ]
       },
@@ -1507,12 +1706,20 @@
           {
             "path": "test/assembly.test.mjs",
             "anchor": "authored selectable material is copied without identity inference"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "a committed save without length loads unchanged and compiles to the same configuration"
           }
         ],
         "negative": [
           {
             "path": "test/assembly.test.mjs",
             "anchor": "renaming and rig placement never select material mass or contact properties"
+          },
+          {
+            "path": "test/beam-length.test.mjs",
+            "anchor": "renaming and rig placement never change a beam whose length and material are fixed"
           }
         ]
       },
@@ -3371,7 +3578,7 @@
       "id": "adaptive-graphics",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes.",
+      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes. Lamp shadow budgets exist exactly where key-light shadows exist and reach every lamp view on a level change.",
       "owners": [
         {
           "path": "src/presentation/graphics-quality.mjs",
@@ -3418,6 +3625,10 @@
           {
             "path": "test/graphics-quality.test.mjs",
             "anchor": "graphics transitions refresh shadow shader variants and release old targets without changing geometry"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "lamp shadows exist exactly where key-light shadows exist and follow the applied level"
           }
         ]
       },
@@ -4809,11 +5020,15 @@
       "id": "candidate-resume-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Only registered successful pure leaves resume with matching signed identity/configuration; failures, aggregates and unknown leaves execute. Candidate attempts require ownership and current terminal reports.",
+      "guarantee": "Registered successful pure leaves resume with matching signed identity and configuration, where identity binds the declared relevant environment rather than every variable. A diagnosed retry (--after) additionally reuses the parent attempt's passing unit and non-always-fresh browser leaves on identical bytes and identity, naming each reused receipt's origin attempt and bounding chain depth; non-pass leaves, the registered controls of their invariants, timing-sensitive checks, merge smoke, aggregates and unknown leaves execute and are observed as executed passing receipts, a source-only delta retry never selects less than the tier's fresh policy except checks a parent receipt covers and the delta does not reach, every non-pass leaf carries a diagnosed cause, tampered or oversized receipts fail closed, and a report that reused a receipt says passed after failure rather than plain green. Candidate attempts require ownership and current terminal reports. A passed parent attempt on identical bytes, dependencies and identity may lend its non-timing-sensitive workshop browser receipts to a later local or merge candidate (--after with a passed report): the child selects its own checks, executes CI, unit, smoke, timing-sensitive, hosted and probe leaves, admits only an attested, finished, non-hosted parent, offers only receipts the parent executed itself, verifies each cited receipt's retained evidence (missing executes again, altered fails closed), refuses final on either side, and reports passed with reused receipts rather than plain green.",
       "owners": [
         {
           "path": "scripts/verification-resume.mjs",
           "anchor": "createLeafLedger"
+        },
+        {
+          "path": "scripts/candidate-after.mjs",
+          "anchor": "reexecutionSet"
         },
         {
           "path": "scripts/candidate-resume.mjs",
@@ -4822,6 +5037,14 @@
         {
           "path": "scripts/candidate-attempt.mjs",
           "anchor": "requireAttemptReport"
+        },
+        {
+          "path": "scripts/candidate-after.mjs",
+          "anchor": "reusableAcrossCandidates"
+        },
+        {
+          "path": "scripts/verification-run.mjs",
+          "anchor": "acceptRetainedEvidence"
         }
       ],
       "checks": [
@@ -4836,6 +5059,50 @@
           {
             "path": "test/candidate-resume.test.mjs",
             "anchor": "dependency records are framed"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "receipts record their origin attempt, carry it through resumed saves and expire by chain depth"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "identity binds the declared relevant environment only; the whole environment is forensic"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "the summary names reused origins, re-executed leaves and maps a passing tier to passed after failure"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "reexecution covers non-pass leaves, their registered controls and every always-fresh class"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "every environment variable read in the tree binds identity or is exempted with a reason"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "required browser checks widen a selection from the registry and never narrow it"
+          },
+          {
+            "path": "test/local-runner.test.mjs",
+            "anchor": "a retry only widens it or skips covered checks its delta does not reach"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a source-only delta selects the fresh policy minus covered checks the delta does not reach, plus required"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "retained evidence is accepted by digest and size"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "same-context suite reuse references retained original evidence"
           }
         ],
         "negative": [
@@ -4850,6 +5117,46 @@
           {
             "path": "test/verification-run.test.mjs",
             "anchor": "a watchdog shortened by the shared budget reports budget exhaustion, not a hung test"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "every failed or unexecuted leaf needs its own cause; an aborted aggregate covers absent leaves"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "an after report is admitted only when its block is consistent with the child receipts"
+          },
+          {
+            "path": "test/verification-resume-controls.test.mjs",
+            "anchor": "plain resume never reads aggregate, timing-sensitive or unaudited leaves, whatever the production save policy stored"
+          },
+          {
+            "path": "test/verification-tiers.test.mjs",
+            "anchor": "refuses --changed-files"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a source-only delta after a parent with no browser coverage runs every check the fresh policy selects"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "a ledger retry selection is admitted only in its declared shape and for its own attempt"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "across candidates only workshop browser journeys carry a receipt"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a passed parent classifies for reuse; a passed report carrying a failed leaf is refused"
+          },
+          {
+            "path": "test/candidate-after.test.mjs",
+            "anchor": "a reuse child is passed with reused receipts exactly when it resumed a receipt the parent offered and executed"
+          },
+          {
+            "path": "test/verification-resume.test.mjs",
+            "anchor": "an accept hook offers a receipt only while its evidence is intact"
           }
         ]
       },
@@ -5074,6 +5381,10 @@
           {
             "path": "test/merge-ci.test.mjs",
             "anchor": "push invalid ancestry"
+          },
+          {
+            "path": "test/candidate-after-e2e.test.mjs",
+            "anchor": "a passed local attempt lends its workshop browser receipts to a merge candidate on identical bytes"
           }
         ]
       },
@@ -5908,7 +6219,7 @@
       "id": "powered-lamp-output",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives all admitted lamp rendering.",
+      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives admitted lamp output, and the presentation graphics budget alone decides whether a lit lamp casts shadows.",
       "owners": [
         {
           "path": "src/simulation/power.mjs",
@@ -5951,6 +6262,10 @@
           {
             "path": "test/lamp-view.test.mjs",
             "anchor": "lamp emission and fixed-flux cone read completed telemetry including off and weak output"
+          },
+          {
+            "path": "test/lamp-view.test.mjs",
+            "anchor": "shadow budget owns cast and map size, releases old maps and forces one reallocation pass"
           }
         ]
       },
@@ -6659,6 +6974,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -6806,6 +7122,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -6899,6 +7216,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -6966,7 +7284,8 @@
         "verify-spring-browser",
         "verify-learning-examples",
         "verify-assembly-library-browser",
-        "verify-authorable-scenes"
+        "verify-authorable-scenes",
+        "verify-beam-length-browser"
       ],
       "consumers": [
         "index.html",
@@ -6979,6 +7298,7 @@
         "src/presentation/scene-editor.mjs",
         "src/presentation/surface-controls.mjs",
         "src/presentation/workshop-view.mjs",
+        "test/beam-length.test.mjs",
         "test/connection-test.test.mjs",
         "test/failure-messages.test.mjs",
         "test/gear-construction.test.mjs",
@@ -6997,6 +7317,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -7548,7 +7869,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7612,7 +7933,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "4af831550868ca2ffd2d375fddeda0286cf016caf17453a38715db6609f542ea",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7629,6 +7950,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
@@ -7702,6 +8024,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -7777,7 +8100,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "4af831550868ca2ffd2d375fddeda0286cf016caf17453a38715db6609f542ea",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7807,6 +8130,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -7868,16 +8192,20 @@
         "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/ci-order.test.mjs",
         "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -7907,6 +8235,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -7990,7 +8319,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "3c6604f2a6419f3bae46bc9cbe0e4facc51ebeaec72c562f9628e18f91a800a4",
+      "consumerSourceHash": "d84738a29b51b1325cce5d0abcfac505e57145522438ca7589c0f76b55a4f87c",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8036,6 +8365,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -8106,6 +8436,7 @@
         "test/browser-scope-proposal.test.mjs",
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8114,8 +8445,11 @@
         "test/experiment-inputs.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
         "test/fixtures/candidate-priority.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -8148,6 +8482,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -8258,7 +8593,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "3f511052210964b603c2dcceb81c22e00604626164f64a7592d2e195c161da68",
+      "consumerSourceHash": "2cac20390a8efc3b9b0921b056f0410d869fe0890c94473c1ad6fd0af0015b36",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -8292,7 +8627,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -8369,7 +8704,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -8440,7 +8775,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -8483,7 +8818,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -8636,7 +8971,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
+      "consumerSourceHash": "a7fab157e32690c657077f2ed8a30cb120ae0b66266116497991ec1e26816847",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -8681,6 +9016,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -8786,7 +9122,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "f8b7d6c7316286ab532576f6e75fffbe3a3d29fb25327b42c77086034c325e76",
+      "consumerSourceHash": "4af831550868ca2ffd2d375fddeda0286cf016caf17453a38715db6609f542ea",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8839,6 +9175,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
+        "scripts/verify-beam-length-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -8911,6 +9248,7 @@
         "test/browser-scope-proposal.test.mjs",
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
+        "test/candidate-after-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8923,12 +9261,15 @@
         "test/experiment-inputs.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
+        "test/fixtures/candidate-after.mjs",
         "test/fixtures/candidate-priority.mjs",
+        "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
+        "test/local-runner.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -8963,6 +9304,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
@@ -9102,7 +9444,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9187,7 +9529,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
+      "consumerSourceHash": "a22d54361cd5a887c696252f5a699ae340e79040087f4b56e1a86a6a4d67f103",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9199,6 +9541,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -9286,7 +9629,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0236de188230a092fb0cb2219920204155a49bccf7b39c32787e6311c74d29da",
+      "consumerSourceHash": "a22d54361cd5a887c696252f5a699ae340e79040087f4b56e1a86a6a4d67f103",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9298,6 +9641,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",
@@ -9436,7 +9780,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "285eb53b89f1a7a0ebe217ee932014a6c6fea72949945856129475808d54f5af",
+      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9519,7 +9863,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "4138bfe23fb57dc674ae859c397688c23a1759fe4ae57878d73353cc5d2dd47c",
+      "consumerSourceHash": "a7fab157e32690c657077f2ed8a30cb120ae0b66266116497991ec1e26816847",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9531,6 +9875,7 @@
         "verify-attachment-status",
         "verify-authorable-scenes",
         "verify-ball-browser",
+        "verify-beam-length-browser",
         "verify-camera-browser",
         "verify-camera-recovery",
         "verify-cloud-playtest",

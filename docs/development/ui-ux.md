@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8c0ff796016b59a9b73babf7158bb31befc20798ee2bf23dcc5a8916e21993ed","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"3b0c479aab8c08aa420dcd29b6df96fc31dc429d8984fefa99e19dc734aa4bab","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): workshop-view.mjs changed only by the loopTicks render probe; no lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decisions and admission criteria stand."} -->
+<!-- doc-review {"version":1,"fingerprint":"3306dd93accff93f4bcd96a6c8f3bc7d79ac71e87208a25b88c92cf5fe99d77c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"64e86236db2531da781161c88b0c10d9b15bbff3f63114f11041c4afea19ef59","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): no lesson, example, experiment, challenge or invitation was added, extended or replaced; the lamp shadow explanation extends existing contextual help (no entry)."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"da897d62c1ffdd1b48b8cfbade2d31565d625ab88c6fa4bcd071a18203ccb434","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8a63046a06bf500d156203c8a66cef87a23d1ff3e8cbbd5003ce3076b6ae489c","disposition":"updated","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): the sound-controls paragraph now states the level policy: levels derive from one registered nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 % default, less with distance; textures and actuators weighted against it), measured by the audio check against a calibration tone through the same output chain, and a slow motor keeps harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Verified against mechanical-audio-model.mjs and verify-mechanical-audio.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"eab957112ef2a85a8bd8316b8b744fe97c9c9f69e9f5214b6de8e54527b1224c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0181cbb1a4512553412fd0855e2ded31f7aec34ceffa97ad6e45fad81c28ee02","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the lamp help sentence now says the eight-lamp limit with shadows only while graphics run smoothly; no surface, region or lifecycle changed."} -->
 
 
 
@@ -391,6 +391,17 @@ details. Bounciness and Grip may inherit Material default or use Custom values;
 changing material preserves visibly custom values, and choosing Material default
 removes the corresponding override. These edits are Build-only.
 
+The Beam uses the same selected-inspector size edit for length (100–1000 mm, 10 mm
+slider steps): the preview shows the new size and names an obstruction, confirming
+sends one parameter edit, and Escape restores the current value. A resize that would
+move a part attached to a beam end is rejected in place with "Detach it from the end
+first"; long-face mounts that no longer fit reject as out of bounds. Confirming the
+default on a beam that never stored a length is not an edit. Beam long faces mount
+through a 40 mm section pad, so a beam can lie on a plate or lap another beam; the
+existing pad markers on those faces now show the 40 mm footprint; end faces keep
+their whole face. Part help gains one sentence and one step; no lesson or example
+entry.
+
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites
 moving the catcher and adjusting spring preload. Roll onto a spring extends the
@@ -460,7 +471,7 @@ Its selected inspector owns Light color, Brightness and Beam spread in Build, wi
 actual input, requested/delivered watts and modeled light output in Run/Paused.
 Black tint warns that output is visually dark while consuming power. The existing
 requested part help explains receiver replacement of default-on behavior, weak supply,
-restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+restart and the eight-lamp limit with shadows only while graphics run smoothly. These controls leave with selection,
 displace no unique action and add no permanent panel. Learning admission is **no entry**:
 existing power and receiver explanations teach the same connection concept; contextual
 lamp help suffices. A powered status lamp does not establish another actuator's success.

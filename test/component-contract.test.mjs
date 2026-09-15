@@ -18,6 +18,16 @@ test('dimensioned wheel uses authored dimensions through save, compiler and phys
       expectedHalfExtents: [0.025, diameter / 2, diameter / 2],
     });
 });
+test('dimensioned beam uses authored length through save, compiler and physics', async () => {
+  for (const length of [0.1, 0.65, 1])
+    for (const material of [undefined, 'steel'])
+      await assertComponentContract({
+        type: 'beam',
+        parameters: { length },
+        material,
+        expectedHalfExtents: [length / 2, 0.02, 0.02],
+      });
+});
 test('common suite rejects plausible wrong geometry and discarded material', async () => {
   const wrongGeometry = (bp, options) => {
     const compiled = compileAssembly(bp, options);
