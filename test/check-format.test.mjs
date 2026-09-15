@@ -49,7 +49,11 @@ test('the gate names the file under a CI environment, where prettier colours its
     join(root, 'scripts/env.mjs'),
     "export const names = Object.freeze(['NODE_ENV', 'NODE_OPTIONS', 'POWER_BASELINE_SOURCE', 'SIMULACRUM_HOST_PROFILE']);\n",
   );
-  const previous = { CI: process.env.CI, NO_COLOR: process.env.NO_COLOR, FORCE_COLOR: process.env.FORCE_COLOR };
+  const previous = {
+    CI: process.env.CI,
+    NO_COLOR: process.env.NO_COLOR,
+    FORCE_COLOR: process.env.FORCE_COLOR,
+  };
   process.env.CI = '1';
   process.env.FORCE_COLOR = '1';
   delete process.env.NO_COLOR;
