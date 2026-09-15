@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"d5d6c7ee65beceae1d5ff2124c84a0e33382e89c32c7251afd5d3f586ee1f0eb","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"eabf154d1935317bcbf2c2bf0a1e284f48b2a5a5a1ed6e501f8a5ac11c187730","disposition":"still accurate","rationale":"Relative to base 3a50c9e runtime-v1's delivery-order paragraph scopes M9's gates as those due by M9 and states that M10/M11 sit on the unchanged 1/120 s single-integration and replay contract with the time-scale decision and material-store mass rule recorded there before any orbital fixture; AGENTS.md names the new milestones and their shared-catalog authority rule. This overview identifies the manifest as allocation owner and the contract as clock/replay/state owner, both preserved."} -->
+<!-- doc-review {"version":1,"fingerprint":"f3f1166c07043f3c66aa01cd4d344716007f3ea46a3b44ad78fd643f6223da0e","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"aab2aea4189568d51c0b5940a951b42279b9ace713d0cd5e9219e73d65e43cc0","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md changed by the citation row and rule; layer ownership, the registry reader's role and the module map are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

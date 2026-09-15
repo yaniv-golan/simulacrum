@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5f0ffd440e88595bce54475d538e8ff57b1d3efe440ee9fdb83be3aca107d29c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"06f7e63c6fa16e953b6a728cad09cd95b8ab544a4281ca6fb1d35f59b250c08c","disposition":"still accurate","rationale":"Package verification launch row (fix-package-verification-launch-row on main 125a5ae): the drift is the release package's phase check admitting the launch-admission row and its control; no simulation, physics-door, power, checkpoint or contact behavior changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"8b2966912cffd75772b20939a64a5bf1f69c8efb675a3ef52e7887109b195df2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c5186b6f3d8f79a57d4468465bf16c9227e818b7662b2544e139dc62d214d897","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): the drift is verification tooling — a release final cited as merge evidence, its tests and documentation, a window-owner reader and a manifest invariant; no simulation, physics-door, power, checkpoint or contact behavior changed, and a physics delta still runs every timing-budget check in its own tiers."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
