@@ -3,6 +3,14 @@ import { createHash } from 'node:crypto';
 import { verificationOutcome } from '../verification-outcome.mjs';
 export const verificationHash = (value) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex');
+/** The tier's phases: `ci,browser,gate`, optionally preceded by the launch admission every tier
+ * runs first (a passed row only — a refused launch is a failed attempt, never a package). */
+export function tierPhases(results) {
+  const ids = results.map((r) => r.id);
+  if (ids[0] !== 'launch-admission') return ids;
+  if (results[0].ok !== true) throw Error('Package verification launch admission did not pass');
+  return ids.slice(1);
+}
 export function assertPackageVerification(manifest) {
   const v = manifest.verification;
   const hash = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -36,7 +44,7 @@ export function assertPackageVerification(manifest) {
         c.elapsedMs < 0,
     ) ||
     !Array.isArray(v.results) ||
-    v.results.map((r) => r.id).join(',') !== 'ci,browser,gate'
+    tierPhases(v.results).join(',') !== 'ci,browser,gate'
   )
     throw Error('Incomplete package verification checks or phases');
   const outcome = verificationOutcome(v.results, v.checks);
