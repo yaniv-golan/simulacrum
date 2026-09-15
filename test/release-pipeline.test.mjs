@@ -163,6 +163,39 @@ if(process.env.DRIFT==='source')writeFileSync('input.txt','wrong');
       );
       assert.equal(release.verification.automation.status, 'PASS');
       assert.equal(release.verification.humanAcceptance.status, 'PENDING');
+      // The envelope shape is pinned by key order (created/expires vary), so the extracted
+      // builder cannot drift from what the consumer and the dry check rehearse.
+      assert.deepEqual(Object.keys(release), [
+        'verification',
+        'schema',
+        'protocolVersion',
+        'createOnlyPayloads',
+        'artifact',
+        'files',
+        'head',
+        'sourceHash',
+        'origin',
+        'appBuild',
+        'created',
+        'expires',
+        'verificationHash',
+      ]);
+      assert.deepEqual(Object.keys(release.verification), [
+        'artifact',
+        'sourceHash',
+        'build',
+        'results',
+        'automation',
+        'humanAcceptance',
+        'source',
+        'runtime',
+        'installed',
+        'checks',
+        'timings',
+        'status',
+        'bundleCoverage',
+      ]);
+      assert.equal(release.expires - release.created, 14 * 86400000);
       // The frozen snapshot is kept out of Spotlight; the marker is not a packaged input.
       assert.ok(existsSync(join(repo, '.release-private/test/.metadata_never_index')));
       assert.equal('.metadata_never_index' in (release.verification.source ?? {}), false);
@@ -186,6 +219,177 @@ if(process.env.DRIFT==='source')writeFileSync('input.txt','wrong');
             : /Command failed/,
       );
   }
+});
+
+import { dryCheckRelease, RELEASE_LAUNCH_WAIT_MS } from '../scripts/playtest/prepare-release.mjs';
+import { FINAL_PHASES } from '../scripts/verification-tiers.mjs';
+
+// A refused launch is the one tier failure the operator relaunches rather than diagnoses: the
+// prepare names it, with the offenders, instead of "Command failed", and the final it spawned
+// was given the release wait budget.
+test('release launch refusal names the busiest foreign processes and waits the release budget', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'release-launch-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const bin = join(root, 'bin');
+  mkdirSync(bin);
+  const node = process.execPath;
+  writeFileSync(
+    join(bin, 'npm'),
+    `#!${node}\nimport{appendFileSync,mkdirSync,writeFileSync}from'node:fs';
+import { sourceIdentity } from ${JSON.stringify(new URL('../scripts/source-identity.mjs', import.meta.url).href)};
+appendFileSync(process.env.CALL_LOG,JSON.stringify({args:process.argv.slice(2),wait:process.env.SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS??null})+'\\n');
+if(process.argv.includes('ci'))mkdirSync('node_modules',{recursive:true});
+if(process.argv.includes('verify:final')){
+ mkdirSync('artifacts',{recursive:true});
+ const refused={id:'launch-admission',ok:false,status:'failed',result:{ok:false,notEvaluated:true,reason:'host pressure: WindowServer 48 % (foreign ≥ 40 %) after 300000 ms',admission:{waitedMs:300000,pressure:{foreign:[{comm:'WindowServer',pcpu:48,pid:400},{comm:'Google Chrome Helper',pcpu:35,pid:9}]}}}};
+ writeFileSync('artifacts/verification-final.json',JSON.stringify({source:sourceIdentity(),build:'test-build',runtime:process.version,outcome:{automation:{status:'FAIL',failures:[]},humanAcceptance:{status:'NOT_EVALUATED'}},checks:[],results:[refused]}));
+ process.exit(1);
+}\n`,
+    { mode: 0o755 },
+  );
+  const repo = join(root, 'repo');
+  mkdirSync(repo);
+  execFileSync('git', ['init', '--quiet'], { cwd: repo });
+  writeFileSync(join(repo, 'input.txt'), 'source');
+  writeFileSync(join(repo, '.gitignore'), '.release-private/\nartifacts/\ndist/\nnode_modules/\n');
+  execFileSync('git', ['add', '.'], { cwd: repo });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=Fixture',
+      '-c',
+      'user.email=fixture@example.test',
+      'commit',
+      '--quiet',
+      '-m',
+      'fixture',
+    ],
+    { cwd: repo },
+  );
+  const log = join(root, 'calls.log');
+  assert.throws(
+    () =>
+      execFileSync(
+        node,
+        [
+          '--input-type=module',
+          '-e',
+          `import {prepareRelease} from ${JSON.stringify(prepareUrl)};await prepareRelease('.release-private/test');`,
+        ],
+        {
+          cwd: repo,
+          env: {
+            ...process.env,
+            SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS: '',
+            PATH: bin + ':' + process.env.PATH,
+            CALL_LOG: log,
+          },
+          stdio: 'pipe',
+        },
+      ),
+    (error) => {
+      const message = String(error.stderr);
+      assert.match(
+        message,
+        /Release launch admission refused after 300 s: host pressure: WindowServer 48 %.*busiest foreign processes: WindowServer 48 %, Google Chrome Helper 35 %/,
+      );
+      assert.doesNotMatch(message, /Error: Command failed/);
+      return true;
+    },
+  );
+  const calls = readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse);
+  const final = calls.find((c) => c.args.includes('verify:final'));
+  assert.equal(final.wait, String(RELEASE_LAUNCH_WAIT_MS));
+  assert.equal(RELEASE_LAUNCH_WAIT_MS, 300000);
+  assert.equal(calls.find((c) => c.args[0] === 'ci').wait, '');
+});
+
+// The dry check is a rehearsal: prerequisites and the packaging shape against the tier's own
+// phase list, creating nothing, holding nothing, printing no envelope.
+test('release dry check rehearses packaging on the tier phase list and creates nothing', async (t) => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'release-dry-')));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = join(root, 'repo');
+  mkdirSync(repo);
+  execFileSync('git', ['init', '--quiet'], { cwd: repo });
+  writeFileSync(join(repo, 'input.txt'), 'source');
+  writeFileSync(join(repo, '.gitignore'), '.release-private/\nartifacts/\n');
+  execFileSync('git', ['add', '.'], { cwd: repo });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=Fixture',
+      '-c',
+      'user.email=fixture@example.test',
+      'commit',
+      '--quiet',
+      '-m',
+      'fixture',
+    ],
+    { cwd: repo },
+  );
+  writeFileSync(join(repo, 'stray.txt'), 'untracked');
+  const commands = [];
+  const run = (command, args) => {
+    commands.push([command, ...args]);
+    if (command === 'git') return ' M input.txt\n?? stray.txt\n';
+    return '';
+  };
+  const readiness = async () => ({
+    reach: 'timing',
+    rows: [{ id: 'admission:timing', ok: true, detail: 'would be admitted now' }],
+    admitted: true,
+  });
+  const options = { root: repo, run, readiness, runtime: () => {} };
+  const byId = (result) => Object.fromEntries(result.rows.map((row) => [row.id, row]));
+  const passed = await dryCheckRelease('.release-private/r9', options);
+  const rows = byId(passed);
+  assert.equal(passed.ok, true);
+  assert.deepEqual(
+    passed.rows.map((row) => row.id),
+    ['destination', 'runtime', 'tree', 'format', 'phases', 'host'],
+  );
+  // A dirty tree is reported as what a real prepare would package, not refused; --require-clean
+  // is the private step-0 rule, applied only when asked.
+  assert.match(rows.tree.detail, /would be packaged: {2}M input\.txt, \?\? stray\.txt/);
+  assert.match(rows.phases.detail, new RegExp(`tier phases ${FINAL_PHASES.join(',')} accepted`));
+  assert.ok(commands.some((c) => c.join(' ') === 'npm run format:check'));
+  assert.equal(existsSync(join(repo, '.release-private')), false);
+  assert.equal(existsSync(join(repo, 'artifacts')), false);
+  // The rehearsal envelope is checked and discarded: no hash or artifact reaches the rows.
+  assert.doesNotMatch(JSON.stringify(passed), /verificationHash|"artifact"/);
+  const strict = await dryCheckRelease('.release-private/r9', { ...options, requireClean: true });
+  assert.equal(strict.ok, false);
+  assert.match(byId(strict).tree.error, /not clean; these would be packaged: {2}M input\.txt/);
+  // R3 attempt 2 at unit cost: a phase the consumer does not accept is named on both sides.
+  const foreign = await dryCheckRelease('.release-private/r9', {
+    ...options,
+    phases: ['launch-admission', 'ci', 'probe', 'browser', 'gate'],
+  });
+  assert.equal(foreign.ok, false);
+  assert.match(
+    byId(foreign).phases.error,
+    /tier phases launch-admission,ci,probe,browser,gate disagree with the package consumer \(ci,browser,gate\)/,
+  );
+  // Prerequisites refuse by name: an existing destination, a path outside .release-private.
+  mkdirSync(join(repo, '.release-private/r9'), { recursive: true });
+  const existing = await dryCheckRelease('.release-private/r9', options);
+  assert.match(byId(existing).destination.error, /destination exists/);
+  const outside = await dryCheckRelease('elsewhere', options);
+  assert.match(byId(outside).destination.error, /must be a new \.release-private/);
+  // The host row is advisory and red when the admission would refuse now.
+  const busy = await dryCheckRelease('.release-private/r10', {
+    ...options,
+    readiness: async () => ({
+      reach: 'timing',
+      rows: [{ id: 'admission:timing', ok: false, error: 'host pressure: WindowServer 48 %' }],
+      admitted: false,
+    }),
+  });
+  assert.equal(busy.ok, false);
+  assert.match(byId(busy).host.error, /not admitted now \(advisory\).*WindowServer 48 %/);
 });
 
 import { randomUUID, createHash, createHmac } from 'node:crypto';

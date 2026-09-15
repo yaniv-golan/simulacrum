@@ -36,6 +36,7 @@ export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
     'SIMULACRUM_TIMING_FOREIGN_BOUND',
     'SIMULACRUM_TIMING_PRESSURE',
     'SIMULACRUM_TIMING_WAIT_MS',
+    'SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS',
   ],
   'attempt coordination, set per attempt or per candidate by the candidate command or the window': [
     'SIMULACRUM_VERIFICATION_WINDOW',

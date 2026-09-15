@@ -12,6 +12,16 @@ import { dependencyDigest, readResumeDescriptor } from '../candidate-resume.mjs'
 import { candidateMatchesOrigin, identityFiles } from '../candidate.mjs';
 import { requireAttemptReport } from '../candidate-attempt.mjs';
 import { processIdentity } from '../verification-environment.mjs';
+import {
+  FINAL_PHASES,
+  LAUNCH_ADMISSION_ID,
+  LAUNCH_WAIT_VARIABLE,
+  describeLaunchRefusal,
+} from '../verification-tiers.mjs';
+import { verificationOutcome } from '../verification-outcome.mjs';
+import { assertRuntime } from '../runtime-preflight.mjs';
+import { hostReadiness } from '../verify-host.mjs';
+export const RELEASE_LAUNCH_WAIT_MS = 300000;
 // One frozen verification and package path shared by local and CI releases.
 import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -44,6 +54,9 @@ function tierEnvironment(ledger, out) {
     // The tier's caches live under the release so the recorded dependency digest survives it.
     SIMULACRUM_VITE_CACHE_DIR: join(out, 'cache', 'vite'),
     MINIFLARE_CACHE_DIR: join(out, 'cache', 'miniflare'),
+    // A release final waits longer for a quiet host than a routine tier: a refused attempt plus
+    // a manual relaunch costs a fresh snapshot and install. Only the wait lengthens.
+    [LAUNCH_WAIT_VARIABLE]: String(RELEASE_LAUNCH_WAIT_MS),
   };
   delete env.SIMULACRUM_LEAF_LEDGER;
   delete env.SIMULACRUM_VERIFICATION_ATTEMPT;
@@ -170,6 +183,195 @@ async function copyCitedEvidence(admitted, reused, snapshot) {
     entry.copiedChecksums = copied;
   }
 }
+/** The package envelope, one pure function for the real prepare and the dry check's rehearsal,
+ * so the shape the tier emits and the shape the consumer accepts meet in one place. */
+export function releaseEnvelope({
+  verification,
+  artifact,
+  files,
+  head,
+  source,
+  installed,
+  timings,
+  status,
+  reuse = null,
+  origin,
+  appBuild,
+  created,
+}) {
+  const manifest = {
+    verification: {
+      artifact,
+      sourceHash: sha(JSON.stringify(source)),
+      build: verification.build,
+      results: verification.results.map(({ id, ok, result }) => ({
+        id,
+        ok,
+        ...(id === 'gate'
+          ? {
+              result: {
+                failed: result.failed,
+                unmet: result.unmet,
+                dueBarCount: result.dueBarCount,
+                bars: result.bars,
+              },
+            }
+          : {}),
+      })),
+      automation: verification.outcome.automation,
+      humanAcceptance: verification.outcome.humanAcceptance,
+      source: verification.source,
+      runtime: verification.runtime,
+      installed,
+      checks: verification.checks,
+      timings,
+      status,
+      ...(reuse ? { reuse } : {}),
+      bundleCoverage:
+        'Backend source is checked by the full suite; Wrangler bundles that same frozen source after verification. Hosted smoke checks the deployed bundle. Local bundle execution is not claimed.',
+    },
+    schema: 1,
+    protocolVersion: 2,
+    createOnlyPayloads: true,
+    artifact,
+    files,
+    head,
+    sourceHash: sha(JSON.stringify(source)),
+    origin,
+    appBuild,
+    created,
+    expires: created + 14 * 86400000,
+  };
+  manifest.verificationHash = verificationHash(manifest.verification);
+  return manifest;
+}
+const refusedLaunch = (report) => {
+  const first = report?.results?.[0];
+  return first?.id === LAUNCH_ADMISSION_ID && first.ok === false && first.result ? first : null;
+};
+/** A report in the shape the current final emits, with nothing real in it: every phase from the
+ * shared list, the gate pending its human bar exactly as an experimental release sees it, one
+ * receipt per phase. It is built for one consumer check and never written or printed. */
+function rehearsalReport(phases, identity) {
+  const bar = { id: 'F1', human: true, state: 'RED', assessment: 'pending' };
+  const results = phases.map((id) =>
+    id === 'gate'
+      ? { id, ok: false, result: { failed: 0, unmet: 0, dueBarCount: 1, bars: [bar] } }
+      : { id, ok: true },
+  );
+  const checks = phases
+    .filter((id) => id !== LAUNCH_ADMISSION_ID)
+    .map((id) => ({ id: `${id}:dry-check`, ok: true, configuration: {}, elapsedMs: 0 }));
+  return {
+    source: identity,
+    build: 'dry-check',
+    runtime: process.version,
+    results,
+    checks,
+    outcome: verificationOutcome(results, checks),
+  };
+}
+/** The cheap prerequisites of a release prepare and a rehearsal of its packaging path against
+ * the tier's own phase list, in seconds: a development probe that creates nothing under
+ * `.release-private/`, writes nothing under `artifacts/` and never enters the verification
+ * window. It makes no completion claim and nothing in it is citable. */
+export async function dryCheckRelease(
+  destination,
+  {
+    root = process.cwd(),
+    phases = FINAL_PHASES,
+    requireClean = false,
+    run: execute = (command, args) => execFileSync(command, args, { cwd: root, encoding: 'utf8' }),
+    readiness = () => hostReadiness({ reach: 'timing' }),
+    runtime = () => assertRuntime(),
+  } = {},
+) {
+  const rows = [];
+  const row = async (id, evaluate) => {
+    try {
+      const detail = await evaluate();
+      rows.push({ id, ok: true, ...(detail ? { detail } : {}) });
+    } catch (error) {
+      rows.push({ id, ok: false, error: error.message });
+    }
+  };
+  const out = resolve(root, destination);
+  await row('destination', () => {
+    if (!relative(root, out).startsWith('.release-private/'))
+      throw Error('Prepare destination must be a new .release-private/<release> directory');
+    if (existsSync(out)) throw Error(`Prepare destination exists: ${destination}`);
+    return 'new directory under .release-private/ (not created)';
+  });
+  await row('runtime', () => {
+    runtime();
+    return process.version;
+  });
+  let source = null;
+  await row('tree', () => {
+    let treeFiles;
+    try {
+      treeFiles = identityFiles(root);
+    } catch (error) {
+      if (/Secret-like/.test(error.message))
+        throw Error('Review secret-like source paths before packaging');
+      throw error;
+    }
+    source = {};
+    for (const path of Object.keys(treeFiles).sort())
+      if (!treeFiles[path].deleted) source[path] = treeFiles[path].sha256;
+    const dirty = execute('git', ['status', '--porcelain', '--untracked-files=all'])
+      .split('\n')
+      .filter(Boolean);
+    if (dirty.length && requireClean)
+      throw Error(`Working tree is not clean; these would be packaged: ${dirty.join(', ')}`);
+    return dirty.length
+      ? `${Object.keys(source).length} inputs; modified or untracked, would be packaged: ${dirty.join(', ')}`
+      : `${Object.keys(source).length} inputs; clean`;
+  });
+  await row('format', () => {
+    execute('npm', ['run', 'format:check']);
+    return 'format:check passed';
+  });
+  await row('phases', () => {
+    const consumer = 'ci,browser,gate';
+    const head = '0'.repeat(40),
+      inputs = source ?? {};
+    const report = rehearsalReport(phases, {
+      head,
+      workingTreeDigest: sha(JSON.stringify(inputs)),
+    });
+    const envelope = releaseEnvelope({
+      verification: report,
+      artifact: 'dry-check',
+      files: {},
+      head,
+      source: inputs,
+      installed: 'dry-check',
+      timings: {},
+      status: 'passed',
+      origin: 'dry-check',
+      appBuild: report.build,
+      created: 0,
+    });
+    // The rehearsal envelope is integrity-bound like a real one but carries fake identity; it is
+    // checked here and discarded, never written or printed.
+    try {
+      assertPackageVerification(envelope);
+    } catch (error) {
+      throw Error(
+        `tier phases ${phases.join(',')} disagree with the package consumer (${consumer}): ${error.message}`,
+      );
+    }
+    return `tier phases ${phases.join(',')} accepted by the package consumer (${consumer})`;
+  });
+  await row('host', async () => {
+    const host = await readiness();
+    const summary = host.rows.map((r) => `${r.id}: ${r.detail ?? r.error}`).join('; ');
+    if (!host.admitted) throw Error(`not admitted now (advisory): ${summary}`);
+    return `admitted now (advisory; the tier's own launch admission decides): ${summary}`;
+  });
+  return { rows, ok: rows.every((r) => r.ok) };
+}
 export async function prepareRelease(destination, { after = null } = {}) {
   const root = process.cwd(),
     out = resolve(destination);
@@ -267,7 +469,13 @@ export async function prepareRelease(destination, { after = null } = {}) {
     const report = JSON.parse(
       await readFile(join(snapshot, 'artifacts', 'verification-final.json'), 'utf8'),
     );
-    if (error.status !== 2 || report.outcome?.automation?.status !== 'PASS') throw error;
+    if (error.status === 2 && report.outcome?.automation?.status === 'PASS') {
+      // Qualification exit 2 with passing automation: humans pending, never invented here.
+    } else if (refusedLaunch(report)) {
+      // The one failure the operator relaunches rather than diagnoses: name it and the
+      // offenders here, so the frozen snapshot's report need not be opened.
+      throw Error(`Release ${describeLaunchRefusal(report.results[0].result)}`);
+    } else throw error;
   }
   const verification = JSON.parse(
     await readFile(join(snapshot, 'artifacts/verification-final.json'), 'utf8'),
@@ -335,52 +543,22 @@ export async function prepareRelease(destination, { after = null } = {}) {
     throw Error('Source input list changed during preparation');
   const files = await inventory(payload),
     artifact = sha(JSON.stringify(files));
-  const manifest = {
-    verification: {
-      artifact,
-      sourceHash: sha(JSON.stringify(source)),
-      build: verification.build,
-      results: verification.results.map(({ id, ok, result }) => ({
-        id,
-        ok,
-        ...(id === 'gate'
-          ? {
-              result: {
-                failed: result.failed,
-                unmet: result.unmet,
-                dueBarCount: result.dueBarCount,
-                bars: result.bars,
-              },
-            }
-          : {}),
-      })),
-      automation: verification.outcome.automation,
-      humanAcceptance: verification.outcome.humanAcceptance,
-      source: verification.source,
-      runtime: verification.runtime,
-      installed,
-      checks: verification.checks,
-      timings,
-      status,
-      ...(reuse ? { reuse } : {}),
-      bundleCoverage:
-        'Backend source is checked by the full suite; Wrangler bundles that same frozen source after verification. Hosted smoke checks the deployed bundle. Local bundle execution is not claimed.',
-    },
-    schema: 1,
-    protocolVersion: 2,
-    createOnlyPayloads: true,
+  const manifest = releaseEnvelope({
+    verification,
     artifact,
     files,
     head,
-    sourceHash: sha(JSON.stringify(source)),
+    source,
+    installed,
+    timings,
+    status,
+    reuse,
     origin: process.env.GITHUB_ACTIONS === 'true' ? 'github' : 'local',
     appBuild: /<meta[^>]+name="build-id"[^>]+content="([^"]+)"/.exec(
       await readFile(join(payload, 'assets/index.html'), 'utf8'),
     )?.[1],
     created: Date.now(),
-    expires: Date.now() + 14 * 86400000,
-  };
-  manifest.verificationHash = verificationHash(manifest.verification);
+  });
   assertPackageVerification(manifest, { allowReusedEvidence: Boolean(admitted) });
   await writeFile(join(out, 'release.json'), JSON.stringify(manifest, null, 2), { mode: 0o600 });
   console.log(

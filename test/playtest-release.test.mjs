@@ -9,7 +9,9 @@ import { validateReleaseConfig } from '../scripts/playtest/release-config.mjs';
 import {
   verificationHash,
   assertPackageVerification,
+  tierPhases,
 } from '../scripts/playtest/package-verification.mjs';
+import { FINAL_PHASES } from '../scripts/verification-tiers.mjs';
 import { verificationOutcome } from '../scripts/verification-outcome.mjs';
 function verifiedFixture(manifest) {
   const source = { head: 'a'.repeat(40), workingTreeDigest: 'b'.repeat(64) };
@@ -88,8 +90,25 @@ test('release package rejects changed bytes, expiry and incompatible capture rol
   // Every tier since the launch admission opens its results with that row: a passed one is
   // admitted ahead of the three phases; a refused one, a misplaced one or any other extra row
   // is not a package.
+  // The rows come from the list the qualification tier itself emits (FINAL_PHASES): if the
+  // tier ever gains a phase the consumer refuses, this fails at every commit rather than after
+  // a thirteen-minute release final (R3 attempt 2).
   const admitted = structuredClone(manifest);
-  admitted.verification.results.unshift({ id: 'launch-admission', ok: true });
+  admitted.verification.results = FINAL_PHASES.map(
+    (id) =>
+      manifest.verification.results.find((row) => row.id === id) ?? {
+        id: 'launch-admission',
+        ok: true,
+      },
+  );
+  assert.deepEqual(
+    admitted.verification.results.map((row) => row.id),
+    ['launch-admission', 'ci', 'browser', 'gate'],
+  );
+  assert.equal(
+    tierPhases(FINAL_PHASES.map((id) => ({ id, ok: true }))).join(','),
+    'ci,browser,gate',
+  );
   admitted.verificationHash = verificationHash(admitted.verification);
   await save(admitted);
   assert.equal((await verifyPackage(root)).artifact, manifest.artifact);

@@ -1,4 +1,4 @@
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 // Local workerd proof; never contacts a Cloudflare account.
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import assert from 'node:assert/strict';
@@ -25,6 +25,20 @@ const countSettled = (name, total) => {
   let settled = 0;
   return (promise) => promise.finally(() => report(`${name} settled=${++settled}/${total}`));
 };
+// Two timed trivial transforms before any bundling: the first spawns the esbuild service
+// binary (the exec whose gating a stall would name — Gatekeeper/XProtect on a fresh
+// install), the second reuses it. A slow first and fast second name per-exec gating; two
+// fast ones with a slow bundle point at the bundle itself. Diagnostics only.
+const timedTransform = async () => {
+  const started = performance.now();
+  try {
+    await transform('1', { loader: 'js' });
+    return (performance.now() - started).toFixed(1);
+  } catch (error) {
+    return `failed:${error.code ?? error.message}`;
+  }
+};
+report(`esbuild service firstMs=${await timedTransform()} secondMs=${await timedTransform()}`);
 begin('bundle');
 const persistence = await mkdtemp(pathJoin(tmpdir(), 'capture-restart-'));
 const options = convertV4MiniflareOptions({

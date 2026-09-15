@@ -276,8 +276,11 @@ export async function createPhysicsWorld(configuration) {
         !Array.isArray(joint.limits) ||
         joint.limits.length !== 2 ||
         !joint.limits.every(Number.isFinite) ||
-        joint.limits[0] < 0.08 ||
-        joint.limits[1] > 0.4 ||
+        // Elastic rows keep the frozen 0.08–0.40 m domain their frequency and
+        // energy controls were measured on; a zero-stiffness row has no elastic
+        // term, so a passive slide or powered linear guide admits 0.01–1.0 m.
+        joint.limits[0] < (joint.stiffness > 0 ? 0.08 : 0.01) ||
+        joint.limits[1] > (joint.stiffness > 0 ? 0.4 : 1) ||
         joint.limits[0] >= joint.limits[1] ||
         joint.restLength < joint.limits[0] ||
         joint.restLength > joint.limits[1] ||

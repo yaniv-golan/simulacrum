@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"c232f20c027eba025ab177ff571cefccddab016c648c750cc84a6f89e3fdc194","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"29e7e6025a62d440158a5e112abcd1cbdb255605c0a30431d5e13778462987ad","disposition":"still accurate","rationale":"AGENTS.md changed only in the experimental release policy paragraph, which now says an authorized release may cite a byte-identical passed merge candidate's workshop browser receipts as described in release operations (the release evidence-reuse change: prepare-release.mjs accepts --after <merge attempt report>, admits the parent through its attestation and signed resume descriptor, requires a byte-identical tree, installed-dependency digest and relevant environment, runs the tier with a resume ledger (caches redirected, the identity record's installed digest re-checked after the tier), copies every cited receipt's evidence into the frozen tree and names each in the envelope; package-verification.mjs assertReusedEvidence admits a 'passed with reused receipts' package only to a bypass-expensive release, refuses it for qualified, CI, rollback-of-qualified and recovery paths; release.mjs passes --after for prepare only and lists reused receipts in the exception record and deploy summary; verification-resume.mjs exports verifyLeafRow/readLeafRow used by the ledger loader; verification-environment.mjs adds the fixture knobs PARENT_ATTEMPT, PARENT_REPORT and PURGED to the test-owned exemption group; the manifest guarantee for release-verification-single-pass names the citation and registers both new tests as positive and negative controls); the guide's entry points, commands and structure are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f7900b610245b25b21e1e571b2480d2f45d413b4770ee9c85b536980f157dfa","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"8526d9c11de53cdd67e7d8dce0b623df3620df7fe48397fc723022b1253acf32","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). AGENTS.md changed only by one verification-table row naming the flag; the entry points, guides and recipes this section lists are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"2ea752357fc7b667b874bb74f02440f46a1f1ca97378141f799d96c7b79c4b38","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"3c9b8c94f65040c06b53e3a2bdcaec20fc9c9838cfd437b22ec4d3446940eb35","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"6fc1379adbb7e9fa3592d32ced6b54237fb5bec15370ad073f8ef42986775479","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"3bfae347346c1fe8b49113a2c20d55a3c00f1ded05dcb1dfdb807b81b5f0308b","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No milestone, bar or obligation changed; the amendments state contract rules for M10/M11 parts allocated already."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b5596ee067c2f08263026c3d6076039afc863e298a2a6635b40c90afa1630e56","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"ee901d41bdc33985df456ce1cf1cdfb46a57dc479f98da992b03b735c375590d","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): the shared browser session now scales every page deadline by the profile's registered `waitScale` (clamped to 60 % of the row budget), budgets workshop startup separately from the interaction deadline, records `waitScale`/`liveWaits`/`targetGeometry` in its evidence, and refuses a wait scale that did not come from the suite; `liveWait` takes its slice from `liveSliceMs` and samples frame gaps; `host-profile.mjs` registers the two facts and passes them to check children as numbers. None of the commands this section names, their order or what each tier verifies changed; `npm run ci` gained no flag here (that is decision 45's follow-up)."} -->
+<!-- doc-review {"version":1,"fingerprint":"a9cba3a0b10b393520a2ac070ab23128602ed3f08423b26899dbcb4ee4be0fe9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"62c215c33c098986fdf320f7752830c64783395e3183e68f795b6bf155f1bbd5","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). candidate-after.mjs gained the @refusal expansion only; the tiers, commands, exit codes and evidence rules here are unchanged, and the retry norm the section points to is documented in isolated-candidate-completion."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -146,23 +146,49 @@ source/build identity with the candidate being claimed. Registration of a check 
 an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Stacked integrations: when another candidate is already verifying against the same
-destination, merge that integration branch instead of `main` and pass its branch name as
-`--destination` with the same `--base`; the later candidate then lands unchanged once the
-earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
+destination, merge that integration branch instead of `main` and run `npm run
+verify:candidate -- merge --stack <that branch name>`; the later candidate then lands
+unchanged once the earlier one fast-forwards. `--stack` derives what the long form
+(`--base <commit> --incoming <commit> --destination <ref>`) makes you type: the destination
+is the named branch; the incoming commit is the branch's pre-integration tip (the last commit
+of its own first-parent history that does not contain the ref — a branch built linearly on the
+ref integrates whole, with the ref as base); the base is their unique merge-base. It refuses,
+naming the commits, when HEAD does not contain the ref (merge it first, or re-merge its moved
+head), when HEAD is the ref, when the merge-base is not unique, and for `--stack main` (that is
+a plain merge candidate). The derived values are recorded as `priority.chain`, the window
+intent says `stacked on <ref>` to contenders, and the landing order (the ref, then this
+candidate) is printed at launch and again with any passing result. A branch-pair merge candidate records the supplied name as
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
-confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+`npm run land` checks `priority.destination` against `main` instead) or NOT_EVALUATED (a
 bare commit was supplied). If the earlier integration is revised after being stacked on,
 re-merge its head and re-verify. A candidate that waited on another window owner retains
 that owner's declared intent (tier, branch, destination, origin worktree) under
 `windowReports[].value.contenders[].intent`.
 
+Landing: `npm run land -- <tip> [--report <attempt report.json>] [--dry-run]`
+([implementation](../../scripts/land.mjs#implementation)) fast-forwards `main` to the tip and
+refuses otherwise. It finds the tip's passing merge attempt reports under the candidate
+directories (or takes `--report`), tries them newest first, and lands on the first that
+satisfies every rule: the checkout on `main` with no modified tracked files; a report whose
+status is `passed`, `passed after failure` or `passed with reused receipts` and whose tier
+is `merge` (never `local`, `final`, a hosted profile or a measurement run); the report read
+from its own candidate's `attempts/` at the path it records and attested by that
+candidate's resume key (the same same-UID trust class as receipts — an edited or copied
+report is refused); `candidate.head` equal to the tip; the commit it integrated against
+(`priority.destination`, or `priority.base` for a routine `merge --base`) equal to the
+current `main`; `destinationStillMatches` not false; the tip's tree equal to the recorded
+`candidate.index`, every tip file's bytes and mode equal to the verified `candidate.files`
+entry, and no untracked bytes among them; and a fast-forward. It prints the attestation,
+attempt and report it verified, then the new `main`. Candidate directories live under the
+system temporary directory; once one is gone, `--report` cannot resurrect it and the tip
+needs new evidence.
+
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green
-report after changing source or environment. An experimental release may cite a byte-identical
-merge candidate's receipts only through the named release admission.
+report after changing source or environment.
 
 The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
 `engines.node` from package.json. CI, the milestone gate, final verification, focused
@@ -183,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"421e53316213107f3491c32973b62d1c6d3c0d0ddb8d508f83e900dcc07888e4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7e149ab2488e4d80afdc43701283553305d943151f332d056d74eb2324849200","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ffd69114262317a23157a68fc9ec7dff877016ae65c653ec90e87141c68b9b7f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea6d00b366487bdf1cab62fc7a4692fc7d427a2bb1bc18eb76590218b37ab25f","disposition":"still accurate","rationale":"reference.md regenerated for the new verify-host module and the extended release guarantee (on the merged base (land-script 9c4e08d0: hosted-check-waits' wait scale/live slice/row budget, merge --stack, the land script and the assessment split) the release-path tooling change stands: FINAL_PHASES shared between verify-final and the package tests; the bounded launch wait budget recorded as budgetMs and stripped from leaves beside the hosted wait variables; the printed refusal with offenders; prepare-release's 300 s release wait, named refusal, releaseEnvelope and dryCheckRelease (release:prepare --dry-check); verify-host.mjs (npm run verify:host) on the admission's own code with describeOwner now carrying the stacked-on branch; the manifest guarantee and two controls of release-verification-single-pass); re-recorded after merging the frozen tip, whose own changes (browser wait scaling, --stack, land script, assessment split) carry their own reviews and do not alter this section's description."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -260,7 +286,10 @@ only to explanation review, never build identities or verification receipts.
 Implicit external-package coverage retains package configuration and lockfile bytes,
 but excludes npm scripts when no install lifecycle hook is present: a command-only
 change does not change an imported library. Lifecycle hooks retain all scripts because
-they can invoke other package commands and alter installed dependencies.
+they can invoke other package commands and alter installed dependencies. The package's
+own `version` (and the lockfile's copy of it) is excluded too: a release bump names the
+build and changes no imported library, so it stales no explanation; a resolved or
+declared dependency version still does.
 Explicit package/command references and literal file reads still bind those scripts.
 Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
@@ -324,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"cfdbf848d69931c266e0c542200c9ade25376cee55bbcfd029e172b32a2a2750","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"0930de879b60aba23654127dd6efb250cceba0411d8ee1ed4db2015f0069bd74","disposition":"updated","rationale":"Extended the declaration paragraph: the skeleton carries the whole row (a declaration replaces reads whole), merge/local tiers print the unaudited reasons on their selection line, the mirror list is a deliberate hand-written contract and the second mirror assertion needs no audit line; no other rule this section describes changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"a3c562f87740fd70b2ff73d250e707c04781b14fb450993e86cafbd62641ac39","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"419ba03fe48dca7ea2041bec44ac69acbd8177f154aa1cf545af3c3882da7779","disposition":"still accurate","rationale":"The manifest changes are the guided-spring-passivity control registration and nine consumerSourceHash refreshes accepted in the scope review (world.mjs is inside the served closure); browser selection rules, scope declarations and execution policy are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -448,7 +477,9 @@ resting desktop's own records; `SIMULACRUM_TIMING_PRESSURE=observe` records with
 refusing) — then the
 remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
-inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
+inside the window and before the CI phase (60 s by default; a release final waits up to five
+minutes, `SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS` within 60–600 s, the budget recorded on the row and a
+refusal printed with its busiest foreign processes), because the structural gates hold 5 s
 deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
 is a failed attempt whose only row is `launch-admission`, not evaluated. The launch applies the
 foreign-process bound only to a tier whose resolved selection reaches a timing row (`reach:
@@ -492,9 +523,15 @@ A failed row additionally carries `processSnapshot` from the
 same bounded process enumeration that terminates the owned tree also retains load
 averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
 Spotlight daemons regardless of rank, the check's own tree (executable names only,
-never arguments or environment), and on macOS whether the stalled executable still
+never arguments or environment; on Linux each row carries its kernel wait channel, which
+macOS does not export), paging counters at that moment (`memory`, units named per
+platform) beside the row's `memoryAtStart` for rows with at least a ten-second deadline,
+on macOS one bounded stack sample of the first owned descendant blocked in
+uninterruptible wait (`sample`, one second, killed after three, output to the runner's
+pipe: its top-of-stack section names each thread's leaf frame and so the blocking
+syscall), and on macOS whether the stalled executable still
 carried quarantine or provenance attributes; a non-zero exit retains a post-hoc snapshot
-without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost and `hintMs` the attribute lookup. macOS
+without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost, `hintMs` the attribute lookup, `memoryMs` the counter read and `sampleMs` the stack sample. macOS
 `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time` and `etime`
 accompany it. The snapshot is context for a person, never attribution, and a failure to
 take it is recorded without changing the outcome. Failed browser rows also carry
@@ -616,7 +653,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"54402691b7db85b5ae258f4059d6806b7d8c027ca901627da4f33367994b1cbd","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"1fecb1f4b5e31cb6560d82c40ab70004115b6b40ebc4cb0b5872fbdef80ebf8f","disposition":"still accurate","rationale":"README#verify-a-change gained the release citation sentence (the release evidence-reuse change: prepare-release.mjs accepts --after <merge attempt report>, admits the parent through its attestation and signed resume descriptor, requires a byte-identical tree, installed-dependency digest and relevant environment, runs the tier with a resume ledger (caches redirected, the identity record's installed digest re-checked after the tier), copies every cited receipt's evidence into the frozen tree and names each in the envelope; package-verification.mjs assertReusedEvidence admits a 'passed with reused receipts' package only to a bypass-expensive release, refuses it for qualified, CI, rollback-of-qualified and recovery paths; release.mjs passes --after for prepare only and lists reused receipts in the exception record and deploy summary; verification-resume.mjs exports verifyLeafRow/readLeafRow used by the ledger loader; verification-environment.mjs adds the fixture knobs PARENT_ATTEMPT, PARENT_REPORT and PURGED to the test-owned exemption group; the manifest guarantee for release-verification-single-pass names the citation and registers both new tests as positive and negative controls); window acquisition, admission, timing pressure and recovery described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"dff6674e1f332fc6427ee8eaafff367b8c717d8f0a29464b6e098b2b48a46b28","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fbd85e9646a94f45c4c41dbf8add6e79ffdbc5a58689f6711978917ee88eba19","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). windowState() is a read-only classification (free/owned/abandoned) of the same owner file; SLEEP_GAP_MS is the existing sleep gap exported. Lease, wait notice, abandonment and recovery semantics are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -624,7 +661,11 @@ on this host. Nested commands inherit the owning window. Completion/browser admi
 canonical report non-green before runtime checks or lock waiting; failed admission
 replaces an older pass even when no child starts. Local, merge, final and native-qualification completion
 CLI runs wait up to thirty minutes. Focused unit/browser probes, builds and standalone
-CI wait up to five minutes; they retain the same serialization. The CLI prints the
+CI wait up to five minutes; they retain the same serialization. `npm run verify:host` is the
+read-only readiness probe: one pressure sample evaluated through the launch admission's own
+code for both reaches, plus the window owner, exit 0 only when a launch of the requested reach
+(`--reach`, default `timing`) would be admitted now and the window is free; it never holds the
+window and is advisory, the tier's own admission decides. The CLI prints the
 owner PID, its declared intent (script or completion tier, integration destination and
 origin worktree when a candidate declared them) and elapsed/maximum wait on contention
 and every thirty seconds thereafter. A candidate that waited on an owner retains that
@@ -665,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"b666dcaf35a8017cc26c78b140d7f541bb3f0831ae0052a59509b901519a9f91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"63bbca305cb62f0d1be2ef4f6e1d246c6d42df4432a27d556d863e85b8223405","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"add2d7e23e4c64cc69a538494b7172deb7a3a6432caa79657b53200e839551e4","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e9b00425b068bc9f941731d59d3b555c3e362987b33a794577b8398d946c68ea","disposition":"still accurate","rationale":"The manifest edit registers two spring-physics controls and refreshes reviewed scope hashes; candidate isolation, evidence binding and stacking rules are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -723,9 +764,7 @@ expired automatically: establish the prior process tree has stopped before recov
 
 A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
 --after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
-only; `final` refuses `--after` because qualification evidence is always a fresh full run (the
-one named admission is an experimental release's `release:prepare -- … --after`, see
-[release operations](playtesting.md#release-operations)). The
+only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
 parent must be a `failed` report that completed its tier; an attempt that failed around the tier
 (window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
@@ -782,6 +821,27 @@ carries the causes, the chain (recorded before capture, three attempts at most),
 origins with their attempt and depth, the covered and skipped checks, the required and
 re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
 diagnosed retry the norm above requires, not a retry-to-green.
+
+Two conveniences keep that honest on a busy desk. `--cause browser=@refusal` cites the admission
+refusal the parent's browser phase recorded — the suite attaches the refusal (its reason, the
+refused rows and the suite report) to the phase failure, the phase row keeps it inside the
+attested attempt report, and the retry expands the shorthand into that recorded reason (recorded
+under `after.causeSources`); a parent that recorded no refusal, a refusal naming other rows than
+the phase left not evaluated, or any id other than the phase id `browser` refuses the shorthand,
+because a cause is a diagnosis, never a template. `--when-quiet <maxWaitMs>` (any candidate
+tier, also with `--after` and `resume`; never with a citation) polls outside the verification
+window — the same launch admission the tier will apply, at the reach the tier's own selection
+policy gives the origin (a local delta's affected checks; a merge delta through the merge policy,
+which widens a risky path and omits a timing row its measured scope does not reach; final always
+measures), plus a free window — every 5 s until one sample would admit or the budget expires,
+taking no lease and capturing nothing meanwhile; the wait is recorded under `report.whenQuiet`
+(count, first and last sample, transitions between sample classes — a refusal's live numbers are
+not a class, and at most 64 are kept with the rest counted — window owners seen, host sleep named
+and not counted), the run then proceeds
+exactly as without the flag (the launch admission still runs and may still refuse), and an
+expired wait publishes the failed report, unattested, before any capture. An abandoned window (a
+dead owner) fails the poll at once: recovery is explicit. The flag is scheduling only; it never
+enters the descriptor, the priority record or receipt identity.
 
 The same `--after <attempt-report.json>` with a **passed** parent (status `passed` or
 `passed with reused receipts`; no `--cause`) is receipt reuse across candidates: an author's

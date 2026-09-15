@@ -2,8 +2,8 @@ import { captureIdentity, assertCaptureIdentity } from './load.mjs';
 import { assertPackageVerification } from './package-verification.mjs';
 import { readCalibrationEvidence } from './calibration-evidence.mjs';
 import { readCorpus } from './corpus.mjs';
-import { prepareRelease } from './prepare-release.mjs';
-export { prepareRelease };
+import { prepareRelease, dryCheckRelease } from './prepare-release.mjs';
+export { prepareRelease, dryCheckRelease };
 import {
   selectExperiments,
   experimentReservation,
@@ -723,9 +723,35 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     if (!after || after.startsWith('-')) throw Error('--after needs an attempt report path');
     argv.splice(afterIndex, 2);
   }
+  // `prepare … --dry-check [--require-clean] [--json]` rehearses the prerequisites and the
+  // packaging shape without a tier, a snapshot or the window; it is a probe, never evidence.
+  const flags = { dryCheck: '--dry-check', requireClean: '--require-clean', json: '--json' };
+  const dry = {};
+  for (const [key, flag] of Object.entries(flags)) {
+    const index = argv.indexOf(flag);
+    dry[key] = index >= 0;
+    if (index >= 0) argv.splice(index, 1);
+  }
   const [command, directory, config, ownerFile, quiescence] = argv;
   if (after && command !== 'prepare') throw Error('--after applies to prepare only');
-  if (command === 'prepare' && directory) await prepareRelease(directory, { after });
+  if ((dry.requireClean || dry.json) && !dry.dryCheck)
+    throw Error('--require-clean and --json apply to prepare --dry-check only');
+  if (dry.dryCheck && (command !== 'prepare' || !directory || after))
+    throw Error('--dry-check applies to prepare <new-private-directory> without --after');
+  if (dry.dryCheck) {
+    const result = await dryCheckRelease(directory, { requireClean: dry.requireClean });
+    if (dry.json) console.log(JSON.stringify(result, null, 2));
+    else {
+      for (const row of result.rows)
+        console.log(`${row.ok ? 'ok  ' : 'no  '} ${row.id.padEnd(12)} ${row.detail ?? row.error}`);
+      console.log(
+        result.ok
+          ? 'DRY CHECK PASSED — a rehearsal, not evidence; release:prepare still runs the full final.'
+          : 'DRY CHECK FAILED — fix the red rows before release:prepare.',
+      );
+    }
+    process.exitCode = result.ok ? 0 : 1;
+  } else if (command === 'prepare' && directory) await prepareRelease(directory, { after });
   else if (['deploy', 'rollback'].includes(command) && directory && config)
     await deployRelease(directory, config, undefined, { rollback: command === 'rollback' });
   else if (
@@ -742,6 +768,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     });
   } else
     throw Error(
-      'Usage: release prepare <new-private-directory> [--after <merge attempt report>] | deploy|rollback <release-directory> <private-config.json> | recover|recover-rollback <selected-release> <private-config.json> <private-owner-file> --publisher-stopped',
+      'Usage: release prepare <new-private-directory> [--after <merge attempt report>] [--dry-check [--require-clean] [--json]] | deploy|rollback <release-directory> <private-config.json> | recover|recover-rollback <selected-release> <private-config.json> <private-owner-file> --publisher-stopped',
     );
 }

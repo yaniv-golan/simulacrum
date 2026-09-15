@@ -5,12 +5,13 @@ All production advancement uses 1/120 s ticks. A tick publishes only after its n
 phases complete: sensor snapshot, controller commands, power/signals,
 actuators/constraints, environment/forces, integration/contacts, structure/failure,
 thermal/ablation, telemetry. Controllers at tick t consume the completed sensor
-snapshot from t-1. Tick zero has a declared initial snapshot.
+snapshot from t-1. Tick zero has a declared initial snapshot. When a configuration carries node thermal ratings, the thermal/ablation phase is the single writer of node temperatures, and a tick's temperatures are consumed by the next tick's power allocation.
+
+When an authored environment declares a replay-safe time scale, it is implemented strictly as N ticks per rendered frame: a rendered frame completes its N ticks or fewer and carries the remainder as tick debt under the P1 performance bar's declared overload policy (simulation debt is preserved; ticks are never dropped or stretched). Tick size 1/120 s and one integration per tick are unchanged for every environment; the scale is stored in saves and replay as compatible admission within version 3, so replay reproduces the recorded cadence and projection hashes are unaffected by it. The scale does not lift the 28,800-tick per-call bound or the qualification bound; qualification fixtures are sized in simulated ticks.
 
 ## Structural failure scope
 
-The current session's structure/failure phase checks finite body state and conserved
-body count and mass. It does not yet implement general joint rated-capacity evaluation,
+The current session's structure/failure phase checks finite body state and conserved body count and, for every body without a material store, conserved mass. For a body whose material store is configured, the structure/failure phase and checkpoint admission instead assert mass = initial mass − mass released by that store; the store commits releases (requested mass flow reported by an actuator, and ablation) in the thermal/ablation phase and is the single writer of that body's mass, inertia and centre of mass, whose initial values remain the player's authored selection; the store's released ledger is checkpointed when configured. It does not yet implement general joint rated-capacity evaluation,
 transmitted-load failure decisions or automatic overload breakage. Commanded release
 couplers are an authored release capability, not evidence of overload failure modeling.
 An active phase or successful numeric invariant check cannot establish the Course's
@@ -50,7 +51,7 @@ arbitration state, optional bounded numeric program state, typed prior sensor re
 range continuity history, prior Load Cell reaction evidence when configured, and the
 signed constraint-work ledger. Physics envelope version 9 binds the pinned
 native backend, gear memory, opened fixed joints, rope memory and work, and latest
-completed joint reactions before deserialization. Older opaque checkpoints are
+completed joint reactions before deserialization. Reaction receipts published for joints that are not bridges of the opened topology are read models, not envelope state; after restore they are initializing for one completed tick. Older opaque checkpoints are
 rejected explicitly. For configured Load Cells at completed tick k ≥ 1, physics
 holds reaction k and the consumed sensor snapshot holds evidence for reaction k−1.
 Each also retains opened-joint topology at that same age; an opened A or B mount
@@ -145,8 +146,7 @@ configuration, renaming seed and input trace. Hashes are integrity identities, n
 substitute for embedded inputs or preserved executable builds.
 
 Determinism initially means the same runtime and library binary across two processes
-and both clock drivers. A declared model projection includes authoritative state and
-excludes wall-clock timing and diagnostic labels. Per-phase timings remain in the
+and both clock drivers. A declared model projection is the model's allow-list of authoritative completed state; a new authoritative field joins it when its feature is configured (completed attachment loads, node temperatures, break events), while wall-clock timing, diagnostic labels and derived diagnostics such as utilization ratios stay outside. Per-phase timings remain in the
 same telemetry frame outside that projection. `tickTiming` also measures completed-tick frame construction (`frameMs`),
 publication and periodic checkpoint work, with their total and remaining overhead.
 Immutable static model metadata is shared only after admission by the immutable-copy
@@ -267,14 +267,10 @@ approximation is documented in the physics contact ADR.
 
 ### Surface mounting (M3b)
 
-Save version 3 represents every structural fixed connection with surface bindings
-`{part, surface:{region,u,v,twist}}`. `{part,port}` bindings are only for power,
-signal and shaft sockets. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
+Save version 3 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
 faces. Their local X is the outward normal, Y is the u tangent, and Z is the v
 tangent. Coordinates use metres and radians. A surface connection's a endpoint
-is the receiving region and b is the centered source pad. Resolved normals oppose
-using the existing fixed-joint convention. The compiler emits ordinary fixed
-joints; surface placement grants no special force, support or power.
+is the receiving region and b is the centered source pad. Resolved normals oppose using the existing fixed-joint convention; a joint-face endpoint additionally carries its declared joint, sits at `u = v = 0`, and is offset along its normal when declared. The compiler emits an ordinary fixed joint for a `fixed` pair, a passive revolute about the mated normal for a `pivot` pair, and a passive spherical at the coincident anchors for a `spherical` pair; surface placement grants no special force, support or power. Joint faces on a release face or a Load Cell face reject.
 
 `surface-mount` atomically proposes and commits selected-group placement, optional
 part insertion, and optional fixed attachment in Build. `replaceConnection`
@@ -287,8 +283,7 @@ A remaining mechanical path to the receiver refuses adjustment. An optional
 `expectedCursor` rejects stale requests. Preview is transient authoring state;
 it does not write completed physical poses. Undo restores the entire transaction.
 
-The catalog-declared source pad must fit on the receiving face; each source pad
-is exclusive. A housing can overhang while its smaller declared pad remains fully
+The catalog-declared source pad must fit on the receiving face for a `fixed` pair; a joint-face pair requires only that its anchor lie inside the receiving face, because a pin-and-socket mate is a point, not a pad. Each source pad and each joint face is exclusive. A housing can overhang while its smaller declared pad remains fully
 supported. Pad geometry is shown on the part and in its placement preview. All
 placement paths and loads reject intersections between canonical bodies and
 exposed-shaft placement envelopes, including unattached parts. Bounds prune distant
@@ -381,10 +376,9 @@ Passive projection loss is separately reported as
 
 ## Guided springs (M3b)
 
-A `spring` connection joins an ordinary Spring guide to a Spring carriage. Its
+A `spring` connection joins a guide-side part that declares a slide descriptor — a Spring guide, a powered linear guide or a passive rail — to the carriage or slider whose slide port shares its family; other pairings reject. Its
 numeric physics joint permits axial translation and constrains the other five
-relative degrees of freedom. The guide owns stiffness (N/m), damping (N s/m),
-zero-force length and travel (m); edits are Build-only. Current save version 3
+relative degrees of freedom. The guide-side part owns the connection start position and travel (m); an elastic guide also owns stiffness (N/m) and damping (N s/m), a powered linear guide owns neither (its drive is the motor law), and a passive rail owns drag (N s/m); edits are Build-only. The start position places a carriage when it is connected and does not reposition a connected one. Current save version 3
 admits this additional connection and part vocabulary. Wrong pairings, invalid
 travel and misaligned loaded endpoints reject before authoring publication.
 Disconnecting removes both the guide constraint and elastic/damping interaction.
@@ -414,9 +408,7 @@ The single integration and nine phases are unchanged.
 The undamped scalar oscillator preserves modified energy `E - h k x v / 2`,
 up to numerical error, rather than suppressing the intended bounce. Admission retains
 `dt² trace(K W) <= 0.09`; exceeding it produces preserved failure evidence before
-impulses are applied. At most eight springs are admitted, with k=0–300 N/m,
-c=0–100 N·s/m and 0.08–0.40 m travel. Limits must be ordered and contain the
-zero-force length. Stops are unilateral prismatic limits, not pose clamps or a
+impulses are applied. At most eight spring-kind joints are admitted. Rows with k > 0 admit k ≤ 300 N/m, c=0–100 N·s/m and 0.08–0.40 m travel; rows with k = 0 (powered linear guides and passive slides) admit 0.01–1.0 m travel with the same damping range, while each part's catalog ratings still bound what a player can author. Limits must be ordered and contain the start position. Stops are unilateral prismatic limits, not pose clamps or a
 breakage model. Isolated completed-tick impact bounds do not qualify unseen substep
 penetration or actual mechanism clearances.
 

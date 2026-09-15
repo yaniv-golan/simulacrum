@@ -2,17 +2,19 @@
   "version": 1,
   "dependencies": {
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
-    "docs/development/playtesting.md#release-operations": "74ea5d5b068949f520da454b6b2a422dfa41bef33a445d5bcbc381b89ae7b004",
+    "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",
+    "scripts/candidate-after.mjs": "954a519feec57a607e7a45b83a4c8a8c7d053bf7de8b76e720e98a440bf94aec",
+    "scripts/land.mjs": "25da0a80b46a142c4843d72aa7fa8eb30b2ae7d5f6f1dd4ed54b87750a013255",
     "docs/development/playtesting.md#remote-setup": "9d5bef5012be1ca2226f1bb760960b936c70d09596bd048a43d9bec1705c48ff",
-    "package.json": "ca97aeb2b333a6f04415bf2798f29514ae045a4e179271182a3a399919763beb",
+    "package.json": "4e8a1a4d3a6a3f2fc8a407f60333479f84eb8f7c2f4e1f4a78e0667474f4681e",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
-    "package-lock.json": "8c8ca50a0c7def8d5ec499258ce55a2540d26ba436be81c7aa19fdf3175881e9",
+    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",
     "scripts/browser-artifacts.mjs": "05ef6fc079ee5c185860889ec11ec6425a74968f56f24480c408a55239508399",
     "scripts/browser-evidence.mjs": "6d8b3558c4ed075b865cf5e897e11318dbd6d800a90010f5ade62aaab43176df",
     "scripts/browser-idle.mjs": "b17d378b5138753c0c12b57032a44585bcbb6aadc8eedfa03447d010fa0b658e",
     "scripts/browser-session.mjs": "35bfae89d868ed1ee974ad7b0920149bfa20b401c00df1457861cb76c05ba48e",
-    "scripts/host-profile.mjs": "bed35e396ad688822432484013295953fa25ffe331af9bfd57d97a1c1500aed4",
+    "scripts/host-profile.mjs": "ca01a1ce6ff5f5186df3dd003d551c900bac313e68ae79a040f96075f0a2c200",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
@@ -30,6 +32,8 @@
     "package.json#script=test:browser:smoke": "8bfc62c5e49cb78384f9bc0bdcd9f1aee1e5b7901b08996981b0054c31ad6dd6",
     "package.json#script=test:performance": "2d6ca68ebffe9b11d9d2131624417503b7f6d7c0450d2e4cf33ed2f2f2b4205e",
     "package.json#script=format": "ef05253c916d239ff45cf48973f920de06053a1c36cd7adc76d9a5304bc5e054",
-    "package.json#script=replay": "ca85cb1b8ca2f88fb66317807b8fc4fda7a411879afeb377af34f92d190732c9"
+    "package.json#script=replay": "ca85cb1b8ca2f88fb66317807b8fc4fda7a411879afeb377af34f92d190732c9",
+    "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756",
+    "package.json#script=land": "6d43e22ae287e75ad8231c6b0507f30a8c955dbaaadb71da261d24c3f329fa3f"
   }
 }
