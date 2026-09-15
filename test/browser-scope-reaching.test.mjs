@@ -415,8 +415,9 @@ test('manifest admits only sorted registered reaching check ids', () => {
 });
 
 test('a witness result is refused for a proposal that requires none', async () => {
-  const { validateScopeWitnessResult } =
-    await import('../scripts/browser-scope-witness-contract.mjs');
+  const { validateScopeWitnessResult } = await import(
+    '../scripts/browser-scope-witness-contract.mjs'
+  );
   const graph = graphFixture(),
     manifest = manifestFixture(graph);
   manifest.browserChecks.push({ id: 'e', script: 'scripts/e.mjs', environment: 'workshop' });

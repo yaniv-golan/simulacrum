@@ -182,8 +182,9 @@ test('removing the last opaque read produces an explicit removal diff', () => {
   assert.equal(row.before.reads.length, 1);
 });
 test('witness admission rejects substituted requests, empty or failed receipts and different candidate bytes', async () => {
-  const { scopeWitnessRequest, validateScopeWitnessResult } =
-    await import('../scripts/browser-scope-witness-contract.mjs');
+  const { scopeWitnessRequest, validateScopeWitnessResult } = await import(
+    '../scripts/browser-scope-witness-contract.mjs'
+  );
   const { input } = fixture();
   const p = deriveScopeProposal(input);
   const result = {
@@ -301,8 +302,9 @@ test('a proposal records which checks the candidate delta selects but no witness
 test('the default affected selector under a live candidate agrees with execution discovery', async () => {
   // The unit fixtures stub the selector; this proves the production default reads the same
   // graph and manifest the tier would use, minus the proposal's own witnesses.
-  const { prepareScopeProposal, inspectScopeInputs } =
-    await import('../scripts/browser-scope-proposal.mjs');
+  const { prepareScopeProposal, inspectScopeInputs } = await import(
+    '../scripts/browser-scope-proposal.mjs'
+  );
   const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
   const proposal = prepareScopeProposal(process.cwd(), [], { base: 'HEAD' });
   const { basis, checks } = proposal.affectedNotWitnessed;
