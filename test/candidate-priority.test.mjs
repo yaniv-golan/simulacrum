@@ -120,3 +120,52 @@ test('candidate merge branch pair names its destination, publishes it and routes
   );
   assert.equal(report.destinationStillMatches, 'fixture-drift');
 });
+
+test('candidate merge --stack derives its destination, incoming and base, records the chain and prints the landing order', () => {
+  const child = spawnSync(process.execPath, [fixture, 'merge', '0', 'stack'], { encoding: 'utf8' });
+  assert.equal(child.status, 0, child.stderr || child.stdout);
+  const output = child.stdout.split('\n').find((line) => line.startsWith('TRANSPORT '));
+  assert.ok(output, child.stdout + child.stderr);
+  const { calls, captured, report, stdout } = JSON.parse(output.slice(10));
+  // The derived values go through the same scope resolution as typed ones.
+  assert.deepEqual(report.priority, {
+    base: 'HEAD~1',
+    incoming: 'resolved-feature',
+    destination: 'resolved-target',
+    destinationName: 'target',
+    stack: 'target',
+    chain: {
+      stack: 'target',
+      destination: 'sha-target',
+      incoming: 'feature',
+      base: 'HEAD~1',
+      head: 'sha-head',
+    },
+    landingOrder: ['target @ sha-tar', 'this candidate @ sha-hea'],
+    priorityFiles,
+    priorityProvenance: 'explicit integration paths',
+  });
+  const tierProcess = calls.filter((row) => row.kind === 'process')[1];
+  assert.deepEqual(tierProcess.args.slice(0, 8), [
+    'scripts/verification-window.mjs',
+    'scripts/verify-merge.mjs',
+    '--base',
+    captured.base,
+    '--incoming',
+    'resolved-feature',
+    '--destination',
+    'resolved-target',
+  ]);
+  // Contenders see the stack in the window intent; the landing order is printed at launch
+  // and again with the passing result.
+  assert.equal(tierProcess.intent.stack, 'target');
+  assert.equal(tierProcess.intent.destinationName, 'target');
+  assert.deepEqual(
+    stdout.filter((line) => line.startsWith('landing order')),
+    [
+      'landing order: target @ sha-tar, then this candidate @ sha-hea',
+      'landing order: target @ sha-tar, then this candidate @ sha-hea',
+    ],
+  );
+  assert.equal(report.destinationStillMatches, 'fixture-drift');
+});

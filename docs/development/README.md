@@ -8,6 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
+
 <!-- doc-review {"version":1,"fingerprint":"16b4007f7d8023bed89f5f2abc56419b1182ec410016c6a2b646744fe77fefde","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"282b9b808ddb287e26291dbb8077d5332435cdf93e1eeba1d2e46ba70184a36f","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the manifest gained the candidate-citation-integrity invariant (tooling, no milestone or bar allocation changed) and AGENTS.md the citation row and rule; the milestone status this section states — the current construction loop and gate — is unchanged."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
@@ -146,9 +147,18 @@ source/build identity with the candidate being claimed. Registration of a check 
 an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Stacked integrations: when another candidate is already verifying against the same
-destination, merge that integration branch instead of `main` and pass its branch name as
-`--destination` with the same `--base`; the later candidate then lands unchanged once the
-earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
+destination, merge that integration branch instead of `main` and run `npm run
+verify:candidate -- merge --stack <that branch name>`; the later candidate then lands
+unchanged once the earlier one fast-forwards. `--stack` derives what the long form
+(`--base <commit> --incoming <commit> --destination <ref>`) makes you type: the destination
+is the named branch; the incoming commit is the branch's pre-integration tip (the last commit
+of its own first-parent history that does not contain the ref — a branch built linearly on the
+ref integrates whole, with the ref as base); the base is their unique merge-base. It refuses,
+naming the commits, when HEAD does not contain the ref (merge it first, or re-merge its moved
+head), when HEAD is the ref, when the merge-base is not unique, and for `--stack main` (that is
+a plain merge candidate). The derived values are recorded as `priority.chain`, the window
+intent says `stacked on <ref>` to contenders, and the landing order (the ref, then this
+candidate) is printed at launch and with a passing result. A branch-pair merge candidate records the supplied name as
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;

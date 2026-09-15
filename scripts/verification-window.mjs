@@ -68,6 +68,7 @@ const INTENT_FIELDS = [
   'destinationName',
   'origin',
   'head',
+  'stack',
 ];
 /** Owner-declared purpose published to contenders: printable single-line strings
  * (paths and ref names), never environment values. */
@@ -277,7 +278,8 @@ if (
         const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
         const target = declared.destinationName ?? declared.destination;
         const branch = declared.head ? ` on ${declared.head}` : '';
-        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
+        const stacked = declared.stack ? ` stacked on ${declared.stack}` : '';
+        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}${stacked}, ${where}`;
       };
       const run = () => {
         childStarted = true;
