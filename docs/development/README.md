@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"980c6dd91ab7249b6cf76e3603523688c3a20ab6e97347f0b1c749bc6651dc6c","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"33144ef038984651fb72fe784f84e619f6bcda0b83adb2951aa4899a33c9c19b","disposition":"still accurate","rationale":"The manifest changed only through the Bench, assembly-ux focus-wait and package-verification launch-row landings (scope rows, timeouts and the release-verification-single-pass controls); milestone allocation still declares M3b with F1 pending and S1, physical feasibility, rover and legged Course incomplete, and the manifest and gate remain the owners this section names; re-read at cd8109aa."} -->
+<!-- doc-review {"version":1,"fingerprint":"16b4007f7d8023bed89f5f2abc56419b1182ec410016c6a2b646744fe77fefde","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"282b9b808ddb287e26291dbb8077d5332435cdf93e1eeba1d2e46ba70184a36f","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the manifest gained the candidate-citation-integrity invariant (tooling, no milestone or bar allocation changed) and AGENTS.md the citation row and rule; the milestone status this section states — the current construction loop and gate — is unchanged."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.

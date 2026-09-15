@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8b2966912cffd75772b20939a64a5bf1f69c8efb675a3ef52e7887109b195df2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c5186b6f3d8f79a57d4468465bf16c9227e818b7662b2544e139dc62d214d897","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): the drift is verification tooling — a release final cited as merge evidence, its tests and documentation, a window-owner reader and a manifest invariant; no simulation, physics-door, power, checkpoint or contact behavior changed, and a physics delta still runs every timing-budget check in its own tiers."} -->
+<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
