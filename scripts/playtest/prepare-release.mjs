@@ -9,11 +9,11 @@ import {
 } from '../candidate-after.mjs';
 import { readLeafRow } from '../verification-resume.mjs';
 import { dependencyDigest, readResumeDescriptor } from '../candidate-resume.mjs';
-import { candidateMatchesOrigin } from '../candidate.mjs';
+import { candidateMatchesOrigin, identityFiles } from '../candidate.mjs';
 import { requireAttemptReport } from '../candidate-attempt.mjs';
 import { processIdentity } from '../verification-environment.mjs';
 // One frozen verification and package path shared by local and CI releases.
-import { readFile, writeFile, mkdir, readdir, copyFile, lstat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve, join, relative, basename, dirname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -38,8 +38,13 @@ async function inventory(root) {
 }
 // The tier's environment never inherits a resume ledger by accident: a plain release strips the
 // two variables, a citing release sets its own.
-function tierEnvironment(ledger) {
-  const env = { ...process.env };
+function tierEnvironment(ledger, out) {
+  const env = {
+    ...process.env,
+    // The tier's caches live under the release so the recorded dependency digest survives it.
+    SIMULACRUM_VITE_CACHE_DIR: join(out, 'cache', 'vite'),
+    MINIFLARE_CACHE_DIR: join(out, 'cache', 'miniflare'),
+  };
   delete env.SIMULACRUM_LEAF_LEDGER;
   delete env.SIMULACRUM_VERIFICATION_ATTEMPT;
   if (ledger)
@@ -172,19 +177,21 @@ export async function prepareRelease(destination, { after = null } = {}) {
     throw Error('Prepare destination must be a new .release-private/<release> directory');
   const admitted = after ? await admitReleaseParent(after, root) : null;
   const head = text('git', ['rev-parse', 'HEAD']);
-  const paths = text('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
-    .split('\0')
-    .filter(Boolean)
-    .sort();
-  if (paths.some((path) => /(^|\/)(\.env(?:\.|$)|\.dev\.vars|secrets?\.)/.test(path)))
-    throw Error('Review secret-like source paths before packaging');
-  const source = {};
-  for (const path of paths) {
-    const info = await lstat(path).catch(() => null);
-    if (!info) continue;
-    if (!info.isFile()) throw Error(`Unsupported source input: ${path}`);
-    source[path] = sha(await readFile(path));
+  // One read of the tree: the candidate's per-path record (shas, modes, deletions; never the
+  // index) is the identity a later merge citation compares, and the packaged `source` map is
+  // derived from it so the two records cannot disagree. Secret-like and symlinked inputs are
+  // refused by the same rules a candidate applies.
+  let treeFiles;
+  try {
+    treeFiles = identityFiles(root);
+  } catch (error) {
+    if (/Secret-like/.test(error.message))
+      throw Error('Review secret-like source paths before packaging');
+    throw error;
   }
+  const paths = Object.keys(treeFiles).sort();
+  const source = {};
+  for (const path of paths) if (!treeFiles[path].deleted) source[path] = treeFiles[path].sha256;
   await mkdir(resolve(out, '..'), { recursive: true, mode: 0o700 });
   await mkdir(out, { recursive: false, mode: 0o700 });
   // Keep Spotlight off the frozen snapshot: the marker sits at the release root, outside the
@@ -197,9 +204,8 @@ export async function prepareRelease(destination, { after = null } = {}) {
     await mkdir(resolve(target, '..'), { recursive: true });
     await copyFile(join(root, path), target);
   }
-  await writeFile(join(out, 'source.json'), JSON.stringify({ head, source }, null, 2), {
-    mode: 0o600,
-  });
+  const record = { head, source, files: treeFiles };
+  await writeFile(join(out, 'source.json'), JSON.stringify(record, null, 2), { mode: 0o600 });
   const timings = {};
   const timed = (id, command, args, env) => {
     const start = performance.now();
@@ -210,13 +216,25 @@ export async function prepareRelease(destination, { after = null } = {}) {
     }
   };
   timed('install', 'npm', ['ci']);
+  // Installed dependencies are digested exactly as a candidate digests them: the scratch
+  // directories the tier creates exist first, and the tier's caches are redirected so the
+  // digest recorded here is the one the final ran on.
+  for (const path of ['.vite-temp', '.cache/prettier'])
+    mkdirSync(join(snapshot, 'node_modules', path), { recursive: true });
+  const installed = dependencyDigest(snapshot),
+    installedAt = new Date().toISOString();
+  // Runtime identity of the prepare process; the narrowed environment digest joins it when the
+  // declared-environment identity lands (until then the final report's own digest is whole-env).
+  Object.assign(record, {
+    installed,
+    installedAt,
+    identity: { runtime: process.version, platform: process.platform, arch: process.arch },
+  });
+  await writeFile(join(out, 'source.json'), JSON.stringify(record, null, 2), { mode: 0o600 });
   let ledger = null,
     offered = [];
   if (admitted) {
-    // The candidate digests its dependencies with these scratch directories present.
-    for (const path of ['.vite-temp', '.cache/prettier'])
-      mkdirSync(join(snapshot, 'node_modules', path), { recursive: true });
-    if (dependencyDigest(snapshot) !== admitted.descriptor.installed)
+    if (installed !== admitted.descriptor.installed)
       throw Error('Release installed dependencies differ from the parent attempt');
     const manifest = JSON.parse(await readFile(join(snapshot, 'scripts/manifest.json'), 'utf8'));
     offered = reuseSet({ classification: admitted.classification, manifest }).offered;
@@ -239,11 +257,12 @@ export async function prepareRelease(destination, { after = null } = {}) {
       { mode: 0o600, flag: 'wx' },
     );
   }
-  timed('format', 'npm', ['run', 'format:check']);
+  const environment = tierEnvironment(ledger, out);
+  timed('format', 'npm', ['run', 'format:check'], environment);
   // Qualification exit 2 is acceptable for release automation only when its report
   // confirms automation passed; human acceptance is never invented by deployment.
   try {
-    timed('verification', 'npm', ['run', 'verify:final'], tierEnvironment(ledger));
+    timed('verification', 'npm', ['run', 'verify:final'], environment);
   } catch (error) {
     const report = JSON.parse(
       await readFile(join(snapshot, 'artifacts', 'verification-final.json'), 'utf8'),
@@ -257,6 +276,8 @@ export async function prepareRelease(destination, { after = null } = {}) {
     throw Error('Complete release automation must pass');
   if (JSON.stringify(verification.source) !== JSON.stringify(sourceIdentity()))
     throw Error('Verification source does not match frozen candidate');
+  if (dependencyDigest(snapshot) !== installed)
+    throw Error('Release installed dependencies changed during release verification');
   let reuse = null,
     status = 'passed';
   if (admitted) {
@@ -337,6 +358,7 @@ export async function prepareRelease(destination, { after = null } = {}) {
       humanAcceptance: verification.outcome.humanAcceptance,
       source: verification.source,
       runtime: verification.runtime,
+      installed,
       checks: verification.checks,
       timings,
       status,

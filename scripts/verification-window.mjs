@@ -26,6 +26,12 @@ function readOwner(directory) {
     throw error;
   }
 }
+/** The live window owner, if any: `{pid, startedAt, directory, cwd, intent?}` for a running
+ * process, else null. Read-only; never enters the window. */
+export function currentWindowOwner(directory = defaultDirectory()) {
+  const owner = readOwner(directory);
+  return owner && alive(owner.pid) ? owner : null;
+}
 function removeOwned(directory, token) {
   const owner = readOwner(directory);
   if (owner?.token !== token) throw Error('verification window owner changed; refusing removal');

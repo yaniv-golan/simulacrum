@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once here and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once here, records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2529,6 +2529,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package names every reused receipt and only an experimental release accepts one"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ],
         "negative": [
@@ -2551,6 +2555,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package names every reused receipt and only an experimental release accepts one"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ]
       },
@@ -5297,6 +5305,80 @@
       "qualificationBars": []
     },
     {
+      "id": "candidate-citation-integrity",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "A release's final run counts as a commit's merge evidence only as a recorded citation: the release's record is read before anything is captured (a release without it, or one whose final has not ended when no pending citation was asked for, refuses there), the merge candidate is then captured, installed and digested exactly as a merge candidate and its integration scope validated, and its head, every tracked and non-ignored path's bytes and mode and its installed dependency digest are compared with the record; a difference is refused by name and records no merge readiness; a final on another head, a red final or a package that does not bind the record are refused; a final that has not ended, or a green final not yet packaged, is recorded pending and resolved by cite-final against the same release bytes and the attempt report itself; a citation carries no receipts, is never reusable and can be neither resumed nor retried.",
+      "owners": [
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "compareIdentity"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "citeRelease"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "resolveCitation"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "packageRefusal"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "parseCiteArgs"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "citeRelease: identical bytes, a terminal passed final and a bound package satisfy merge readiness; anything short of that is pending or refused by name"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "resolveCitation resolves a pending citation against the same release only, re-verifying bytes and the package"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a release final on identical bytes is recorded as the merge candidate evidence: captured and installed like a merge candidate, nothing run"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a running final is pending only when the slot owner says so; cite-final resolves it against the same release"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "compareIdentity names every differing path, the head and the installed digest; index and deleted entries never count"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "packageRefusal verifies the package envelope, then its binding to the cited source"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "parseCiteArgs strips --satisfied-by/--pending for a merge tier only; citationVerification records a run-less tier"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a citation is refused, with no merge readiness recorded, when a path, the dependency digest or the record itself differs, or the final was red"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "citation reports are not attempts: neither resumed nor retried"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "ordered-verification-preparation",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
@@ -6022,6 +6104,44 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "text-only stores attach nothing by default and keep the controls hidden"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-sync-read-only",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The local feedback sync issues only GET requests to the admin feedback, session listing, snapshot and object routes; it never deletes, drains or mutates hosted feedback or recordings, and every listed submission is either saved with its attachments, recorded as gone, or reported as failed with a non-zero exit.",
+      "owners": [
+        {
+          "path": "scripts/playtest/sync-feedback.mjs",
+          "anchor": "syncFeedback"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync saves every listed feedback across pages with text, media and context"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "an export whose receipt hash does not match is recorded as failed without a final directory"
           }
         ]
       },
@@ -8640,6 +8760,7 @@
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-after-e2e.test.mjs",
+        "test/candidate-cite-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8649,6 +8770,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/candidate-after.mjs",
+        "test/fixtures/candidate-cite.mjs",
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
@@ -9040,6 +9162,7 @@
         "scripts/playtest/experiments.mjs",
         "scripts/playtest/load.mjs",
         "scripts/playtest/release.mjs",
+        "scripts/playtest/sync-feedback.mjs",
         "scripts/playtest/verify-deployment.mjs",
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs",
@@ -9049,6 +9172,7 @@
         "test/experiment-transport.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-load.test.mjs",
+        "test/feedback-sync.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-corpus.test.mjs",
         "test/playtest-load.test.mjs",
@@ -9456,6 +9580,7 @@
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-after-e2e.test.mjs",
+        "test/candidate-cite-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -9469,6 +9594,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/candidate-after.mjs",
+        "test/fixtures/candidate-cite.mjs",
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
@@ -9836,6 +9962,8 @@
         "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
+        "test/feedback-sync.test.mjs",
+        "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
       "consumerSourceHash": "173084dd7b8968c02c0d280f06ba4c83e8063296da388165b2051602f5e9cbf3",
