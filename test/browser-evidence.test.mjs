@@ -778,8 +778,9 @@ test('the startup budget scales with the hosted wait scale', async (t) => {
     'app-current',
   );
   // Positive control: the same page under no scale is refused as a startup failure, so the
-  // pass above is the scale's doing and not a goto that never waited.
-  withEnvironment(t, { [WAIT_SCALE_VARIABLE]: undefined });
+  // pass above is the scale's doing and not a goto that never waited. (The first hook restores
+  // the original environment; a second hook would re-set the scale for the next test.)
+  delete process.env[WAIT_SCALE_VARIABLE];
   const unscaled = createBrowserEvidence({
     readBuild: () => 'app-current',
     readSource: () => ({}),
