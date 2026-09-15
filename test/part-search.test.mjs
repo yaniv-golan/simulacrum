@@ -5,7 +5,9 @@ import { PART_SEARCH, searchParts, ESSENTIAL_PARTS } from '../src/presentation/p
 
 test('search metadata covers available parts without becoming an alternative catalog', () => {
   assert.deepEqual(Object.keys(PART_SEARCH).sort(), Object.keys(CATALOG).sort());
-  assert.equal(new Set(ESSENTIAL_PARTS).size, 9);
+  // The six a first machine needs, in build order (decided 2026-09-14); part-help.test.mjs
+  // owns the exact list, this test owns their catalogue coverage and uniqueness.
+  assert.equal(new Set(ESSENTIAL_PARTS).size, 6);
   for (const type of ESSENTIAL_PARTS) assert.ok(CATALOG[type]);
 });
 test('everyday words and roles find the intended part before incidental references', () => {
