@@ -1786,7 +1786,7 @@
       "id": "copied-graph-integrity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Built-in definitions remain available independently of personal saved items and use the same placement preview. Assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice.",
+      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Built-in definitions remain available independently of personal saved items and use the same placement preview. Assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice. A single-part copy allocates a fresh identity, preserves the authored part without its connections, and lands one extent plus clearance from its original on the placement grid along one floor axis, stepping past occupied positions and failing explicitly rather than overlapping.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -1799,6 +1799,10 @@
         {
           "path": "src/presentation/assembly-placement.mjs",
           "anchor": "createAssemblyPlacement"
+        },
+        {
+          "path": "src/model/duplication.mjs",
+          "anchor": "duplicatePart"
         }
       ],
       "checks": [
@@ -1819,6 +1823,14 @@
           {
             "path": "test/assembly-placement.test.mjs",
             "anchor": "an applied placement with a missing or failed reply reconciles against authored state"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "duplicate preserves authored choices without mutating the original or copying connections"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "a copy lands one extent plus clearance from the original, snapped outward to the grid"
           }
         ],
         "negative": [
@@ -1837,6 +1849,10 @@
           {
             "path": "test/assembly-placement.test.mjs",
             "anchor": "placement admission preserves the previous proposal outside Build"
+          },
+          {
+            "path": "test/duplication.test.mjs",
+            "anchor": "occupied search limit and blueprint position bounds never produce an overlapping or invalid copy"
           }
         ]
       },
@@ -3562,7 +3578,7 @@
       "id": "adaptive-graphics",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes.",
+      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes. Lamp shadow budgets exist exactly where key-light shadows exist and reach every lamp view on a level change.",
       "owners": [
         {
           "path": "src/presentation/graphics-quality.mjs",
@@ -3609,6 +3625,10 @@
           {
             "path": "test/graphics-quality.test.mjs",
             "anchor": "graphics transitions refresh shadow shader variants and release old targets without changing geometry"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "lamp shadows exist exactly where key-light shadows exist and follow the applied level"
           }
         ]
       },
@@ -6257,7 +6277,7 @@
       "id": "powered-lamp-output",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives all admitted lamp rendering.",
+      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives admitted lamp output, and the presentation graphics budget alone decides whether a lit lamp casts shadows.",
       "owners": [
         {
           "path": "src/simulation/power.mjs",
@@ -6300,6 +6320,10 @@
           {
             "path": "test/lamp-view.test.mjs",
             "anchor": "lamp emission and fixed-flux cone read completed telemetry including off and weak output"
+          },
+          {
+            "path": "test/lamp-view.test.mjs",
+            "anchor": "shadow budget owns cast and map size, releases old maps and forces one reallocation pass"
           }
         ]
       },
@@ -7967,7 +7991,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
+      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8134,7 +8158,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
+      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8353,7 +8377,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "5f08a2cbe9405f445398d69653faabfff1e27bedc04b799b8a98ea3d4e7c135c",
+      "consumerSourceHash": "551a8987ce86dcd8a821839dc91f1f003e97d3d3e3b3d6429eade15e12827ad3",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8627,7 +8651,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "2cac20390a8efc3b9b0921b056f0410d869fe0890c94473c1ad6fd0af0015b36",
+      "consumerSourceHash": "1e8103b404cb61e623355a45c1c66fefc939432c48972815ef8032835fc267dd",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9005,7 +9029,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e7da278bc1a7ed5fb0dc5b6d0e0675c10c54792e2c54c63fe6697b0153f93cc7",
+      "consumerSourceHash": "d7704b105df7b620550035fae6df4f0e3ddaca5b0b711d19e9a399ec182c1a84",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9156,7 +9180,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9a501e4e5e8950ab5e0a5a12e6d3c355ce4326b943e29ba41b12c9e5b71b7056",
+      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9563,7 +9587,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "bf4172c0d3fa0b3ba050b9bbe0dff478d9c17b5e70b28d7024c0a7d7b461ceb3",
+      "consumerSourceHash": "bf9088653eb25c99147eebef67be1bd55bd9e034ba5fb423745089d7b3e26b13",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9663,7 +9687,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "bf4172c0d3fa0b3ba050b9bbe0dff478d9c17b5e70b28d7024c0a7d7b461ceb3",
+      "consumerSourceHash": "bf9088653eb25c99147eebef67be1bd55bd9e034ba5fb423745089d7b3e26b13",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9897,7 +9921,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "e7da278bc1a7ed5fb0dc5b6d0e0675c10c54792e2c54c63fe6697b0153f93cc7",
+      "consumerSourceHash": "d7704b105df7b620550035fae6df4f0e3ddaca5b0b711d19e9a399ec182c1a84",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",

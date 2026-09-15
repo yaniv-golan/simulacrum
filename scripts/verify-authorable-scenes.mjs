@@ -129,6 +129,22 @@ try {
   assert.notDeepEqual((await sceneState()).preview, previewBefore);
   assert.deepEqual((await read()).metadata.blueprint, placed, 'drag is still provisional');
   await page.locator('canvas').first().focus();
+  // Shift with the up arrow lifts the selected proposal by one grid step,
+  // the same binding the workshop uses; the draft stays provisional.
+  const beforeLift = (await sceneState()).preview.map((p) => p.position);
+  await page.keyboard.press('Shift+ArrowUp');
+  const afterLift = (await sceneState()).preview.map((p) => p.position);
+  assert.equal(afterLift.length, beforeLift.length);
+  assert.ok(
+    afterLift.some((p, i) => Math.abs(p[1] - beforeLift[i][1] - 0.025) < 1e-9),
+    'Shift+ArrowUp lifts the selected scene object by 25 mm',
+  );
+  await page.keyboard.press('Shift+ArrowDown');
+  assert.deepEqual(
+    (await sceneState()).preview.map((p) => p.position.map((v) => Math.round(v * 1e6) / 1e6)),
+    beforeLift.map((p) => p.map((v) => Math.round(v * 1e6) / 1e6)),
+  );
+  assert.deepEqual((await read()).metadata.blueprint, placed, 'lift is still provisional');
   await page.keyboard.press('e');
   assert.equal((await sceneState()).gizmoMode, 'rotate');
   await page.keyboard.press('v');

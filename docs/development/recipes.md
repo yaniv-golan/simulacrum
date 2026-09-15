@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"7fe01a9cbcef89204442808b2f402c85d06dfaa112eae18022c85b3907ab2366","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"1e1397c4db6ae2ead941f2e9dc1a19b24abadf556c5835b47437d8a7ed85ce6a","disposition":"updated","rationale":"Parametric beam: the worked examples now name beam length as the second authored dimension — partPrimitives scales the box along local X, faces and pads follow, resizeMovesMount refuses a dimension edit that would move any surface attachment, and assertDimensionDefaults ties the optional default to the canonical primitive."} -->
+<!-- doc-review {"version":1,"fingerprint":"591052e4b20a2aa3d04ba00dc72fae6987ac75e415928923ac110346cde578e7","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"5cb9509e6b9d13750f485f1ae4440168918502e17b43716eed70e600a24c78fe","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): part-help-content.mjs changed one lamp help sentence; the part recipe steps, help placement and admission rules are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -119,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"1b8d57c96d2934fbce4eadd4967c34d0f21e509c26c12ad27f7a1fc4dbe7ff42","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"39629e4704da38b09a9c475eea044f5093207a5deb579c4a54cc6069bf4b0373","disposition":"still accurate","rationale":"Parametric beam: the inspector length control follows this recipe — catalog eligibility through CATALOG, discovery vocabulary through part search (beam gains length/link/adjustable), part help extended, and the registered part-help/inspector browser checks left in place."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed0eaf32bb9baf0183a880d36206fc73fbb7b75de2cb55866fdde10be771fef9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"60c8ebff77747ae28384a8731f58ae14498d64e2d85cd2e274f2fd547c434c3f","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): surface-controls.mjs now disposes a preview lamp light with the rest of the preview; interaction lifecycle, focus and key routing are unchanged. part-help-content.mjs changed copy only."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"502e65e6d193e8ebe3ef70f6e1bfae1a7db7435761542679d76bbaf456bb54a0","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2e99703ce47c4c47098d127a1965832eec5a96a825e8576d010689f2707928bf","disposition":"still accurate","rationale":"Relative to base 3a50c9e the new M10/M11 obligations require air, rotor thrust, drag, position-dependent gravity and ablation to be laws under simulation/physics/law fed by numeric inputs from ordinary catalog parts, keep one integration per 1/120 s tick, confine mass mutation to an owned material store, and route the energy ledger's potential through the gravity law; AGENTS.md forbids rig-only forces for those milestones. This recipe already prescribes exactly that (laws receive numbers not identities, no second clock or hidden support, resample after structure/thermal mutation, geometry via environment descriptors), so it is consistent and unchanged. No physics source changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"27e0cf0c19691afec86103d49955cfe2849b89a50b0fd8cb615888fb755effd2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"465096f67fd27b8133d718ec46fa9f6d066acf3eea00dced4e4be58af61e9bbb","disposition":"still accurate","rationale":"The candidate changes duplication placement (grid steps beside the original), the copy/lift/hint/Connect & test presentation and their browser checks; no physics door, contract or admission path in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -605,7 +605,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"c69a06c30cc9d25452523fad66dfcb352d5fef0924a41b1eff94d581679c200a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"cc18c02604bcb5190716b6f33ed8ddea32a057ff7bd6cb1ef32bc10f595178e2","disposition":"still accurate","rationale":"Parametric beam: the renderer, thumbnails and previews read partPrimitives, so a resized beam's mesh and pad markers follow authored geometry with no overlay change; the inspector rebuild described here is what refreshes the control after an accepted edit."} -->
+<!-- doc-review {"version":1,"fingerprint":"13d8dc0399ede8115b203913740f1e2d7582bd143056678f93c2407812254748","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9495b3e2e18590b6c3c2f3c09de01745e7758b4e54c3f3ab9b175b9b4d90bbc5","disposition":"updated","rationale":"The Connect & test paragraph now states the auto-open rule: the disclosure opens by itself while power or the shaft is missing until the player closes it for that part; once both are connected the player's own open state rules."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -645,7 +645,7 @@ so shared shader programs stay available, while yielding before rendering and be
 types. Each completed image updates mounted palette, help and inspector icons and
 remains cached for later icons, including loaded-only parts. Completion, cancellation
 and errors release the meshes, preview environment and renderer once; stale callbacks
-cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains both the catalog lighting configuration and variants without part lights, since even an unpowered lamp changes shader light counts. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
+cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains the catalog lighting configuration with a shadow-casting lamp, the same configuration with an unshadowed lamp, and variants without part lights, since even an unpowered lamp changes shader light counts and a casting lamp changes them again. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
@@ -659,7 +659,9 @@ exploded markers remain schematic interaction overlays.
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths
-while open. Row pointer leave clears highlighting, but closing the panel, changing
+while open. It opens by itself for an actuator still missing its power or its shaft
+connection until the player closes it for that part; once both are connected the
+player's own open state rules (control is optional). Row pointer leave clears highlighting, but closing the panel, changing
 selection, removing the target and disposal clear reveal as well. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,
 tracing and exploded display state keep their existing owners; compose their inputs
@@ -754,7 +756,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"f2f35b43dfdd6f735f8665274a386edbca2cfdf95f17b32b2208c9b960e73b7f","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"c39aea8a209c488617e04f6293aaf9f834a7ab7dec4300e19d381ce5ff6b2835","disposition":"updated","rationale":"Read the complete nested section and checked graphics-quality thresholds:45 rendered samples,35ms downgrade,20ms recovery and30000ms wait remain unchanged. The quality thresholds remain unchanged; the browser journey now also exercises Lamp rendering under those same budgets. Load Cell adds an existing selected sensor-axis overlay; force readings do not enter quality policy or alter fixed stepping, so rendering budgets and human-evidence limits remain accurate. Incoming Lamp paragraph matches createLampView: one unshadowed spotlight/lens, modeled flux conversion and no quality omission. Optical performance evidence is explicitly separated from player/calibrated evidence. Re-read the added Build-orbit paragraph against final verify-spring-browser: mandatory ordinary Shift+right movement precedes the first quality check, the observed result must arrive within 45000 ms, and assertPresentationOnlyOrbit preserves blueprint, full physical poses and completed cursor while requiring camera movement. Slow callbacks are disabled before original held/released launcher and minimum-resolution checks. The measured diagnostic showed too few active callbacks, not idle resets; prose makes no overloaded-runtime qualification claim. The final warmup fix retains two shader light-count variants before animation; it does not alter quality thresholds or physics. The helper readiness wait precedes fixture loading in the adaptive-graphics, spring-performance and lamp-performance journeys; their original assertions and measured budgets remain intact. Resolved the competing spring witness in favor of the already tested Build-only Shift/right orbit with unchanged 45000 ms bound and blueprint, physical-pose, cursor and actual-camera-motion controls. Incoming protected file upload handling is retained. The original launcher/minimum-pixel checks still follow with delay disabled; no runtime-overload claim is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"ee0fd61e0beb09bb4a1ccbdd86352b50c680d50b06877d0b0d2eca393bd20138","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76e2310708e76557f1392bc588032d5f50a1a842f4c0ee1ff0693061c0b3448","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the section now describes the per-level lamp shadow map size, that lamp casting flips only with the key-light shadow toggle, and the lamp renderer paragraph explains applyShadowBudget, the shared mesh factory, released depth targets and unlit lamps skipping their pass."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses
@@ -773,7 +775,12 @@ The final 50% to 40% step
 reduces pixel work by 36%, leaving the full scene present while sacrificing fine detail.
 DOM controls, authored geometry, picking, simulation rate and completed observations
 remain unchanged. Shadow enable/disable refreshes shader variants; old shadow targets
-are released. Resize uses the current scale without changing CSS coordinates.
+are released. Each level also carries a lamp shadow map size (1024, 512 and 256 pixels
+at the three shadowed levels, 0 below), applied to every lamp view on a level change;
+lamp shadow casting therefore flips only on the transition that already toggles the
+renderer shadow map, and Three's lights-state version handles the changed
+shadow-casting light count without another shader sweep. Resize uses the current
+scale without changing CSS coordinates.
 No permanent panel or action is added; the existing 3D view owns this behavior.
 
 The [graphics controls](../../test/graphics-quality.test.mjs) cover full startup,
@@ -792,11 +799,19 @@ simulation catch-up; it does not qualify overloaded runtime cadence.
 Agent screenshots are not target-player acceptance.
 
 The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
-completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
-lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+completed optical telemetry. Each admitted lamp retains one spotlight and lens. A hard
+cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
 concentration without adding modeled flux. Display exposure and tint are illustrative;
-black tint is dark while electrical demand remains. No lamp shadows are offered, so
-light can pass through occluders. Quality reduction retains every lamp. The
+black tint is dark while electrical demand remains. Whether a lamp casts shadows is a
+presentation budget, never telemetry: the graphics level supplies a lamp shadow map
+size through the view's `applyShadowBudget`, applied by the workshop's shared mesh
+factory to authored, surface-preview and placement-preview lamps alike so the
+shadow-casting light count never depends on which mesh is a preview. Changing the
+budget releases the old depth target and requests one reallocation pass. An unlit or
+black-tinted lamp skips its shadow pass (`shadow.autoUpdate` follows lit output), so
+eight mounted lamps cost depth passes only while lit. At reduced graphics levels lamp
+shadows are off and light passes through occluders. Quality reduction retains every
+lamp. The
 [lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
 [eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
 checks, not target-player or calibrated photometry evidence.

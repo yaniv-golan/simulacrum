@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"8b217d0361d7dd23eee2268a5a477f9b68a7a997025a95054de30e7508b9e3ed","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"c15f26e38098e3fb9f15fdad8981e6762f7836ab356a8b2bb949747070033fbf","disposition":"still accurate","rationale":"Parametric beam: workshop-view.mjs changed only in the selected-inspector dimension control and the settings skip list; the render-submission receipts, viewRenderMs and completedDraw semantics described here are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"7c35e7d49fb7c4fcfbc409b5b648c10ac357d0b9f09ee4dce6b978a4d59aa64c","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"22174dfcbd0bb27789e58c5d49a118fbdc50f75f4c0f634192441334b8c4a659","disposition":"still accurate","rationale":"workshop-view changes (copy placement, hint button, Shift-lift) do not touch recording, feedback or the playtest panel host; the section's capture and consent statements hold."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 

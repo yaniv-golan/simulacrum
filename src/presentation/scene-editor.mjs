@@ -669,16 +669,18 @@ export function createSceneEditor({
             if (forward.lengthSq() < 1e-12) forward.set(0, 0, -1);
             forward.normalize();
             const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0));
+            // Shift+↑↓ lifts and lowers, as in the workshop; Page keys are aliases.
+            const lift = event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key);
             const direction =
-              event.key === 'ArrowUp'
-                ? forward
-                : event.key === 'ArrowDown'
-                  ? forward.negate()
-                  : event.key === 'ArrowRight'
-                    ? right
-                    : event.key === 'ArrowLeft'
-                      ? right.negate()
-                      : new THREE.Vector3(0, event.key === 'PageUp' ? 1 : -1, 0);
+              lift || event.key.startsWith('Page')
+                ? new THREE.Vector3(0, ['ArrowUp', 'PageUp'].includes(event.key) ? 1 : -1, 0)
+                : event.key === 'ArrowUp'
+                  ? forward
+                  : event.key === 'ArrowDown'
+                    ? forward.negate()
+                    : event.key === 'ArrowRight'
+                      ? right
+                      : right.negate();
             object.position = new THREE.Vector3(...object.position)
               .addScaledVector(direction, 0.025)
               .toArray();

@@ -16,7 +16,16 @@ export function createLampView() {
   lens.position.z = 0.0402;
   const light = new THREE.SpotLight(0xffffff, 0, 12, 0.52, 0, 2);
   light.position.set(0, 0, 0.045);
+  // Shadow casting is a presentation budget applied through applyShadowBudget; the
+  // graphics level owns it, never the lamp's telemetry. Three derives the shadow
+  // camera's fov and far from the cone; its default 0.5 m near plane would clip every
+  // nearby part, so the near plane is set once here.
   light.castShadow = false;
+  light.shadow.camera.near = 0.02;
+  light.shadow.camera.updateProjectionMatrix();
+  light.shadow.normalBias = 0.01;
+  // A lamp that emits nothing shadows nothing: skip its depth pass until it is lit.
+  light.shadow.autoUpdate = false;
   const target = new THREE.Object3D();
   target.position.z = 1;
   light.target = target;
@@ -36,6 +45,22 @@ export function createLampView() {
       light.intensity = (flux * LAMP_DISPLAY_SCALE) / (2 * Math.PI * (1 - Math.cos(angle)));
       lens.material.emissiveIntensity = flux / 250;
       group.userData.lampFlux = flux;
+      light.shadow.autoUpdate = light.intensity > 0 && color !== 0;
+    },
+    /** Presentation budget: size 0 disables casting. Releases any previous depth target
+     * and, while casting, requests exactly one reallocation pass regardless of lit state. */
+    applyShadowBudget(size) {
+      const shadow = light.shadow;
+      const cast = size > 0;
+      const changed = cast !== light.castShadow || (cast && shadow.mapSize.width !== size);
+      if (!changed) return false;
+      light.castShadow = cast;
+      if (cast) shadow.mapSize.set(size, size);
+      shadow.dispose();
+      shadow.map = null;
+      shadow.mapPass = null;
+      if (cast) shadow.needsUpdate = true;
+      return true;
     },
     dispose() {
       lens.geometry.dispose();

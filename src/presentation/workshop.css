@@ -308,6 +308,10 @@ h3 {
   width: 80%;
   max-width: 320px;
 }
+.empty-hint button {
+  pointer-events: auto;
+  margin-top: 4px;
+}
 .empty-hint[hidden] {
   display: none;
 }
