@@ -102,7 +102,7 @@ the operator notes; the data directory's `README.md` (rewritten each run) states
 
 ## Release operations
 
-<!-- doc-review {"version":1,"fingerprint":"f8b64ff39aefcc4f8374d6291a74d7deeb93d44ee48edbcd34de5c8bdcc0053e","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"edc3ec04e5323415f917db6347bcd6f46b961ab80bb63e4c313700497c6a8c5d","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): verification-environment.mjs gained an exemption group for `CI`/`NO_COLOR`/`FORCE_COLOR` (read by prettier through the format gate's test); release routing, dispatch-only release runs, staging/production admission and the deploy path are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"69803d7cfac82bab5ed4594ac252e7bea72bae2450af8c1c5d89575b6d290021","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"d29ea13015e34cb3ec95fc6fcc5afe3aa48adcfca9e8e9cdcbd7363fc7e9d37d","disposition":"still accurate","rationale":"--stack + item 52 stacked on claude/hosted-check-waits 94c85e92 (tooling-stack-flag, base 458e9b3c): candidate-after.mjs changed only in how a diagnosed retry keys a required structural check (`structural:<id>`, the receipt the gate writes); release preparation, the package envelope, deployment authorization and recovery are unchanged."} -->
 
 The app names its release from package.json's `version`, read at build time into the served
 `app-version` meta; the last candidate of a release carries the version bump (a minor bump for

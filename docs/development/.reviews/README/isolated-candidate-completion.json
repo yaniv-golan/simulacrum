@@ -11,7 +11,7 @@
     "scripts/browser-scope-proposal.mjs": "e5b3e840489b468a478bf36e658e236e31a5595042a4926c2ca4a21a6dc97327",
     "scripts/browser-scope-witness-contract.mjs": "7f0a608ea272402279fb0feab3ae43905045841f7e3f804f4e79b992c7c401c5",
     "scripts/browser-selection.mjs": "ada7d647c6fe4548b4865724f304d21eddbf63bae8435a8d21a559ea82a9f55c",
-    "scripts/candidate-after.mjs": "500dd038d1be1dd1650c8cc45501c9dd99c73d9d41950e0efe94ad1661987831",
+    "scripts/candidate-after.mjs": "082d862e8431abb2e96e9a9b61f41fa5e7ec909494845658e4074789f0d846b5",
     "scripts/candidate-attempt.mjs": "21096751ddc0e774ff78e0489978be26367a438a992bb1d1ecca3bac1f553e70",
     "scripts/candidate-cite.mjs": "09aea208c168434e1f4f4502f585e352a5629fcfcf636d13e48b7e0055067479",
     "scripts/candidate-resume.mjs": "e536334f74a1942293ee48566dd85a9b69052e9697a83424230b01c992dcc79a",
