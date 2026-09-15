@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "docs/development/ui-ux.md#before-changing-player-facing-ui": "a26fcd2a0b476f0ed2147bebbaabd0d4581d1d2ce614e1c5c10cca5e3573bb7a",
-    "package-lock.json": "8c8ca50a0c7def8d5ec499258ce55a2540d26ba436be81c7aa19fdf3175881e9",
-    "package.json": "7f619018c19301663b76334ab52419aeced8e84690956186063cc383c033029d",
+    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
+    "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
     "src/model/assembly.mjs": "bc19854627eb237e40baf3b3abfadde6d156cd47b463f54c888f14be61be38ad",
     "src/model/blueprint.mjs": "3628ea60289dfa9861b827738fc6573517d377a248d3ab230b9f98ad87f9a883",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
