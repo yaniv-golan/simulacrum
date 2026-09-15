@@ -8,6 +8,20 @@ import { CATALOG } from './catalog.mjs';
 /** @param {import('./generated/blueprint-types.js').Part} part @returns {readonly import('./boundaries.js').Primitive[]} */
 export function partPrimitives(part) {
   const definition = CATALOG[part.type];
+  if (definition.parameterDefinitions.length) {
+    // Length runs along local X; the section is fixed by the canonical primitive.
+    const length =
+      ('length' in part.parameters ? part.parameters.length : undefined) ??
+      definition.parameterDefinitions.length.default;
+    return definition.primitives.map((primitive) =>
+      primitive.kind === 'box'
+        ? {
+            ...primitive,
+            halfExtents: [length / 2, primitive.halfExtents[1], primitive.halfExtents[2]],
+          }
+        : primitive,
+    );
+  }
   if (!definition.parameterDefinitions.diameter) return definition.primitives;
   const radius =
     (('diameter' in part.parameters ? part.parameters.diameter : undefined) ??

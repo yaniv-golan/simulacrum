@@ -13,6 +13,8 @@ const messages = {
   SURFACE_OVERLAP: 'This placement overlaps another part. Slide or rotate it until clear.',
   MOUNT_HELD_BY_ANOTHER_CONNECTION:
     'Another attachment holds this group. Disconnect that attachment before adjusting this mount.',
+  SURFACE_RESIZE_MOVES_MOUNT:
+    'Resizing would move an attached part. Detach it from the end first, then resize.',
   STALE_PROPOSAL: 'The machine changed. Choose the mounting position again.',
   OK: 'Ready.',
   INVALID_BLUEPRINT:
@@ -115,6 +117,7 @@ const fieldLabels = {
   position: 'Position',
   rotation: 'Orientation',
   parameters: 'Settings',
+  length: 'Length',
   authoredMaterial: 'Material',
   defaultDuty: 'Drive setting',
   currentLimit: 'Current limit',

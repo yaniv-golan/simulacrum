@@ -1105,10 +1105,26 @@ export function createWorkshopView(
   }
   const guideCues = new THREE.Group();
   scene.add(guideCues);
+  // Every lamp mesh this view creates, including surface and placement previews,
+  // receives the current lamp shadow budget so the shadow-casting light count never
+  // depends on which mesh is a preview.
+  const createBudgetedMesh = (part) => {
+    const mesh = createPartMesh(part);
+    mesh.userData.lamp?.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    return mesh;
+  };
+  // Authored and live preview lamps alike: a level change must reach every casting light.
+  const lampViews = () => {
+    const views = [];
+    scene.traverse((object) => {
+      if (object.userData.lamp) views.push(object.userData.lamp);
+    });
+    return views;
+  };
   const partResources = createResourceCache({
     key: partAppearanceKey,
     create: (part) => {
-      const mesh = createPartMesh(part),
+      const mesh = createBudgetedMesh(part),
         display = new THREE.Group();
       display.add(mesh);
       scene.add(display);
@@ -1165,7 +1181,7 @@ export function createWorkshopView(
     send,
     onMessage: setMessage,
     onInteraction,
-    createMesh: createPartMesh,
+    createMesh: createBudgetedMesh,
     onInvalidate: invalidateScene,
   });
   function beginSurface(part, options) {
@@ -1650,7 +1666,7 @@ export function createWorkshopView(
       canvas: renderer.domElement,
       orbit: controls,
       getMachineMeshes: () => meshes.values(),
-      createMesh: createPartMesh,
+      createMesh: createBudgetedMesh,
       disposeMesh: disposePart,
       invalidate: invalidateScene,
       onState: refreshAssemblyState,
@@ -2584,7 +2600,7 @@ export function createWorkshopView(
         element(
           'p',
           'parameter-help',
-          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps; no lamp shadows, so light can pass through objects.',
+          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps. Lamps cast shadows while the view is running smoothly; when graphics are reduced to keep up, light passes through objects.',
         ),
       );
       if (part.parameters.color === 0)
@@ -2660,30 +2676,40 @@ export function createWorkshopView(
       }
       right.append(controls);
     }
-    if (definition.parameterDefinitions.diameter) {
-      const dimensions = element('div', 'setting primary-setting'),
+    // One authored dimension per part: diameter (ball, wheel) or length (beam). Labels are
+    // explicit because registered checks assert them verbatim.
+    const dimension = definition.parameterDefinitions.diameter
+      ? 'diameter'
+      : definition.parameterDefinitions.length
+        ? 'length'
+        : null;
+    if (dimension) {
+      const rating = definition.parameterDefinitions[dimension],
+        dimensions = element('div', 'setting primary-setting'),
         number = element('input'),
         slider = element('input'),
         notice = element('p', 'parameter-help');
-      const value =
-        (part.parameters.diameter ?? definition.parameterDefinitions.diameter.default) * 1000;
-      dimensions.append(element('label', '', 'Diameter (mm)'));
+      const authored = dimension in part.parameters ? part.parameters[dimension] : undefined,
+        value = (authored ?? rating.default) * 1000,
+        title = dimension === 'diameter' ? 'Diameter' : 'Length',
+        subject = { ball: 'Ball', gripWheel: 'Wheel', beam: 'Beam' }[part.type] ?? definition.name;
+      dimensions.append(element('label', '', `${title} (mm)`));
       number.type = 'number';
       slider.type = 'range';
       for (const control of [number, slider]) {
-        control.min = String(definition.parameterDefinitions.diameter.minimum * 1000);
-        control.max = String(definition.parameterDefinitions.diameter.maximum * 1000);
+        control.min = String(rating.minimum * 1000);
+        control.max = String(rating.maximum * 1000);
         control.step = control === number ? 'any' : '10';
         control.value = String(value);
         control.disabled = !editable;
         control.setAttribute(
           'aria-label',
-          `${part.type === 'ball' ? 'Ball' : 'Wheel'} diameter${control === number ? ' (mm)' : ''}`,
+          `${subject} ${dimension}${control === number ? ' (mm)' : ''}`,
         );
       }
       const candidate = () => ({
         ...part,
-        parameters: { ...part.parameters, diameter: Number(number.value) / 1000 },
+        parameters: { ...part.parameters, [dimension]: Number(number.value) / 1000 },
       });
       const obstruction = (next) =>
         parts.find(
@@ -2693,10 +2719,10 @@ export function createWorkshopView(
               placementEnvelopes(other).some((b) => solidsOverlap(a, b)),
             ),
         );
-      function previewDiameter(control) {
+      function previewDimension(control) {
         number.value = slider.value = control.value;
         if (!number.checkValidity()) {
-          notice.textContent = `Choose a diameter from ${number.min} to ${number.max} mm.`;
+          notice.textContent = `Choose a ${dimension} from ${number.min} to ${number.max} mm.`;
           return;
         }
         const next = candidate(),
@@ -2708,15 +2734,22 @@ export function createWorkshopView(
         invalidateScene();
       }
       for (const control of [number, slider]) {
-        control.addEventListener('input', () => previewDiameter(control));
+        control.addEventListener('input', () => previewDimension(control));
         control.addEventListener('change', async () => {
           if (!number.checkValidity() || obstruction(candidate())) return;
           editing.clearPreview();
+          const next = Number(number.value) / 1000;
+          // Confirming the default on a part that never stored one is not an edit.
+          if (authored === undefined && next === rating.default) {
+            notice.textContent = '';
+            invalidateScene();
+            return;
+          }
           const result = await send({
             type: 'parameter',
             id: part.id,
-            key: 'diameter',
-            value: Number(number.value) / 1000,
+            key: dimension,
+            value: next,
           });
           if (!result?.ok)
             notice.textContent = explainFailure(result ?? {}, frame.metadata.blueprint);
@@ -3204,6 +3237,7 @@ export function createWorkshopView(
           ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'].includes(key)) ||
         part.type === 'poweredLamp' ||
         key === 'diameter' ||
+        key === 'length' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
         (part.type === 'poweredMotor' &&
@@ -4097,6 +4131,11 @@ export function createWorkshopView(
       return { id, x: p.x, y: p.y, z: p.z };
     });
   }
+  /** Diagnostics: normalized device coordinates of a world point under the live camera. */
+  function projectWorldPoint(position) {
+    const p = new THREE.Vector3().fromArray(position).project(camera);
+    return { x: p.x, y: p.y, z: p.z };
+  }
   function readRenderedTransforms() {
     return [...meshes].map(([id, mesh]) => ({
       id,
@@ -4370,13 +4409,19 @@ export function createWorkshopView(
   const warmMeshes = Object.keys(CATALOG).map((type) =>
     createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
   );
-  const warmLights = [];
+  const warmLights = [],
+    warmLamps = warmMeshes.map((mesh) => mesh.userData.lamp).filter(Boolean);
   for (const mesh of warmMeshes)
     mesh.traverse((object) => {
       if (object.isLight) warmLights.push({ light: object, visible: object.visible });
     });
   try {
     scene.add(...warmMeshes);
+    // Shadow-casting light count is part of the shader key: warm the lamp-shadow
+    // variant, then the unshadowed variant used once graphics reduce.
+    for (const lamp of warmLamps) lamp.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    renderer.render(scene, camera);
+    for (const lamp of warmLamps) lamp.applyShadowBudget(0);
     renderer.render(scene, camera);
     // Light count is part of the shader key, even for unpowered lamps. Retain
     // the ordinary no-part-light variants too, including across New/Load.
@@ -4418,6 +4463,7 @@ export function createWorkshopView(
         pixelRatio: Math.min(window.devicePixelRatio, 2),
         width: stage.clientWidth,
         height: stage.clientHeight,
+        lampShadows: lampViews(),
       });
       invalidateScene();
     }
@@ -4576,6 +4622,7 @@ export function createWorkshopView(
           emission: m.userData.lamp.lens.material.emissiveIntensity,
           position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
           shadows: m.userData.lamp.light.castShadow,
+          shadowRefresh: m.userData.lamp.light.shadow.autoUpdate,
         })),
       cameraFrustum: cameraFrustum.read(),
       cameraPhoto: cameraSession
@@ -4661,6 +4708,7 @@ export function createWorkshopView(
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
     readRenderedRopeEndpoints: () => ropeView.readRenderedEndpoints(),
     readRenderedCenters,
+    projectWorldPoint,
     camera,
     dispose() {
       disposed = true;
