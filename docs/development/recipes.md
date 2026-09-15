@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"e6ac8ff86436c54e28888be55b7e3f40306755eae87d8b5a53b94fabfaecb8e8","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c75622a87f091b17a2e5ac9e6276ffb465588bedefb4edc3e45f1809604a4de9","disposition":"still accurate","rationale":"part-search's ESSENTIAL_PARTS is now the six essentials in build order (the catalogue's one owner of that list; PRIMARY_PARTS removed) and the load-cell journey opens Tools before New; adding a part still means catalogue, help, search vocabulary and manifest entries as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"f815a3b61cac914bbee26a3b59717e51a7aaf22b0bad90e4a6dab90f305c9cf0","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"0dcca24ba9d5236ebef44e7d0fe6da858781ff4f47318b4052982642226ca3b6","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). The part recipe's catalog, admission and test contract steps are unchanged; the joint-face and slide fields the contract now names are declared for future parts, none of which this candidate adds."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -97,7 +97,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"20609514cdf995994366fa35bd61038d45bce94d82321e0d69897c45aa959811","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"398327d725fbf7c6f52c425f9e5f7f0276bb158c2c178b66b703c327d98dcc06","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; no command surface change (Try it runs the existing example card launchers)."} -->
+<!-- doc-review {"version":1,"fingerprint":"e3beaae470d81cdd92888f89d0aa550a9bb4070bb840e1ef3d5a0daf5715bcf6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"db167d5620caa2a777072d8f5a7c6e487f02267efb09d3fc41b8e6daf5d58bcf","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No command surface, admission path or ownership named here changed."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -126,7 +126,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"dbb0e9e66d85612ce9bfee2f5b37c4a726a34473209934e8783a1f52a5629caf","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9481b8c37c4a0ba68918a339f6f324bb851ccfffbe8503c5a52ba83f0061519a","disposition":"still accurate","rationale":"part-palette.mjs was removed (its unused PRIMARY_PARTS list duplicated the essentials), journeys gained openTools steps and the harness seeds the first-run cursor; the interaction-change guidance is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bf87ce96f9150e635e53b09bcc4fbba566a45f745f41362ea5c0b99f840aa3ec","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0423c2b648481251dc0d5e49685ac0957025b96414cef0e396da23f79b18ebcc","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Interaction ownership and the command path are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -175,7 +175,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"456f72c30b2d61dd2ff0f5a7231e17c1e57ccc9c20b8ddb8f8255961c28e9bcc","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"7c7fb4833f67739bf302592de8ac2fcf61da844704188388d5fac2328572016b","disposition":"updated","rationale":"The recipe now names readinessLine and readinessNext beside diagnoseMotion: the Build readiness line and the footer's next step derive from the same issue list and claim nothing the diagnosis did not check (null for machines holding a hinge or linear actuator); the health hint's Run-mode cadence paragraph was updated for the two faces."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a61eaf56fec27e236f0735b04c34806162b58d79cd1f901ccf8ac037e995488","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9f4df72076eb08f04525a222233561ee1ee387fbd9443e4b901be179a8201770","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Diagnostics read the same completed snapshots; no diagnostic owner or read model changed."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"7a1e1d3d8840ab3afd3866de4d3c673a7aa69a817962853072104b22a14b24a3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c202146057b2060d1e5623c9670eece51ba23363f68fb5a5a089b5979fc780e","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). This recipe's owners, invariant contracts and test controls are unchanged; the two new spring-physics tests register under guided-spring-passivity as it describes."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -521,7 +521,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"84574a57634607a158e5c015705d66eb9ade6d7287bfc9a10be34ddb490b58c9","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1cfeb1003e885d1f323024ed21186fab45c106e279fe3003721121b36356db67","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"99e70adb4c579d36154d70c20b0c771277876eed6ac1d839b790c2cfb8586e9f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ebab12ddb988117fb60fe5e2c88d11b1780d22229393ba6f45de024447e22ce8","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Multi-part authoring (mirror, assemblies, surface mounts) and their proposals are unchanged; the contract's joint-face sentences describe endpoints those proposals will resolve when a joint-face part exists."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -618,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"97e12014ec85b338310cd0ee5cd65e56885d7e89775f45b340ed77c9293b1e24","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"be654b21cd7796fce46fc8e35746146fcaa639a2e0ed952751ab7eb0090265bb","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Journeys gained openTools steps and the connection test's reason moved to its own reserved line; the overlay guidance (placement, lifecycle, displaced UI, journeys) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"628edb4788537392c905c6aeb5fe78b94ef95062bb8261df1e5af0cc4186954b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7b09eb68b6a5081d722c514441c49f6b561a7ed68d32114936ed1724b464203c","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Presentation overlays and their owners are untouched."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -769,7 +769,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"48a10d46df93480169b47670e010daccd2a196cb7d8c4a653c445614ae93cd21","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"0790d873fe5018bee220b947fa83b585706e89f905c9201bb8bdbf0a31e8781b","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): verify-spring-browser gained the openTools step before Measurements and Choose scene; the adaptive-graphics thresholds, warmup and evidence rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a229ba90aca50f43d7117169000cf62677dda97ff78ec75c9bf44a979f21a18b","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"b8a9543211d2946751563c9a7e92865715435d261996621876d6dac48e98d15a","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; adaptive graphics untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

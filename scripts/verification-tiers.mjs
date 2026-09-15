@@ -23,11 +23,37 @@ export const REACHES = Object.freeze(['timing', 'structural']);
  * 55 % of one core does not starve a 5 s gate — while a tier that will measure launches under
  * the full policy, so no timing phase ever follows a lax launch. The reach and the bounds
  * applied are recorded on the row; the foreign rows seen stay in the pressure sample. */
+export const LAUNCH_WAIT_VARIABLE = 'SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS';
+export const LAUNCH_WAIT_BOUNDS = Object.freeze({ default: 60000, min: 60000, max: 600000 });
+/** The launch wait budget: 60 s unless the environment names a longer one (a release prepare
+ * sets five minutes: a refused attempt plus a manual relaunch costs more than waiting). Only the
+ * wait lengthens — bounds, mode and reach are untouched. A malformed or out-of-range value fails
+ * the attempt by name rather than defaulting or reading as host pressure. */
+export function launchWaitMs(env = process.env) {
+  const raw = env[LAUNCH_WAIT_VARIABLE];
+  if (raw === undefined || raw === '') return LAUNCH_WAIT_BOUNDS.default;
+  const value = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  if (!Number.isInteger(value) || value < LAUNCH_WAIT_BOUNDS.min || value > LAUNCH_WAIT_BOUNDS.max)
+    throw Error(
+      `${LAUNCH_WAIT_VARIABLE} must be an integer between ${LAUNCH_WAIT_BOUNDS.min} and ${LAUNCH_WAIT_BOUNDS.max} milliseconds, got ${JSON.stringify(raw)}`,
+    );
+  return value;
+}
+/** One line for the operator on a refused launch: the reason and the busiest foreign processes
+ * of the last pressure sample (names and shares only; the sampler never reads arguments). */
+export function describeLaunchRefusal(row) {
+  const admission = row?.admission ?? row;
+  const foreign = (admission?.pressure?.foreign ?? [])
+    .map((entry) => `${entry.comm} ${entry.pcpu} %`)
+    .join(', ');
+  const waited = Math.round((admission?.waitedMs ?? 0) / 1000);
+  return `launch admission refused after ${waited} s: ${row?.reason ?? admission?.reason ?? 'no reason recorded'}${foreign ? `; busiest foreign processes: ${foreign}` : ''}`;
+}
 export async function launchAdmission({
   reach,
   admit = admitQuietHost,
   host = { cores: cpus().length, load1: () => loadavg()[0], pressure: () => samplePressure() },
-  waitMs = 60000,
+  waitMs = launchWaitMs(),
   trendMs = 20000,
   policy = PRESSURE_POLICY,
 } = {}) {
@@ -41,6 +67,7 @@ export async function launchAdmission({
       idle: applied.idleBound,
       foreign: Number.isFinite(applied.foreignBound) ? applied.foreignBound : null,
     },
+    budgetMs: waitMs,
   };
   const admission = await admit({
     cores: host.cores,
@@ -55,6 +82,9 @@ export async function launchAdmission({
     : { ok: false, notEvaluated: true, policy: record, reason: admission.reason, admission };
 }
 export const LAUNCH_ADMISSION_ID = 'launch-admission';
+/** The phases a qualification (`verify:final`) emits, in order; the release package consumer
+ * reads the same list, so the tier and the package can never disagree on shape unnoticed. */
+export const FINAL_PHASES = Object.freeze([LAUNCH_ADMISSION_ID, 'ci', 'browser', 'gate']);
 /** The selection phase runs after the launch admission; a selection whose reach differs from
  * the one the launch was admitted under is refused, so a lax launch never precedes a timing
  * phase. */
@@ -69,7 +99,7 @@ export function assertSelectionReach(selection, reach) {
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(
   phases,
-  { now = () => performance.now(), onProgress = () => {} } = {},
+  { now = () => performance.now(), onProgress = () => {}, log = console.error } = {},
 ) {
   const rows = [];
   for (const [id, execute] of phases) {
@@ -86,10 +116,17 @@ export async function runVerificationPhases(
       // Rows a phase never evaluated are recorded by id so a retry can require them.
       if (Array.isArray(error.notEvaluated) && error.notEvaluated.length)
         row.notEvaluated = [...error.notEvaluated];
+      // The admission refusal behind those rows stays with the row: the attested attempt report
+      // is the only source a retry may cite the reason from.
+      if (error.refusal && typeof error.refusal === 'object')
+        row.refusal = JSON.parse(JSON.stringify(error.refusal));
       console.error(`${id}: ${error.stack}`);
     }
     row.status = row.ok ? 'passed' : 'failed';
     row.elapsedMs = now() - started;
+    // A refused launch is read where the operator looks: the reason and the offenders on
+    // stderr, not only inside the report.
+    if (id === LAUNCH_ADMISSION_ID && !row.ok && row.result) log(describeLaunchRefusal(row.result));
     onProgress(rows);
     if (!row.ok) break;
   }
@@ -160,7 +197,7 @@ export function parseCompletionArgs(tier, args) {
   };
   const usage = () =>
     Error(
-      'Usage: local [--base <commit>] | merge --base <commit> [--incoming <commit> --destination <commit>] | final; all support --priority-files <paths...>',
+      'Usage: local [--base <commit>] | merge --base <commit> [--incoming <commit> --destination <commit>] | merge --stack <ref> | final; all support --priority-files <paths...>',
     );
   if (!['local', 'merge', 'final'].includes(tier)) throw usage();
   const seen = new Set();
@@ -182,16 +219,20 @@ export function parseCompletionArgs(tier, args) {
       !args[i + 1].startsWith('-')
     )
       result[arg.slice(2)] = args[++i];
+    else if (arg === '--stack' && tier === 'merge' && args[i + 1] && !args[i + 1].startsWith('-'))
+      result.stack = args[++i];
     else if (arg === '--priority-files') {
       while (args[i + 1] && !args[i + 1].startsWith('-')) result.priorityFiles.push(args[++i]);
       if (!result.priorityFiles.length) throw usage();
     } else throw usage();
   }
-  if (
-    tier === 'merge' &&
-    (!seen.has('--base') || Boolean(result.incoming) !== Boolean(result.destination))
-  )
-    throw usage();
+  if (tier === 'merge') {
+    // A stack derives base, incoming and destination; the explicit form names them all.
+    if (result.stack) {
+      if (['--base', '--incoming', '--destination'].some((flag) => seen.has(flag))) throw usage();
+    } else if (!seen.has('--base') || Boolean(result.incoming) !== Boolean(result.destination))
+      throw usage();
+  }
   result.priorityFiles = [...new Set(normalizeSelectedFiles(result.priorityFiles))];
   return result;
 }

@@ -170,7 +170,7 @@ try {
       () =>
         document.querySelector('.playtest-panel [data-status]').textContent.includes('Recording '),
       null,
-      { timeout: 15000 },
+      { timeout: browserEvidence.waitBudget(15000) },
     )
     .catch(async (e) => {
       console.log(await page.locator('body').innerText());

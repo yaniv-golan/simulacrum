@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "8c8ca50a0c7def8d5ec499258ce55a2540d26ba436be81c7aa19fdf3175881e9",
-    "package.json": "7f619018c19301663b76334ab52419aeced8e84690956186063cc383c033029d",
+    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
+    "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
     "src/core/workshop.mjs": "4fce872d00f119296b847cedc92837e5770751e6f9a6683d20a17e54d23cfdf4",
     "src/model/assembly.mjs": "bc19854627eb237e40baf3b3abfadde6d156cd47b463f54c888f14be61be38ad",
     "src/model/blueprint.mjs": "3628ea60289dfa9861b827738fc6573517d377a248d3ab230b9f98ad87f9a883",
@@ -50,7 +50,7 @@
     "src/simulation/physics/read-body.mjs": "af1e109c7c7ae5eb2ffd49455e23756818c8769eb4403fa31866aa06aceb9518",
     "src/simulation/physics/read-contacts.mjs": "5c8daffdbc0397a273aee8acfdbf00c7aaed723108eaf54891a15febdf8eb2fa",
     "src/simulation/physics/spring-topology.mjs": "6c7a9001cc61431d66a52385c681f868b4d66578f8fdc29c6e5eef4d823dd7dc",
-    "src/simulation/physics/world.mjs": "c5054b45df6dd2f34b7a959bf3e0fab09574c49b9f6f98c5338d83b427c3b1bd",
+    "src/simulation/physics/world.mjs": "a5c8bb5f9b72bb49916151410ef04f366c95f16d5ed98174ed74e67f871a5a8f",
     "src/simulation/power.mjs": "81fb254c21eae6bb9f28266f9a185a56a4a7e3ef9efea3cc4ef08233690da461",
     "src/simulation/receiver-arbiter.mjs": "5e0b173f7f938987cf41ce7cb63488536caa4b4fa704d868e8cc60757db000e7",
     "src/simulation/sensors.mjs": "8e3c60c7a37a5467668d3c8688cd2cbc0328eca554d00b831611e966e4e051a7",
