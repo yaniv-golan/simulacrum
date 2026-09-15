@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"d7d0691d434a1f77007a920235afb28c2265a9f0c64c2a0c5fe646c7eda0cfd6","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"de7a62f8ef8ef938e5d971293eae581778486484caaa0fdadc69738477b971d2","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-load-cell-browser.mjs changed only its launch profile literal (focus → headless ui, now GPU-backed); the part recipe's steps and the check's assertions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7fe01a9cbcef89204442808b2f402c85d06dfaa112eae18022c85b3907ab2366","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"1e1397c4db6ae2ead941f2e9dc1a19b24abadf556c5835b47437d8a7ed85ce6a","disposition":"updated","rationale":"Parametric beam: the worked examples now name beam length as the second authored dimension — partPrimitives scales the box along local X, faces and pads follow, resizeMovesMount refuses a dimension edit that would move any surface attachment, and assertDimensionDefaults ties the optional default to the canonical primitive."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -26,6 +26,11 @@ The [compiler](../../src/model/assembly.mjs) derives configuration; the renderer
 the same geometry. Do not select material or forces by name, role or fixture identity.
 
 Worked example: wheel diameter changes radius while keeping axle position and width.
+Beam length is the second authored dimension: [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives)
+scales the box along local X, faces and pads follow, and a dimension edit is refused by
+[resizeMovesMount](../../src/model/editing.mjs#symbol=resizeMovesMount) when any surface
+attachment of the edited part would move; the optional parameter's default must equal
+the canonical primitive ([assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)).
 Trace `partPrimitives`, then read [wheel diameter tests](../../test/wheel-diameter.test.mjs)
 and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, material/mass,
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated
@@ -85,7 +90,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"b212e87e4d2f01bb242b780740f0a8fe33969454f76147cfcc7dab59685070cb","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"54146972baa62deef9d98285a9c2a289a3b3f3989e010441c8767222142b2e8a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): indexed FNV preserves checkpoint bytes and numeric body admission preserves completed samples; replace-scene remains an atomic expectedCursor edit and camera-photo a Run-only input, and command validation, atomic publication and authored history are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f21cc34e6456c5b70ba05488d9a63ffb7782f10e4b59cbaadb43029ec74dbd48","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6ef14d4a9d698fed1462040bb975229b9a1c5ecdcb515ccad0f0eeb9414661c9","disposition":"still accurate","rationale":"Parametric beam: no new command; the existing parameter command gained one admission step in createWorkshop and the beam length edit is registered in the editing-contracts list exactly as this recipe prescribes (reuse the editing contract assertions)."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -114,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"d81e821309cbcdc4adbab54222f5a901032e30b6503ca000cacf4802fa48eef8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"19f6cfd39ab752c0b73b2898e024d33af5cc314bd1c32f47870ddbbfc2a18ac6","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs gained the ui profile's GPU args and verify-mirror-browser.mjs changed only its launch profile literal; the interaction recipe (sensor → controller → telemetry → rendered/simulated agreement) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b8d57c96d2934fbce4eadd4967c34d0f21e509c26c12ad27f7a1fc4dbe7ff42","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"39629e4704da38b09a9c475eea044f5093207a5deb579c4a54cc6069bf4b0373","disposition":"still accurate","rationale":"Parametric beam: the inspector length control follows this recipe — catalog eligibility through CATALOG, discovery vocabulary through part search (beam gains length/link/adjustable), part help extended, and the registered part-help/inspector browser checks left in place."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -163,7 +168,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"56d0691353cc95c4b8fc45dea834c07c160aad55ad3979fcac44c8c07af11539","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c0956b280abcc2246a94dc683ae56524aec4c5678c1f67b4a310013d538f3173","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): body fields and finite rejection are unchanged while admission is specialized; health explanations are refreshed on a bounded tick cadence in Run and immediately on failure, and scene/command additions grant diagnostics no simulation authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"92f340f717f6fa302b7dea6ade3ae017b5e83798c98efdfe739e94d413dfdb7e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"69007290b80973bbccb1fe455ee3ccfa5f78ab12f738ad643e05a77f8d4a82e3","disposition":"still accurate","rationale":"Parametric beam: no diagnostic or telemetry channel changed; the new rejection is an ordinary reason code with player copy in messages.mjs, which is the explanation path this recipe already describes."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -196,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"0cc48149419adbdfb29b9e9816ebe7568a5e43f76146c92737bc54ef9bc3f8bd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c3dc2947db180322cac07f236661169bd06c3d26a173d5411aaeadcc591309ee","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): the drift is verification tooling — which pressure bound the launch admission applies, decided from the resolved browser selection — and its tests and documentation; no simulation, physics-door, power, checkpoint or contact behavior changed, and a physics delta still reaches every timing-budget check, so its tiers launch under the full policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"502e65e6d193e8ebe3ef70f6e1bfae1a7db7435761542679d76bbaf456bb54a0","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2e99703ce47c4c47098d127a1965832eec5a96a825e8576d010689f2707928bf","disposition":"still accurate","rationale":"Relative to base 3a50c9e the new M10/M11 obligations require air, rotor thrust, drag, position-dependent gravity and ablation to be laws under simulation/physics/law fed by numeric inputs from ordinary catalog parts, keep one integration per 1/120 s tick, confine mass mutation to an owned material store, and route the energy ledger's potential through the gravity law; AGENTS.md forbids rig-only forces for those milestones. This recipe already prescribes exactly that (laws receive numbers not identities, no second clock or hidden support, resample after structure/thermal mutation, geometry via environment descriptors), so it is consistent and unchanged. No physics source changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +508,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"0f3e241c93d2eb536fe98f9cde92ff0150c47d65c128da416cfd98744413467f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"81e83220e01889a9f5e842fe9c39050909c270b4537d8b56b3764498a3949633","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs's profile change does not touch assembly authoring; the recipe is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"89b6e27e1018e75c15205a4d2c93faa6866d7d812849ecb2a7070e0ae4d4fc1d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d830eb4b3ee4c657fcd2d4f1be6374ef85f0c87c27443fe580a557cbb9208f99","disposition":"still accurate","rationale":"Parametric beam: assembly capture, insertion and mirroring copy part parameters by structuredClone, so a beam's length travels with library items and mirrored copies as this recipe assumes; a new test asserts it."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +605,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"4b696756e55e57de9d123aca251e5be654f81d5954c2bcf3763a508a5e185071","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0c455133fd47d2dbccfed551170a8a780ca2e6f2fdcb837438d91288d53a8f14","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-rope-browser.mjs changed only its launch profile literal and browser-session.mjs its ui profile args; overlay ownership and the recipe's verification steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c69a06c30cc9d25452523fad66dfcb352d5fef0924a41b1eff94d581679c200a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"cc18c02604bcb5190716b6f33ed8ddea32a057ff7bd6cb1ef32bc10f595178e2","disposition":"still accurate","rationale":"Parametric beam: the renderer, thumbnails and previews read partPrimitives, so a resized beam's mesh and pad markers follow authored geometry with no overlay change; the inspector rebuild described here is what refreshes the control after an accepted edit."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
