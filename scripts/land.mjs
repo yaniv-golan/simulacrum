@@ -126,7 +126,11 @@ export function assertLandable({
     );
   if (report.destinationStillMatches === false)
     refuse('the report recorded its destination as already drifted');
-  const recorded = new Set(String(report.candidate?.index ?? '').split('\0').filter(Boolean));
+  const recorded = new Set(
+    String(report.candidate?.index ?? '')
+      .split('\0')
+      .filter(Boolean),
+  );
   const actual = new Set(tree.map((row) => row.entry));
   const missing = [...recorded].filter((e) => !actual.has(e)),
     extra = [...actual].filter((e) => !recorded.has(e));
