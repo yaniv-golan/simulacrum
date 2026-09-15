@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"5b10ab2ac76e47f16bf70acf21ed48f1f5ed65a3419d568df62bd3c6b2db15b7","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"53858d0c77a2d56db6e4a8f7a1bd4f0de7065f604d2fec86d71638a9253ebc9e","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no lesson, example, experiment or challenge was added, extended or replaced; the What's new notice carries at most one invitation to existing Learn & examples content and Help's Try it runs existing card launchers — recorded as no entry."} -->
+<!-- doc-review {"version":1,"fingerprint":"a68b3965f25968209bedd08c731b93a32f972b08806bc422ffea388d088b9202","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"d80ce83f6da7e958778d5d88ca54c0ff8a46bab756f2c78f079c544647746c02","disposition":"updated","rationale":"The guided build now says what to do next and ticks a step from what the player built (k-th part of the step's type, k-th connection of its kind between the two types) with Do it for me as the fallback; Learn & examples remains the primary home and the first-run choice is a one-time entry, not a hint system."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"49f40bd1e1d1dc2d5317fa4e297875fc3537bca6a03bbac33675790d058cb0ca","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"282337103dac12922c035c7cd318257a9066e5034462467034615390e994af7d","disposition":"updated","rationale":"What's-new candidate (pre-integration fe736bc): the Help paragraph now describes the What's new badge, notice, Help section and Try it with their trigger, dismissal, retrieval, yield rules and no-entry disposition, and a new paragraph covers the Source on GitHub link and the About line's version source; workshop-view.mjs, whats-new.mjs, workshop.css and workshop-app.mjs implement exactly that; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
+<!-- doc-review {"version":1,"fingerprint":"b4c92f387c23487efb807096b0f2ead89be0af8bd96249ae95373b4a81de4099","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"9b792e6aac98f11059929963d1fd29b9497e40e606324b0e9eda9a7b7300d525","disposition":"updated","rationale":"Rewritten for the bench refresh: header (Build | Run switch, Pause/Step once running, Tools menu contents, what stays visible), footer status line and key badges, the readiness line's two faces, the inspector summary line, the six essentials with purpose lines, the first-run choice (trigger, completion, retrieval, hosted ordering, harness seeding), the reserved reason lines beside controls, and the anchoring rule; feedback, recording and learning dispositions are unchanged. Merged with what's-new's paragraph: two automatic surfaces exist and never coincide — the first-run choice on a first visit, the what's-new notice on a returning device with unseen notes — and the application offers the first-run choice before considering the notice, which yields to it and re-checks on its close."} -->
 
 
 
@@ -556,7 +556,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"2141192d73f080bb166fbbd4e09819fd3230feef17e7715584ac3653bd5c8d3c","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"20e3fc88d5b12cc6943ff4f6ba30a7855e227c90aa6015fb231530be0cb863dd","disposition":"still accurate","rationale":"verify-authorable-scenes gained a Shift+ArrowUp/Down preview step under the same journey ownership; the section's rules on automation versus player evidence are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1fb638c2ad2ff26afa7ab580603c48e994c11ef4bd96bdfc047e70835a0cfadf","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"051905c6bbcb3dcddfec1721f8b12681543c3dc11a9146c164dee85039752f61","disposition":"still accurate","rationale":"The workbench-content and learning-examples journeys gained the first-run, footer and guide assertions and workbench-content.mjs gained pure models with unit controls; the verification guidance (scope discovery, journeys, separation of automation from player evidence) is unchanged."} -->
 
 
 

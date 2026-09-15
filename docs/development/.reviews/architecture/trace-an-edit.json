@@ -1,10 +1,10 @@
 {
   "version": 1,
   "dependencies": {
-    "src/application/workshop-app.mjs": "4b4929de23b43f4f13313f53c81a109023dfb65fe18611f67660f1802cf6d9de",
-    "src/presentation/workshop-view.mjs": "0409ea19da8a23640eecd7ade0d5257764e7480b97570aab06a558f6c6fb98f4",
-    "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
-    "src/presentation/part-search.mjs": "a886435145ad84df70ca01cebcf4901ea43b73d1f0bcd3097b3d385a9ca87045",
+    "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
+    "src/presentation/workshop-view.mjs": "57d2f159c237beb3836b10f75a64805b9db566c340d9025eb4691b095d0cc4b2",
+    "src/presentation/parts-browser.mjs": "9aeb4e5ac2d31ec7d37f0b539135fef380d77c2134a02a4d738a7cacd3f71932",
+    "src/presentation/part-search.mjs": "8964e0f08b565066b11a6a0fdc98f7628b7ac611bfcb50901969cf6afdca5161",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
     "src/presentation/surface-controls.mjs": "a28ca64d8b92bffced2a89334686004fd3ed9e637a9d67be65b2169bfa8a1550",
     "src/presentation/placement-lifecycle.mjs": "02d5fc17f5ada7fe5c60d43c2bd8cc7963dc2ea8e7d0fb7238270fcc7a7f8015",
@@ -68,6 +68,7 @@
     "src/application/clock.mjs": "4d572664bf6b489945343148da6c54d328335d318c51a210bf3bbf6a8b89498f",
     "src/application/render-submission.mjs": "fb2e0bc496f4999f0fc1bc55c436606290aec4b5ea9b0e71b4a7bf1982e69a27",
     "docs/contracts/runtime-v1.md#structural-failure-scope": "c1ee3fb10a13dc8ed50cd9177dfb86d7eea66c580d128f6a4d0d4dca75089560",
+    "src/presentation/workbench-content.mjs": "ef56df1e188a065a99c709ebfeac5552f24c864f00d22ed39f4d677580b77f89",
     "src/application/feedback-context.mjs": "3597c60d3624670858128ec45bb385282e5ccbf96c3c2a8d43b49ed2ba2344db",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
     "src/presentation/assembly-library.mjs": "7e575049f79fb8f73c5629f8d8d7f863504e8dff87556a34cca3da2fc458e60e",

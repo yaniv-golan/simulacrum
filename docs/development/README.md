@@ -9,7 +9,7 @@ serve a stable build. The page displays its build identity.
 
 ## Working loop
 
-<!-- doc-review {"version":1,"fingerprint":"364e2ae29312e97672580ca12471edcd7dce06abbbeb940e42265f8c4cb50a64","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The complete loop still matches current navigation, inspection, red-before-green and candidate owners. This integration adds a registered coupled physical regression and preserves the same completion tiers; source preparation and semantic review precede capture, and merged source requires its own merge candidate. No workflow command or human-evidence boundary changed. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"96ec854d7c9bb7de55f5f2ce367f006708b8225ac90b05ac19e816e94e3ac04c","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"100fe5c738cf156112b1a06eae8025f10351baf676498a05c1dc9498b51f7b95","disposition":"still accurate","rationale":"Only the linked ui-ux before-changing-player-facing-ui section re-fingerprinted (its placement paragraph gained the anchoring rule); the loop's steps are unchanged."} -->
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"889e9230e8a862a97e982f8a7116d171a668b072b40d9b81e63cc580729c2000","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"499834629d9130d1536275f6e82e0ef2caf7f32325ef06a3f22a18c0eb474e93","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the release runbook gained the version/tag rule, which does not alter how a change is verified."} -->
+<!-- doc-review {"version":1,"fingerprint":"3456b163f9e6e3b254b08cd1044c9a7cb449aa66ceedc10f194b595de0cf27e0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a090ccca1d431b83cd30eb0e6a72532cea8dac88bb1a603c7927891982dad8f","disposition":"updated","rationale":"Added the launch-boundary paragraph: every harness context is marked a returning device so the workshop's one-time first-run choice never opens inside an unrelated journey, and a first-visit check passes firstRun: true; tiers, commands and evidence requirements are otherwise unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"262fe1e81552a3731cbfedb209f17248aabb7bedc9789bc06706ca3b086aaf9a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bb068c3ecfabcac0b793a54482803d9020df2d8576585600261ac154e21ba1b7","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; reference.md was regenerated for the new release-notes check and browser rows; the documentation workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"163d8b59794e273133bb45b6cb14477a3039ce83259a7e5d41b35dccec6f6e12","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7a19b675a5735f063e1053f9fade4c8ed01fe04cb2bcb4597f8f5a1a495127aa","disposition":"still accurate","rationale":"Only this section's linked dependencies re-fingerprinted (the bench refresh's documentation edits and the stacked integrations' reviews); the docs:prepare/review/check workflow it describes is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"f34e32fdd95590751fd3a6d9b42c4c55424af1c87906ba8a3c1738e07766336e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"df83e4586c81e2952b0632b3009b60083e6b2fb61a5aa3ad16e650f3ce63f384","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the manifest adds one gate-integrity check (release-notes) and one parallel browser row (verify-whats-new-browser) plus regenerated scopes; features.mjs adds UI_FEATURES.whatsNew and REPOSITORY_URL; workshop-app.mjs injects notes and calls considerWhatsNew. Execution phases and selection rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e0508de2085f4ca6b684eb547c57ae92b207b80db8f7b21a0ccbbad6c4eb31a8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8df3b15940d6519d67459f1ac433811becdbeba1b754604dc1dbf73287191742","disposition":"still accurate","rationale":"Dependencies moved because the browser harness marks every context a returning device (an init script stores the first-run cursor) unless a check passes firstRun: true, and 18 journeys open the header's Tools menu through the shared openTools helper before clicking a moved control, and the manifest gained the build-readiness-honesty invariant plus new controls; scope rows, exclusion rules, the phased schedule and the proposal/apply flow described here are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -622,7 +622,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"331b8563bc2f2dbcd2c621df3fbd5782975771b24533a812c2a730c20a8ac6df","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e90c1f9f8fccd7a2b10828abffe65079d747d81589c0236390afd0875f38dbb","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; manifest rows added; candidate capture and tiers are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a1197daea5a83a6629cbaabe62219166ad26771b1e7c20c067455a1326b1786f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"3a39d52fbd7658c7f503181d72a8a641200f580f027fc6834c3b60114ffd097d","disposition":"still accurate","rationale":"Dependencies moved because the browser harness marks every context a returning device (an init script stores the first-run cursor) unless a check passes firstRun: true, and 18 journeys open the header's Tools menu through the shared openTools helper before clicking a moved control; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
