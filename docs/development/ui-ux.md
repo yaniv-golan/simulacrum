@@ -133,12 +133,21 @@ they do not automatically judge whether a new activity deserves admission.
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-in the header, **+ Add part** first (the one way to summon the parts; P is its key), one
-Build | Run switch (Pause and Step appear once the clock can run; Step acts only while
-paused), Undo, Redo, Save, Choose scene, Learn & examples and Help stay visible, and the
-occasional commands — Check machine, Measurements, Assemblies, New, Load, Edit scene —
-live under one Tools ⋯ menu that closes on pick, Escape or leaving it, each keeping its
-name and `data-command`; the compact parts catalogue in the left column (the summoned
+in the header, a stage group — **+ Add part** first and primary (the one way to summon
+the parts; P is its key), one Build | Run switch, Pause and Step (visible once the clock
+can run; Step acts only while paused; both hold their slots in Build so the bar never
+reflows on a mode change), and a Tools menu — then a document group: Undo, Redo, Save,
+Learn (accessible name "Learn & examples"), Help and the GitHub link. The occasional
+commands — Check machine, Measurements, Assemblies, New, Load, Choose scene, Edit
+scene — live under Tools, which closes on pick, Escape or leaving it, each command
+keeping its name and `data-command`. Undo, Redo and Pause are icon-only; every
+icon-only control carries `aria-label` = its name, `title` = name · key or, when it is
+off, the reason ("Nothing to undo"), and a 36 px target; the single driving keys stay as
+visible chips (Space, ., P) and chords live in the tooltips (⌘Z or Ctrl+Z by platform);
+Help › Controls lists the same names and keys for touch. Chrome glyphs come from one
+set ([icons](../../src/presentation/icons.mjs#source), Primer Octicons plus a pause
+drawn on its grid); parts keep their mesh thumbnails. The brand subtitle is gone — the
+page title and Help › About say "Mechanical workshop". The compact parts catalogue in the left column (the summoned
 overlay is its expanded state, see below); separate edit and view groups at the workbench
 edge; selected properties and operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
@@ -247,8 +256,8 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose Choose scene in the header and Edit scene under Tools in
-place of the old Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+The document controls expose Choose scene and Edit scene under Tools in place of the
+old Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
 replaces catalogue and inspector content while Editing scene is active; Done restores
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
@@ -505,8 +514,8 @@ preference.
 Simulacrum is open source, so the header's document/help cluster carries a "Source on
 GitHub" icon link beside Help (the GitHub mark; `aria-label` and tooltip "Source on
 GitHub"; opens the repository in a new tab; in the filebar's tab order), and Help's About
-line, placed before Build information, reads "Simulacrum <version> · open source (MIT)
-· github.com/…". `<version>` is package.json's `version` read at build time and injected
+line, placed before Build information, reads "Mechanical workshop · Simulacrum <version>
+· open source (MIT) · github.com/…". `<version>` is package.json's `version` read at build time and injected
 as the `app-version` meta, the one wired version source; a build with no semver package
 version, or one whose semver tag differs from it, names its build id instead (the
 [release runbook](playtesting.md#release-operations) owns the bump and tagging rule).

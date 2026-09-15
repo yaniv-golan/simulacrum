@@ -55,7 +55,7 @@ footer is otherwise a status line (mode, part count, status message, the pending
 composed by [footerModel](../../src/presentation/workbench-content.mjs#symbol=footerModel);
 the header holds + Add part (the parts are summoned by it or by P into a non-modal
 overlay), one Build | Run switch and a Tools menu (Check machine, Measurements,
-Assemblies, New, Load, Edit scene), so the left column is the compact parts catalogue
+Assemblies, New, Load, Choose scene, Edit scene), so the left column is the compact parts catalogue
 alone; and the
 application offers the one-time first-run choice through `view.offerFirstRun()` only after
 the remote playtest's `setupClosed` promise resolves, keeping recording consent first. Optional

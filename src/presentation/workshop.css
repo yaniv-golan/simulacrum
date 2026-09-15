@@ -75,8 +75,40 @@ button.primary:hover:not(:disabled) {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  gap: 20px;
+  gap: 16px;
   background: #17232b;
+}
+/* One 36 px rhythm for every header control; 4 px inside a group, 16 px between groups. */
+.workshop-header button:not(.tools-list *),
+.workshop-header .tools-menu > summary,
+.workshop-header .github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 7px;
+}
+.workshop-header button.icon-only {
+  padding: 0;
+}
+.workshop-header button.icon-only:not(.keyed) {
+  width: 36px;
+}
+.workshop-header .icon {
+  flex: none;
+}
+.workshop-header .key-badge {
+  margin-left: 0;
+}
+.header-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .brand {
   display: flex;
@@ -101,28 +133,11 @@ button.primary:hover:not(:disabled) {
   font-size: 14px;
   font-weight: 800;
 }
-.brand-subtitle {
-  font-size: 12px;
-  color: #8fa5b0;
-  border-left: 1px solid #42535d;
-  padding-left: 12px;
-}
 .modebar,
 .filebar {
   display: flex;
-  gap: 7px;
-}
-.modebar {
-  padding: 5px;
-  background: #111c23;
-  border-radius: 10px;
-}
-.modebar button {
-  min-width: 79px;
-}
-.modebar button.active {
-  border-color: #f2b46a;
-  color: #f2b46a;
+  align-items: center;
+  gap: 12px;
 }
 /* One Build | Run switch: the pressed segment reads as the current mode, not as a disabled button. */
 .mode-switch {
@@ -141,8 +156,9 @@ button.primary:hover:not(:disabled) {
   font-weight: 700;
   opacity: 1;
 }
-.modebar button[hidden] {
-  display: none;
+/* Pause and Step hold their slots in Build: invisible, unfocusable, never removed. */
+.modebar button.reserved {
+  visibility: hidden;
 }
 /* Occasional tools under one summary; the list opens below and closes on pick, Escape or blur. */
 .tools-menu {
@@ -151,15 +167,18 @@ button.primary:hover:not(:disabled) {
 .tools-menu > summary {
   list-style: none;
   cursor: pointer;
-  min-width: 79px;
-  padding: 8px 12px;
-  border: 1px solid #3b4d56;
-  border-radius: 8px;
-  background: #17232b;
-  color: #d5e3ea;
-  font-size: 12px;
+  border: 1px solid #3a4d58;
+  background: #24343f;
+  color: inherit;
   text-align: center;
   user-select: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.tools-menu > summary:hover {
+  background: #344953;
+  border-color: #9db1b9;
 }
 .tools-menu > summary::-webkit-details-marker {
   display: none;
@@ -191,10 +210,8 @@ button.primary:hover:not(:disabled) {
   display: none;
 }
 .filebar button {
-  font-size: 12px;
   background: transparent;
   border-color: transparent;
-  padding: 8px;
 }
 .workshop-body {
   flex: 1;
@@ -590,7 +607,7 @@ h3 {
   opacity: 0.75;
 }
 button:not(.keyed) > .key-badge {
-  display: none;
+  visibility: hidden;
 }
 .build-id {
   position: absolute;
@@ -603,9 +620,6 @@ button:not(.keyed) > .key-badge {
 @media (max-width: 1100px) {
   .workshop-body {
     grid-template-columns: 215px minmax(240px, 1fr) 245px;
-  }
-  .brand-subtitle {
-    display: none;
   }
   .workshop-header {
     padding: 0 16px;
@@ -638,8 +652,8 @@ button:not(.keyed) > .key-badge {
     width: 100%;
     justify-content: center;
   }
-  .modebar button {
-    padding: 6px 18px;
+  .modebar {
+    gap: 8px;
   }
   .workshop-body {
     grid-template-columns: 165px minmax(180px, 1fr);
@@ -4301,11 +4315,9 @@ button.dialog-close:focus-visible {
 }
 /* Source on GitHub: an always-visible icon link beside Help, sized like a filebar button. */
 .filebar .github-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px;
+  width: 36px;
+  padding: 0;
   color: inherit;
-  border-radius: 6px;
 }
 .filebar .github-link:hover {
   background: #344953;
