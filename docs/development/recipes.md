@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ba8131270a6830320217c3250614ed54e5a1b03a6422a59e1373eaec0938170e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8ecc4ab2cf7198c454694ef9166a46673b68303e36a0321605900da363ee3760","disposition":"still accurate","rationale":"Its README and developer-guide dependencies changed only by the player-facing README rewrite and the developer guide's new milestone-status section; physics ownership, the simulation door, law inputs, the named invariants and the verification steps of this recipe are unchanged and were re-read against src/simulation at cd8109aa."} -->
+<!-- doc-review {"version":1,"fingerprint":"dbdeb858866d98c8bcb8e7cf45fe4bcef9c0c8505b51612a027a8ebfda744fc0","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8633aefc16295d0c03051891764d3ed4ec80f4c5d89d4c5ba02787c9d754da08","disposition":"still accurate","rationale":"Item 50 stacked on the frozen release-identity branch (bc843961, main 458e9b3c): an admission-refused timing row is now recorded on its run row at the refusal site and named on the browser phase failure, so a diagnosed retry can complete it. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is one verification harness file (verify-browser-suite.mjs) and its test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

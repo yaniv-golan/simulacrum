@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"4b4387e7fc672c4361a36b2a824ac5161b9db766a381652c17c597938a7ad7b9","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e30cb5af50299cb41ca46504d8e3167781d132dde3dec5bc53db424c5c12550b","disposition":"still accurate","rationale":"Relative to base 3a50c9e the roadmap patch adds M10 (flight) and M11 (orbital) after M9 in AGENTS.md's milestone paragraph, states that every part those milestones need enters the shared catalog and is used as in any player design, and names the M4b/M7/M9 subject as a legged machine built from ordinary parts. This section only points readers to AGENTS.md, the architecture map and recipes and enumerates no milestones or parts, so the pointer remains correct."} -->
+<!-- doc-review {"version":1,"fingerprint":"7d6d90c82e4ce05db4418d04d0e1b593c6b432e02db8fe8b69768e8e7bbeed00","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b2304db96f057e2e3ff235b16deab2bd7dc76cf608c88105f492b017fadac405","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md gained the `--satisfied-by` table row and the rule paragraph that a release's final on byte-identical code is merge evidence when cited and that nothing targets main while it is pending; the guide's entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"980c6dd91ab7249b6cf76e3603523688c3a20ab6e97347f0b1c749bc6651dc6c","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"33144ef038984651fb72fe784f84e619f6bcda0b83adb2951aa4899a33c9c19b","disposition":"still accurate","rationale":"The manifest changed only through the Bench, assembly-ux focus-wait and package-verification launch-row landings (scope rows, timeouts and the release-verification-single-pass controls); milestone allocation still declares M3b with F1 pending and S1, physical feasibility, rover and legged Course incomplete, and the manifest and gate remain the owners this section names; re-read at cd8109aa."} -->
+<!-- doc-review {"version":1,"fingerprint":"fcc7488fd04cca6fd4e11fa4915b76676a113f3b90fbff71d7cb6d7048eb74d9","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"7e3a1209a8e9ecb4443a07d5265f62695015aace0decc18bd008ed4ac25126e1","disposition":"still accurate","rationale":"scripts/manifest.json changed only by the release identity record (identityFiles export in candidate.mjs sharing the candidate inventory; prepare-release recording files, installed digest, installedAt and runtime identity in source.json with caches redirected and the digest re-verified after the tier; its control registered under release-verification-single-pass); milestone allocation still declares M3b with F1 pending and the same incomplete qualifications, and the manifest and gate remain the owners named here."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"3456b163f9e6e3b254b08cd1044c9a7cb449aa66ceedc10f194b595de0cf27e0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a090ccca1d431b83cd30eb0e6a72532cea8dac88bb1a603c7927891982dad8f","disposition":"updated","rationale":"Added the launch-boundary paragraph: every harness context is marked a returning device so the workshop's one-time first-run choice never opens inside an unrelated journey, and a first-visit check passes firstRun: true; tiers, commands and evidence requirements are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b7bca365e0e2d69355019d07f225ed6887501919274f5c4c2722ac16a5f1dd4","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"4e20360ca40321f1652f0b82e098ba9ed2d96c57e3c5b73fac79922829ae4c44","disposition":"still accurate","rationale":"playtesting.md#release-operations gained one sentence describing the release identity record (identityFiles export in candidate.mjs sharing the candidate inventory; prepare-release recording files, installed digest, installedAt and runtime identity in source.json with caches redirected and the digest re-verified after the tier; its control registered under release-verification-single-pass); the tiers, commands, exit codes and evidence rules this section describes are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -182,7 +182,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"163d8b59794e273133bb45b6cb14477a3039ce83259a7e5d41b35dccec6f6e12","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7a19b675a5735f063e1053f9fade4c8ed01fe04cb2bcb4597f8f5a1a495127aa","disposition":"still accurate","rationale":"Only this section's linked dependencies re-fingerprinted (the bench refresh's documentation edits and the stacked integrations' reviews); the docs:prepare/review/check workflow it describes is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"207e6d00676fc6a7079e6c6107f2ba268043c5fbb9f0638e1bf1557911d0ef35","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e1ed6a0209454a049ea03af8118e79b53e48ef085bde38b202949612d1ca2e07","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): reference.md was regenerated for the new candidate-citation-integrity invariant row; the documentation workflow (prepare, review, check, sidecars, batch decisions) is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -323,7 +323,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"82ec3bd22b7171a70b994dafee1cc3d9067d893018ca7572d4e0ef3617da5f64","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1f4c9d8f253b4e0938b3d90fe0418ec7cad1d14b7b6f264ed6e8615f30f75c17","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"142504b8b8444bc5630c503a9297a828d0f3e58c6fc73faab86e0b25823c72a4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"be5bfbf5b30f39bf73bd29e4c0fd20ac77a412f394930f4a1fc5240c2afacf4b","disposition":"still accurate","rationale":"Item 50 stacked on the frozen release-identity branch (bc843961, main 458e9b3c): an admission-refused timing row is now recorded on its run row at the refusal site and named on the browser phase failure, so a diagnosed retry can complete it. Selection, scope rows, admission, the phased scheduler and what the section says about refused timing rows (not evaluated, never a pass, never retried inside the tier) are unchanged; the change only makes the refusal visible to the phase row and to --after, which the isolated-candidate-completion section already describes. Verified against verify-browser-suite.mjs (refusal site and browserSuiteFailure)."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -599,7 +599,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"12109191fb7813ee2ba42bc0acdff5f7e9600331f49f84479492140b49fd5529","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"49cb86ee063a05c57d62b394b2b1154f4ad803099ca548d2a6df6c302ea9908a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the window scripts are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"b45ad40e045f48efe99b359e3bba6c2768ff737c833f8743fcfa2a7de6a04ad3","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"b6e3d2561f60ed9722e6c42f328fdc87d7f128646648d8916e5a4eaf020c622d","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): `currentWindowOwner` reads owner.json and liveness without entering the window; ownership, wait notices, intent publication and stacking are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -648,7 +648,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"fedaf593daea3d4c5e69dec044ba4cf78b45d49e6c14d166f05e1d3610f9fbb7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cb1f84c19a7f92c5f46ae9ba1448ea2f6dd7a162d62c4f3e5012fb28fce8425d","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"0b5c26b226de0b2f445769ca9a6759460365b8358c202ebf59ccfcf8659b4193","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2c565f1d8ef1b4b30f8d6ffc93a4b3d3a7185a0e6994e9bf1ea116a8d2da11ee","disposition":"still accurate","rationale":"scripts/verification-environment.mjs changed only by adding MUTATE_DEPS to the test-owned-knob exemption group (a fixture variable the release identity test sets for the child it spawns); the relevant-environment set, digest and identity semantics are unchanged; candidate identity, capture and completion tiers are unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -786,6 +786,32 @@ block naming the offered, reused (with origin attempt and depth) and executed le
 validation refuses a resumed receipt the parent did not offer or that is not depth 1 from
 that parent. Nothing here changes what a landing needs: candidate evidence still applies only
 to its recorded bytes.
+
+A release's `final` on byte-identical code is that commit's merge evidence when recorded as a
+citation: `npm run verify:candidate -- merge --base <commit> --incoming <commit> --destination
+<ref> --satisfied-by <release directory>` reads the release's own record first (`source.json`,
+which `release:prepare` writes after `npm ci` and before `verify:final`; a release without it
+is refused, so a citation exists only during or after the release's final, never before), then
+captures, installs and digests the candidate exactly as a merge candidate and validates the
+integration scope, and — in place of the tier — compares the candidate's head, every tracked
+and non-ignored path's bytes and mode and its installed dependency digest with that record
+(the git index and the process identity are not compared). Identical bytes, a final whose
+report is terminal and passed, and a packaged `release.json` whose verification envelope
+binds the same source record `mergeReadiness` (`satisfiedBy` names the release, its
+`source.json`, final report and package by sha256, the head and the installed digest) and the
+report passes; a differing path, digest or head, a final on another head, or a package that
+does not bind are refused by name with no merge readiness recorded, and a red final is refused
+with the failure recorded (`mergeReadiness.failed`). The final's report exists from its first
+phase (`status: running`), so a release whose final has not ended, or whose green final is not
+yet packaged, is `pending final` (exit 3, `mergeReadiness.pendingOn: final | package`) — and
+only with `--pending`: without it the command refuses before any capture, because no capture
+runs beside a final unless the slot owner asks (a pending citation records the window owner it
+was captured beside). `npm run verify:candidate -- cite-final <attempt report>` resolves it
+once the release is complete, against the same release bytes (a re-prepared release is
+refused), recording `landed` (whether `main` is the cited head where it runs). A citation
+carries no receipts, is never reusable, and can be neither resumed nor retried. The landing
+message says whether the final is pending; while it is, nothing names `main` or the landing's
+branch as a destination.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested

@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once, records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2521,6 +2521,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ],
         "negative": [
@@ -2535,6 +2539,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ]
       },
@@ -5275,6 +5283,80 @@
           {
             "path": "test/verification-resume.test.mjs",
             "anchor": "an accept hook offers a receipt only while its evidence is intact"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "candidate-citation-integrity",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "A release's final run counts as a commit's merge evidence only as a recorded citation: the release's record is read before anything is captured (a release without it, or one whose final has not ended when no pending citation was asked for, refuses there), the merge candidate is then captured, installed and digested exactly as a merge candidate and its integration scope validated, and its head, every tracked and non-ignored path's bytes and mode and its installed dependency digest are compared with the record; a difference is refused by name and records no merge readiness; a final on another head, a red final or a package that does not bind the record are refused; a final that has not ended, or a green final not yet packaged, is recorded pending and resolved by cite-final against the same release bytes and the attempt report itself; a citation carries no receipts, is never reusable and can be neither resumed nor retried.",
+      "owners": [
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "compareIdentity"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "citeRelease"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "resolveCitation"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "packageRefusal"
+        },
+        {
+          "path": "scripts/candidate-cite.mjs",
+          "anchor": "parseCiteArgs"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "citeRelease: identical bytes, a terminal passed final and a bound package satisfy merge readiness; anything short of that is pending or refused by name"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "resolveCitation resolves a pending citation against the same release only, re-verifying bytes and the package"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a release final on identical bytes is recorded as the merge candidate evidence: captured and installed like a merge candidate, nothing run"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a running final is pending only when the slot owner says so; cite-final resolves it against the same release"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "compareIdentity names every differing path, the head and the installed digest; index and deleted entries never count"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "packageRefusal verifies the package envelope, then its binding to the cited source"
+          },
+          {
+            "path": "test/candidate-cite.test.mjs",
+            "anchor": "parseCiteArgs strips --satisfied-by/--pending for a merge tier only; citationVerification records a run-less tier"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "a citation is refused, with no merge readiness recorded, when a path, the dependency digest or the record itself differs, or the final was red"
+          },
+          {
+            "path": "test/candidate-cite-e2e.test.mjs",
+            "anchor": "citation reports are not attempts: neither resumed nor retried"
           }
         ]
       },
@@ -8662,6 +8744,7 @@
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-after-e2e.test.mjs",
+        "test/candidate-cite-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -8671,6 +8754,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/candidate-after.mjs",
+        "test/fixtures/candidate-cite.mjs",
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",
@@ -9478,6 +9562,7 @@
         "test/browser-scope-reaching.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/candidate-after-e2e.test.mjs",
+        "test/candidate-cite-e2e.test.mjs",
         "test/candidate-priority.test.mjs",
         "test/candidate.test.mjs",
         "test/change-inspection.test.mjs",
@@ -9491,6 +9576,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/candidate-after.mjs",
+        "test/fixtures/candidate-cite.mjs",
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/local-runner.mjs",
         "test/fixtures/merge-runner.mjs",

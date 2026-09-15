@@ -127,7 +127,15 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | Release or milestone qualification | `npm run verify:candidate -- final` |
 | Diagnosed retry of a failed local/merge candidate | `npm run verify:candidate -- <tier> --after <report> --cause <id>=<cause>` |
 | Receipt reuse from a passed local/merge candidate on identical bytes | `npm run verify:candidate -- <tier> --after <passed report>` |
+| A release's `final` on byte-identical code as merge evidence | `npm run verify:candidate -- merge --base <commit> --incoming <commit> --destination <ref> --satisfied-by <release directory>` |
 | Authorized experimental publication | Existing release preparation and exception policy |
+
+A release's `final` on byte-identical code (identical tree and dependency digest, verified at
+citation) is that commit's merge evidence when recorded with `--satisfied-by`; the report and
+the landing message say whether the final is pending. While a landing's final is pending, no
+candidate names `main` or that landing's branch as `--destination`; a red final makes the
+citation `failed` — revert the landing or land a fix with its own evidence before any other
+integration targets `main`.
 
 Direct tiers remain for already frozen CI/release copies. Complete source-writing
 `docs:prepare` and `docs:review` operations before capturing completion. Documentation
