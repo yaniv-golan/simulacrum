@@ -419,6 +419,15 @@ existing pad markers on those faces now show the 40 mm footprint; end faces keep
 their whole face. Part help gains one sentence and one step; no lesson or example
 entry.
 
+The Pivot pin uses the existing surface-mount flow: its `Pivot · Top` face is listed with the
+other faces, the mode help reads "Creates a pin. The link swings about the pin axis; set its
+start angle.", edge anchors are hidden because a pin-and-hole mate has no footprint to align,
+and the Connections entry reads "Pinned: swings about the pin; does not slide." The Mounting
+section shows the pinned partner ("Pinned to"), never "Unattached". A loop closes through the
+same panel only when the proposed mate already coincides; otherwise the existing loop copy
+explains it. The Joint Angle Sensor's inspector lists pivot edges beside axles. Part help gains a
+pin entry and one bearing sentence; no lesson or example entry.
+
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites
 moving the catcher and adjusting spring preload. Roll onto a spring extends the

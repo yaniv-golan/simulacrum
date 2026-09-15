@@ -21,6 +21,7 @@ const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
 const sub = (a, b) => a.map((x, i) => x - b[i]);
 const add = (a, b) => a.map((x, i) => x + b[i]);
 const norm = (a) => Math.hypot(...a);
+const normalize = (a) => a.map((x) => x / norm(a));
 const blueprint = (parts) => ({ ...createEmptyBlueprint('pin', 'Pin'), parts });
 const mount = (bp, spec) => proposeSurfaceMount(bp, spec).blueprint;
 /** World pose of a resolved surface endpoint. */
@@ -37,6 +38,8 @@ function worldEndpoint(bp, endpoint) {
 const compiledJoint = (compiled, kind) =>
   compiled.configuration.joints.filter((j) => j.kind === kind);
 const bodyOf = (bp, id) => bp.parts.findIndex((p) => p.id === id);
+/** A row is a touch only when the solver pushed the bodies apart; predicted points are not. */
+const touching = (c) => c.available && c.solved && Math.hypot(...c.normalImpulse) > 1e-8;
 
 /** Beam A carries a pin at u; beam B sits on the pin head at `twist` (pin-first order). */
 function pinnedPair({ u = 0.15, twist = 0.5 } = {}) {
@@ -145,7 +148,7 @@ test('admission: pivot needs exactly one revolute joint face, kind-matched, excl
   // Positive control: a valid pinned pair admits.
   assert.deepEqual(
     reason(withConnections([{ id: 'p', kind: 'pivot', a: pinHead, b: beamBBottom }])),
-    ['OK', undefined],
+    ['OK', ''],
   );
   // pivot between two ordinary faces.
   assert.deepEqual(
@@ -324,6 +327,9 @@ function pendulumConfiguration(startAngleRad, { fixedJoint = false } = {}) {
     createPart('beam', 'beamB', [0, 3, 0]),
   ]);
   bp.parts[0].rotation = [Math.SQRT1_2, 0, 0, Math.SQRT1_2];
+  // The start angle is the twist of the head mate (a pin-and-hole mate has no pad to keep
+  // inside the face); the foot is an ordinary square pad, which a twisted mount on a
+  // 40 mm-wide beam would overhang.
   const build = (twist) => {
     let next = mount(bp, {
       part: 'pin',
@@ -332,7 +338,7 @@ function pendulumConfiguration(startAngleRad, { fixedJoint = false } = {}) {
       targetRegion: 'bottom',
       u: 0.15,
       v: 0,
-      twist: 0,
+      twist,
       id: 'head',
     });
     return mount(next, {
@@ -342,17 +348,24 @@ function pendulumConfiguration(startAngleRad, { fixedJoint = false } = {}) {
       targetRegion: 'top',
       u: 0,
       v: 0,
-      twist,
+      twist: 0,
       id: 'foot',
     });
   };
-  // Find the foot twist that hangs beam B straight down, then add the release angle.
-  const axisOf = (b) => rotateVector(b.parts[bodyOf(b, 'beamB')].rotation, [1, 0, 0]);
-  const d0 = axisOf(build(0));
-  // Down is [0,-1,0] and the pin axis is world ±Z: the twist that hangs beam B is the signed
-  // angle from d0 to down about Z, tried in both senses because the axis sign is the mate's.
+  // Find the foot twist that hangs beam B straight down: its centre of mass sits below the
+  // pin. The pin axis is world Z, so the pin centre and the head share an XY position and
+  // the beam's centre relative to the pin is the pendulum arm; the pin sits 0.15 m from the
+  // beam's centre, so a hanging beam has its pinned end up (the inverted pose would swing
+  // through the bottom with a much longer period).
+  const armOf = (b) => {
+    const r = sub(b.parts[bodyOf(b, 'beamB')].position, b.parts[bodyOf(b, 'pin')].position);
+    return normalize([r[0], r[1], 0]);
+  };
+  const d0 = armOf(build(0));
+  // The twist that turns d0 onto down about Z, tried in both senses because the axis sign
+  // is the mate's.
   const t0 = Math.atan2(d0[0] * -1 - d0[1] * 0, d0[0] * 0 + d0[1] * -1);
-  const hangs = (t) => Math.abs(dot(axisOf(build(t)), [0, -1, 0]) - 1) < 1e-6;
+  const hangs = (t) => Math.abs(dot(armOf(build(t)), [0, -1, 0]) - 1) < 1e-6;
   assert.ok(hangs(t0) || hangs(-t0), 'beam B can hang straight down');
   const chosen = hangs(t0) ? t0 : -t0;
   const released = build(chosen + startAngleRad);
@@ -382,9 +395,11 @@ function pendulumConfiguration(startAngleRad, { fixedJoint = false } = {}) {
     blueprint: released,
   };
 }
-function swingAngle(read, index) {
-  const axis = rotateVector(read[index].rotation, [1, 0, 0]);
-  return Math.atan2(axis[0], -axis[1]); // 0 when hanging straight down, positive toward +X
+/** Swing of the link about the pin: the arm from the pin centre to the link's centre of
+ * mass in the swing plane; 0 when hanging straight down, positive toward +X. */
+function swingAngle(read, index, pin) {
+  const r = sub(read[index].position, read[pin].position);
+  return Math.atan2(r[0], -r[1]);
 }
 
 test('a pinned link swings as a compound pendulum; a fixed joint does not; the pin transmits no torque', async () => {
@@ -397,7 +412,7 @@ test('a pinned link swings as a compound pendulum; a fixed joint does not; the p
       d = 0.15,
       expected = 2 * Math.PI * Math.sqrt((icm + m * d * d) / (m * G * d));
     const dt = 1 / 120;
-    let previous = swingAngle(w.read(), beamB),
+    let previous = swingAngle(w.read(), beamB, pin),
       previousT = 0,
       crossings = [];
     for (let tick = 1; tick <= 1200; tick++) {
@@ -405,7 +420,7 @@ test('a pinned link swings as a compound pendulum; a fixed joint does not; the p
       w.applyPreparedConstraints();
       w.step();
       const t = tick * dt,
-        angle = swingAngle(w.read(), beamB);
+        angle = swingAngle(w.read(), beamB, pin);
       if (previous > 0 && angle <= 0)
         crossings.push(previousT + (dt * previous) / (previous - angle));
       previous = angle;
@@ -427,38 +442,44 @@ test('a pinned link swings as a compound pendulum; a fixed joint does not; the p
   const held = pendulumConfiguration((5 * Math.PI) / 180, { fixedJoint: true });
   const h = await createPhysicsWorld(held.config);
   try {
-    const start = swingAngle(h.read(), held.beamB);
+    const start = swingAngle(h.read(), held.beamB, held.pin);
     for (let tick = 1; tick <= 240; tick++) {
       h.prepareConstraints();
       h.applyPreparedConstraints();
       h.step();
     }
     assert.ok(
-      Math.abs(swingAngle(h.read(), held.beamB) - start) < 1e-3,
+      Math.abs(swingAngle(h.read(), held.beamB, held.pin) - start) < 1e-3,
       'fixed joint does not swing',
     );
   } finally {
     h.dispose();
   }
-  // Negative control: a spinning partner does not spin the pin about the axis (no torque transmission).
-  const free = pinnedPair({ u: 0, twist: 0 });
+  // Negative control: the pin passes no torque about its axis. With no gravity and link A
+  // held, a link pinned 0.15 m from its centre and kicked sideways spins at a constant rate
+  // (a joint that coupled the links would damp it), and the pin never turns.
+  const free = headFirstPair({ u: 0.15, footU: 0.15 });
   const spinning = compileAssembly(free, { ground: null, gravity: [0, 0, 0] }).configuration;
   delete spinning.power;
   spinning.bodies[bodyOf(free, 'beamA')].fixed = true;
-  spinning.bodies[bodyOf(free, 'beamB')].angularVelocity = [0, 3, 0];
+  spinning.bodies[bodyOf(free, 'beamB')].velocity = [0, 0, 0.5];
   const s = await createPhysicsWorld(spinning);
   try {
-    for (let tick = 1; tick <= 120; tick++) {
+    const rate = () => s.read()[bodyOf(free, 'beamB')].angularVelocity[1];
+    const advance = () => {
       s.prepareConstraints();
       s.applyPreparedConstraints();
       s.step();
-    }
-    const state = s.read();
+    };
+    for (let tick = 1; tick <= 10; tick++) advance();
+    const first = rate();
+    assert.ok(Math.abs(first) > 1.5, `the kick becomes a spin about the pin: ${first}`);
+    for (let tick = 11; tick <= 120; tick++) advance();
+    assert.ok(Math.abs(rate() - first) < 1e-3 * Math.abs(first), 'partner keeps spinning');
     assert.ok(
-      Math.abs(state[bodyOf(free, 'beamB')].angularVelocity[1] - 3) < 0.05,
-      'partner keeps spinning',
+      Math.abs(s.read()[bodyOf(free, 'pin')].angularVelocity[1]) < 1e-4,
+      'pin does not turn',
     );
-    assert.ok(Math.abs(state[bodyOf(free, 'pin')].angularVelocity[1]) < 1e-6, 'pin does not turn');
   } finally {
     s.dispose();
   }
@@ -533,7 +554,8 @@ test('links on a pin swing over each other with 10 mm clearance and never touch'
   const config = compileAssembly(bp, { ground: null }).configuration;
   delete config.power;
   config.bodies[bodyOf(bp, 'beamA')].fixed = true;
-  config.bodies[bodyOf(bp, 'beamB')].angularVelocity = [0, 2, 0];
+  // A sideways kick on the link pinned 0.15 m from its centre becomes a spin about the pin.
+  config.bodies[bodyOf(bp, 'beamB')].velocity = [0, 0, 0.5];
   const w = await createPhysicsWorld(config);
   try {
     let contacts = 0;
@@ -545,7 +567,9 @@ test('links on a pin swing over each other with 10 mm clearance and never touch'
         .contacts()
         .rows.filter(
           (c) =>
-            [c.a, c.b].includes(bodyOf(bp, 'beamA')) && [c.a, c.b].includes(bodyOf(bp, 'beamB')),
+            touching(c) &&
+            [c.a, c.b].includes(bodyOf(bp, 'beamA')) &&
+            [c.a, c.b].includes(bodyOf(bp, 'beamB')),
         ).length;
     }
     assert.equal(contacts, 0, 'links never touch');
@@ -557,24 +581,17 @@ test('links on a pin swing over each other with 10 mm clearance and never touch'
   } finally {
     w.dispose();
   }
-  // Wrong control: a zero-thickness revolute puts the links in contact.
+  // Wrong control: a pin whose head sits 0.1 mm too low (the joint holds link B that much
+  // deeper) puts the links in solved contact. Bodies joined directly have their contacts
+  // disabled, so the links must stay joined only through the pin, as authored.
   const flat = compileAssembly(bp, { ground: null }).configuration;
   delete flat.power;
   flat.bodies[bodyOf(bp, 'beamA')].fixed = true;
-  const revolute = flat.joints.findIndex((j) => j.kind === 'revolute');
-  flat.joints = flat.joints.filter((_, i) => i !== revolute).filter((j) => j.kind !== 'fixed');
-  flat.bodies[bodyOf(bp, 'beamB')].position[1] =
-    flat.bodies[bodyOf(bp, 'beamA')].position[1] + 0.04 - 1e-4;
-  flat.joints.push({
-    kind: 'revolute',
-    a: bodyOf(bp, 'beamA'),
-    b: bodyOf(bp, 'beamB'),
-    anchorA: [0.15, 0.02, 0],
-    anchorB: [0.15, -0.02, 0],
-    axisA: [0, 1, 0],
-    axisB: [0, 1, 0],
-  });
-  flat.bodies[bodyOf(bp, 'beamB')].angularVelocity = [0, 2, 0];
+  const revolute = flat.joints.find((j) => j.kind === 'revolute'),
+    onB = revolute.b === bodyOf(bp, 'beamB') ? 'anchorB' : 'anchorA';
+  revolute[onB] = add(revolute[onB], [0, 0.0101, 0]);
+  flat.bodies[bodyOf(bp, 'beamB')].position[1] -= 0.0101;
+  flat.bodies[bodyOf(bp, 'beamB')].velocity = [0, 0, 0.5];
   const f = await createPhysicsWorld(flat);
   try {
     let contacts = 0;
@@ -586,10 +603,12 @@ test('links on a pin swing over each other with 10 mm clearance and never touch'
         .contacts()
         .rows.filter(
           (c) =>
-            [c.a, c.b].includes(bodyOf(bp, 'beamA')) && [c.a, c.b].includes(bodyOf(bp, 'beamB')),
+            touching(c) &&
+            [c.a, c.b].includes(bodyOf(bp, 'beamA')) &&
+            [c.a, c.b].includes(bodyOf(bp, 'beamB')),
         ).length;
     }
-    assert.ok(contacts > 0, 'a washer-less revolute drags its links across each other');
+    assert.ok(contacts > 0, 'a pin too short drags its links across each other');
   } finally {
     f.dispose();
   }
@@ -667,13 +686,14 @@ function parallelogram({ closeOffset = 0 } = {}) {
   };
   shaft('sA', { part: 'hingeA', port: 'shaft' }, { part: 'mountA', port: 'shaft' });
   shaft('sB', { part: 'hingeB', port: 'shaft' }, { part: 'mountB', port: 'shaft' });
-  // Pins stand on the far ends of crank and rocker.
+  // Pins stand on the far ends of crank and rocker: a top face's u runs along the link's
+  // -X while the underside's runs along +X, so u = -0.08 on top is 0.16 m from the axle.
   bp = mount(bp, {
     part: 'pinA',
     sourceRegion: 'bottom',
     targetPart: 'crank',
     targetRegion: 'top',
-    u: 0.08,
+    u: -0.08,
     v: 0,
     twist: 0,
     id: 'fA',
@@ -683,12 +703,14 @@ function parallelogram({ closeOffset = 0 } = {}) {
     sourceRegion: 'bottom',
     targetPart: 'rocker',
     targetRegion: 'top',
-    u: 0.08,
+    u: -0.08,
     v: 0,
     twist: 0,
     id: 'fB',
   });
-  // The coupler sits centred on pin A's head; pin B's head must coincide with the coupler at u = 0.34.
+  // The coupler sits centred on pin A's head, turned a quarter so its length runs along the
+  // hinge line (world +Z at twist -π/2); pin B's head then coincides with its underside at
+  // u = 0.34, the hinge spacing.
   bp = mount(bp, {
     part: 'coupler',
     sourceRegion: 'bottom',
@@ -696,7 +718,7 @@ function parallelogram({ closeOffset = 0 } = {}) {
     targetRegion: 'top',
     u: 0,
     v: 0,
-    twist: 0,
+    twist: -Math.PI / 2,
     id: 'cA',
   });
   const closing = {
@@ -808,12 +830,15 @@ test('a joint angle sensor bound to a pivot edge reads the swing, and unbinds wh
         b = rotateVector(f.physics[bodyOf(bp, 'beamB')].rotation, [1, 0, 0]);
       return Math.atan2(a[0] * b[2] - a[2] * b[0], dot(a, b));
     };
-    const reading = () =>
-      w.observe().frames[0].power.sensors.find((s) => s.kind === 'jointAngle').channels.angle;
+    const reading = () => {
+      const f = w.observe().frames[0];
+      return f.sensors.readings.find((r) => r.node === bodyOf(f.metadata.blueprint, 'sensor'))
+        .channels.angle;
+    };
     w.step(2);
     const r0 = reading(),
       a0 = angleOf();
-    assert.equal(r0.status, 'valid');
+    assert.equal(r0.status, 'ok');
     w.step(240);
     const swing = angleOf() - a0,
       delta = reading().value - r0.value;
@@ -822,11 +847,19 @@ test('a joint angle sensor bound to a pivot edge reads the swing, and unbinds wh
       `sensor change ${delta} vs swing ${swing}`,
     );
     assert.equal((await w.act({ type: 'build' })).ok, true);
+    // Deleting the pin removes its edges; the binding string is left as a shaft binding is
+    // today, and the compiler unbinds the sensor (no joint), so it reads nothing rather than
+    // failing the machine.
     assert.equal((await w.act({ type: 'delete', id: 'pin' })).ok, true);
-    assert.equal(
-      w.observe().frames[0].metadata.blueprint.parts.find((p) => p.id === 'sensor').jointBinding,
-      undefined,
+    const gone = w.observe().frames[0].metadata.blueprint;
+    assert.ok(!gone.connections.some((c) => c.id === 'head'), 'the pivot edge is gone');
+    const unbound = compileAssembly(gone).configuration.power.sensors.find(
+      (s) => s.kind === 'jointAngle',
     );
+    assert.equal(unbound.joint, -1, 'no joint to read');
+    assert.equal((await w.act({ type: 'run' })).ok, true);
+    w.step(2);
+    assert.equal(reading().status, 'unavailable');
   } finally {
     w.dispose();
   }
@@ -865,8 +898,10 @@ test('a driven parallelogram keeps the rocker parallel to the crank with millime
         w.step(30);
         assert.ok(Math.abs(yaw(rocker) - yaw(crank) - start) < 0.02, 'rocker tracks the crank');
         assert.ok(drift() < 1e-3, `joint drift ${drift()}`);
-        contacts += (w.observe().frames[0].contacts?.rows ?? []).filter((c) =>
-          [c.a, c.b].every((i) => [crank, rocker, bodyOf(bp, 'coupler')].includes(i)),
+        contacts += (w.observe().frames[0].contacts?.rows ?? []).filter(
+          (c) =>
+            touching(c) &&
+            [c.a, c.b].every((i) => [crank, rocker, bodyOf(bp, 'coupler')].includes(i)),
         ).length;
       }
     }

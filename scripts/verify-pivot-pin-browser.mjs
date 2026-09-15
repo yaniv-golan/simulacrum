@@ -35,7 +35,9 @@ function pinnedPair() {
     twist: 0,
     id: 'ground',
   });
-  // Head under beam B first, then the pin's foot onto the standing beam moves beam B with it.
+  // Head under beam B first, then the pin's foot onto the standing beam moves beam B with it;
+  // the standing beam's top-face u runs downward, so u = -0.19 puts the pin near its top and
+  // beam B hangs with its centre 0.1 m below the pin, clear of the floor.
   step({
     part: 'pin',
     sourceRegion: 'top',
@@ -51,7 +53,7 @@ function pinnedPair() {
     sourceRegion: 'bottom',
     targetPart: 'beamA',
     targetRegion: 'top',
-    u: 0.19,
+    u: -0.19,
     v: 0,
     twist: 0,
     id: 'foot',
@@ -136,7 +138,7 @@ function openParallelogram() {
     sourceRegion: 'bottom',
     targetPart: 'crank',
     targetRegion: 'top',
-    u: 0.08,
+    u: -0.08,
     v: 0,
     twist: 0,
     id: 'fA',
@@ -146,11 +148,13 @@ function openParallelogram() {
     sourceRegion: 'bottom',
     targetPart: 'rocker',
     targetRegion: 'top',
-    u: 0.08,
+    u: -0.08,
     v: 0,
     twist: 0,
     id: 'fB',
   });
+  // Pins on the far ends (a top face's u runs along the link's -X); the coupler turned a
+  // quarter so its length runs along the hinge line and pin B meets it at u = 0.34.
   bp = mount(bp, {
     part: 'coupler',
     sourceRegion: 'bottom',
@@ -158,7 +162,7 @@ function openParallelogram() {
     targetRegion: 'top',
     u: 0,
     v: 0,
-    twist: 0,
+    twist: -Math.PI / 2,
     id: 'cA',
   });
   return bp;
@@ -219,8 +223,9 @@ try {
       Math.abs(beamB.position[k] - after.physics[index].position[k]) < 1e-6,
       'rendered position matches simulated',
     );
-  const reading = after.power.sensors.find((s) => s.kind === 'jointAngle');
-  assert.equal(reading.channels.angle.status, 'valid', 'joint angle reads on a pivot');
+  const sensorIndex = after.metadata.blueprint.parts.findIndex((p) => p.id === 'sensor');
+  const reading = after.sensors.readings.find((r) => r.node === sensorIndex);
+  assert.equal(reading.channels.angle.status, 'ok', 'joint angle reads on a pivot');
   await page.screenshot({ path: `${out}/swing.png` });
   await page.locator('[data-command=pause]').click();
   await page.locator('[data-command=build]').click();

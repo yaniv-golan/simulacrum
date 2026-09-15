@@ -2688,7 +2688,8 @@ export function createWorkshopView(
       const mounting = element('section', 'mount-status');
       mounting.setAttribute('aria-label', 'Mounting');
       const edges = frame.metadata.blueprint.connections.filter(
-        (c) => c.kind === 'fixed' && (c.a.part === part.id || c.b.part === part.id),
+        (c) =>
+          ['fixed', 'pivot'].includes(c.kind) && (c.a.part === part.id || c.b.part === part.id),
       );
       const axleEdges = frame.metadata.blueprint.connections.filter(
         (c) =>
@@ -2719,6 +2720,10 @@ export function createWorkshopView(
         relationship.dataset.attachmentState = edge.id;
         relationship.dataset.peerLabel = `${peer.name} · ${endpointName(peer, other)}`;
         row.append(relationship);
+        if (edge.kind === 'pivot')
+          row.append(
+            element('p', 'parameter-help', 'Pinned: swings about the pin; does not slide.'),
+          );
         if (editable && edge.b.part === part.id && own.surface && other.surface)
           row.append(
             button('Adjust mount', () => beginSurface(part.id, { replaceConnection: edge.id })),
@@ -3672,7 +3677,7 @@ export function createWorkshopView(
       const edge = frame.metadata.blueprint.connections.find(
         (c) => c.id === label.dataset.attachmentState,
       );
-      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : edge?.kind === 'pivot' ? 'Pinned to' : 'Bolted to'} ${label.dataset.peerLabel}`;
       if (label.textContent !== text) label.textContent = text;
     }
     updateSensorInspector(frame, right);
@@ -4027,8 +4032,8 @@ export function createWorkshopView(
     if (completed && releasedAttachment(edge))
       return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)
-      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
-    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
+      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'pivot' ? 'Will pin these parts: the link swings about the pin axis.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
+    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'pivot' ? 'Pinned: swings about the pin; does not slide.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;

@@ -31,6 +31,13 @@ scales the box along local X, faces and pads follow, and a dimension edit is ref
 [resizeMovesMount](../../src/model/editing.mjs#symbol=resizeMovesMount) when any surface
 attachment of the edited part would move; the optional parameter's default must equal
 the canonical primitive ([assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)).
+A part may declare one joint face (`jointFace: { region, joint }`); a surface pair with exactly
+one revolute joint face is a `pivot` connection that [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly)
+turns into a passive revolute about the mated normal, admitted by
+[validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint) with the joint-face
+rules and by the one footprint rule in
+[mountFootprintLimits](../../src/model/surfaces.mjs#symbol=mountFootprintLimits), which exempts
+joint-face pairs. A surface-mount loop closes only when the mate already coincides.
 Trace `partPrimitives`, then read [wheel diameter tests](../../test/wheel-diameter.test.mjs)
 and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, material/mass,
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated

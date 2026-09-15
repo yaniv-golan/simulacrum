@@ -21,6 +21,7 @@ export const PART_SEARCH = Object.freeze({
   plate: entry('Structure', 'platform', 'flat|floor|support'),
   steelAxle: entry('Motion', 'shaft|rod', 'transmit rotation', 'spin|rotation'),
   passiveBearing: entry('Motion', 'bearing', 'support axle|support shaft', 'rotation|spin'),
+  pivotPin: entry('Motion', 'pin|pivot|clevis', 'link|rotate|swivel|four-bar', 'linkage'),
   linearActuator: entry(
     'Motion',
     'linear actuator|electric cylinder',

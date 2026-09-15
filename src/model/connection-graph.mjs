@@ -24,6 +24,7 @@ export function mechanicalGroup(
     for (const edge of blueprint.connections)
       if (
         (edge.kind === 'fixed' ||
+          edge.kind === 'pivot' ||
           edge.kind === 'shaft' ||
           edge.kind === 'spring' ||
           edge.kind === 'rope') &&

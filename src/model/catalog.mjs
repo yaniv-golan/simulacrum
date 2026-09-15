@@ -625,6 +625,14 @@ export const CATALOG = freeze({
     milestone: 'M3b',
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
   },
+  pivotPin: {
+    // A 10 mm washer body whose top face is a declared revolute joint face: the physical
+    // separation between two pinned links, with ordinary mass and material.
+    ...component('pivotPin', 'Pivot pin', [0.02, 0.005, 0.02], 'steel', [], {}),
+    milestone: 'M3b',
+    mountingFaces: ['bottom', 'top'],
+    jointFace: { region: 'top', joint: 'revolute' },
+  },
   passiveBearing: {
     ...component(
       'passiveBearing',

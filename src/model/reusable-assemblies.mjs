@@ -189,7 +189,7 @@ export function connectAssembly(input, id, portName, target, connectionId) {
   if (group.ids.includes(target.part)) reject('target');
   const before = bp.parts.find((part) => part.id === binding.part);
   const kind = binding.surface
-    ? 'fixed'
+    ? surfaceConnectionKind(bp, target, binding, 'fixed')
     : CATALOG[before.type].ports.find((port) => port.id === binding.port).kind;
   if (kind === 'power' || kind === 'signal')
     return { blueprint: bp, endpoint: structuredClone(binding), target, connectionId };

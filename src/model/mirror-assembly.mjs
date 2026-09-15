@@ -177,7 +177,7 @@ export function proposeMirroredAssembly(blueprint, options) {
     if (classification === 'external') continue;
     const a = selected.has(connection.a.part);
     const referenceAttachment =
-      ['fixed', 'shaft', 'spring', 'rope'].includes(connection.kind) &&
+      ['fixed', 'pivot', 'shaft', 'spring', 'rope'].includes(connection.kind) &&
       (a ? connection.b.part === referenceId : connection.a.part === referenceId);
     if (classification !== 'internal' && !referenceAttachment) {
       omittedExternalConnectionIds.push(connection.id);
@@ -196,7 +196,7 @@ export function proposeMirroredAssembly(blueprint, options) {
         isCopy ? idMap[binding.part] : referenceId,
       );
     }
-    if (copy.kind === 'fixed' && copy.a.surface && copy.b.surface) {
+    if (['fixed', 'pivot'].includes(copy.kind) && copy.a.surface && copy.b.surface) {
       // Mating surface normals oppose: removing a source-frame twist requires
       // adding that angle to the receiving frame. Keep the reflected solids in
       // place while restoring the save format's centered, zero-twist source pad.

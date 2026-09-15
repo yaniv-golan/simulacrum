@@ -8,7 +8,7 @@ import { createPlacementLifecycle, placementPresentation } from './placement-lif
 import * as THREE from 'three';
 import { spreadSurfaceAnchors } from './surface-anchor-layout.mjs';
 import { explainFailure } from '../model/messages.mjs';
-import { surfaceRegions, projectedPadHalfSize } from '../model/surfaces.mjs';
+import { surfaceRegions, mountFootprintLimits } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
 import { mechanicalGroup } from '../model/connection-graph.mjs';
 
@@ -185,14 +185,29 @@ export function createSurfaceControls({
     const face = surfaceRegions(receiver).find((r) => r.id === state.target.region);
     const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part);
     const pad = surfaceRegions(part).find((r) => r.id === source.value);
-    const ext = pad.padHalfSize ?? pad.halfSize;
-    const theta = degreesToRadians(Number(angle.value));
-    const roundoff = 32 * Number.EPSILON * Math.max(1, ...ext, ...face.halfSize);
-    const projected = projectedPadHalfSize(ext, theta);
-    return [face.halfSize[0] - projected[0], face.halfSize[1] - projected[1]].map((limit) =>
-      Math.abs(limit) <= roundoff ? 0 : limit,
+    if (!face || !pad) return null;
+    // A pin-and-hole mate is a point and an axis: no footprint to align with an edge.
+    const limits = mountFootprintLimits(
+      receiver,
+      state.target.region,
+      part,
+      source.value,
+      degreesToRadians(Number(angle.value)),
     );
+    if (!limits) return null;
+    const ext = pad.padHalfSize ?? pad.halfSize;
+    const roundoff = 32 * Number.EPSILON * Math.max(1, ...ext, ...face.halfSize);
+    return [limits.u, limits.v].map((limit) => (Math.abs(limit) <= roundoff ? 0 : limit));
   }
+  const pivotPair = () => {
+    if (!state?.target) return false;
+    const receiver = bp().parts.find((p) => p.id === state.target.part),
+      part = state.insertPart ?? bp().parts.find((p) => p.id === state.part);
+    return (
+      surfaceRegions(receiver).find((r) => r.id === state.target.region)?.joint === 'revolute' ||
+      surfaceRegions(part).find((r) => r.id === source.value)?.joint === 'revolute'
+    );
+  };
   function presentation() {
     return placementPresentation(placement.read(), {
       attach: placementMode.value === 'attach',
@@ -220,7 +235,7 @@ export function createSurfaceControls({
         visible: point.z >= -1 && point.z <= 1,
       };
     }
-    const limits = alignmentLimits();
+    const limits = alignmentLimits() ?? [-1, -1];
     const markerYs = [];
     const points = anchors.map(({ a, b }) => screen(a * face.halfSize[0], b * face.halfSize[1]));
     const positions = spreadSurfaceAnchors(points, canvasRect.width, canvasRect.height);
@@ -382,7 +397,9 @@ export function createSurfaceControls({
     u.value = v.value = angle.value = '0';
     placementMode.value = 'attach';
     placementMode.disabled = !!replaceConnection;
-    modeHelp.textContent = 'Creates a fixed joint. These parts move together.';
+    modeHelp.textContent = pivotPair()
+      ? 'Creates a pin. The link swings about the pin axis; set its start angle.'
+      : 'Creates a fixed joint. These parts move together.';
     panel.hidden = false;
     title.textContent = replaceConnection ? 'Adjust mount' : 'Snap to surface';
     apply.textContent = replaceConnection
@@ -801,11 +818,16 @@ export function createSurfaceControls({
     // Keep a full mounting footprint on the face. Edge candidates use the moving
     // pad's projected extent and remain ordinary authored local coordinates.
     const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part),
-      base = surfaceRegions(part).find((r) => r.id === source.value),
       theta = degreesToRadians(Number(angle.value));
-    const [extU, extV] = projectedPadHalfSize(base.padHalfSize ?? base.halfSize, theta);
-    const limitU = region.halfSize[0] - extU,
-      limitV = region.halfSize[1] - extV;
+    const footprintLimits = mountFootprintLimits(
+      bp().parts.find((p) => p.id === state.target.part),
+      state.target.region,
+      part,
+      source.value,
+      theta,
+    );
+    const limitU = footprintLimits ? footprintLimits.u : region.halfSize[0],
+      limitV = footprintLimits ? footprintLimits.v : region.halfSize[1];
     const pixel =
       (camera.position.distanceTo(world) * 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) /
       renderer.domElement.clientHeight;
@@ -846,7 +868,9 @@ export function createSurfaceControls({
   placementMode.addEventListener('change', () => {
     modeHelp.textContent =
       placementMode.value === 'attach'
-        ? 'Creates a fixed joint. These parts move together.'
+        ? pivotPair()
+          ? 'Creates a pin. The link swings about the pin axis; set its start angle.'
+          : 'Creates a fixed joint. These parts move together.'
         : 'No joint. Touching parts can separate when you run.';
     apply.textContent = state?.replaceConnection
       ? 'Apply mount'

@@ -1084,6 +1084,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-pivot-pin-browser",
+      "script": "scripts/verify-pivot-pin-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "measure-gears",
       "script": "scripts/measure-gears.mjs",
       "execution": "exclusive",
@@ -1358,6 +1369,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "a length change keeps long-face mounts that still fit and rejects the rest atomically"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a coincident pin-head closure admits through the surface-mount path without moving a part"
           }
         ],
         "negative": [
@@ -1704,6 +1719,75 @@
       ]
     },
     {
+      "id": "passive-pin-linkage",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A pivot connection compiles to a passive revolute about the mated face normal that transmits no torque about its axis, keeps the pinned pair contact-free through its 10 mm body, and admits a surface-mount loop only when the proposed mate already coincides.",
+      "owners": [
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "surfaceMountCandidate"
+        },
+        {
+          "path": "src/model/surfaces.mjs",
+          "anchor": "resolveSurfaceEndpoint"
+        },
+        {
+          "path": "src/model/blueprint.mjs",
+          "anchor": "validateBlueprint"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-pivot-pin-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "compile: a pinned pair is one fixed joint and one passive revolute about the mated normal"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a pinned link swings as a compound pendulum; a fixed joint does not; the pin transmits no torque"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a coincident pin-head closure admits through the surface-mount path without moving a part"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "links on a pin swing over each other with 10 mm clearance and never touch"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a driven parallelogram keeps the rocker parallel to the crank with millimetre joint drift and no link contact"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a joint angle sensor bound to a pivot edge reads the swing, and unbinds when the pin goes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "admission: pivot needs exactly one revolute joint face, kind-matched, exclusive and centred"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a pin head admits its partner at any start angle; the pad-projection rule stays for ordinary faces"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
       "id": "identity-material-admission",
       "ruleId": "identity",
       "dueAt": "M3b",
@@ -1730,6 +1814,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "a committed save without length loads unchanged and compiles to the same configuration"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "pivot pin is an ordinary catalog part with a declared revolute joint face"
           }
         ],
         "negative": [
@@ -1740,6 +1828,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "renaming and rig placement never change a beam whose length and material are fixed"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "renaming and rig placement never change a pinned pair; material changes mass only"
           }
         ]
       },
@@ -1851,6 +1943,10 @@
           {
             "path": "test/duplication.test.mjs",
             "anchor": "a copy lands one extent plus clearance from the original, snapped outward to the grid"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "mirroring and reusable-assembly instantiation keep the pivot kind and its endpoints"
           }
         ],
         "negative": [

@@ -23,6 +23,7 @@ export const BLUEPRINT_REASON_CODES = Object.freeze([
   'SELF_CONNECTION',
   'PORT_OCCUPIED',
   'RELEASE_LATCH_CONFLICT',
+  'JOINT_FACE_CONFLICT',
   'UNKNOWN_MATERIAL',
   'INVALID_ROTATION',
   'INCOMPATIBLE_PORT_DIRECTION',
@@ -210,12 +211,34 @@ export function validateBlueprint(blueprint) {
         CATALOG[b.type].releaseFace === connection.b.surface.region
       )
         return result('RELEASE_LATCH_CONFLICT', path);
-      if (a && b)
+      if (a && b) {
+        // A joint face mates by kind: exactly one revolute joint face makes a pivot; a fixed
+        // pair has none. Latch and load-cell faces need a rigid mount, so a pin may not sit there.
+        const joints = [
+          CATALOG[a.type].jointFace?.region === connection.a.surface.region
+            ? CATALOG[a.type].jointFace.joint
+            : null,
+          CATALOG[b.type].jointFace?.region === connection.b.surface.region
+            ? CATALOG[b.type].jointFace.joint
+            : null,
+        ];
+        const revolute = joints.filter((j) => j === 'revolute').length,
+          declared = joints.filter(Boolean).length;
+        if (connection.kind === 'pivot') {
+          if (revolute !== 1 || declared !== 1) return result('INVALID_BLUEPRINT', path);
+          const other = joints[0] ? [b, connection.b] : [a, connection.a];
+          if (
+            CATALOG[other[0].type].releaseFace === other[1].surface.region ||
+            other[0].type === 'loadCellSensor'
+          )
+            return result('JOINT_FACE_CONFLICT', path);
+        } else if (declared) return result('INVALID_BLUEPRINT', path);
         try {
           validateSurfacePair(a, connection.a, b, connection.b);
         } catch (error) {
           return result(error.reasonCode, path);
         }
+      }
     }
     if (
       connection.kind === 'spring' &&
@@ -230,7 +253,7 @@ export function validateBlueprint(blueprint) {
       if (!part) return result('UNKNOWN_PART', `${path}/${side}/part`);
       let port;
       if (endpoint.surface) {
-        if (blueprint.version !== 3 || connection.kind !== 'fixed')
+        if (blueprint.version !== 3 || !['fixed', 'pivot'].includes(connection.kind))
           return result('INVALID_BLUEPRINT', `${path}/${side}`);
         try {
           port = resolveSurfaceEndpoint(part, endpoint);
@@ -238,7 +261,7 @@ export function validateBlueprint(blueprint) {
           return result(error.reasonCode, `${path}/${side}`);
         }
       } else port = CATALOG[part.type].ports.find((port) => port.id === endpoint.port);
-      if (!port || port.kind !== connection.kind)
+      if (!port || (endpoint.surface ? connection.kind === 'rope' : port.kind !== connection.kind))
         return result('UNKNOWN_PORT', `${path}/${side}/port`);
       if (connection.kind === 'signal' && port.direction !== (side === 'a' ? 'output' : 'input'))
         return result('INCOMPATIBLE_PORT_DIRECTION', `${path}/${side}/port`);

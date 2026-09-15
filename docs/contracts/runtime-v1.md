@@ -279,7 +279,9 @@ component. Optional `assemblyId` requires the selected source to be a member of 
 editor group and includes every member's mechanical component in the same rigid
 transform and collision check. Without it, only the selected mechanical component
 moves. The receiving part remains fixed.
-A remaining mechanical path to the receiver refuses adjustment. An optional
+A remaining mechanical path to the receiver refuses adjustment unless the proposed mate
+already coincides — within 1 µm, with opposed normals for a `fixed` pair or an agreeing
+axis for a `pivot` pair — in which case the loop closes without moving any part. An optional
 `expectedCursor` rejects stale requests. Preview is transient authoring state;
 it does not write completed physical poses. Undo restores the entire transaction.
 
