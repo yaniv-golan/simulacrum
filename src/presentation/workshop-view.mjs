@@ -304,7 +304,7 @@ export function createWorkshopView(
   // occasional tools. Words stay where a glyph is not universal; the chips show driving keys.
   const modebar = element('div', 'modebar');
   const run = button('Run', () => send({ type: 'run' })),
-    pause = button('', () => send({ type: 'pause' }), 'icon-only'),
+    pause = button('', () => send({ type: 'pause' })),
     build = button('Build', () => send({ type: 'build' }));
   run.dataset.command = 'run';
   pause.dataset.command = 'pause';
@@ -1634,7 +1634,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Machine controls shows the keys configured on this machine. Space runs or pauses; . steps one tick while paused. Return to Build restores the editable starting machine.',
+      'Machine controls shows the keys configured on this machine. Space runs or pauses; . steps one tick while paused. ? opens this help. Return to Build restores the editable starting machine.',
     ),
     hint,
   );

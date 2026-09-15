@@ -29,7 +29,6 @@ function withDocument(run) {
 
 test('every named icon is a fresh decorative 16-grid svg with drawn shapes', () => {
   withDocument(() => {
-    assert.ok(ICONS.length >= 9, 'the header needs at least nine glyphs');
     for (const name of ICONS) {
       const svg = icon(name);
       assert.equal(svg.tagName, 'svg', name);

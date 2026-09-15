@@ -16,6 +16,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-15-top-bar-breathes',
+      date: '2026-09-15',
+      name: 'The top bar breathes',
+      summary:
+        'Undo, Redo and Pause are icons that explain themselves on hover; + Add part leads the bar; Choose scene lives under Tools.',
+    },
+    {
       id: '2026-09-15-summon-the-parts',
       date: '2026-09-15',
       name: 'Summon the parts from anywhere',
@@ -49,13 +56,6 @@ export const RELEASE_NOTES = Object.freeze(
       name: 'One Build | Run switch and a Tools menu',
       summary:
         'Pause and Step show once running; the occasional tools (Check machine, Measurements, Assemblies, New, Load, Edit scene) live under Tools.',
-    },
-    {
-      id: '2026-09-15-top-bar-breathes',
-      date: '2026-09-15',
-      name: 'The top bar breathes',
-      summary:
-        'Undo, Redo and Pause are icons that explain themselves on hover; + Add part leads the bar; Choose scene lives under Tools.',
     },
     {
       id: '2026-09-15-six-essentials',

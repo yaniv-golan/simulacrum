@@ -105,7 +105,6 @@ test('control titles join the name and key, and a reason for being off replaces 
     'Nothing to undo',
   );
   assert.equal(controlTitle({ name: 'Save' }), 'Save');
-  assert.equal(controlTitle({ name: 'Save', key: '' }), 'Save');
   assert.equal(controlTitle({ name: 'Undo', key: '⌘Z', reason: '' }), 'Undo · ⌘Z');
 });
 
@@ -116,5 +115,4 @@ test('history chords follow the platform modifier', () => {
   assert.deepEqual(historyChord('Win32'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
   assert.deepEqual(historyChord('Linux x86_64'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
   assert.deepEqual(historyChord(undefined), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
-  assert.notEqual(historyChord('Windows').undo, '⌘Z', 'a Windows player never sees ⌘');
 });

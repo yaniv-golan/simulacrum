@@ -141,12 +141,12 @@ Learn (accessible name "Learn & examples"), Help and the GitHub link. The occasi
 commands — Check machine, Measurements, Assemblies, New, Load, Choose scene, Edit
 scene — live under Tools, which closes on pick, Escape or leaving it, each command
 keeping its name and `data-command`. Undo, Redo and Pause are icon-only; every
-icon-only control carries `aria-label` = its name, `title` = name · key or, when it is
-off, the reason ("Nothing to undo"), and a 36 px target; the single driving keys stay as
-visible chips (Space, ., P) and chords live in the tooltips (⌘Z or Ctrl+Z by platform);
-Help › Controls lists the same names and keys for touch. Chrome glyphs come from one
-set ([icons](../../src/presentation/icons.mjs#source), Primer Octicons plus a pause
-drawn on its grid); parts keep their mesh thumbnails. The brand subtitle is gone — the
+icon-only control carries `aria-label` = its name, `title` = name · key (Undo and Redo
+say instead why they are off: "Nothing to undo", "Undo returns in Build"), and a 36 px
+target; the single driving keys stay as visible chips (Space, ., P) and chords live in
+the tooltips (⌘Z or Ctrl+Z by platform); Help › Controls lists the same keys for touch.
+Header glyphs come from one set ([icons](../../src/presentation/icons.mjs#source),
+Primer Octicons plus a pause drawn on its grid); parts keep their mesh thumbnails. The brand subtitle is gone — the
 page title and Help › About say "Mechanical workshop". The compact parts catalogue in the left column (the summoned
 overlay is its expanded state, see below); separate edit and view groups at the workbench
 edge; selected properties and operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.

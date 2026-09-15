@@ -94,10 +94,8 @@ button.primary:hover:not(:disabled) {
   border-radius: 7px;
 }
 .workshop-header button.icon-only {
-  padding: 0;
-}
-.workshop-header button.icon-only:not(.keyed) {
   width: 36px;
+  padding: 0;
 }
 .workshop-header .icon {
   flex: none;
@@ -137,7 +135,7 @@ button.primary:hover:not(:disabled) {
 .filebar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 /* One Build | Run switch: the pressed segment reads as the current mode, not as a disabled button. */
 .mode-switch {
@@ -145,9 +143,10 @@ button.primary:hover:not(:disabled) {
   border-radius: 8px;
   overflow: hidden;
 }
-.mode-switch button {
+.workshop-header .mode-switch button {
   border-radius: 0;
   margin: 0;
+  font-weight: 700;
 }
 .mode-switch button[aria-pressed='true'] {
   background: #f2b46a;
@@ -651,8 +650,6 @@ button:not(.keyed) > .key-badge {
     order: 3;
     width: 100%;
     justify-content: center;
-  }
-  .modebar {
     gap: 8px;
   }
   .workshop-body {
@@ -713,11 +710,7 @@ button:not(.keyed) > .key-badge {
     font-size: 10px;
   }
   .filebar {
-    gap: 0;
-  }
-  .filebar button {
-    padding: 6px;
-    font-size: 11px;
+    gap: 8px;
   }
 }
 /* Selection and its details share one panel. The left rail only adds parts. */
