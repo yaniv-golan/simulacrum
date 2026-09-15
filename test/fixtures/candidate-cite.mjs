@@ -164,6 +164,7 @@ try {
         stdout: child.stdout.trim(),
         stderr: child.stderr.trim(),
         attempt: JSON.parse(readFileSync(first.report.attemptReport, 'utf8')),
+        latest: JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8')),
       };
     }
   }

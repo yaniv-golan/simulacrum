@@ -155,10 +155,8 @@ test('a running final is pending only when the slot owner says so; cite-final re
   const pointer = run('cite-final-pointer');
   assert.equal(pointer.second.code, 1);
   assert.match(pointer.second.attempt.status, /pending final/);
-  assert.match(
-    pointer.second.stderr + pointer.second.stdout,
-    /cite-final needs the attempt report itself/,
-  );
+  assert.equal(pointer.second.latest.status, 'failed');
+  assert.match(pointer.second.latest.error, /cite-final needs the attempt report itself/);
   // The final ended red: the merge report becomes failed, carrying the failure.
   const redFinal = run('cite-final-red');
   assert.equal(redFinal.second.code, 1);
