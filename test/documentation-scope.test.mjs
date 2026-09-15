@@ -201,6 +201,37 @@ test('implicit package version coverage excludes command scripts but explicit pa
   assert.equal(f.inspect().sections[0].stale, true);
 });
 
+test('a version-only package bump stales no implicit dependency coverage', (t) => {
+  const f = fixture(t);
+  const pkg = { version: '0.3.0', dependencies: { three: '1' }, scripts: { dev: 'vite' } };
+  const lock = {
+    name: 'p',
+    version: '0.3.0',
+    packages: {
+      '': { version: '0.3.0', dependencies: { three: '1' } },
+      'node_modules/three': { version: '1' },
+    },
+  };
+  f.put('package.json', JSON.stringify(pkg));
+  f.put('package-lock.json', JSON.stringify(lock));
+  f.put('src/owner.mjs', "import * as THREE from 'three';export const material=THREE.Material;");
+  f.put(document, '# Owner\n[owner](../../src/owner.mjs#implementation)\n');
+  f.review();
+  pkg.version = '0.4.0';
+  lock.version = '0.4.0';
+  lock.packages[''].version = '0.4.0';
+  f.put('package.json', JSON.stringify(pkg));
+  f.put('package-lock.json', JSON.stringify(lock));
+  assert.equal(f.inspect().sections[0].stale, false, 'the release version is not a dependency');
+  lock.packages['node_modules/three'].version = '2';
+  f.put('package-lock.json', JSON.stringify(lock));
+  assert.equal(f.inspect().sections[0].stale, true, 'a resolved dependency version is');
+  f.review();
+  pkg.dependencies.three = '2';
+  f.put('package.json', JSON.stringify(pkg));
+  assert.equal(f.inspect().sections[0].stale, true, 'a declared dependency range is');
+});
+
 test('install lifecycle scripts retain their indirect npm command dependencies', (t) => {
   const f = fixture(t),
     pkg = {
