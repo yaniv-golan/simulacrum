@@ -219,6 +219,7 @@ export function validateCauses(
 
 const browserId = (id) => (id.startsWith('browser:') ? id.slice('browser:'.length) : null);
 const unitFile = (id) => (id.startsWith('unit:') ? id.slice('unit:'.length) : null);
+const structuralId = (id) => (id.startsWith('structural:') ? id.slice('structural:'.length) : null);
 /** Only unit leaves and browser checks registered neither timing-sensitive nor as merge smoke
  * may carry a receipt forward. Always-fresh is derived: the registered timingSensitive and
  * mergeSmoke facts plus the structural classes (gates, builds, aggregates, hosted and human bars). */
@@ -263,12 +264,14 @@ export function requiredReexecution({ classification, manifest }) {
   const invariants = manifest.invariants ?? [];
   const controlsOf = (invariant) =>
     [...invariant.controls.positive, ...invariant.controls.negative].map((c) => `unit:${c.path}`);
+  // A structural check's receipt is keyed `structural:<id>` (gate-structural.mjs); a required
+  // id must name a receipt the child can carry, or no passing child could ever validate.
   const leafOfCheck = (checkId) =>
     manifest.browserChecks.some((c) => c.id === checkId)
       ? `browser:${checkId}`
-      : `check:${checkId}`;
+      : `structural:${checkId}`;
   for (const id of [...set]) {
-    const check = browserId(id) ?? (id.startsWith('check:') ? id.slice(6) : null),
+    const check = browserId(id) ?? structuralId(id),
       file = unitFile(id);
     for (const invariant of invariants) {
       if (check && invariant.checks?.includes(check))

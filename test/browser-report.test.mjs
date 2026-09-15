@@ -591,4 +591,93 @@ test("the suite failure names refused rows apart from failed ones by the suite's
   const unscheduled = browserSuiteFailure([{ id: 'ghost', ok: false, error: Error('x') }], []);
   assert.deepEqual(unscheduled.notEvaluated, []);
   assert.deepEqual(unscheduled.failedChecks, ['ghost']);
+  // Item 50: an admission refusal is thrown before the runner reaches the row, so at failure
+  // time the run row may still read 'queued'; the refusal on the outcome's error is enough.
+  const refusedEarly = Object.assign(Error('not evaluated: host pressure'), {
+    notEvaluated: true,
+    failureKind: 'host-load',
+  });
+  const early = browserSuiteFailure(
+    [{ id: 'perf', ok: false, error: refusedEarly }],
+    [{ id: 'perf', status: 'queued' }],
+  );
+  assert.deepEqual(early.notEvaluated, ['perf']);
+  assert.deepEqual(early.failedChecks, []);
+});
+
+test('a timing phase refused by admission marks its rows and names them on the suite failure (real suite path)', async (t) => {
+  // Item 50, the real path: candidate Cnk8eN's browser phase row carried no notEvaluated list
+  // because the refusal never reached the per-row catch. This drives the real suite with the
+  // host and admission inputs stubbed: a refused timing row must be marked on its run row and
+  // listed on the thrown failure, so a diagnosed retry can complete it.
+  const { verifyBrowserSuite } = await import('../scripts/verify-browser-suite.mjs');
+  const { sourceIdentity } = await import('../scripts/source-identity.mjs');
+  const { appFingerprint } = await import('../scripts/app-fingerprint.mjs');
+  const { mkdirSync, existsSync } = await import('node:fs');
+  const manifest = JSON.parse(
+    readFileSync(new URL('../scripts/manifest.json', import.meta.url), 'utf8'),
+  );
+  const timingRow = manifest.browserChecks.find((c) => c.timingSensitive === true);
+  assert.ok(timingRow, 'a timing-sensitive row is registered');
+  // The suite writes the checkout's canonical suite reports and scheduling history; the
+  // refusal is load-driven (the pressure policy is frozen at import), so only the wait is
+  // shortened. Every file the run touches is snapshotted and restored, and its run directory
+  // removed, so no stub row survives into a later tier's history.
+  const savedWait = process.env.SIMULACRUM_TIMING_WAIT_MS;
+  process.env.SIMULACRUM_TIMING_WAIT_MS = '1';
+  const stamp = 'dist/.verification-source.json';
+  const canonical = [
+    stamp,
+    'artifacts/browser-suite/last-run.json',
+    'artifacts/browser-suite/selected.json',
+    'artifacts/browser-suite/scheduling-history.json',
+  ];
+  const snapshot = new Map(
+    canonical.map((path) => [path, existsSync(path) ? readFileSync(path) : null]),
+  );
+  mkdirSync('dist', { recursive: true });
+  writeFileSync(stamp, JSON.stringify({ source: sourceIdentity(), app: appFingerprint() }));
+  let runId = null;
+  t.after(() => {
+    if (savedWait === undefined) delete process.env.SIMULACRUM_TIMING_WAIT_MS;
+    else process.env.SIMULACRUM_TIMING_WAIT_MS = savedWait;
+    for (const [path, bytes] of snapshot)
+      if (bytes === null) rmSync(path, { force: true });
+      else writeFileSync(path, bytes);
+    if (runId) rmSync(`artifacts/browser-suite/runs/${runId}`, { recursive: true, force: true });
+  });
+  const context = {
+    identity: { source: sourceIdentity(), build: 'test' },
+    hostProfile: null,
+    check: async (id, configuration, execute) => execute(),
+    receipts: () => [],
+  };
+  // A tier context with derived workers on a host that never quiets: load1 far above the
+  // bound and no idle CPU, so admission refuses after the 1 ms wait.
+  const host = {
+    cores: 8,
+    load1: () => 99,
+    priority: () => 0,
+    pressure: async () => ({
+      method: 'stub',
+      idlePercent: 5,
+      foreign: [{ comm: 'WindowServer', pcpu: 60, pid: 1 }],
+    }),
+  };
+  let thrown = null;
+  try {
+    await verifyBrowserSuite([timingRow.id], { context, host, reuseBuild: true });
+  } catch (error) {
+    thrown = error;
+  }
+  assert.ok(thrown, 'the suite fails when its only row is refused');
+  assert.deepEqual(thrown.notEvaluated, [timingRow.id]);
+  assert.deepEqual(thrown.failedChecks, []);
+  const report = JSON.parse(readFileSync('artifacts/browser-suite/last-run.json', 'utf8'));
+  runId = report.runId;
+  const row = report.runs.find((r) => r.id === timingRow.id);
+  assert.equal(row.status, 'not evaluated');
+  assert.equal(row.failureKind, 'host-load');
+  assert.match(row.reason, /not evaluated/);
+  assert.equal(report.timingAdmission.admitted, false);
 });

@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"7f698d2d585c3a40bd70e64bbfca90079c79a798c11e88cb8e1a7580cf6eb566","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"edbb1ff4ea36a9c9737e5a9c136e0e0746ce8e1c96171a86cf1e49d3a81c739f","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; no player-facing surface changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"609b806fddb08cc27811f699c9a2b36611b1be74266dde98b0c61037fe8e8866","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"428869a0c0425d0c95a32e4237b566eae48eb0101a226e14fd1da8582c11f617","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): the shared browser session now scales every page deadline by the profile's registered `waitScale` (clamped to 60 % of the row budget), budgets workshop startup separately from the interaction deadline, records `waitScale`/`liveWaits`/`targetGeometry` in its evidence, and refuses a wait scale that did not come from the suite; `liveWait` takes its slice from `liveSliceMs` and samples frame gaps; `host-profile.mjs` registers the two facts and passes them to check children as numbers. No surface, lifecycle rule or player-facing copy changed; the session changes are harness-side evidence and patience."} -->
 
 
 
@@ -556,7 +556,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"1fb638c2ad2ff26afa7ab580603c48e994c11ef4bd96bdfc047e70835a0cfadf","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"051905c6bbcb3dcddfec1721f8b12681543c3dc11a9146c164dee85039752f61","disposition":"still accurate","rationale":"The workbench-content and learning-examples journeys gained the first-run, footer and guide assertions and workbench-content.mjs gained pure models with unit controls; the verification guidance (scope discovery, journeys, separation of automation from player evidence) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"905f742af78fd84d17a22d4680f3ac4b81858ee021e8ec2dee99e14b7f7c2258","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"9d226fc27cb90d4ea42684e0d5ab78cb4703182f48d4cf8de19ae77a07dae2e8","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): verify-authorable-scenes routes three literal 2 s waits through `evidence.waitBudget`; the section's rules for verifying journeys and rendered layout and for reporting automation separately from player evidence are unchanged."} -->
 
 
 

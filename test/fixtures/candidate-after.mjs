@@ -182,7 +182,7 @@ globalThis.candidateTransport = {
       };
       try {
         await phase('ci', async () => {
-          await context.check('check:layers', {}, leaf('check:layers', undefined));
+          await context.check('structural:layers', {}, leaf('structural:layers', undefined));
           await context.check('ci:budget', { limitMs: 1 }, async () => {
             executed.push('ci:budget');
             await context.node('unit:test/a.test.mjs', ['--test', 'test/a.test.mjs']);

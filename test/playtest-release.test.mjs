@@ -6,7 +6,10 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { verifyPackage } from '../scripts/playtest/release.mjs';
 import { validateReleaseConfig } from '../scripts/playtest/release-config.mjs';
-import { verificationHash } from '../scripts/playtest/package-verification.mjs';
+import {
+  verificationHash,
+  assertPackageVerification,
+} from '../scripts/playtest/package-verification.mjs';
 import { verificationOutcome } from '../scripts/verification-outcome.mjs';
 function verifiedFixture(manifest) {
   const source = { head: 'a'.repeat(40), workingTreeDigest: 'b'.repeat(64) };
@@ -826,4 +829,140 @@ test('recording-only capacity cannot qualify feedback-enabled releases', async (
       },
     );
   }
+});
+
+// A package that cites another candidate's receipts must say so consistently, and only an
+// experimental release may consume it.
+test('release package names every reused receipt and only an experimental release accepts one', () => {
+  const attempt = '12345678-1234-4123-8123-123456789abc';
+  const origin = { attempt, report: '/private/parent/report.json', depth: 1 };
+  const build = (overrides = {}) => {
+    const manifest = verifiedFixture({ artifact: 'd'.repeat(64), ...overrides.top });
+    manifest.verification.checks = [
+      { id: 'browser:reused', ok: true, configuration: {}, elapsedMs: 0, resumed: true, origin },
+      { id: 'browser:fresh', ok: true, configuration: {}, elapsedMs: 3 },
+      { id: 'ci', ok: true, configuration: {}, elapsedMs: 2 },
+    ];
+    manifest.verification.automation = verificationOutcome(
+      manifest.verification.results,
+      manifest.verification.checks,
+    ).automation;
+    manifest.verification.status = 'passed with reused receipts';
+    manifest.verification.reuse = {
+      kind: 'reuse',
+      parentAttempt: attempt,
+      parentReport: origin.report,
+      parentTier: 'merge',
+      offered: ['browser:reused'],
+      reused: [
+        {
+          id: 'browser:reused',
+          origin,
+          evidenceChecksums: [{ path: '/private/parent/evidence/reused', directory: true }],
+          copiedTo: 'artifacts/browser-suite/reused/x/reused',
+          copiedChecksums: [],
+        },
+      ],
+      executed: ['browser:fresh', 'ci'],
+      counts: { offered: 1, reused: 1, executed: 2 },
+    };
+    Object.assign(manifest.verification.reuse, overrides.reuse ?? {});
+    overrides.mutate?.(manifest.verification);
+    manifest.verificationHash = verificationHash(manifest.verification);
+    return manifest;
+  };
+  assertPackageVerification(build(), { allowReusedEvidence: true });
+  assert.throws(() => assertPackageVerification(build()), /experimental|reused/);
+  assert.throws(
+    () =>
+      assertPackageVerification(build({ reuse: { parentTier: 'local' } }), {
+        allowReusedEvidence: true,
+      }),
+    /merge/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(build({ reuse: { reused: [] } }), { allowReusedEvidence: true }),
+    /status|resumed/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(
+        build({ reuse: { counts: { offered: 1, reused: 40, executed: 2 } } }),
+        {
+          allowReusedEvidence: true,
+        },
+      ),
+    /counts/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(build({ reuse: { executed: ['browser:fresh'] } }), {
+        allowReusedEvidence: true,
+      }),
+    /executed/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(build({ mutate: (v) => delete v.reuse.reused[0].copiedTo }), {
+        allowReusedEvidence: true,
+      }),
+    /evidence/,
+  );
+  // A citing release that executed everything is a plain pass every consumer accepts.
+  const nothingReused = verifiedFixture({ artifact: '9'.repeat(64) });
+  nothingReused.verification.status = 'passed';
+  nothingReused.verification.reuse = {
+    kind: 'reuse',
+    parentAttempt: attempt,
+    parentReport: origin.report,
+    parentTier: 'merge',
+    offered: ['fixture-check'],
+    reused: [],
+    executed: ['fixture-check'],
+    counts: { offered: 1, reused: 0, executed: 1 },
+  };
+  nothingReused.verificationHash = verificationHash(nothingReused.verification);
+  assertPackageVerification(nothingReused);
+  assertPackageVerification(nothingReused, { allowReusedEvidence: true });
+  assert.throws(
+    () =>
+      assertPackageVerification(
+        build({ reuse: { reused: [{ id: 'browser:fresh', origin, evidenceChecksums: [] }] } }),
+        { allowReusedEvidence: true },
+      ),
+    /browser:fresh/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(
+        build({ mutate: (v) => (v.checks[0].origin = { ...origin, attempt: '0'.repeat(36) }) }),
+        { allowReusedEvidence: true },
+      ),
+    /origin|attempt/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(
+        build({ mutate: (v) => (v.checks[0].origin = { ...origin, depth: 2 }) }),
+        { allowReusedEvidence: true },
+      ),
+    /depth/,
+  );
+  assert.throws(
+    () =>
+      assertPackageVerification(build({ mutate: (v) => (v.status = 'passed') }), {
+        allowReusedEvidence: true,
+      }),
+    /status/,
+  );
+  // A plain package is unchanged: no reuse block, no resumed receipt, both callers accept it.
+  const plain = verifiedFixture({ artifact: 'e'.repeat(64) });
+  assertPackageVerification(plain);
+  assertPackageVerification(plain, { allowReusedEvidence: true });
+  const stray = verifiedFixture({ artifact: 'f'.repeat(64) });
+  stray.verification.checks[0].resumed = true;
+  stray.verification.checks[0].origin = origin;
+  stray.verificationHash = verificationHash(stray.verification);
+  assert.throws(() => assertPackageVerification(stray, { allowReusedEvidence: true }), /reuse/);
 });

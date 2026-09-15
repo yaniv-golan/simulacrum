@@ -149,7 +149,7 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const browser = await evidence.launch({ profile: 'ui', channel: 'chrome', headless: true });
 const origin = `http://127.0.0.1:${server.address().port}`;
 async function until(predicate, limit = 10000) {
-  const deadline = Date.now() + limit;
+  const deadline = Date.now() + evidence.waitBudget(limit);
   while (!(await predicate())) {
     if (Date.now() > deadline) throw Error('Fixture condition timed out');
     await new Promise((resolve) => setTimeout(resolve, 20));

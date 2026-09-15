@@ -194,7 +194,7 @@ try {
         return now - window.__idleRenderProbe.since >= 350;
       },
       null,
-      { timeout: 15000 },
+      { timeout: browserEvidence.waitBudget(15000) },
     );
     const before = await frames();
     // Prove the renderer was alive while it submitted nothing; a starved window is refused.
