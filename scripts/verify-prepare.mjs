@@ -45,6 +45,13 @@ try {
     console.log(
       'Review proposal with browser:scopes review format; supply --scope-review. Unknown reads need --declarations.',
     );
+  if (report.proposal?.declarationSkeletons) {
+    const skeleton = path.replace(/\.json$/, '') + '.declarations.json';
+    writeFileSync(skeleton, JSON.stringify(report.proposal.declarationSkeletons, null, 2) + '\n');
+    console.log(
+      `Declaration skeleton saved to ${skeleton} for ${report.proposal.declarationSkeletons.map((s) => s.entrypoint).join(', ')}; it replaces the row's reads whole.`,
+    );
+  }
   if (report.documentation)
     console.log(
       'Supply --documentation-review JSON {source: <report.source>, decisions: <docs:review batch rows>}.',

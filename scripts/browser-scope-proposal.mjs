@@ -1,10 +1,5 @@
 import { createHash } from 'node:crypto';
-import {
-  classifyReads,
-  declarationSkeleton,
-  READ_PURPOSES,
-  REQUIRED_EXCLUSIONS,
-} from './read-classification.mjs';
+import { classifyRead, classifyReads, declarationSkeleton } from './read-classification.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -51,20 +46,18 @@ function validateDeclaration(d) {
     throw Error(
       'Invalid scope declaration; supply kind, entrypoint and authored reads/checks only',
     );
-  if (
-    d.reads !== undefined &&
-    (!Array.isArray(d.reads) ||
-      d.reads.some(
-        (r) =>
-          !only(r, ['expression', 'purpose', 'excludedInputs']) ||
-          typeof r.expression !== 'string' ||
-          !r.expression ||
-          !READ_PURPOSES.includes(r.purpose) ||
-          !strings(r.excludedInputs) ||
-          r.excludedInputs.some((k) => !REQUIRED_EXCLUSIONS.includes(k)),
-      ))
-  )
-    throw Error('Invalid read classification');
+  if (d.reads !== undefined && !Array.isArray(d.reads))
+    throw Error(`${d.kind}:${d.entrypoint}: reads must be an array`);
+  for (const r of d.reads ?? []) {
+    if (!only(r, ['expression', 'purpose', 'excludedInputs']))
+      throw Error(
+        `${d.kind}:${d.entrypoint}: a read declares expression, purpose and excludedInputs only`,
+      );
+    // The same predicate selection trusts, so a refusal here names the read and the field — a
+    // skeleton with a placeholder purpose left in is refused by name, not as "invalid".
+    const classified = classifyRead(r);
+    if (!classified.ok) throw Error(`${d.kind}:${d.entrypoint}: ${classified.reason}`);
+  }
   if (d.reads && new Set(d.reads.map((r) => r.expression)).size !== d.reads.length)
     throw Error('Duplicate read classification');
 }
@@ -260,11 +253,7 @@ export function deriveScopeProposal(
         if (proposed.reads.some((r) => r.purpose === null)) {
           blocked.push(`${key}: unclassified reads require explicit declarations`);
           skeletons.push(
-            declarationSkeleton(
-              path,
-              proposed.reads.filter((r) => r.purpose === null).map((r) => r.expression),
-              { checks: proposed.checks ?? [] },
-            ),
+            declarationSkeleton(path, proposed.reads, { checks: proposed.checks ?? [] }),
           );
         }
         // A classification selection would not trust is refused here, naming the read and the

@@ -7,7 +7,6 @@ import {
   READ_PURPOSES,
   REQUIRED_EXCLUSIONS,
 } from '../scripts/read-classification.mjs';
-import { readManifest } from '../scripts/validate-manifest.mjs';
 
 test('an audited read names its purpose and excludes both documentation and unit tests; every refusal names the field', () => {
   const full = {
@@ -20,7 +19,7 @@ test('an audited read names its purpose and excludes both documentation and unit
     ok: true,
     reasons: [],
   });
-  // The lamp-shadows declaration of 2026-09-15: a purpose but no exclusions.
+  // The real case (2026-09-15): a purpose given, exclusions left empty.
   const partial = classifyRead({ ...full, excludedInputs: [] });
   assert.equal(partial.ok, false);
   assert.match(partial.reason, /readFileSync\(path\)/);
@@ -45,33 +44,48 @@ test('an audited read names its purpose and excludes both documentation and unit
   assert.match(classifyRead(null).reason, /not an object/);
   assert.deepEqual(classifyReads('nope'), { ok: false, reasons: ['reads is not an array'] });
   assert.deepEqual([...READ_PURPOSES], ['identity', 'fixture', 'runtime', 'source-analysis']);
-  // Every registered row already satisfies the predicate: the block changes nothing on main.
-  for (const scope of readManifest().browserReviewMetadataScopes ?? [])
-    assert.deepEqual(classifyReads(scope.reads ?? []), { ok: true, reasons: [] }, scope.entrypoint);
 });
 
-test('a declaration skeleton lists every unclassified expression with the purpose left to choose and both exclusions present', () => {
-  const s = declarationSkeleton('scripts/x.mjs', ['execFileSync(bin)', 'readFileSync(a)'], {
-    checks: ['invariant-controls'],
-  });
+test('a declaration skeleton carries the whole row: existing classifications verbatim, each unclassified expression with the purpose left to choose and both exclusions present', () => {
+  const kept = {
+    expression: 'readFileSync(a)',
+    purpose: 'identity',
+    excludedInputs: ['documentation', 'unit-test'],
+  };
+  const s = declarationSkeleton(
+    'scripts/x.mjs',
+    [{ expression: 'execFileSync(bin)', purpose: null }, kept],
+    { checks: ['invariant-controls'] },
+  );
   assert.equal(s.kind, 'metadata');
   assert.equal(s.entrypoint, 'scripts/x.mjs');
   assert.deepEqual(
     s.reads.map((r) => r.expression),
     ['execFileSync(bin)', 'readFileSync(a)'],
   );
-  for (const r of s.reads) {
-    assert.match(r.purpose, /one of identity\|fixture\|runtime\|source-analysis/);
-    assert.deepEqual(r.excludedInputs, ['documentation', 'unit-test']);
-    assert.equal(classifyRead(r).ok, false, 'the skeleton is not itself a valid declaration');
-    assert.equal(
-      classifyRead({ ...r, purpose: 'runtime' }).ok,
-      true,
-      'choosing a purpose completes it',
-    );
-  }
+  // A declaration replaces the row's reads whole, so the classified read must ride along
+  // unchanged or re-declaring with the skeleton would unclassify it.
+  assert.deepEqual(s.reads[1], kept);
+  const placeholder = s.reads[0];
+  assert.match(placeholder.purpose, /one of identity\|fixture\|runtime\|source-analysis/);
+  assert.deepEqual(placeholder.excludedInputs, ['documentation', 'unit-test']);
+  assert.equal(
+    classifyRead(placeholder).ok,
+    false,
+    'the skeleton is not itself a valid declaration',
+  );
+  assert.equal(
+    classifyRead({ ...placeholder, purpose: 'runtime' }).ok,
+    true,
+    'a purpose completes it',
+  );
   assert.deepEqual(s.checks, ['invariant-controls']);
+  // Bare expressions are accepted as unclassified reads.
+  assert.deepEqual(
+    declarationSkeleton('scripts/y.mjs', ['x']).reads.map((r) => r.expression),
+    ['x'],
+  );
   assert.deepEqual(declarationSkeleton('scripts/y.mjs', []).checks, [
-    '<registered witness check id>',
+    '<registered witness check id from manifest.checks>',
   ]);
 });

@@ -128,14 +128,14 @@ export function selectAffectedBrowserChecks({
   const queue = checks.flatMap(browserCheckRoots);
   const closures = browserCheckClosures(checks, graph);
   const seen = new Set();
+  let unresolved = false,
+    readKindsAudited = metadataEnvironmentSafe;
   // Why the audit failed, per entrypoint: a widened selection must name its cause.
   const unaudited = [];
   const refuse = (entrypoint, reason) => {
     unaudited.push({ entrypoint, reason });
     readKindsAudited = false;
   };
-  let unresolved = false,
-    readKindsAudited = metadataEnvironmentSafe;
   if (!metadataEnvironmentSafe)
     unaudited.push({
       entrypoint: null,
@@ -152,46 +152,48 @@ export function selectAffectedBrowserChecks({
     }
     if (node.opaqueInputs) {
       unresolved = true;
-      let hash;
+      let hash = null;
       try {
         hash = createHash('sha256').update(readSource(path)).digest('hex');
       } catch (error) {
         refuse(path, `source unreadable: ${error.code ?? error.message}`);
       }
-      const audit = metadataScopes.find((scope) => scope.entrypoint === path);
-      const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-      const sorted = (list) => [...(list ?? [])].sort();
-      const reason = !audit
-        ? 'no metadata scope row'
-        : audit.sourceSha256 !== hash
-          ? 'sourceSha256 differs from the entrypoint source'
-          : !same(sorted(audit.dependencies), sorted(node.dependencies))
-            ? 'dependencies differ from the module graph'
-            : !same(
-                  sorted(audit.externalImports),
-                  sorted(
-                    (node.imports ?? []).filter((x) => x.target === null).map((x) => x.specifier),
-                  ),
-                )
-              ? 'externalImports differ from the module graph'
-              : !audit.reads ||
-                  !same(sorted(audit.reads.map((r) => r.expression)), sorted(node.opaqueReads))
-                ? 'reads differ from the opaque reads in source'
-                : !classifyReads(audit.reads).ok
-                  ? classifyReads(audit.reads).reasons.join('; ')
-                  : !same(audit.consumers, browserScopeConsumers(graph, path))
-                    ? 'consumers differ from the module graph'
-                    : !same(audit.reachingChecks, browserScopeRoots(checks, graph, path, closures))
-                      ? 'reachingChecks differ from the registered roots'
-                      : audit.consumerSourceHash !==
-                          browserConsumerSourceHash(graph, path, readSource, checks)
-                        ? "consumerSourceHash differs from the consumers' source"
-                        : null;
+      // One reason per entrypoint, in the order the row is compared; an unreadable source
+      // already has its reason.
+      const reason = hash === null ? null : auditReason(rowFor(path), node, hash, path);
       if (reason) refuse(path, reason);
     }
     queue.push(...node.dependencies);
   }
   const audit = { readKindsAudited, unaudited };
+  function rowFor(path) {
+    return metadataScopes.find((scope) => scope.entrypoint === path);
+  }
+  function auditReason(row, node, hash, path) {
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const sorted = (list) => [...list].sort();
+    if (!row) return 'no metadata scope row';
+    if (row.sourceSha256 !== hash) return 'sourceSha256 differs from the entrypoint source';
+    if (!Array.isArray(row.dependencies)) return 'row has no dependencies list';
+    if (!same(sorted(row.dependencies), sorted(node.dependencies)))
+      return 'dependencies differ from the module graph';
+    if (!Array.isArray(row.externalImports)) return 'row has no externalImports list';
+    const external = (node.imports ?? []).filter((x) => x.target === null).map((x) => x.specifier);
+    if (!same(sorted(row.externalImports), sorted(external)))
+      return 'externalImports differ from the module graph';
+    if (!Array.isArray(row.reads)) return 'row has no audited reads';
+    if (!same(sorted(row.reads.map((r) => r.expression)), sorted(node.opaqueReads ?? [])))
+      return 'reads differ from the opaque reads in source';
+    const classified = classifyReads(row.reads);
+    if (!classified.ok) return classified.reasons.join('; ');
+    if (!same(row.consumers, browserScopeConsumers(graph, path)))
+      return 'consumers differ from the module graph';
+    if (!same(row.reachingChecks, browserScopeRoots(checks, graph, path, closures)))
+      return 'reachingChecks differ from the registered roots';
+    if (row.consumerSourceHash !== browserConsumerSourceHash(graph, path, readSource, checks))
+      return "consumerSourceHash differs from the consumers' source";
+    return null;
+  }
   const documentation = (files ?? []).filter(
     (p) =>
       (!unresolved || readKindsAudited) &&
@@ -320,6 +322,11 @@ export function selectAffectedBrowserChecks({
     reasons,
     audit,
   };
+}
+/** One console line naming why a selection widened, or nothing when every read is audited. */
+export function unauditedLine(audit) {
+  if (!audit || audit.readKindsAudited) return '';
+  return ` — unaudited opaque reads: ${audit.unaudited.map((u) => `${u.entrypoint ?? 'environment'}: ${u.reason}`).join('; ')}`;
 }
 export function affectedBrowserChecks(files) {
   const root = process.cwd();

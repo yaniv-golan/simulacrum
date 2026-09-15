@@ -1,4 +1,8 @@
-import { browserGraphEntrypoints, selectAffectedBrowserChecks } from './browser-selection.mjs';
+import {
+  browserGraphEntrypoints,
+  selectAffectedBrowserChecks,
+  unauditedLine,
+} from './browser-selection.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildModuleGraph, explainAffectedTests } from './module-graph.mjs';
@@ -189,9 +193,7 @@ export function summarizeChangeInspection({ analysis, value: report }) {
     lines.push(`  Unknown browser inputs: ${report.browserSelection.unknownInputs.join(', ')}`);
   const audit = report.browserSelection.audit;
   if (audit && !audit.readKindsAudited)
-    lines.push(
-      `  Unaudited opaque reads (selection widened): ${audit.unaudited.map((u) => `${u.entrypoint ?? 'environment'}: ${u.reason}`).join('; ')}`,
-    );
+    lines.push(`  Unaudited opaque reads (selection widened)${unauditedLine(audit)}`);
   lines.push('Affected documentation:');
   for (const row of report.documentation.sections)
     lines.push(`  ${row.stale ? 'STALE' : 'current'} ${row.file}#${row.id}`);

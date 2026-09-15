@@ -5,6 +5,7 @@ import {
   selectAffectedBrowserChecks,
   browserScopeConsumers,
   browserScopeRoots,
+  browserConsumerSourceHash,
 } from '../scripts/browser-selection.mjs';
 
 test('unit-only documentation readers do not expand browsers, but browser and opaque readers do', () => {
@@ -104,16 +105,62 @@ test('selection reports why a metadata row is not audited so a widened selection
   const none = select([]);
   assert.equal(none.audit.readKindsAudited, false);
   assert.match(none.audit.unaudited[0].reason, /no metadata scope row/);
-  // Every return shape carries the audit block.
-  const doc = selectAffectedBrowserChecks({
+  // An environment override is a named reason too.
+  const env = selectAffectedBrowserChecks({
     checks,
     graph,
     files: ['docs/development/README.md'],
     scopes: [],
     metadataScopes: [],
-    readSource: (p) => p,
+    readSource: (p) => `${p}-source`,
     metadataEnvironmentSafe: false,
   });
-  assert.equal(doc.audit.readKindsAudited, false);
-  assert.match(doc.audit.unaudited[0].reason, /environment override/);
+  assert.equal(env.audit.readKindsAudited, false);
+  assert.match(env.audit.unaudited[0].reason, /environment override/);
+  // A complete row is audited: the documentation-only shape carries an empty unaudited list.
+  const complete = row([
+    {
+      expression: 'execFileSync(bin)',
+      purpose: 'runtime',
+      excludedInputs: ['documentation', 'unit-test'],
+    },
+  ]);
+  complete.consumerSourceHash = browserConsumerSourceHash(
+    graph,
+    'reader',
+    (p) => `${p}-source`,
+    checks,
+  );
+  const audited = select([complete]);
+  assert.deepEqual(audited.audit, { readKindsAudited: true, unaudited: [] });
+  assert.equal(audited.scope, 'documentation');
+  assert.deepEqual(audited.checks, []);
+  // The manifest local-contract shape carries the audit block as well.
+  const local = {
+    errors: [],
+    nodes: new Map([
+      ['help', { dependencies: ['copy'], imports: [] }],
+      ['copy', { dependencies: [], imports: [] }],
+      ['index.html', { dependencies: [], imports: [] }],
+    ]),
+  };
+  const contract = selectAffectedBrowserChecks({
+    checks,
+    graph: local,
+    files: ['copy'],
+    scopes: [
+      {
+        entrypoint: 'copy',
+        dependencies: [],
+        externalImports: [],
+        checks: ['help'],
+        consumers: browserScopeConsumers(local, 'copy'),
+        reachingChecks: browserScopeRoots(checks, local, 'copy'),
+      },
+    ],
+    metadataScopes: [],
+    readSource: (p) => p,
+  });
+  assert.equal(contract.scope, 'local-contract');
+  assert.deepEqual(contract.audit, { readKindsAudited: true, unaudited: [] });
 });

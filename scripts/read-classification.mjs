@@ -47,17 +47,26 @@ export function classifyReads(reads) {
   return { ok: reasons.length === 0, reasons };
 }
 
-/** The declaration an operator must author for an entrypoint's unclassified reads: every
- * expression with the purpose left to choose and both exclusions already present. */
-export function declarationSkeleton(entrypoint, expressions, { checks = [] } = {}) {
+/** The declaration an operator must author for an entrypoint: every read of the row, existing
+ * classifications carried verbatim and each unclassified expression with the purpose left to
+ * choose and both exclusions present. A declaration replaces the row's reads whole, so the
+ * skeleton must be whole too — a delta would unclassify what was already declared. */
+export function declarationSkeleton(entrypoint, reads, { checks = [] } = {}) {
   return {
     kind: 'metadata',
     entrypoint,
-    reads: [...expressions].sort().map((expression) => ({
-      expression,
-      purpose: `<one of ${READ_PURPOSES.join('|')}>`,
-      excludedInputs: [...REQUIRED_EXCLUSIONS],
-    })),
-    checks: checks.length ? [...checks] : ['<registered witness check id>'],
+    reads: [...reads]
+      .map((read) => (typeof read === 'string' ? { expression: read, purpose: null } : read))
+      .sort((a, b) => a.expression.localeCompare(b.expression))
+      .map((read) =>
+        read.purpose === null || read.purpose === undefined
+          ? {
+              expression: read.expression,
+              purpose: `<one of ${READ_PURPOSES.join('|')}>`,
+              excludedInputs: [...REQUIRED_EXCLUSIONS],
+            }
+          : { ...read },
+      ),
+    checks: checks.length ? [...checks] : ['<registered witness check id from manifest.checks>'],
   };
 }

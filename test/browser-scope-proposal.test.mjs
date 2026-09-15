@@ -372,10 +372,27 @@ test('a declaration selection would not trust is blocked at prepare naming the r
           purpose: '<one of identity|fixture|runtime|source-analysis>',
           excludedInputs: ['documentation', 'unit-test'],
         },
+        // The row's existing classification rides along: a declaration replaces reads whole.
+        { expression: 'path', purpose: 'identity', excludedInputs: ['documentation', 'unit-test'] },
       ],
       checks: ['controls'],
     },
   ]);
+  // A skeleton handed back with a placeholder purpose left in is refused by name, not as "invalid".
+  assert.throws(
+    () => deriveScopeProposal(input, none.declarationSkeletons),
+    /metadata:scripts\/read\.mjs: read `execFileSync\(esbuild\)` needs purpose in identity\|fixture\|runtime\|source-analysis/,
+  );
+  // A carried-forward row that predates the predicate blocks every proposal until re-declared.
+  const legacy = fixture();
+  const stale = JSON.parse(legacy.input.manifestText);
+  stale.browserReviewMetadataScopes[0].reads[0].excludedInputs = ['documentation'];
+  const carried = deriveScopeProposal({ ...legacy.input, manifestText: JSON.stringify(stale) });
+  assert.equal(carried.blocked.length, 1, carried.blocked.join('\n'));
+  assert.match(
+    carried.blocked[0],
+    /metadata:scripts\/read\.mjs: read `path` must exclude unit-test/,
+  );
   // A complete declaration proposes the row and no witness sees an unaudited selection.
   const good = deriveScopeProposal(input, [
     {

@@ -4054,6 +4054,10 @@
         {
           "path": "scripts/browser-scope-proposal.mjs",
           "anchor": "deriveScopeProposal"
+        },
+        {
+          "path": "scripts/validate-manifest.mjs",
+          "anchor": "validateManifest"
         }
       ],
       "checks": [
@@ -4071,7 +4075,7 @@
           },
           {
             "path": "test/read-classification.test.mjs",
-            "anchor": "a declaration skeleton lists every unclassified expression"
+            "anchor": "a declaration skeleton carries the whole row"
           }
         ],
         "negative": [

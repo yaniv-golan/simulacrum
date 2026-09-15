@@ -64,6 +64,7 @@ export function mergeSelection({
     files,
     fullReason,
     scope: fullReason ? 'full' : selection.scope,
+    audit: selection.audit,
     checks: chosen,
     selected: chosen.map((check) => ({
       ...check,

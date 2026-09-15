@@ -382,9 +382,13 @@ proposal (`<proposal>.declarations.json`) with the purpose left to choose. Compu
 hashes are not accepted as declarations. Existing classifications carry forward visibly.
 Selection reports why a row is not audited (`audit.unaudited`, shown by `inspect:change`
 as "Unaudited opaque reads"), and the live registry contract asserts it before its mirror
-list, so a widened selection names its cause. That mirror list changes only when a browser
-check is declared on the mirror rows; edit the contract before `browser:scopes prepare`
-in the same candidate.
+list, so a widened selection names its cause (the merge and local tiers print the same
+reasons on their selection line). That mirror list is a deliberate hand-written contract —
+a human re-affirms the union of the mirror rows' declared checks — and it changes only when
+a browser check is declared on those rows; edit the contract before `browser:scopes prepare`
+in the same candidate. The skeleton carries every read of the row, because a declaration
+replaces the row's reads whole; the second mirror assertion in `browser-registry.test.mjs`
+tolerates a widened selection by design and needs no audit line.
 Optional `--base <commit>` (also on `verify:prepare`) names the candidate delta; the
 proposal, its summary and the apply report then carry `affectedNotWitnessed` — the
 checks that delta would select which no witness of this proposal executes. It is

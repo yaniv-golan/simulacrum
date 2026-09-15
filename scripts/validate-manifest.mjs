@@ -232,7 +232,7 @@ export function validateManifest(m) {
       const classified = classifyReads(scope.reads);
       if (!classified.ok)
         throw Error(
-          `invalid audited browser reads for ${scope.entrypoint}: ${classified.reasons.join('; ')}`,
+          `invalid audited browser reads for ${scope.entrypoint}: ${classified.reasons.join('; ')}; re-declare the row with browser:scopes -- prepare --declarations and apply`,
         );
     }
   }
