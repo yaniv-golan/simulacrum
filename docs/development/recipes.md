@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5f0ffd440e88595bce54475d538e8ff57b1d3efe440ee9fdb83be3aca107d29c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"06f7e63c6fa16e953b6a728cad09cd95b8ab544a4281ca6fb1d35f59b250c08c","disposition":"still accurate","rationale":"Package verification launch row (fix-package-verification-launch-row on main 125a5ae): the drift is the release package's phase check admitting the launch-admission row and its control; no simulation, physics-door, power, checkpoint or contact behavior changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ba8131270a6830320217c3250614ed54e5a1b03a6422a59e1373eaec0938170e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8ecc4ab2cf7198c454694ef9166a46673b68303e36a0321605900da363ee3760","disposition":"still accurate","rationale":"Its README and developer-guide dependencies changed only by the player-facing README rewrite and the developer guide's new milestone-status section; physics ownership, the simulation door, law inputs, the named invariants and the verification steps of this recipe are unchanged and were re-read against src/simulation at cd8109aa."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
