@@ -14,8 +14,12 @@ import { dependencyDigest } from '../../scripts/candidate-resume.mjs';
 import { sourceRecord, finalReport, packageRecord } from './release-record.mjs';
 
 const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, '');
-const root = mkdtempSync('/tmp/candidate-cite-');
+// A second command on the same root (resume/--after of a citation) runs as a child of this
+// fixture with the same stubs: `<scenario> <root> <attempt report>` — the module graph sees
+// one literal import of verify-candidate.mjs per process.
 const scenario = process.argv[2];
+const second = process.argv[3] ? { root: process.argv[3], attempt: process.argv[4] } : null;
+const root = second ? second.root : mkdtempSync('/tmp/candidate-cite-');
 const head = 'c'.repeat(40);
 const files = {
   'src/a.mjs': { sha256: '1'.repeat(64), mode: 0o644 },
@@ -74,7 +78,7 @@ registerHooks({
 // The release directory as release:prepare leaves it: source.json always; the final's report
 // (running, passed or failed) and, once green, the package.
 const release = join(root, '.release-private', 'main-r9');
-mkdirSync(join(release, 'source', 'artifacts'), { recursive: true });
+if (!second) mkdirSync(join(release, 'source', 'artifacts'), { recursive: true });
 const releaseFiles =
   scenario === 'differing'
     ? { ...files, 'src/a.mjs': { sha256: '9'.repeat(64), mode: 0o644 } }
@@ -87,7 +91,7 @@ const source =
         files: releaseFiles,
         installed: scenario === 'deps' ? 'd'.repeat(64) : installed,
       });
-writeFileSync(join(release, 'source.json'), JSON.stringify(source));
+if (!second) writeFileSync(join(release, 'source.json'), JSON.stringify(source));
 const writeFinal = (status) => {
   const final = finalReport({ head, status, failure: 'bar B7 unmet' });
   writeFileSync(join(release, 'source/artifacts/verification-final.json'), JSON.stringify(final));
@@ -105,9 +109,10 @@ const pendingScenarios = [
   'cite-final-pointer',
 ];
 // A running final has already written its first report (status running).
-writeFinal(
-  pendingScenarios.includes(scenario) ? 'running' : scenario === 'red' ? 'failed' : 'passed',
-);
+if (!second)
+  writeFinal(
+    pendingScenarios.includes(scenario) ? 'running' : scenario === 'red' ? 'failed' : 'passed',
+  );
 process.chdir(root);
 mkdirSync('artifacts', { recursive: true });
 const merge = ['merge', '--base', 'HEAD~1', '--incoming', 'feature', '--destination', 'target'];
@@ -127,23 +132,36 @@ const argvFor = {
 const runCandidate = async (args) => {
   process.argv = [process.execPath, `${repo}/scripts/verify-candidate.mjs`, ...args];
   process.exitCode = 0;
-  await import(`../../scripts/verify-candidate.mjs?${Math.random()}`);
+  await import('../../scripts/verify-candidate.mjs');
   return {
     code: process.exitCode ?? 0,
     report: JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8')),
   };
 };
+if (second) {
+  // The second command of a resume/after scenario, on the parent's root.
+  const result = await runCandidate(
+    scenario === 'resume-citation'
+      ? ['resume', second.attempt]
+      : [...merge, '--after', second.attempt, '--cause', 'x=y'],
+  );
+  console.log('SECOND ' + JSON.stringify(result));
+  delete globalThis.candidateTransport;
+  process.exit(0);
+}
 try {
   let first, second;
   if (scenario === 'resume-citation' || scenario === 'after-citation') {
     // A citation report can be neither resumed nor retried.
     first = await runCandidate(cite);
-    const path = first.report.attemptReport;
-    second = await runCandidate(
-      scenario === 'resume-citation'
-        ? ['resume', path]
-        : [...merge, '--after', path, '--cause', 'x=y'],
+    const child = spawnSync(
+      process.execPath,
+      [fileURLToPath(import.meta.url), scenario, root, first.report.attemptReport],
+      { encoding: 'utf8' },
     );
+    const line = child.stdout.split('\n').find((x) => x.startsWith('SECOND '));
+    if (!line) throw Error(`second command produced no result: ${child.stderr}`);
+    second = JSON.parse(line.slice(7));
   } else {
     first = await runCandidate(argvFor[scenario]);
     if (scenario.startsWith('cite-final')) {
