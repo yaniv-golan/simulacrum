@@ -3,6 +3,7 @@ import { loadSave, availablePartName } from './blueprint.mjs';
 import { compileAssembly, snapConnection } from './assembly.mjs';
 import { classifySelectionConnections, mechanicalGroup } from './connection-graph.mjs';
 import { transformPoseBetweenFrames } from './transforms.mjs';
+import { surfaceConnectionKind } from './surfaces.mjs';
 
 function reject(path) {
   throw Object.assign(Error('INVALID_COMMAND'), { reasonCode: 'INVALID_COMMAND', path });

@@ -186,7 +186,6 @@ export function createSurfaceControls({
     const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part);
     const pad = surfaceRegions(part).find((r) => r.id === source.value);
     if (!face || !pad) return null;
-    // A pin-and-hole mate is a point and an axis: no footprint to align with an edge.
     const limits = mountFootprintLimits(
       receiver,
       state.target.region,
@@ -194,7 +193,8 @@ export function createSurfaceControls({
       source.value,
       degreesToRadians(Number(angle.value)),
     );
-    if (!limits) return null;
+    // A pin-and-hole mate has no footprint to align with an edge, whichever side the pin is.
+    if (!limits || face.joint || pad.joint) return null;
     const ext = pad.padHalfSize ?? pad.halfSize;
     const roundoff = 32 * Number.EPSILON * Math.max(1, ...ext, ...face.halfSize);
     return [limits.u, limits.v].map((limit) => (Math.abs(limit) <= roundoff ? 0 : limit));
@@ -208,6 +208,16 @@ export function createSurfaceControls({
       surfaceRegions(part).find((r) => r.id === source.value)?.joint === 'revolute'
     );
   };
+  /** The mode help names the joint the current pair would make; the pair is known only once
+   * a target face is chosen, so every path that changes it refreshes the line. */
+  function refreshModeHelp() {
+    modeHelp.textContent =
+      placementMode.value === 'attach'
+        ? pivotPair()
+          ? 'Creates a pin. The link swings about the pin axis; set its start angle.'
+          : 'Creates a fixed joint. These parts move together.'
+        : 'No joint. Touching parts can separate when you run.';
+  }
   function presentation() {
     return placementPresentation(placement.read(), {
       attach: placementMode.value === 'attach',
@@ -236,6 +246,8 @@ export function createSurfaceControls({
       };
     }
     const limits = alignmentLimits() ?? [-1, -1];
+    // A pin-and-hole mate has no footprint to align: the markers and their hint step aside.
+    alignHint.hidden = pivotPair();
     const markerYs = [];
     const points = anchors.map(({ a, b }) => screen(a * face.halfSize[0], b * face.halfSize[1]));
     const positions = spreadSurfaceAnchors(points, canvasRect.width, canvasRect.height);
@@ -304,7 +316,7 @@ export function createSurfaceControls({
     MOUNT_OVERLAP: 'This position overlaps another part. Move it clear.',
     MOUNT_COLLISION: 'This position overlaps another part. Move it clear.',
     INCOMPATIBLE_CONNECTION_LOOP:
-      'Another attachment holds this group. Detach that connection first.',
+      'These parts already belong to the same mechanism and the mates do not meet. Move the free link until the pin meets the face, then attach.',
     SURFACE_OCCUPIED: 'This mounting face is already attached.',
     INVALID_SURFACE: 'Choose a suitable flat mounting surface.',
   };
@@ -326,6 +338,13 @@ export function createSurfaceControls({
   }
   function bp() {
     return getFrame()?.metadata.blueprint;
+  }
+  /** Faces a mount may target: everything but the part itself, or but the editor group it
+   * moves with (a receiver reachable only through that group is held). A receiver in the
+   * part's own mechanism is offered; the mount then closes a loop only where the mates meet. */
+  function targetable(id) {
+    if (!state) return false;
+    return state.assemblyId ? !moving().includes(id) : id !== state.part;
   }
   function moving() {
     if (!state) return [];
@@ -386,9 +405,8 @@ export function createSurfaceControls({
     if (sourceRegion) source.value = sourceRegion;
     source.disabled = !!assemblyId;
     target.replaceChildren(node('option', 'Choose a face in the scene'));
-    const excluded = moving();
     for (const p of bp().parts)
-      if (!excluded.includes(p.id))
+      if (targetable(p.id))
         for (const r of surfaceRegions(p)) {
           const o = node('option', `${p.name} · ${r.label}`);
           o.value = JSON.stringify([p.id, r.id]);
@@ -397,9 +415,7 @@ export function createSurfaceControls({
     u.value = v.value = angle.value = '0';
     placementMode.value = 'attach';
     placementMode.disabled = !!replaceConnection;
-    modeHelp.textContent = pivotPair()
-      ? 'Creates a pin. The link swings about the pin axis; set its start angle.'
-      : 'Creates a fixed joint. These parts move together.';
+    refreshModeHelp();
     panel.hidden = false;
     title.textContent = replaceConnection ? 'Adjust mount' : 'Snap to surface';
     apply.textContent = replaceConnection
@@ -489,6 +505,7 @@ export function createSurfaceControls({
       return;
     }
     target.value = JSON.stringify([state.target.part, state.target.region]);
+    refreshModeHelp();
     try {
       const assessment = inspectSurfaceMount(bp(), options()),
         proposal = assessment.proposal;
@@ -692,7 +709,8 @@ export function createSurfaceControls({
     const committedState = state;
     stateLabel.textContent = presentation().label;
     const attaching = placementMode.value === 'attach';
-    const peerName = bp().parts.find((p) => p.id === state.target.part)?.name;
+    const peerName = bp().parts.find((p) => p.id === state.target.part)?.name,
+      pinned = pivotPair();
     apply.disabled = true;
     const command = {
         type: 'surface-mount',
@@ -706,7 +724,9 @@ export function createSurfaceControls({
       if (state === committedState) cancel(false);
       onMessage(
         attaching
-          ? `Attached to ${peerName}. These parts now move together. Undo reverses this attachment.`
+          ? pinned
+            ? `Pinned to ${peerName}. The link swings about the pin. Undo reverses this attachment.`
+            : `Attached to ${peerName}. These parts now move together. Undo reverses this attachment.`
           : 'Placed against surface · not attached.',
       );
       onInteraction?.('surface-committed', { command, label });
@@ -766,12 +786,9 @@ export function createSurfaceControls({
       );
       if (!world) return true;
     } else {
-      const excluded = moving(),
-        hit = r
-          .intersectObjects(
-            [...getMeshes()].filter(([id]) => !excluded.includes(id)).map(([, m]) => m),
-          )
-          .find((h) => h.object.isMesh);
+      const hit = r
+        .intersectObjects([...getMeshes()].filter(([id]) => targetable(id)).map(([, m]) => m))
+        .find((h) => h.object.isMesh);
       if (!hit) {
         state.target = null;
         update();
@@ -866,12 +883,7 @@ export function createSurfaceControls({
   });
   grid.addEventListener('change', update);
   placementMode.addEventListener('change', () => {
-    modeHelp.textContent =
-      placementMode.value === 'attach'
-        ? pivotPair()
-          ? 'Creates a pin. The link swings about the pin axis; set its start angle.'
-          : 'Creates a fixed joint. These parts move together.'
-        : 'No joint. Touching parts can separate when you run.';
+    refreshModeHelp();
     apply.textContent = state?.replaceConnection
       ? 'Apply mount'
       : placementMode.value === 'attach'
@@ -961,7 +973,7 @@ export function createSurfaceControls({
       return true;
     }
     const hit = r
-      .intersectObjects([...getMeshes()].filter(([id]) => !moving().includes(id)).map(([, m]) => m))
+      .intersectObjects([...getMeshes()].filter(([id]) => targetable(id)).map(([, m]) => m))
       .find((h) => h.object.isMesh);
     if (!hit) return false;
     if (state.locked && hit.object.userData.partId !== state.target?.part) return false;

@@ -45,19 +45,12 @@ export function surfaceRegions(partOrType) {
           : jointFace?.region === id
             ? `Pivot · ${id[0].toUpperCase() + id.slice(1)}`
             : id[0].toUpperCase() + id.slice(1),
-    position:
-      jointFace?.region === id && jointFace.offset
-        ? position.map((x, i) => x + rotateVector(rotation, [jointFace.offset, 0, 0])[i])
-        : position,
+    position,
     rotation,
     halfSize,
     padHalfSize: definition.mountingPads?.[id] ?? halfSize,
     ...(jointFace?.region === id ? { joint: jointFace.joint } : {}),
   }));
-}
-/** The declared joint face of a part, if any: a pin head or a ball stud. */
-export function jointFaceOf(part) {
-  return CATALOG[typeof part === 'string' ? part : part.type]?.jointFace ?? null;
 }
 export function resolveSurfaceEndpoint(part, binding) {
   const data = binding.surface,
@@ -82,13 +75,15 @@ export function resolveSurfaceEndpoint(part, binding) {
     ...(region.joint ? { joint: region.joint } : {}),
   };
 }
-/** Room a centred pad has to slide on its receiver at this twist, or null when the pair mates
- * at a point and an axis (a joint face on either side) and no footprint rule applies. */
+/** Room a centred pad has to slide on its receiver at this twist. A joint face mates at a
+ * point and an axis: as the receiver it takes only its centre (no room), as the pad it has no
+ * footprint to keep inside the face (null: no rule applies). */
 export function mountFootprintLimits(target, targetRegion, source, sourceRegion, twist) {
   const receiver = surfaceRegions(target).find((r) => r.id === targetRegion),
     pad = surfaceRegions(source).find((r) => r.id === sourceRegion);
   if (!receiver || !pad) reject('UNKNOWN_SURFACE');
-  if (receiver.joint || pad.joint) return null;
+  if (receiver.joint) return { u: 0, v: 0 };
+  if (pad.joint) return null;
   const [width, height] = projectedPadHalfSize(pad.padHalfSize, twist);
   // Negative room means the pad overhangs at every offset, so any mount there refuses.
   return { u: receiver.halfSize[0] - width, v: receiver.halfSize[1] - height };

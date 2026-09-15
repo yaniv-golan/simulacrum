@@ -41,7 +41,7 @@ import { createAssemblyMirror } from './assembly-mirror.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { createMotionReadout } from './motion-readout.mjs';
 import { createVehicleControls } from './vehicle-controls.mjs';
-import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { findPlacementOverlap, surfaceConnectionKind } from '../model/surfaces.mjs';
 import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
 import { contactProperties } from '../model/contact-properties.mjs';
@@ -2564,7 +2564,7 @@ export function createWorkshopView(
           element(
             'p',
             'trace-description',
-            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : 'Holds these parts together.'}`,
+            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : edge.kind === 'pivot' ? 'Pins these parts: the link swings about the pin.' : 'Holds these parts together.'}`,
           ),
         );
       }
@@ -2732,7 +2732,11 @@ export function createWorkshopView(
           row.append(button('Detach', () => send({ type: 'disconnect', id: edge.id }), 'quiet'));
         mounting.append(row);
       }
-      if (editable && !edges.length && !surface.active()) {
+      // A part with a free mounting face can take another mount; on a part already in a
+      // mechanism that is how a linkage closes (the mate must already coincide).
+      const usedFaces = edges.map((e) => (e.a.part === part.id ? e.a : e.b).surface.region);
+      const freeFace = surfaceRegions(part).some((r) => !usedFaces.includes(r.id));
+      if (editable && freeFace && !surface.active()) {
         const snap = button('Snap to surface', () => beginSurface(part.id));
         snap.dataset.command = 'snap-surface';
         mounting.append(snap);
@@ -4028,7 +4032,9 @@ export function createWorkshopView(
       b = bp.parts.find((p) => p.id === edge.b.part);
     const kind =
       edge.kind ??
-      (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
+      (edge.a.surface
+        ? surfaceConnectionKind(bp, edge.a, edge.b, 'fixed')
+        : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
     if (completed && releasedAttachment(edge))
       return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)

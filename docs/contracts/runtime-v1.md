@@ -270,18 +270,19 @@ approximation is documented in the physics contact ADR.
 Save version 3 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
 faces. Their local X is the outward normal, Y is the u tangent, and Z is the v
 tangent. Coordinates use metres and radians. A surface connection's a endpoint
-is the receiving region and b is the centered source pad. Resolved normals oppose using the existing fixed-joint convention; a joint-face endpoint additionally carries its declared joint, sits at `u = v = 0`, and is offset along its normal when declared. The compiler emits an ordinary fixed joint for a `fixed` pair, a passive revolute about the mated normal for a `pivot` pair, and a passive spherical at the coincident anchors for a `spherical` pair; surface placement grants no special force, support or power. Joint faces on a release face or a Load Cell face reject.
+is the receiving region and b is the centered source pad. Resolved normals oppose using the existing fixed-joint convention; a joint-face endpoint additionally carries its declared joint and sits at `u = v = 0`. The compiler emits an ordinary fixed joint for a `fixed` pair, a passive revolute about the mated normal for a `pivot` pair, and a passive spherical at the coincident anchors for a `spherical` pair; surface placement grants no special force, support or power. Joint faces on a release face or a Load Cell face reject.
 
 `surface-mount` atomically proposes and commits selected-group placement, optional
-part insertion, and optional fixed attachment in Build. `replaceConnection`
-removes the chosen fixed edge in a temporary graph before computing the moving
-component. Optional `assemblyId` requires the selected source to be a member of that
+part insertion, and optional attachment (`fixed` or `pivot`, decided by the mated faces)
+in Build. `replaceConnection` removes the chosen `fixed` or `pivot` edge in a temporary
+graph before computing the moving component. Optional `assemblyId` requires the selected source to be a member of that
 editor group and includes every member's mechanical component in the same rigid
 transform and collision check. Without it, only the selected mechanical component
 moves. The receiving part remains fixed.
-A remaining mechanical path to the receiver refuses adjustment unless the proposed mate
-already coincides — within 1 µm, with opposed normals for a `fixed` pair or an agreeing
-axis for a `pivot` pair — in which case the loop closes without moving any part. An optional
+A receiver still reachable from the source through a remaining mechanical path refuses
+the mount or adjustment unless the proposed mate already coincides — within 1 µm, with
+the whole mated frame (opposed normals and the same twist) for a `fixed` pair or an
+agreeing axis for a `pivot` pair — in which case the loop closes without moving any part. An optional
 `expectedCursor` rejects stale requests. Preview is transient authoring state;
 it does not write completed physical poses. Undo restores the entire transaction.
 

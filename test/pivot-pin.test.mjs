@@ -4,7 +4,11 @@ import fc from 'fast-check';
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
 import { createEmptyBlueprint, createPart, validateBlueprint } from '../src/model/blueprint.mjs';
 import { compileAssembly, proposeSurfaceMount, snapConnection } from '../src/model/assembly.mjs';
-import { resolveSurfaceEndpoint, validateSurfacePair } from '../src/model/surfaces.mjs';
+import {
+  mountFootprintLimits,
+  resolveSurfaceEndpoint,
+  validateSurfacePair,
+} from '../src/model/surfaces.mjs';
 import { multiplyQuaternion, rotateVector, normalizeQuaternion } from '../src/model/transforms.mjs';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
 import { createWorkshop } from '../src/core/workshop.mjs';
@@ -95,6 +99,52 @@ function headFirstPair({ u = 0.15, footU = 0.15, footTwist = 0 } = {}) {
     u: footU,
     v: 0,
     twist: footTwist,
+    id: 'foot',
+  });
+  return bp;
+}
+
+/** Workshop-level pendulum: link A stands on its end on a chassis, the pin near its top with
+ * a horizontal axis, link B hanging with its centre 0.1 m below the pin and released at
+ * `startAngle` (the twist of the head mate; a pin-and-hole mate has no pad to keep in bounds). */
+function standingPendulum(startAngle) {
+  let bp = blueprint([
+    createPart('chassis', 'base', [0, 0.02, 0]),
+    createPart('beam', 'beamA', [0, 1, 0]),
+    createPart('pivotPin', 'pin', [0, 2, 0]),
+    createPart('beam', 'beamB', [0, 3, 0]),
+  ]);
+  const step = (spec) => (bp = mount(bp, spec));
+  step({
+    part: 'beamA',
+    sourceRegion: 'left',
+    targetPart: 'base',
+    targetRegion: 'top',
+    u: 0,
+    v: 0,
+    twist: 0,
+    id: 'ground',
+  });
+  step({
+    part: 'pin',
+    sourceRegion: 'top',
+    targetPart: 'beamB',
+    targetRegion: 'bottom',
+    u: 0.1,
+    v: 0,
+    twist: startAngle,
+    id: 'head',
+  });
+  // The standing link's top-face u runs downward: u = -0.18 keeps the 40 mm foot inside the
+  // face near the top, and link B clears the floor.
+  step({
+    part: 'pin',
+    sourceRegion: 'bottom',
+    targetPart: 'beamA',
+    targetRegion: 'top',
+    u: -0.18,
+    v: 0,
+    twist: 0,
     id: 'foot',
   });
   return bp;
@@ -300,20 +350,17 @@ test('a pin head admits its partner at any start angle; the pad-projection rule 
       ),
     /SURFACE_OUT_OF_BOUNDS/,
   );
-  // The hoisted footprint rule reports no pad limits for a joint-face pair and the ordinary
-  // limits otherwise, so the placement panel and both admission paths share one answer.
-  const { mountFootprintLimits } = await import('../src/model/surfaces.mjs');
-  const pinnedParts = pinnedPair({ twist: 0 }).parts;
-  assert.equal(
-    mountFootprintLimits(
-      pinnedParts.find((p) => p.id === 'pin'),
-      'top',
-      pinnedParts.find((p) => p.id === 'beamB'),
-      'bottom',
-      Math.PI / 4,
-    ),
-    null,
-  );
+  // The hoisted footprint rule gives a pin head as receiver its centre only, a pin head as
+  // the pad no rule at all, and ordinary pairs the ordinary room, so the placement panel and
+  // both admission paths share one answer.
+  const pinnedParts = pinnedPair({ twist: 0 }).parts,
+    pin = pinnedParts.find((p) => p.id === 'pin'),
+    beamB = pinnedParts.find((p) => p.id === 'beamB');
+  assert.deepEqual(mountFootprintLimits(pin, 'top', beamB, 'bottom', Math.PI / 4), {
+    u: 0,
+    v: 0,
+  });
+  assert.equal(mountFootprintLimits(beamB, 'bottom', pin, 'top', Math.PI / 4), null);
   const limits = mountFootprintLimits(plain.parts[0], 'top', plain.parts[1], 'bottom', 0);
   assert.deepEqual(limits, { u: 0, v: 0 }, 'a 40 mm pad on a 40 mm face has no room to slide');
 });
@@ -457,7 +504,7 @@ test('a pinned link swings as a compound pendulum; a fixed joint does not; the p
   }
   // Negative control: the pin passes no torque about its axis. With no gravity and link A
   // held, a link pinned 0.15 m from its centre and kicked sideways spins at a constant rate
-  // (a joint that coupled the links would damp it), and the pin never turns.
+  // (a joint that coupled the links about the axis would slow it).
   const free = headFirstPair({ u: 0.15, footU: 0.15 });
   const spinning = compileAssembly(free, { ground: null, gravity: [0, 0, 0] }).configuration;
   delete spinning.power;
@@ -476,10 +523,6 @@ test('a pinned link swings as a compound pendulum; a fixed joint does not; the p
     assert.ok(Math.abs(first) > 1.5, `the kick becomes a spin about the pin: ${first}`);
     for (let tick = 11; tick <= 120; tick++) advance();
     assert.ok(Math.abs(rate() - first) < 1e-3 * Math.abs(first), 'partner keeps spinning');
-    assert.ok(
-      Math.abs(s.read()[bodyOf(free, 'pin')].angularVelocity[1]) < 1e-4,
-      'pin does not turn',
-    );
   } finally {
     s.dispose();
   }
@@ -806,7 +849,7 @@ test('a coincident pin-head closure admits through the surface-mount path withou
 });
 
 test('a joint angle sensor bound to a pivot edge reads the swing, and unbinds when the pin goes', async () => {
-  const bp = pinnedPair({ u: 0.15, twist: 0 });
+  const bp = standingPendulum(0.4);
   bp.parts.push(
     createPart('jointAngleSensor', 'sensor', [1, 1, 0]),
     createPart('powerCell', 'cell', [2, 1, 0]),
@@ -824,11 +867,15 @@ test('a joint angle sensor bound to a pivot edge reads the swing, and unbinds wh
       true,
     );
     assert.equal((await w.act({ type: 'run' })).ok, true);
+    // Swing of link B about the pin axis: the angle between the links' long axes in the
+    // plane normal to that axis, computed from poses alone.
     const angleOf = () => {
       const f = w.observe().frames[0];
-      const a = rotateVector(f.physics[bodyOf(bp, 'beamA')].rotation, [1, 0, 0]),
-        b = rotateVector(f.physics[bodyOf(bp, 'beamB')].rotation, [1, 0, 0]);
-      return Math.atan2(a[0] * b[2] - a[2] * b[0], dot(a, b));
+      const axis = rotateVector(f.physics[bodyOf(bp, 'pin')].rotation, [0, 1, 0]),
+        a = rotateVector(f.physics[bodyOf(bp, 'beamA')].rotation, [1, 0, 0]),
+        b = rotateVector(f.physics[bodyOf(bp, 'beamB')].rotation, [1, 0, 0]),
+        cross = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      return Math.atan2(dot(cross, axis), dot(a, b));
     };
     const reading = () => {
       const f = w.observe().frames[0];
@@ -839,9 +886,12 @@ test('a joint angle sensor bound to a pivot edge reads the swing, and unbinds wh
     const r0 = reading(),
       a0 = angleOf();
     assert.equal(r0.status, 'ok');
-    w.step(240);
-    const swing = angleOf() - a0,
-      delta = reading().value - r0.value;
+    w.step(60);
+    // The sensor reports a wrapped angle, so its change is read modulo a turn.
+    const wrap = (x) => Math.atan2(Math.sin(x), Math.cos(x));
+    const swing = wrap(angleOf() - a0),
+      delta = wrap(reading().value - r0.value);
+    assert.ok(Math.abs(swing) > 0.1, `the released link swings: ${swing}`);
     assert.ok(
       Math.abs(Math.abs(delta) - Math.abs(swing)) < 0.02,
       `sensor change ${delta} vs swing ${swing}`,

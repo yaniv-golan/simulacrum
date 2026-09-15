@@ -673,10 +673,15 @@ function surfaceMountCandidate(
     { part: source, port: resolveSurfaceEndpoint(source, b) },
   );
   if (group) {
-    const after = next.parts.find((p) => p.id === part);
-    for (const member of next.parts)
-      if (moving.has(member.id) && !originalMoving.has(member.id))
-        Object.assign(member, transformPoseBetweenFrames(member, source, after));
+    const after = next.parts.find((p) => p.id === part),
+      moved =
+        after.position.some((x, i) => x !== source.position[i]) ||
+        after.rotation.some((x, i) => x !== source.rotation[i]);
+    // A closed loop moved nothing, so the editor group stays byte-identical too.
+    if (moved)
+      for (const member of next.parts)
+        if (moving.has(member.id) && !originalMoving.has(member.id))
+          Object.assign(member, transformPoseBetweenFrames(member, source, after));
   }
   const proposal = { blueprint: next, movingPartIds: [...moving] };
   observe(proposal);

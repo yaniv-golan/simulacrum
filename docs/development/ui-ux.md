@@ -423,10 +423,14 @@ The Pivot pin uses the existing surface-mount flow: its `Pivot · Top` face is l
 other faces, the mode help reads "Creates a pin. The link swings about the pin axis; set its
 start angle.", edge anchors are hidden because a pin-and-hole mate has no footprint to align,
 and the Connections entry reads "Pinned: swings about the pin; does not slide." The Mounting
-section shows the pinned partner ("Pinned to"), never "Unattached". A loop closes through the
-same panel only when the proposed mate already coincides; otherwise the existing loop copy
-explains it. The Joint Angle Sensor's inspector lists pivot edges beside axles. Part help gains a
-pin entry and one bearing sentence; no lesson or example entry.
+section shows the pinned partner ("Pinned to"), never "Unattached", and still offers "Snap to
+surface" while the part has a free mounting face, which is how a linkage closes: faces on the
+part's own mechanism are offered as targets, and the mount applies only when the proposed mate
+already coincides; otherwise the panel reads "These parts already belong to the same mechanism
+and the mates do not meet. Move the free link until the pin meets the face, then attach." The
+success message reads "Pinned to …". The Joint Angle Sensor's inspector lists pivot edges
+beside axles. Part help gains a pin entry and one bearing sentence; no lesson, example or
+diagram entry.
 
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites

@@ -294,7 +294,7 @@ export const PART_HELP = {
   ),
   pivotPin: help(
     'A swivel between two links',
-    'A 10 mm steel washer whose top face is a pivot: mount its foot on one link and the other link on its head, and they swing about the pin axis. Set the start angle when you place the second link.',
+    'A 10 mm washer whose top face is a pivot: mount its foot on one link and the other link on its head, and they swing about the pin axis. Set the start angle when you place the second link.',
     'Mount the foot on a face, then mount the swinging link on the pin head.',
     [
       'Mount the pin foot on the first link at the point you want the swivel.',

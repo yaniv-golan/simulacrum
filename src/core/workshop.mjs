@@ -6,9 +6,8 @@ import {
   transformAssembly,
   connectAssembly,
 } from '../model/reusable-assemblies.mjs';
-import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
+import { resolveSurfaceEndpoint, surfaceConnectionKind } from '../model/surfaces.mjs';
 import { transformGroup, resizeMovesMount } from '../model/editing.mjs';
-import { surfaceConnectionKind } from '../model/surfaces.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import { ENVIRONMENT_PRESETS } from '../model/environment.mjs';

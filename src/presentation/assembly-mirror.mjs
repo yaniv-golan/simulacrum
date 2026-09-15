@@ -50,7 +50,7 @@ export function createAssemblyMirror({
       }
     }
     const mount = bp.connections.find(
-      (c) => c.kind === 'fixed' && ids.has(c.a.part) !== ids.has(c.b.part),
+      (c) => ['fixed', 'pivot'].includes(c.kind) && ids.has(c.a.part) !== ids.has(c.b.part),
     );
     referenceId = mount
       ? ids.has(mount.a.part)

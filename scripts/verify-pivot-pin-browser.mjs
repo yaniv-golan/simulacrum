@@ -5,7 +5,6 @@ import { createBrowserEvidence, uploadWorkshopFile } from './browser-evidence.mj
 import { liveWait } from './browser-idle.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { proposeSurfaceMount, snapConnection } from '../src/model/assembly.mjs';
-import { rotateVector } from '../src/model/transforms.mjs';
 // Pivot pin: a pinned link swings in Run with rendered/simulated agreement, the inspector
 // names the pin, a parallelogram closes through the surface-mount UI only when coincident,
 // a joint angle sensor binds to the pivot, and the machine survives save/reload.
@@ -35,9 +34,10 @@ function pinnedPair() {
     twist: 0,
     id: 'ground',
   });
-  // Head under beam B first, then the pin's foot onto the standing beam moves beam B with it;
-  // the standing beam's top-face u runs downward, so u = -0.19 puts the pin near its top and
-  // beam B hangs with its centre 0.1 m below the pin, clear of the floor.
+  // Head under beam B first (its twist is the release angle: a pin-and-hole mate has no pad
+  // to keep in bounds), then the pin's foot onto the standing beam moves beam B with it; the
+  // standing beam's top-face u runs downward, so u = -0.18 keeps the 40 mm foot inside the
+  // face near the top and beam B hangs with its centre 0.1 m below the pin, clear of the floor.
   step({
     part: 'pin',
     sourceRegion: 'top',
@@ -45,7 +45,7 @@ function pinnedPair() {
     targetRegion: 'bottom',
     u: 0.1,
     v: 0,
-    twist: 0,
+    twist: 0.4,
     id: 'head',
   });
   step({
@@ -53,7 +53,7 @@ function pinnedPair() {
     sourceRegion: 'bottom',
     targetPart: 'beamA',
     targetRegion: 'top',
-    u: -0.19,
+    u: -0.18,
     v: 0,
     twist: 0,
     id: 'foot',
@@ -202,20 +202,42 @@ try {
     undefined,
     { label: 'sensor binds to the pivot' },
   );
-  // Run: beam B swings about the pin; rendered and simulated transforms agree.
-  const before = await frame();
+  // Run: beam B, released 0.4 rad from hanging, swings about the pin; the wait watches the
+  // swing itself (the angle between the links' long axes about the pin axis) so the check
+  // does not depend on where in its period the pendulum is when a tick count is reached.
+  const swingOf = (f) => {
+    const part = (id) => f.physics[f.metadata.blueprint.parts.findIndex((p) => p.id === id)];
+    const rotate = ([x, y, z, w], [vx, vy, vz]) => {
+      const tx = 2 * (y * vz - z * vy),
+        ty = 2 * (z * vx - x * vz),
+        tz = 2 * (x * vy - y * vx);
+      return [
+        vx + w * tx + (y * tz - z * ty),
+        vy + w * ty + (z * tx - x * tz),
+        vz + w * tz + (x * ty - y * tx),
+      ];
+    };
+    const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+    const axis = rotate(part('pin').rotation, [0, 1, 0]),
+      a = rotate(part('beamA').rotation, [1, 0, 0]),
+      b = rotate(part('beamB').rotation, [1, 0, 0]),
+      cross = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    return Math.atan2(dot(cross, axis), dot(a, b));
+  };
+  await page.evaluate(`window.__pinSwing = ${swingOf.toString()}`);
+  const start = await page.evaluate(() =>
+    window.__pinSwing(JSON.parse(window.render_game_to_text())),
+  );
   await page.locator('[data-command=run]').click();
-  await page.evaluate(() => window.advanceTime(1500));
-  await liveWait(page, () => JSON.parse(window.render_game_to_text()).tick >= 180, undefined, {
-    label: 'run reaches tick 180',
-  });
+  await liveWait(
+    page,
+    (start) => Math.abs(window.__pinSwing(JSON.parse(window.render_game_to_text())) - start) > 0.1,
+    start,
+    { label: 'the pinned link swings' },
+  );
+  await page.locator('[data-command=pause]').click();
   const after = await frame();
   const index = after.metadata.blueprint.parts.findIndex((p) => p.id === 'beamB');
-  const yaw = (f) => {
-    const a = rotateVector(f.physics[index].rotation, [1, 0, 0]);
-    return Math.atan2(a[2], a[0]);
-  };
-  assert.ok(Math.abs(yaw(after) - yaw(before)) > 0.05, 'the pinned link swung');
   const rendered = await page.evaluate(() => window.workshopProbe.readRenderedTransforms());
   const beamB = rendered.find((r) => r.id === 'beamB');
   for (let k = 0; k < 3; k++)
@@ -227,7 +249,6 @@ try {
   const reading = after.sensors.readings.find((r) => r.node === sensorIndex);
   assert.equal(reading.channels.angle.status, 'ok', 'joint angle reads on a pivot');
   await page.screenshot({ path: `${out}/swing.png` });
-  await page.locator('[data-command=pause]').click();
   await page.locator('[data-command=build]').click();
   // Undo the sensor binding through ordinary history.
   await page.locator('[data-command=undo]').click();
@@ -248,8 +269,10 @@ try {
   const openState = await frame();
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   await page.locator('.surface-precise summary').click();
-  await page.getByLabel('Mounting face').selectOption('top');
-  await page.getByLabel('Target surface').selectOption(JSON.stringify(['coupler', 'bottom']));
+  await page.getByLabel('Mounting face', { exact: true }).selectOption('top');
+  await page
+    .getByLabel('Target surface', { exact: true })
+    .selectOption(JSON.stringify(['coupler', 'bottom']));
   await page.getByLabel('Along surface (mm)').fill('342');
   await liveWait(
     page,
