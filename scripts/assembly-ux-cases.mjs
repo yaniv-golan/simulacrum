@@ -405,6 +405,12 @@ export async function runAssemblyCases(partition, evidence, browser) {
       await search.press('Escape');
       evidence.assert('equal', [await dialog.isVisible(), false]);
       // The launcher sits in the Tools menu; leaving the browser hands focus to that control.
+      // The browser restores focus in the dialog's close event, a task queued after close()
+      // returns, so wait for it rather than reading once (the wrong trace — no focus restore —
+      // times this wait out).
+      await p.waitForFunction(
+        () => document.activeElement === document.querySelector('details.tools-menu > summary'),
+      );
       evidence.assert('equal', [
         await p
           .locator('details.tools-menu > summary')
