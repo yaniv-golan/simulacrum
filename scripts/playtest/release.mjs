@@ -61,7 +61,10 @@ async function inventory(root) {
   await visit(root);
   return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
-export async function verifyPackage(directory, { rollback = false } = {}) {
+export async function verifyPackage(
+  directory,
+  { rollback = false, allowReusedEvidence = false } = {},
+) {
   const manifest = JSON.parse(await readFile(join(directory, 'release.json'), 'utf8'));
   const files = await inventory(join(directory, 'payload'));
   if (
@@ -77,7 +80,7 @@ export async function verifyPackage(directory, { rollback = false } = {}) {
     if (prior.artifact !== manifest.artifact || prior.status !== 'passed' || !prior.version)
       throw Error('Previously verified production package required');
   } else if (Date.now() > manifest.expires) throw Error('Release artifact expired');
-  assertPackageVerification(manifest);
+  assertPackageVerification(manifest, { allowReusedEvidence });
   return manifest;
 }
 export async function persistOwner(path, owner, { recovery = false } = {}) {
@@ -172,8 +175,12 @@ export async function deployRelease(
   { rollback = false, recovery = false, eligibilityGuard } = {},
 ) {
   const restoration = recovery || rollback;
-  const manifest = await verifyPackage(directory, { rollback }),
-    config = JSON.parse(await readFile(configPath, 'utf8'));
+  const config = JSON.parse(await readFile(configPath, 'utf8'));
+  // Only an explicitly authorized experimental exception may consume a package that cites
+  // another candidate's receipts; qualified releases, rollback and recovery of a qualified
+  // package keep full evidence.
+  const allowReusedEvidence = config?.verification?.mode === 'bypass-expensive';
+  const manifest = await verifyPackage(directory, { rollback, allowReusedEvidence });
   if (
     !['staging', 'production'].includes(config.environment) ||
     !/^[a-f0-9]{32}$/.test(config.accountId || '') ||
@@ -433,7 +440,7 @@ export async function deployRelease(
     await writeFile(generatedPath, JSON.stringify(generated), { mode: 0o600 });
     if (JSON.stringify(wrangler) !== JSON.stringify(desired))
       throw Error('Deployment config changed');
-    await verifyPackage(directory, { rollback });
+    await verifyPackage(directory, { rollback, allowReusedEvidence });
     await eligibilityGuard?.();
     await control('/check');
     run('npx', ['--no-install', 'wrangler', 'deploy', '--config', generatedPath, '--no-bundle']);
@@ -595,6 +602,18 @@ export async function deployRelease(
               attempt: attempt.attempt,
               actor: config.publisher || 'local',
               policyVersion: 1,
+              // A package that cites a merge candidate's receipts names it here as a
+              // deferred check of this deployment, not as executed evidence.
+              ...(manifest.verification.reuse
+                ? {
+                    reusedEvidence: {
+                      parentAttempt: manifest.verification.reuse.parentAttempt,
+                      parentTier: manifest.verification.reuse.parentTier,
+                      counts: manifest.verification.reuse.counts,
+                      reused: manifest.verification.reuse.reused.map((r) => r.id),
+                    },
+                  }
+                : {}),
             }
           : undefined,
         smoke: {
@@ -623,6 +642,14 @@ export async function deployRelease(
         version,
         artifact: manifest.artifact,
         status: experimentPlan.exception ? 'deployed-with-exception' : 'passed',
+        ...(manifest.verification.reuse
+          ? {
+              reusedEvidence: {
+                parentAttempt: manifest.verification.reuse.parentAttempt,
+                counts: manifest.verification.reuse.counts,
+              },
+            }
+          : {}),
       }),
     );
   } catch (error) {
@@ -688,8 +715,17 @@ export async function deployRelease(
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const [command, directory, config, ownerFile, quiescence] = process.argv.slice(2);
-  if (command === 'prepare' && directory) await prepareRelease(directory);
+  const argv = process.argv.slice(2);
+  // `prepare … --after <merge attempt report>` cites a byte-identical passed merge candidate.
+  const afterIndex = argv.indexOf('--after');
+  const after = afterIndex >= 0 ? argv[afterIndex + 1] : null;
+  if (afterIndex >= 0) {
+    if (!after || after.startsWith('-')) throw Error('--after needs an attempt report path');
+    argv.splice(afterIndex, 2);
+  }
+  const [command, directory, config, ownerFile, quiescence] = argv;
+  if (after && command !== 'prepare') throw Error('--after applies to prepare only');
+  if (command === 'prepare' && directory) await prepareRelease(directory, { after });
   else if (['deploy', 'rollback'].includes(command) && directory && config)
     await deployRelease(directory, config, undefined, { rollback: command === 'rollback' });
   else if (
@@ -706,6 +742,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     });
   } else
     throw Error(
-      'Usage: release prepare <new-private-directory> | deploy|rollback <release-directory> <private-config.json> | recover|recover-rollback <selected-release> <private-config.json> <private-owner-file> --publisher-stopped',
+      'Usage: release prepare <new-private-directory> [--after <merge attempt report>] | deploy|rollback <release-directory> <private-config.json> | recover|recover-rollback <selected-release> <private-config.json> <private-owner-file> --publisher-stopped',
     );
 }
