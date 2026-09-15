@@ -33,7 +33,7 @@
     "scripts/verification-resume.mjs": "cc12555b28aaa0f6f5e877d80f710ed17396ff6bb7341c67ada4701be1f3fabe",
     "scripts/verification-run.mjs": "a56e285c0067ad43cb6abe873298fc0854ea2329f714e648d59bf4c6aaa474f9",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
-    "scripts/verify-browser-suite.mjs": "514900f663e198b63b80daa9c4d0785abd3c9a6da9fec2cb755c47f73a53a3d9",
+    "scripts/verify-browser-suite.mjs": "28f416c7a9dcc5cae747087690338b7b8839c542136bf8ae5e421a6c457fea2b",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/catalog.mjs": "6b055c352755b20e5ca9fb71db6bd81f1e2d3b63cf20bb919548158726a283be",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",

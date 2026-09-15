@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"ecdd93613353aaa6e4a899a440350ecb0462691db5b814b21f619471885c4539","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2206993e2396847c02b76ea1137481acb471716aaac808edbfcd9982cd8bae14","disposition":"still accurate","rationale":"Item 50 on main 458e9b3c: an admission-refused timing row is now recorded on its run row at the refusal site and named on the browser phase failure, so a diagnosed retry can complete it. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is one verification harness file (verify-browser-suite.mjs) and its test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
