@@ -208,7 +208,7 @@ try {
     'input arrows must not transform parts',
   ]);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: '▶ Run', exact: true }).click();
+  await page.locator('[data-command=run]').click();
   const running = (await frame()).metadata.blueprint;
   await page.keyboard.press('c');
   await page.keyboard.press('Delete');

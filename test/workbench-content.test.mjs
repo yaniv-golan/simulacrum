@@ -7,6 +7,8 @@ import {
   firstRunDecision,
   FIRST_RUN_KEY,
   paletteKeyOpens,
+  controlTitle,
+  historyChord,
 } from '../src/presentation/workbench-content.mjs';
 
 test('scope predicts multi-part direct dragging and rotation before the gesture', () => {
@@ -93,4 +95,26 @@ test('P summons the parts only in Build and never from a text field', () => {
   assert.equal(paletteKeyOpens({ mode: 'run', editableTarget: false }), false);
   assert.equal(paletteKeyOpens({ mode: 'paused', editableTarget: false }), false);
   assert.equal(paletteKeyOpens({ mode: 'build', editableTarget: true }), false);
+});
+
+test('control titles join the name and key, and a reason for being off replaces both', () => {
+  assert.equal(controlTitle({ name: 'Run', key: 'Space' }), 'Run · Space');
+  assert.equal(controlTitle({ name: 'Undo', key: '⌘Z' }), 'Undo · ⌘Z');
+  assert.equal(
+    controlTitle({ name: 'Undo', key: '⌘Z', reason: 'Nothing to undo' }),
+    'Nothing to undo',
+  );
+  assert.equal(controlTitle({ name: 'Save' }), 'Save');
+  assert.equal(controlTitle({ name: 'Save', key: '' }), 'Save');
+  assert.equal(controlTitle({ name: 'Undo', key: '⌘Z', reason: '' }), 'Undo · ⌘Z');
+});
+
+test('history chords follow the platform modifier', () => {
+  assert.deepEqual(historyChord('MacIntel'), { undo: '⌘Z', redo: '⇧⌘Z' });
+  assert.deepEqual(historyChord('macOS'), { undo: '⌘Z', redo: '⇧⌘Z' });
+  assert.deepEqual(historyChord('iPad'), { undo: '⌘Z', redo: '⇧⌘Z' });
+  assert.deepEqual(historyChord('Win32'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
+  assert.deepEqual(historyChord('Linux x86_64'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
+  assert.deepEqual(historyChord(undefined), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
+  assert.notEqual(historyChord('Windows').undo, '⌘Z', 'a Windows player never sees ⌘');
 });

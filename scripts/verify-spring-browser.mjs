@@ -112,9 +112,11 @@ try {
   environmentFixture.parts.push(createPart('beam', 'environment-beam', [0, 2, 0]));
   writeFileSync(`${out}/environment.json`, JSON.stringify(environmentFixture));
   await evidence.loadAndWait(page, `${out}/environment.json`);
-  const environment = page.getByRole('button', { name: 'Choose scene', exact: true });
+  // Choose scene lives in the Tools menu; the summary is the header control that must stay reachable.
+  const environment = page.locator('details.tools-menu > summary');
   const chooseEnvironment = async (name) => {
-    await environment.click();
+    await openTools(page);
+    await page.getByRole('button', { name: 'Choose scene', exact: true }).click();
     await page
       .getByRole('button', { name: name === 'flat' ? 'Flat floor' : 'Bump test', exact: true })
       .click();

@@ -14,8 +14,8 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const click = async (name) => {
-  // Edit scene lives in the Tools menu.
-  if (name === 'Edit scene') await openTools(page);
+  // Choose scene and Edit scene live in the Tools menu.
+  if (name === 'Edit scene' || name === 'Choose scene') await openTools(page);
   await page.getByRole('button', { name, exact: true }).click();
 };
 try {

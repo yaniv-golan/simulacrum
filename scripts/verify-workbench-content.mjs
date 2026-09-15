@@ -66,11 +66,18 @@ try {
   ]);
   evidence.assert('match', [await footer.locator('.mode-label').textContent(), /^Build$/]);
   evidence.assert('equal', [
-    await page
-      .getByRole('button', { name: '▶ Run', exact: true })
-      .locator('.key-badge')
-      .textContent(),
+    await page.locator('[data-command=run] .key-badge').textContent(),
     'Space',
+  ]);
+  // Icon-only controls explain themselves on hover: the name and key, or why they are off.
+  evidence.assert('equal', [
+    await page.locator('[data-command=undo]').getAttribute('title'),
+    'Nothing to undo',
+    'an empty bench says why Undo is off',
+  ]);
+  evidence.assert('equal', [
+    await page.locator('[data-command=add-part]').getAttribute('title'),
+    'Add a part · P',
   ]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   evidence.assert('equal', [
@@ -150,6 +157,11 @@ try {
     await page.locator('.move-scope').innerText(),
     `Moves ${moved.length} parts together`,
   ]);
+  evidence.assert('match', [
+    await page.locator('[data-command=undo]').getAttribute('title'),
+    /^Undo · (⌘Z|Ctrl\+Z)$/,
+    'Undo names its chord once there is something to undo',
+  ]);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, before.metadata.blueprint]);
   await page.getByRole('button', { name: 'Adjust mount', exact: true }).click();
@@ -172,13 +184,28 @@ try {
   evidence.assert('equal', [await pauseButton.isVisible(), false, 'no Pause in Build']);
   evidence.assert('equal', [await stepControl.isVisible(), false, 'no Step in Build']);
   evidence.assert('equal', [await buildButton.getAttribute('aria-pressed'), 'true']);
+  // The bar never reflows on a mode change: Pause and Step hold their slots in Build and the
+  // key chips hold theirs, so the stage group measures the same in Build, Run and Paused, and
+  // the header stays one row (74 px) at 1280 px even in Run.
+  const headerHeight = () => page.locator('.workshop-header').evaluate((n) => n.offsetHeight);
+  const modebarWidth = () =>
+    page.locator('.modebar').evaluate((n) => n.getBoundingClientRect().width);
+  const buildWidth = await modebarWidth();
+  evidence.assert('equal', [await headerHeight(), 74, 'one header row in Build at 1280 px']);
   await runButton.click();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
   await pauseButton.waitFor({ state: 'visible' });
   evidence.assert('equal', [await runButton.getAttribute('aria-pressed'), 'true']);
+  evidence.assert('equal', [await headerHeight(), 74, 'one header row in Run at 1280 px']);
+  evidence.assert('equal', [await modebarWidth(), buildWidth, 'Run does not move the stage group']);
   evidence.assert('equal', [await stepControl.isDisabled(), true, 'Step acts only while paused']);
   await pauseButton.click();
   await page.waitForFunction(() => !document.querySelector('[data-command=step]').disabled);
+  evidence.assert('equal', [
+    await modebarWidth(),
+    buildWidth,
+    'Pause does not move the stage group',
+  ]);
   evidence.assert('equal', [await page.locator('.move-scope').isVisible(), false]);
   const toolsMenu = page.locator('details.tools-menu');
   await openTools(page);
@@ -233,7 +260,7 @@ try {
         const r = button.getBoundingClientRect();
         return r.left < 0 || r.right > innerWidth || r.top < 0;
       })
-      .map((button) => button.textContent),
+      .map((button) => button.getAttribute('aria-label') ?? button.textContent),
   );
   evidence.assert('deepEqual', [clipped, [], 'header actions remain reachable at smaller widths']);
   await page.screenshot({ path: `${out}/smaller.png` });
