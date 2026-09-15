@@ -120,6 +120,14 @@ export function validateManifest(m) {
   }
   if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
     throw Error('invalid merge smoke metadata');
+  // The registered timingSensitive fact (validated per row above) also excludes a check from
+  // receipt reuse across attempts; every performance-tier check carries it.
+  if (browser.some((x) => x.tier === 'performance' && x.timingSensitive !== true))
+    throw Error('performance-tier checks must be registered timingSensitive');
+  // A check that launches a system browser channel says so; the channel's version is bound
+  // into that check's receipt because installed dependencies pin only the bundled browsers.
+  if (browser.some((x) => x.browserChannel !== undefined && x.browserChannel !== 'chrome'))
+    throw Error('invalid browserChannel metadata');
   const mergeSmoke = browser
     .filter((x) => x.mergeSmoke)
     .map((x) => x.id)

@@ -1,12 +1,14 @@
 import * as THREE from 'three';
-/** Presentation-only budgets. No model, simulation, device-name or saved-state inputs. */
+/** Presentation-only budgets. No model, simulation, device-name or saved-state inputs.
+ * Lamp shadows exist exactly where key-light shadows exist, so lamp shadow casting flips
+ * only on the transition that already toggles the renderer shadow map and refreshes shaders. */
 export const GRAPHICS_LEVELS = Object.freeze([
-  Object.freeze({ name: 'Full', scale: 1, shadowSize: 2048 }),
-  Object.freeze({ name: 'Balanced', scale: 1, shadowSize: 1024 }),
-  Object.freeze({ name: 'Reduced', scale: 0.85, shadowSize: 512 }),
-  Object.freeze({ name: 'Low', scale: 0.7, shadowSize: 0 }),
-  Object.freeze({ name: 'Very low', scale: 0.5, shadowSize: 0 }),
-  Object.freeze({ name: 'Minimum', scale: 0.4, shadowSize: 0 }),
+  Object.freeze({ name: 'Full', scale: 1, shadowSize: 2048, lampShadowSize: 1024 }),
+  Object.freeze({ name: 'Balanced', scale: 1, shadowSize: 1024, lampShadowSize: 512 }),
+  Object.freeze({ name: 'Reduced', scale: 0.85, shadowSize: 512, lampShadowSize: 256 }),
+  Object.freeze({ name: 'Low', scale: 0.7, shadowSize: 0, lampShadowSize: 0 }),
+  Object.freeze({ name: 'Very low', scale: 0.5, shadowSize: 0, lampShadowSize: 0 }),
+  Object.freeze({ name: 'Minimum', scale: 0.4, shadowSize: 0, lampShadowSize: 0 }),
 ]);
 export function createGraphicsQuality() {
   let level = 0,
@@ -59,7 +61,8 @@ export function createGraphicsQuality() {
   };
 }
 
-/** Apply quality without replacing meshes, picking geometry, DOM or the canvas. */
+/** Apply quality without replacing meshes, picking geometry, DOM or the canvas.
+ * `lampShadows` lists lamp views; each receives the level's lamp shadow budget. */
 export function applyGraphicsQuality({
   renderer,
   scene,
@@ -68,6 +71,7 @@ export function applyGraphicsQuality({
   pixelRatio,
   width,
   height,
+  lampShadows = [],
 }) {
   renderer.setPixelRatio(pixelRatio * quality.scale);
   renderer.setSize(width, height, false);
@@ -82,6 +86,7 @@ export function applyGraphicsQuality({
   shadow.map = null;
   shadow.mapPass = null;
   shadow.mapSize.set(quality.shadowSize || 512, quality.shadowSize || 512);
+  for (const lamp of lampShadows) lamp.applyShadowBudget(quality.lampShadowSize);
   renderer.shadowMap.needsUpdate = true;
 }
 

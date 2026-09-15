@@ -24,6 +24,16 @@ try {
     await page.locator('meta[name=build-id]').getAttribute('content'),
     build,
   ]);
+  // The empty workshop offers the guided build directly; it starts the same
+  // guide the Learn & examples card does, and the hint leaves with the guide.
+  const hintButton = page.locator('.empty-hint [data-command=start-guide-hint]');
+  browserEvidence.assert('ok', [await hintButton.isVisible()]);
+  await hintButton.click();
+  await page.waitForFunction(() => document.querySelector('[data-command=guide-step]'));
+  browserEvidence.assert('ok', [await page.locator('.empty-hint').isHidden()]);
+  browserEvidence.assert('equal', [(await frame()).metadata.blueprint.parts.length, 0]);
+  await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
+  browserEvidence.assert('ok', [await hintButton.isVisible()]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) {

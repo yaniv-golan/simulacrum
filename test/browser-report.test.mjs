@@ -1,9 +1,16 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { withBrowserReport } from '../scripts/verify-browser-suite.mjs';
+import {
+  withBrowserReport,
+  browserReceiptConfiguration,
+  browserSuiteFailure,
+  NOT_EVALUATED_STATUS,
+} from '../scripts/verify-browser-suite.mjs';
+import { createLeafLedger } from '../scripts/verification-resume.mjs';
 test('every attempt replaces old green reports, including build and server failures', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'suite-report-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -280,6 +287,18 @@ test('same-context suite reuse references retained original evidence for success
     assert.equal(reused.runs[0].evidenceOrigin.reportPath, original.reportPath);
     assert.equal(reused.runs[0].evidenceDirectory, original.runs[0].evidenceDirectory);
     assert.equal(reused.runs[0].log, original.runs[0].log);
+    // A passing receipt's value names the evidence a later candidate must find intact.
+    const saved = row.savedValues.filter((s) => s.id === 'browser:verify-browser');
+    if (!row.childFailed && !row.cleanupFailed) {
+      assert.equal(saved.length, 1, 'saved once, reused once');
+      const checksums = saved[0].value.evidenceChecksums;
+      assert.deepEqual(checksums[0], { path: original.runs[0].evidenceDirectory, directory: true });
+      const witness = checksums.find((c) => c.path.endsWith('/witness.json'));
+      assert.equal(witness.bytes, Buffer.byteLength(row.originalBytes));
+      assert.equal(witness.sha256, createHash('sha256').update(row.originalBytes).digest('hex'));
+      const log = checksums.find((c) => c.path === original.runs[0].log);
+      assert.equal(log.sha256, createHash('sha256').update(row.originalLog).digest('hex'));
+    } else assert.equal(saved.length, 0, 'a failed or unretained leaf is never saved');
     assert.equal(original.runs[0].ok, !(row.childFailed || row.cleanupFailed));
     assert.equal(reused.runs[0].ok, original.runs[0].ok);
     assert.equal(row.retainedBytes, row.originalBytes);
@@ -493,4 +512,83 @@ test('history uses one snapshot and accepts last-writer-wins hint loss', async (
   // A competing writer can lose a hint; hints cannot admit or skip a check.
   writeFileSync(path, JSON.stringify({ runs: [{ id: 'check', ok: true, observedAt: 5 }] }));
   assert.equal(readBrowserHistory(path).get('check').ok, true);
+});
+
+test('a browser receipt is bound to its registered row, not the worker count of the run that took it', (t) => {
+  // The scheduler derives workers per run; a receipt taken under a three-worker pool must be
+  // offered to a two-worker run, so the worker count is a measurement condition on the row and
+  // never part of receipt identity. The channel version is part of it for system browsers only.
+  const check = {
+    id: 'ball',
+    script: 'scripts/verify-ball-browser.mjs',
+    timeoutMs: 90000,
+    environment: 'workshop',
+    execution: 'parallel',
+  };
+  const configuration = browserReceiptConfiguration(check);
+  assert.deepEqual(configuration, {
+    script: check.script,
+    timeoutMs: 90000,
+    environment: 'workshop',
+    execution: 'parallel',
+  });
+  assert.equal('workers' in configuration, false);
+  const chrome = browserReceiptConfiguration({ ...check, browserChannel: 'chrome' });
+  assert.equal(chrome.browserChannel, 'chrome');
+  assert.equal(typeof chrome.browserVersion, 'string');
+  // Round trip through the signed ledger: saved by an attempt at workers 3, loaded at workers 2.
+  const dir = mkdtempSync(join(tmpdir(), 'receipt-workers-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const identity = { source: 'fixed', environmentDigest: 'same' };
+  const ledger = (workers) =>
+    createLeafLedger({
+      directory: dir,
+      key: Buffer.alloc(32, 4),
+      identity,
+      eligible: ['browser:ball'],
+      saveEligible: null,
+      origin: { attempt: `attempt-at-${workers}`, report: '/r' },
+    });
+  ledger(3).save('browser:ball', browserReceiptConfiguration(check), { code: 0 }, 10);
+  const offered = ledger(2).load('browser:ball', browserReceiptConfiguration(check));
+  assert.ok(offered, 'receipt offered across worker counts');
+  assert.equal(offered.origin.attempt, 'attempt-at-3');
+  assert.equal(
+    ledger(2).load('browser:ball', {
+      ...browserReceiptConfiguration(check),
+      execution: 'exclusive',
+    }),
+    null,
+    'a changed execution class still refuses reuse',
+  );
+});
+
+test("the suite failure names refused rows apart from failed ones by the suite's own status", () => {
+  // The row status the suite writes for refused rows is the one the failure reads back.
+  assert.equal(NOT_EVALUATED_STATUS, 'not evaluated');
+  const outcomes = [
+    { id: 'a', ok: true },
+    { id: 'perf', ok: false, error: Error('not evaluated: host pressure') },
+    { id: 'ball', ok: false, error: Error('assertion') },
+    { id: 'audio', ok: false, error: Error('not evaluated: host pressure') },
+  ];
+  const runs = [
+    { id: 'a', status: 'passed' },
+    { id: 'perf', status: NOT_EVALUATED_STATUS },
+    { id: 'ball', status: 'failed' },
+    { id: 'audio', status: NOT_EVALUATED_STATUS },
+  ];
+  const error = browserSuiteFailure(outcomes, runs);
+  assert.ok(error instanceof AggregateError);
+  assert.equal(error.message, 'Browser checks failed: perf, ball, audio');
+  assert.deepEqual(error.notEvaluated, ['audio', 'perf']);
+  assert.deepEqual(error.failedChecks, ['ball']);
+  assert.equal(error.errors.length, 3);
+  // A failure without any refused row carries an empty list, and a row missing from the runs
+  // (never scheduled) counts as failed rather than silently refused.
+  const plain = browserSuiteFailure(outcomes.slice(0, 3), runs.slice(0, 3));
+  assert.deepEqual(plain.notEvaluated, ['perf']);
+  const unscheduled = browserSuiteFailure([{ id: 'ghost', ok: false, error: Error('x') }], []);
+  assert.deepEqual(unscheduled.notEvaluated, []);
+  assert.deepEqual(unscheduled.failedChecks, ['ghost']);
 });

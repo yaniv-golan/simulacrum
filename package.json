@@ -1,6 +1,6 @@
 {
   "name": "simulacrum-foundry",
-  "version": "2.0.0-alpha.0",
+  "version": "0.3.0",
   "description": "A component-driven Three.js engineering construction sandbox.",
   "private": true,
   "license": "MIT",
@@ -34,6 +34,10 @@
     "build-fingerprint": "node scripts/build-fingerprint.mjs",
     "bar:F5": "node scripts/bars.mjs F5",
     "bar:L0": "node scripts/bars.mjs L0",
+    "bar:V1": "node scripts/bars.mjs V1",
+    "bar:V2": "node scripts/bars.mjs V2",
+    "bar:O1": "node scripts/bars.mjs O1",
+    "bar:O2": "node scripts/bars.mjs O2",
     "test:unit": "node scripts/verification-window.mjs scripts/test-affected.mjs",
     "test:all": "node scripts/verification-window.mjs scripts/test-affected.mjs --all",
     "ci": "node scripts/verification-window.mjs scripts/ci.mjs",

@@ -37,7 +37,7 @@ export const PART_HELP = {
       'Tune color, brightness and beam spread in Build. Black is dark but still consumes power.',
       'Wire a Command Receiver to Signal for keys or controller programs through that receiver. Its output replaces the default: zero, negative or Off gives no light. Disconnect Signal in Build to restore the default next Run.',
       'A lit status lamp shows its own powered input, not proof that another actuator moved or released.',
-      'Up to eight lamps illuminate at every quality level. Lamp shadows are not offered: light can pass through objects.',
+      'Up to eight lamps illuminate at every quality level. Lamps cast shadows while the view is running smoothly; when graphics are reduced to keep up, light passes through objects.',
     ],
   ),
   camera: help(
@@ -197,10 +197,11 @@ export const PART_HELP = {
   ),
   beam: help(
     'A narrow support for your machine',
-    'Joins parts into a rigid frame. Use it for a rail or crossbar.',
+    'Joins parts into a rigid frame. Use it for a rail, crossbar or linkage arm. Set the length in the inspector; mass follows the material and size.',
     'Mount other parts to its surfaces.',
     [
       'Select a part and use Snap to surface to mount it to the beam. Fixed mounting prevents relative motion.',
+      'Select the beam and set Length (mm) in the inspector. Detach anything on its ends before resizing.',
     ],
   ),
   plate: help(

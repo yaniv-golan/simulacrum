@@ -21,8 +21,12 @@ These are registered commands and checks, not evidence that they passed.
 | npm run bar:L1c | node scripts/bars.mjs L1c |
 | npm run bar:L1d | node scripts/bars.mjs L1d |
 | npm run bar:L2 | node scripts/bars.mjs L2 |
+| npm run bar:O1 | node scripts/bars.mjs O1 |
+| npm run bar:O2 | node scripts/bars.mjs O2 |
 | npm run bar:P1 | node scripts/bars.mjs P1 |
 | npm run bar:S1 | node scripts/bars.mjs S1 |
+| npm run bar:V1 | node scripts/bars.mjs V1 |
+| npm run bar:V2 | node scripts/bars.mjs V2 |
 | npm run bars | node scripts/bars.mjs |
 | npm run browser:scopes | node scripts/browser-scopes.mjs |
 | npm run build | node scripts/verification-window.mjs scripts/build-app.mjs |
@@ -77,7 +81,9 @@ These are registered commands and checks, not evidence that they passed.
 | boundary-types | runtime-contract | M3b | [scripts/check-boundary-types.mjs](../../scripts/check-boundary-types.mjs) |
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
+| format | gate-integrity | M0 | [scripts/check-format.mjs](../../scripts/check-format.mjs) |
 | verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
+| release-notes | gate-integrity | M3b | [scripts/check-release-notes.mjs](../../scripts/check-release-notes.mjs) |
 | verification-scope-configuration | gate-integrity | M3b | [scripts/verification-window.mjs](../../scripts/verification-window.mjs) |
 
 ## Invariant owners
@@ -87,10 +93,10 @@ These are registered commands and checks, not evidence that they passed.
 | rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls, verify-authorable-scenes |
 | preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createDocumentProposal](../../src/presentation/document-proposal.mjs) | invariant-controls, verify-mirror-browser, verify-authorable-scenes |
 | input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-inspectors, verify-part-help-window, verify-spring-browser |
-| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs), [environmentObstacles](../../src/model/environment.mjs), [createPrimitiveGeometry](../../src/presentation/primitive-geometry.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser, verify-authorable-scenes |
+| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs), [environmentObstacles](../../src/model/environment.mjs), [createPrimitiveGeometry](../../src/presentation/primitive-geometry.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser, verify-authorable-scenes, verify-beam-length-browser |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-authorable-scenes |
-| copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
+| copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs), [duplicatePart](../../src/model/duplication.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
 | connection-display-isolation | [connectionRenderSpecs](../../src/presentation/connection-render.mjs), [pickableObjects](../../src/presentation/connection-view.mjs), [createPortHardware](../../src/presentation/part-finish.mjs), [createPartMesh](../../src/presentation/part-mesh.mjs), [createSensorDetails](../../src/presentation/part-visuals/sensors.mjs), [createElectronicsDetails](../../src/presentation/part-visuals/electronics.mjs), [createMechanicalDetails](../../src/presentation/part-visuals/mechanical.mjs), [createThumbnailQueue](../../src/presentation/thumbnail-queue.mjs) | invariant-controls, verify-connection-test-browser, verify-exploded-browser |
 | capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs), [CaptureStore](../../scripts/playtest/cloud-store.mjs), [bodyReservation](../../scripts/playtest/protocol.mjs) | invariant-controls, verify-authorable-scenes |
 | capture-cloud-integrity | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
@@ -118,6 +124,7 @@ These are registered commands and checks, not evidence that they passed.
 | observable-test-completion | [waitUntil](../../scripts/wait-until.mjs) | verification-scope-configuration |
 | candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |
 | private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
+| human-evidence-verdicts | [evaluateBar](../../scripts/bars.mjs), [Records a human assessment](../../scripts/assess.mjs), [formatVerificationOutcome](../../scripts/verification-outcome.mjs) | verification-scope-configuration |
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
@@ -131,7 +138,7 @@ These are registered commands and checks, not evidence that they passed.
 | powered-shared-sensing | [SENSOR_DEFINITIONS](../../src/model/sensors.mjs), [sampleSensor](../../src/simulation/sensors.mjs), [createPowerNetwork](../../src/simulation/power.mjs) | invariant-controls |
 | bounded-controller-programs | [compileController](../../src/scripting/controller-program.mjs), [createWorkshop](../../src/core/workshop.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [controllerDecision](../../src/model/controller-decision.mjs), [createControllerHistory](../../src/application/controller-history.mjs) | invariant-controls |
 | learning-feature-identity | [admitLearningModel](../../src/model/learning-model.mjs), [admitLearningBindings](../../src/model/learning-bindings.mjs) | invariant-controls |
-| candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs) | verification-scope-configuration |
+| candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [reexecutionSet](../../scripts/candidate-after.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs), [reusableAcrossCandidates](../../scripts/candidate-after.mjs), [acceptRetainedEvidence](../../scripts/verification-run.mjs) | verification-scope-configuration |
 | ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
 | verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |
 | bounded-process-ownership | [runProcess](../../scripts/run-check.mjs) | verification-scope-configuration |

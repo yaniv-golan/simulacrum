@@ -16,6 +16,7 @@ const fixture = () => {
     ['gripWheel', 'wheel'],
     ['powerCell', 'cell'],
     ['commandReceiver', 'receiver'],
+    ['beam', 'bar'],
   ].map(([type, id], i) => createPart(type, id, [i * 2, 2, 0]));
   return bp;
 };
@@ -38,6 +39,7 @@ const edits = [
   },
   { type: 'delete', id: 'cell' },
   { type: 'place', id: 'beam', partType: 'beam', position: [12, 2, 0] },
+  { type: 'parameter', id: 'bar', key: 'length', value: 0.6 },
 ];
 test('registered edit examples share rejection and round-trip behavioral contracts', async () => {
   for (const command of edits) {
