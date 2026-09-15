@@ -68,7 +68,7 @@
     "test/gear-authoring.test.mjs": "11b5b0bb7a3728331a342f825f6732208d59860298c63417de2ab7d01e8b0e52",
     "test/release-authoring.test.mjs": "b6a014dd102bebcd7637af15247a5f2ea470ac6117f570e7036509dc2815fec7",
     "src/presentation/part-visuals/sensors.mjs": "5d205c685696965eba89ec715ad2e5be7561e075454424b78ddf3ac534b7d359",
-    "src/presentation/part-help-content.mjs": "5e70d4b2dbc1b031afb40bcf19c63e4ecd3c5a5ea823785f781b2b2e74d63785",
+    "src/presentation/part-help-content.mjs": "5601f8d4cc5e445b6a1ef427f7ae08655aec8b7db79c70c9e9eb575fafdb61c9",
     "src/presentation/part-search.mjs": "3aefd3e4f0e6500d0694b4d61423c9edd20eea9d84fb1282ccb73572988710a6",
     "test/load-cell-authoring.test.mjs": "a62b4b99665596d0b52e712be568594f176d5c5eb7f67c7623f0a332ecd8fe14",
     "scripts/verify-load-cell-browser.mjs": "9a660c84e71acc527e7dd6fbdc35f692deae0b3e8ffab86b9ad3cb1bc33c7f73",

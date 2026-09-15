@@ -20,7 +20,7 @@
     "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
     "src/model/generated/blueprint-validator.mjs": "92dd884d72f722258c0a2b6cee3b06c9ac1956baf028e5d392a4212cb2cc88d2",
     "src/model/surfaces.mjs": "886da321a58eeda9e8da961623d6d6860015258482e50c24c80bdc3d77336cea",
-    "src/presentation/lamp-view.mjs": "287b10186437dd72b06601b446eb4e17f89d21d22a17314e406cdce0531ffe33",
+    "src/presentation/lamp-view.mjs": "1f77d6cd46f302f738fda391bd10b7150ba2c1993364e6575e36b2017f5534fd",
     "src/presentation/part-finish.mjs": "5eccbf8a4960639d299a43b065949cac69e410c1c20e9df2fc0b202ebf68efe8",
     "src/presentation/part-mesh.mjs": "4c782bf7df0d3b73d950c4e7a78f728f1e50b82af23c714738b64f999f9eefb3",
     "src/presentation/part-visuals/electronics.mjs": "f9a1d8a97c580dc4699d2d140f9ac5b585cef83b7cfc81eeba8f9e60285cc359",

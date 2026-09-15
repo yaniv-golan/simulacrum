@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"8b217d0361d7dd23eee2268a5a477f9b68a7a997025a95054de30e7508b9e3ed","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"c15f26e38098e3fb9f15fdad8981e6762f7836ab356a8b2bb949747070033fbf","disposition":"still accurate","rationale":"Parametric beam: workshop-view.mjs changed only in the selected-inspector dimension control and the settings skip list; the render-submission receipts, viewRenderMs and completedDraw semantics described here are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"e298600c50aef937a6b2ff86e2ffd2d843a1b08c00b08fce50d4e29c9bd1fb41","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"6b7aa7595632a57bdd6c1a49951d83e932b2005ab1feae3be725398ab22561f9","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): recording, playtest and feedback flows are untouched; the workshop-app.mjs and workshop-view.mjs changes are the lamp shadow budget and the projectWorldPoint/shadowRefresh diagnostics."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 

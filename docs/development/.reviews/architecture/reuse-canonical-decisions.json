@@ -68,7 +68,7 @@
     "src/presentation/part-help-input.mjs": "6f25719495c85a83be51360725ad52bf499c654c224f99dc61997b36f66d03ef",
     "src/presentation/vehicle-controls.mjs": "53a9330e22432e4a91792d6b4a5db8901360655b7786fa460c9ce43788430bc4",
     "src/presentation/connection-test.mjs": "e7fd59d6e161650a014681589c2116e778dfe1bd4185e1c14e5d4547eff41574",
-    "src/presentation/part-help-content.mjs": "5e70d4b2dbc1b031afb40bcf19c63e4ecd3c5a5ea823785f781b2b2e74d63785",
+    "src/presentation/part-help-content.mjs": "5601f8d4cc5e445b6a1ef427f7ae08655aec8b7db79c70c9e9eb575fafdb61c9",
     "src/presentation/part-search.mjs": "3aefd3e4f0e6500d0694b4d61423c9edd20eea9d84fb1282ccb73572988710a6",
     "src/presentation/port-wording.mjs": "e74f60bf873a20b4d9bddedf8d0a6405a7d543c1335040bd291db4ade13d10ff",
     "src/model/motion-readout.mjs": "9d79f3e88b73e9ea7c705491771d44bc7e9baed9aa87304204d528674f4f4c42",

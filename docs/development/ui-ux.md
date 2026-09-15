@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8ee09ab78ca814a11327362a92502ba8f5947e843f8b6a57a88f0dc26eca04d3","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1baa750e5f2df213da35fb369e3e9f4fe6b6b2b403fedc121210a70b578162a8","disposition":"still accurate","rationale":"Parametric beam: admission decision is extend (one part-help sentence and step); no lesson, example or workbench entry, and part settings stay in the inspector as the policy requires."} -->
+<!-- doc-review {"version":1,"fingerprint":"3306dd93accff93f4bcd96a6c8f3bc7d79ac71e87208a25b88c92cf5fe99d77c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"64e86236db2531da781161c88b0c10d9b15bbff3f63114f11041c4afea19ef59","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): no lesson, example, experiment, challenge or invitation was added, extended or replaced; the lamp shadow explanation extends existing contextual help (no entry)."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3a729a54ab0d1d54f0e0907a0f40561de836c1cb9140882eb692c09c47fdd459","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"95c94df3f0fa2d8aab9847ab9f4311fb0a99905942e1e80b9185d5b2be36694e","disposition":"updated","rationale":"Parametric beam: a Beam paragraph beside the Ball one describes the selected-inspector length control (100–1000 mm, 10 mm slider steps, preview and obstruction copy, Escape), the detach-first rejection and out-of-bounds rejection, the no-edit-on-default rule, the 40 mm long-face pads and their markers, and the part-help extension with no lesson entry."} -->
+<!-- doc-review {"version":1,"fingerprint":"eab957112ef2a85a8bd8316b8b744fe97c9c9f69e9f5214b6de8e54527b1224c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0181cbb1a4512553412fd0855e2ded31f7aec34ceffa97ad6e45fad81c28ee02","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the lamp help sentence now says the eight-lamp limit with shadows only while graphics run smoothly; no surface, region or lifecycle changed."} -->
 
 
 

@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"e5d1a871473b00312455d53d7cd22eb8ca3c2431a95978025d53e14d16c72fc0","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"0c5e5b5d8c360e8a19b87d14c398570cd50f0af7d3c27e035842ec1327f3b1ec","disposition":"still accurate","rationale":"Relative to base 3a50c9e scripts/manifest.json gains milestones M10 and M11, bars V1/V2/O1/O2, nineteen M10/M11 exit obligations and one M7 obligation (all check:null, each owned by an existing rule), and package.json gains four bar scripts. browserChecks, browserLocalScopes and execution metadata are untouched, so nothing this section says about browser scope, parallel execution or scope evidence depends on the change."} -->
+<!-- doc-review {"version":1,"fingerprint":"90552f67ddc30bdcafcafcc1ef558a3a3b43345e624cb1443355816f623d42b8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5939173341bb8ac245a0fe5961af63986bbff8e6c68c597addc96fae2ec4dd67","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): scripts/manifest.json changed only the adaptive-graphics and powered-lamp-output guarantee text and their unit controls plus regenerated scope metadata; workshop-app.mjs gained the projectWorldPoint diagnostics probe. Browser execution phases, selection and scope rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -618,7 +618,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"06ba26d5fda14b4636cfbd83d28141d4bcbfe1077786129a8fed4a8d5983efa7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8d7bfb127c8d5d81b32f28ec1776e885b27e2d92383914471984d888dcfd8e38","disposition":"still accurate","rationale":"Relative to base 3a50c9e the manifest additions are two milestones after M9, four automation-evaluated bars and twenty check-null exit obligations; the candidate tiers, watchdog and manifest-owned deadlines this section describes are unchanged and the current milestone stays M3b, so tier selection is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"bbfe6bc24cc1c10e003c01b6cef9afbdb73e56ac3120e33b2cc4953286f7eda4","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b0cd445c09b33ad54c1645e9366b98f63c47699b4669dd5a47ac3437e519867f","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the manifest delta is guarantee wording, unit controls and regenerated scope rows; candidate capture, tiers and completion rules are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
