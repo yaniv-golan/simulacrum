@@ -108,9 +108,14 @@ try {
   await page.getByRole('spinbutton', { name: 'Rope length (m)', exact: true }).fill('.25');
   await page.getByRole('button', { name: 'Attach rope', exact: true }).click();
   await page.locator('[data-command=run]').click();
-  await liveWait(page, () => JSON.parse(window.render_game_to_text()).status === 'failed', undefined, {
-    label: 'near-limit 0.25 m rope fails',
-  });
+  await liveWait(
+    page,
+    () => JSON.parse(window.render_game_to_text()).status === 'failed',
+    undefined,
+    {
+      label: 'near-limit 0.25 m rope fails',
+    },
+  );
   assert.equal((await read()).failure.reasonCode, 'ROPE_MOTION_LIMIT');
   await page.screenshot({ path: `${out}/failure.png` });
   await page.getByRole('button', { name: 'Return to Build', exact: true }).click();
@@ -126,7 +131,10 @@ try {
   const repaired = await read();
   assert.ok(repaired.tick >= 240, `repaired rig paused at tick ${repaired.tick}`);
   assert.notEqual(repaired.status, 'failed');
-  assert.ok(repaired.ropes.some((r) => r.appliedTension > 0), 'repaired rope carries load');
+  assert.ok(
+    repaired.ropes.some((r) => r.appliedTension > 0),
+    'repaired rope carries load',
+  );
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(
