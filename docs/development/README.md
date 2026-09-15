@@ -277,7 +277,10 @@ only to explanation review, never build identities or verification receipts.
 Implicit external-package coverage retains package configuration and lockfile bytes,
 but excludes npm scripts when no install lifecycle hook is present: a command-only
 change does not change an imported library. Lifecycle hooks retain all scripts because
-they can invoke other package commands and alter installed dependencies.
+they can invoke other package commands and alter installed dependencies. The package's
+own `version` (and the lockfile's copy of it) is excluded too: a release bump names the
+build and changes no imported library, so it stales no explanation; a resolved or
+declared dependency version still does.
 Explicit package/command references and literal file reads still bind those scripts.
 Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
