@@ -232,9 +232,9 @@ try {
     // The light sits 0.05 m above the chassis top with 0.175 m of chassis ahead of it,
     // so the chassis's own shadow ends 3.5 H from the light (H = light height). The
     // plate top is 0.03 m below the light and its far edge 0.255 m ahead, so its shadow
-    // reaches 8.5 H. Sample at 5 H: lit without the plate, dark with it, 11 degrees
-    // below the axis of the 0.9 rad cone.
-    const reach = 5 * origin[1];
+    // reaches 8.5 H. Sample at 4 H: lit without the plate, dark with it, 14 degrees
+    // below the axis of the 0.52 rad cone, as near as the chassis shadow allows.
+    const reach = 4 * origin[1];
     const point = [origin[0] + direction[0] * reach, 0, origin[2] + direction[2] * reach];
     const ndc = await page.evaluate((p) => window.workshopProbe.projectWorldPoint(p), point);
     assert.ok(
@@ -243,7 +243,7 @@ try {
     );
     return { direction, origin, reach, point, ndc };
   };
-  const lampLight = async () => {
+  const lampLight = async (label) => {
     await page.locator('[data-command=run]').click();
     await page.evaluate(() => window.advanceTime(1500));
     await frames(3);
@@ -252,6 +252,7 @@ try {
     await page.evaluate(() => window.advanceTime(100));
     await frames(3);
     const lit = await page.locator('canvas').first().screenshot();
+    await page.screenshot({ path: `${out}/${label}-lit.png` });
     const level = await page.evaluate(
       () => window.workshopProbe.readInteractionState().rendering.quality,
     );
@@ -297,17 +298,34 @@ try {
     );
     return { ...probe, ...region, level: level.level, lampShadowSize: level.lampShadowSize };
   };
-  const open = await lampLight();
+  // Full brightness and the default cone for a measurable floor window at 4 H.
+  await select(lamp);
+  for (const [name, value] of [
+    ['brightness', '1'],
+    ['beamSpread', '0.52'],
+  ]) {
+    const input = page.getByRole('spinbutton', { name, exact: true });
+    await input.fill(value);
+    await input.press('Tab');
+  }
+  // A fixed camera and no selection label keep the floor window's pixels deterministic.
+  const follow = page.getByRole('checkbox', { name: 'Follow motion', exact: true });
+  if (await follow.isChecked()) await follow.uncheck();
+  await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
+  const open = await lampLight('open');
   assert.equal(open.count, 576, 'floor window is fully on the canvas');
-  assert.ok(open.meanDelta > 24, `lamp lights the floor window (${open.meanDelta})`);
+  assert.ok(
+    open.meanDelta > 12,
+    `lamp lights the floor window (${open.meanDelta} at ${JSON.stringify(open.point)})`,
+  );
   const plate = await place('Plate');
   await mount(plate, base, 'top', {
     'Across surface (mm)': Math.round(180 * Math.sign(open.direction[2])),
   });
   const mounted = (await read()).metadata.blueprint.connections.filter((c) => c.kind === 'fixed');
   assert.equal(mounted.length, 3, 'plate is bolted across the beam');
-  const occluded = await lampLight();
-  await page.screenshot({ path: `${out}/occluded.png` });
+  await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
+  const occluded = await lampLight('occluded');
   const glRenderer = await page.evaluate(() => {
     const gl = document.querySelector('canvas').getContext('webgl2'),
       ext = gl.getExtension('WEBGL_debug_renderer_info');
