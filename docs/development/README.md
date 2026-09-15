@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"d393ff209550a2d6884f69b54b83012299ea920f56dc0d4068ab8ba8c48e2f83","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"8409dd456094013814ba7d242ddce9b59fb584d578122fe6b047745213bdd44c","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the manifest gained the landing-integrity invariant, two watchdog controls and the 90 s cloud-runtime budget; milestones and bars are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d2eab67f07f97bff8a0b18e119736567915d8df1de11d4a0aa6b38d3186440f3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"69195cd4fbc19c53e6e53ce3ceae084637eb2bc336faaa65d8c9450ba58d897c","disposition":"still accurate","rationale":"No milestone, bar or obligation changed; the manifest edit is an invariant registration and relocated unit controls under the existing gate-integrity rule."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"5957c00aab2f95752f8f5ca579f90c6b0fce840cab8ac42761af6132499b7bf4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8c4123aefb5bb6ba46beb6ea7cfd5248e39f00b56ce9989b2e43468e7f2edc6b","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the coverage paragraph now says the package's own version is excluded from implicit external-package coverage; documentation.mjs implements it; reference.md regenerated."} -->
+<!-- doc-review {"version":1,"fingerprint":"58c16b223b696be9e384c5276abbbfe788e0f1c2cb35437bddc31513df69246b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8401146fea9cad2c6391e0758f21470819e524da1d15cd3eab020291d68f2cfe","disposition":"still accurate","rationale":"reference.md regenerated only to add the app-identity-fingerprint row and to move the human-evidence-verdicts control paths to the split test files; the review workflow, sidecar rules and gate are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"6a6a6daa8308f1f4f7b0218cc82c1b893ea182c1aeda22b01d9bf87669f26a0e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"96e3789aef2f99673d4af1268fe983959ee271ed2fce80dea3b33ae7a066f9d9","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the failed-row diagnostics sentence now lists Linux wait channels, paging counters with memoryAtStart, the bounded macOS stack sample and memoryMs/sampleMs; verify-cloud-runtime's timeoutMs is 90 s."} -->
+<!-- doc-review {"version":1,"fingerprint":"3c72170fb92d8daab7c81703a89d9b8997b44507b433e8c56d93faf4503ca0ab","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d26e5bb98c39a1aeb72afdbd07ffa793f8ec55d6af5fd9acdcf5eb06a68ce3fb","disposition":"still accurate","rationale":"The manifest change registers a unit-tested guarantee and relocates unit control paths; browser selection, scope declarations and execution policy are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -684,7 +684,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"bc372b682720db42a9df64090c47218e97deefaaeccd13d8c2e816e1f6e0eae7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6da8db4fa858e02ed74ac44fd406bbd6ea8411920ead8ae5f8b66dc71284700a","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): manifest invariant/controls and the package digest change do not alter candidate capture or tiers."} -->
+<!-- doc-review {"version":1,"fingerprint":"3be9135a2d633c39c410bf4506c5e7ab6b5f1c6887e1e29f35f9514c71bdac03","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7af81f9c82d003ee555e33ca4e86985007254d267751a78326939ec015924059","disposition":"still accurate","rationale":"The manifest gained the app-identity-fingerprint invariant and moved unit control paths; candidate isolation, evidence binding and stacking rules are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

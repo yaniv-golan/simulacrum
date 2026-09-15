@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"1b4ef18ed2e7635ceb520ed1edcb0ba2aa97eb5a8695229fd615fa4ddcf427a9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"3a6f15ce551bfabcf8f2aa6ae451a1c2dc1a68719e8add95d5bbc21f53af18a0","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): no physics change; verify-runtime.mjs gained a diagnostic timing line; the listed source dependencies changed by landings already on that tip and reviewed there; this candidate's delta (land.mjs, documentation.mjs's version-field digest, run-check/process-inventory watchdog evidence, verify-runtime.mjs's esbuild timing, the 90 s row) touches none of them."} -->
+<!-- doc-review {"version":1,"fingerprint":"0d6f0057b20d59c131968452a22c4b7c224b2c292dd256cc0e980d10942f979c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b8c03445597e49391e5118bde205bcbe31c37a9f7b1b98c4ce753789659d81b9","disposition":"still accurate","rationale":"test/assessment.test.mjs was split into four files sharing test/fixtures/assessment-fixture.mjs with no check changed; no physics door, contract or physical test contract in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
