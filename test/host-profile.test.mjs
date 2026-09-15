@@ -216,6 +216,7 @@ test('persisted suite rows keep NOT_EVALUATED entries and children never inherit
   const env = childEnvironment({
     PATH: '/bin',
     SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu',
+    SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS: '300000',
     OTHER: '1',
   });
   assert.deepEqual(env, { PATH: '/bin', OTHER: '1' });

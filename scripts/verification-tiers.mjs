@@ -23,11 +23,37 @@ export const REACHES = Object.freeze(['timing', 'structural']);
  * 55 % of one core does not starve a 5 s gate — while a tier that will measure launches under
  * the full policy, so no timing phase ever follows a lax launch. The reach and the bounds
  * applied are recorded on the row; the foreign rows seen stay in the pressure sample. */
+export const LAUNCH_WAIT_VARIABLE = 'SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS';
+export const LAUNCH_WAIT_BOUNDS = Object.freeze({ default: 60000, min: 60000, max: 600000 });
+/** The launch wait budget: 60 s unless the environment names a longer one (a release prepare
+ * sets five minutes: a refused attempt plus a manual relaunch costs more than waiting). Only the
+ * wait lengthens — bounds, mode and reach are untouched. A malformed or out-of-range value fails
+ * the attempt by name rather than defaulting or reading as host pressure. */
+export function launchWaitMs(env = process.env) {
+  const raw = env[LAUNCH_WAIT_VARIABLE];
+  if (raw === undefined || raw === '') return LAUNCH_WAIT_BOUNDS.default;
+  const value = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  if (!Number.isInteger(value) || value < LAUNCH_WAIT_BOUNDS.min || value > LAUNCH_WAIT_BOUNDS.max)
+    throw Error(
+      `${LAUNCH_WAIT_VARIABLE} must be an integer between ${LAUNCH_WAIT_BOUNDS.min} and ${LAUNCH_WAIT_BOUNDS.max} milliseconds, got ${JSON.stringify(raw)}`,
+    );
+  return value;
+}
+/** One line for the operator on a refused launch: the reason and the busiest foreign processes
+ * of the last pressure sample (names and shares only; the sampler never reads arguments). */
+export function describeLaunchRefusal(row) {
+  const admission = row?.admission ?? row;
+  const foreign = (admission?.pressure?.foreign ?? [])
+    .map((entry) => `${entry.comm} ${entry.pcpu} %`)
+    .join(', ');
+  const waited = Math.round((admission?.waitedMs ?? 0) / 1000);
+  return `launch admission refused after ${waited} s: ${row?.reason ?? admission?.reason ?? 'no reason recorded'}${foreign ? `; busiest foreign processes: ${foreign}` : ''}`;
+}
 export async function launchAdmission({
   reach,
   admit = admitQuietHost,
   host = { cores: cpus().length, load1: () => loadavg()[0], pressure: () => samplePressure() },
-  waitMs = 60000,
+  waitMs = launchWaitMs(),
   trendMs = 20000,
   policy = PRESSURE_POLICY,
 } = {}) {
@@ -41,6 +67,7 @@ export async function launchAdmission({
       idle: applied.idleBound,
       foreign: Number.isFinite(applied.foreignBound) ? applied.foreignBound : null,
     },
+    budgetMs: waitMs,
   };
   const admission = await admit({
     cores: host.cores,
@@ -55,6 +82,9 @@ export async function launchAdmission({
     : { ok: false, notEvaluated: true, policy: record, reason: admission.reason, admission };
 }
 export const LAUNCH_ADMISSION_ID = 'launch-admission';
+/** The phases a qualification (`verify:final`) emits, in order; the release package consumer
+ * reads the same list, so the tier and the package can never disagree on shape unnoticed. */
+export const FINAL_PHASES = Object.freeze([LAUNCH_ADMISSION_ID, 'ci', 'browser', 'gate']);
 /** The selection phase runs after the launch admission; a selection whose reach differs from
  * the one the launch was admitted under is refused, so a lax launch never precedes a timing
  * phase. */
@@ -69,7 +99,7 @@ export function assertSelectionReach(selection, reach) {
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(
   phases,
-  { now = () => performance.now(), onProgress = () => {} } = {},
+  { now = () => performance.now(), onProgress = () => {}, log = console.error } = {},
 ) {
   const rows = [];
   for (const [id, execute] of phases) {
@@ -90,6 +120,9 @@ export async function runVerificationPhases(
     }
     row.status = row.ok ? 'passed' : 'failed';
     row.elapsedMs = now() - started;
+    // A refused launch is read where the operator looks: the reason and the offenders on
+    // stderr, not only inside the report.
+    if (id === LAUNCH_ADMISSION_ID && !row.ok && row.result) log(describeLaunchRefusal(row.result));
     onProgress(rows);
     if (!row.ok) break;
   }

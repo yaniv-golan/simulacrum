@@ -26,6 +26,17 @@ function readOwner(directory) {
     throw error;
   }
 }
+/** The owner line the wait notice and the readiness probe print: tier, branch, destination and
+ * origin worktree when declared. */
+export function describeOwner(owner) {
+  if (!owner) return 'unpublished';
+  const declared = owner.intent ?? {};
+  const what = declared.tier ?? declared.script ?? 'no declared intent';
+  const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
+  const target = declared.destinationName ?? declared.destination;
+  const branch = declared.head ? ` on ${declared.head}` : '';
+  return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
+}
 /** The live window owner, if any: `{pid, startedAt, directory, cwd, intent?}` for a running
  * process, else null. Read-only; never enters the window. */
 export function currentWindowOwner(directory = defaultDirectory()) {
@@ -270,15 +281,7 @@ if (
       const intent = process.env.SIMULACRUM_VERIFICATION_INTENT
         ? validateIntent(JSON.parse(process.env.SIMULACRUM_VERIFICATION_INTENT))
         : { script: basename(script) };
-      const describe = (owner) => {
-        if (!owner) return 'unpublished';
-        const declared = owner.intent ?? {};
-        const what = declared.tier ?? declared.script ?? 'no declared intent';
-        const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
-        const target = declared.destinationName ?? declared.destination;
-        const branch = declared.head ? ` on ${declared.head}` : '';
-        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
-      };
+      const describe = describeOwner;
       const run = () => {
         childStarted = true;
         return runProcess(process.execPath, [script, ...args], {

@@ -72,6 +72,7 @@
     "native:qualify": "node scripts/verification-window.mjs scripts/native-qualification.mjs",
     "browser:scopes": "node scripts/browser-scopes.mjs",
     "verify:prepare": "node scripts/verify-prepare.mjs",
+    "verify:host": "node scripts/verify-host.mjs",
     "verify:merge:shadow": "node scripts/verify-merge-shadow.mjs",
     "verify:merge": "node scripts/verify-merge.mjs"
   },

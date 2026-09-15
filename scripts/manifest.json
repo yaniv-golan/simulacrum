@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once here, records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once here (its final waiting up to five minutes for a quiet host, a refusal named with its offenders and never a package; a dry check rehearses the prerequisites and the package shape against the tier's own phase list without a tier, a snapshot or the window, and is never evidence), records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2533,6 +2533,14 @@
           {
             "path": "test/release-pipeline.test.mjs",
             "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release launch refusal names the busiest foreign processes and waits the release budget"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release dry check rehearses packaging on the tier phase list and creates nothing"
           }
         ],
         "negative": [
@@ -2559,6 +2567,14 @@
           {
             "path": "test/release-pipeline.test.mjs",
             "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release launch refusal names the busiest foreign processes and waits the release budget"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release dry check rehearses packaging on the tier phase list and creates nothing"
           }
         ]
       },

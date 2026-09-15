@@ -7,7 +7,91 @@ import {
   selectionReach,
   assertSelectionReach,
   LAUNCH_ADMISSION_ID,
+  launchWaitMs,
+  LAUNCH_WAIT_VARIABLE,
+  FINAL_PHASES,
 } from '../scripts/verification-tiers.mjs';
+
+// A release prepare waits five minutes for a quiet host where a routine tier waits one; only
+// the wait lengthens, the budget is recorded on the row, and a malformed budget fails the
+// attempt by name rather than defaulting or reading as host pressure. The refusal is printed
+// where the operator looks, offenders included.
+test('launch admission takes its wait budget from the environment within bounds, records it and prints a refusal', async () => {
+  assert.equal(launchWaitMs({}), 60000);
+  assert.equal(launchWaitMs({ [LAUNCH_WAIT_VARIABLE]: '' }), 60000);
+  assert.equal(launchWaitMs({ [LAUNCH_WAIT_VARIABLE]: '300000' }), 300000);
+  for (const raw of ['59999', '600001', 'abc', '3e5', '-60000', '60000.5'])
+    assert.throws(
+      () => launchWaitMs({ [LAUNCH_WAIT_VARIABLE]: raw }),
+      new RegExp(
+        `${LAUNCH_WAIT_VARIABLE} must be an integer between 60000 and 600000 milliseconds, got "${raw}"`,
+      ),
+    );
+  const seen = [];
+  const admit = async (options) => {
+    seen.push(options.waitMs);
+    return {
+      admitted: false,
+      load1: 3,
+      waitedMs: options.waitMs,
+      samples: [3],
+      pressure: {
+        foreign: [
+          { comm: 'WindowServer', pcpu: 48, pid: 400 },
+          { comm: 'Google Chrome Helper', pcpu: 35, pid: 9 },
+        ],
+      },
+      reason: 'host pressure: WindowServer 48 % (foreign ≥ 40 %) after 300000 ms',
+    };
+  };
+  const host = {
+    cores: 14,
+    load1: () => 3,
+    pressure: async () => ({ method: 'cpus+ps', foreign: [] }),
+  };
+  const refused = await launchAdmission({ reach: 'timing', admit, host, waitMs: 300000 });
+  assert.deepEqual(seen, [300000]);
+  assert.equal(refused.policy.budgetMs, 300000);
+  const printed = [];
+  const rows = await runVerificationPhases(
+    [
+      [
+        LAUNCH_ADMISSION_ID,
+        () => launchAdmission({ reach: 'timing', admit, host, waitMs: 300000 }),
+      ],
+      ['ci', async () => 'never'],
+    ],
+    { log: (line) => printed.push(line) },
+  );
+  assert.equal(rows.length, 1);
+  assert.deepEqual(printed, [
+    'launch admission refused after 300 s: host pressure: WindowServer 48 % (foreign ≥ 40 %) after 300000 ms; busiest foreign processes: WindowServer 48 %, Google Chrome Helper 35 %',
+  ]);
+  // The default budget is read from the environment when the phase runs: a malformed value is
+  // the phase's error, not a refusal, so a retry never reads it as pressure.
+  const previous = process.env[LAUNCH_WAIT_VARIABLE];
+  process.env[LAUNCH_WAIT_VARIABLE] = 'abc';
+  try {
+    let ciRan = 0;
+    const failed = await runVerificationPhases(
+      [
+        [LAUNCH_ADMISSION_ID, () => launchAdmission({ reach: 'structural', admit, host })],
+        ['ci', async () => ++ciRan],
+      ],
+      { log: () => {} },
+    );
+    assert.equal(ciRan, 0);
+    assert.equal(failed[0].status, 'failed');
+    assert.equal(failed[0].notEvaluated, undefined);
+    assert.match(failed[0].error, new RegExp(`${LAUNCH_WAIT_VARIABLE} must be an integer`));
+  } finally {
+    if (previous === undefined) delete process.env[LAUNCH_WAIT_VARIABLE];
+    else process.env[LAUNCH_WAIT_VARIABLE] = previous;
+  }
+  // The qualification phase list is one shared value, admission first.
+  assert.deepEqual([...FINAL_PHASES], [LAUNCH_ADMISSION_ID, 'ci', 'browser', 'gate']);
+  assert.ok(Object.isFrozen(FINAL_PHASES));
+});
 test('failed preflight stops expensive phases and cannot claim local completion', async () => {
   const seen = [];
   const rows = await runVerificationPhases([
@@ -269,6 +353,7 @@ test('launch admission applies the foreign-process bound only to a tier that wil
     reach: 'structural',
     mode: 'enforce',
     bounds: { idle: 80, foreign: null },
+    budgetMs: 60000,
   });
   assert.deepEqual(structural.admission.pressure.foreign, [{ comm: 'WindowServer', pcpu: 52 }]);
   assert.equal(JSON.parse(JSON.stringify(structural)).policy.bounds.foreign, null);
@@ -280,6 +365,7 @@ test('launch admission applies the foreign-process bound only to a tier that wil
     reach: 'timing',
     mode: 'enforce',
     bounds: { idle: 80, foreign: 40 },
+    budgetMs: 60000,
   });
   // Controls: the structural policy still refuses a dim host and a loaded one.
   const dim = await run('structural', { ...drawing, idlePercent: 61 });

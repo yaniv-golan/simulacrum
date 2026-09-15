@@ -72,10 +72,13 @@ export function partitionHostedChecks(checks, profile) {
 export function finalSuiteRuns(checks, executedRows, notEvaluated) {
   return [...checks.flatMap((c) => executedRows.filter((r) => r.id === c.id)), ...notEvaluated];
 }
-/** Children under test never inherit the profile: it governs the harness, not the code under test. */
+/** Children under test never inherit the profile or the tier's launch wait budget: both govern
+ * the harness, not the code under test (a leaf's own admission test would otherwise read the
+ * release's five-minute budget). */
 export function childEnvironment(env = process.env) {
-  const { SIMULACRUM_HOST_PROFILE, ...rest } = env;
+  const { SIMULACRUM_HOST_PROFILE, SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS, ...rest } = env;
   void SIMULACRUM_HOST_PROFILE;
+  void SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS;
   return rest;
 }
 /** Rotation is schedule metadata: it never enters the priority reasons that size the prefix. */
