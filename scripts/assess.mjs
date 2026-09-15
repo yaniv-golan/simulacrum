@@ -1,5 +1,11 @@
 // Records a human assessment.
 //   npm run assess -- F1 pass designated-player app-1234567890abcdef "11 min to a moving cart"
+//   npm run assess -- F1 incomplete designated-player app-1234567890abcdef "left at 6 min; no criterion reached"
+//
+// `incomplete` is for a session that ended before any criterion could be judged.
+// It supplies no verdict: the latest complete session keeps governing the bar,
+// and a bar with only incomplete sessions stays pending. A session in which a
+// criterion was judged and not met is a fail, however early it ended.
 //
 // `servedBuild` is read off the RUNNING APPLICATION by the person who ran the
 // session -- not inferred from the assessor's checkout, which allowed testing an
@@ -24,7 +30,8 @@ function fail(message) {
 // Validate the id against the manifest BEFORE it is used to build a path.
 if (!id || !Object.hasOwn(manifest.bars, id)) fail(`unknown bar: ${id ?? '(none)'}`);
 if (!manifest.bars[id].human) fail(`${id} is not a human-judged bar`);
-if (!['pass', 'fail'].includes(verdict)) fail('verdict must be pass or fail');
+if (!['pass', 'fail', 'incomplete'].includes(verdict))
+  fail('verdict must be pass, fail or incomplete');
 if (!participant) fail('participant is required: who actually played');
 if (!servedBuild) fail('servedBuild is required: the build id shown by the running application');
 if (!notes) fail('notes are required: what happened');
@@ -65,6 +72,8 @@ writeFileSync(
 
 if (servedBuild !== app)
   console.error(
-    `WARNING: served build ${servedBuild} != current source ${app}. The bar will stay RED until they agree.`,
+    verdict === 'incomplete'
+      ? `WARNING: served build ${servedBuild} != current source ${app}. The session is recorded; it supplies no verdict either way.`
+      : `WARNING: served build ${servedBuild} != current source ${app}. The bar will stay RED until they agree.`,
   );
 console.log(`recorded ${id} ${verdict} for ${app} (participant: ${participant})`);

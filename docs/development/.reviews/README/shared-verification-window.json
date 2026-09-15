@@ -6,7 +6,7 @@
     "scripts/run-check.mjs": "75eb78439df937509acb13b77b68817c029177417c8558fed065fa3f517d6343",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
     "scripts/verification-window.mjs": "732dc8da11bc5ebd9e780b25cd04bd6333ba097a5de5fbdc22433959bdf15df8",
-    "docs/development/README.md#verify-a-change": "0cc969306639858a19c4504ee74b45774712abd5300f51cfeb31dd4ebb8b1d9c",
+    "docs/development/README.md#verify-a-change": "368273343e7aafd9328be5447e8af6553783d2d27e346bdb59f5dffd9d075a65",
     "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c"
   }
 }

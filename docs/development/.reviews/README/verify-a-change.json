@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/verification-outcome.mjs": "15a7e2f488042a0e636a1f352362956a3cf12240cc1970ca72263a722c9fd2ba",
+    "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
     "docs/development/playtesting.md#release-operations": "f71fdcf8896057ce3f32feed6c51a5d545fdfb01e54d72db0295b85e1be2e67a",
     "docs/development/playtesting.md#remote-setup": "404b4ce99f014b4a283a22aa8f8c1b1aeb3f36830db0750a2040a58781acafc8",
     "package.json": "cfea1114d02cc69c6c41dca9bae09e8f9162e9bc5f5d66ea48ec397798051e25",
