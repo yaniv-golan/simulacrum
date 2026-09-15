@@ -87,6 +87,8 @@ export function createWhatsNew({
   const shown = notes.filter((note) => note.date >= cutoff);
   let { mode, cursor } = readCursor(storage);
   let { firstVisit, unseen } = unseenNotes(notes, cursor);
+  // What this mount found, before any cursor write: the diagnostics report it as such.
+  const arrivedFirst = firstVisit;
   let writeFailed = false,
     attempted = false,
     disposed = false,
@@ -280,7 +282,7 @@ export function createWhatsNew({
     markSeen,
     read: () => ({
       mode,
-      firstVisit,
+      firstVisit: arrivedFirst,
       unseenIds: unseen.map((note) => note.id),
       badge,
       noticeOpen: !notice.hidden,
