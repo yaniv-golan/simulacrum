@@ -163,6 +163,15 @@ if(process.env.DRIFT==='source')writeFileSync('input.txt','wrong');
       );
       assert.equal(release.verification.automation.status, 'PASS');
       assert.equal(release.verification.humanAcceptance.status, 'PENDING');
+      // The frozen snapshot is kept out of Spotlight; the marker is not a packaged input.
+      assert.ok(existsSync(join(repo, '.release-private/test/.metadata_never_index')));
+      assert.equal('.metadata_never_index' in (release.verification.source ?? {}), false);
+      assert.equal(
+        Object.keys(
+          JSON.parse(readFileSync(join(repo, '.release-private/test/source.json'), 'utf8')).source,
+        ).includes('.metadata_never_index'),
+        false,
+      );
       assert.equal(
         readFileSync(join(repo, '.release-private/test/source/input.txt'), 'utf8'),
         'dirty source',

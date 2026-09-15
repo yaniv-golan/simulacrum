@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import {
   validateManifest,
   validateManifestText,
@@ -73,4 +73,59 @@ test('the manifest stays out of prettier so hosted format checks see the writer 
     ignore.split('\n').includes('scripts/manifest.json'),
     '.prettierignore must list scripts/manifest.json; validateManifest owns its layout',
   );
+});
+test('performance-tier checks are registered timing-sensitive, which also excludes them from receipt reuse', () => {
+  // The timingSensitive rows, boolean rule, exclusive-execution rule and budget-assertion source
+  // guard are owned by the browser registry tests; this adds the performance-tier implication.
+  const perf = structuredClone(manifest);
+  const performance = perf.browserChecks.find((c) => c.tier === 'performance');
+  assert.ok(performance, 'a performance-tier check exists');
+  assert.equal(performance.timingSensitive, true);
+  performance.timingSensitive = false;
+  delete performance.measures; // `measures` is itself a timing-sensitive fact
+  assert.throws(() => validateManifest(perf), /performance-tier/);
+});
+
+test('checks that launch a system browser channel are registered so the channel version binds their receipts', () => {
+  const m = structuredClone(manifest);
+  // Source guard over each script's closure of local imports (static and dynamic): a script
+  // that launches channel 'chrome' itself or through a module it loads must be registered
+  // (launch ⇒ declared), and a registered row must actually launch it (declared ⇒ launch).
+  const closure = (entry) => {
+    const seen = new Set();
+    const visit = (path) => {
+      if (seen.has(path)) return;
+      // JSDoc type-only references may name generated files that do not exist in the tree.
+      if (!existsSync(new URL(`../${path}`, import.meta.url))) return;
+      seen.add(path);
+      const text = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+      for (const match of text.matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
+        const target = new URL(match[1], `file:///${path}`).pathname.slice(1);
+        if (/\.(mjs|js)$/.test(target)) visit(target);
+      }
+    };
+    visit(entry);
+    return [...seen];
+  };
+  const launchesChrome = (entry) =>
+    closure(entry).some((path) =>
+      /channel:\s*['"]chrome['"]/.test(
+        readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'),
+      ),
+    );
+  for (const c of m.browserChecks)
+    assert.equal(
+      c.browserChannel === 'chrome',
+      launchesChrome(c.script),
+      `${c.id}: browserChannel registration must match the channel launch in its module closure`,
+    );
+  // Positive controls: a direct launcher and a transitive one (cloud playtest loads the remote
+  // playtest script dynamically).
+  for (const id of ['verify-feedback-flow', 'verify-cloud-playtest'])
+    assert.equal(m.browserChecks.find((c) => c.id === id)?.browserChannel, 'chrome', id);
+  assert.ok(
+    closure('scripts/verify-cloud-playtest.mjs').includes('scripts/verify-remote-playtest.mjs'),
+  );
+  m.browserChecks[0].browserChannel = 'firefox';
+  assert.throws(() => validateManifest(m), /browserChannel/);
 });

@@ -1,5 +1,6 @@
 import { createRenderSubmissionTracker, FIRST_TICK_METRIC } from './render-submission.mjs';
 import { assertRecordableObservation } from './recording-admission.mjs';
+import { RELEASE_NOTES } from './release-notes.mjs';
 import { createSceneLibrary } from './scene-library.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
 import { createCameraSession } from './camera-session.mjs';
@@ -728,6 +729,7 @@ export async function mountWorkshopApp(root) {
   }
   view = createWorkshopView(root, {
     learning,
+    releaseNotes: RELEASE_NOTES,
     controllerHistory,
     beforeDraw: (now) => {
       try {
@@ -792,6 +794,8 @@ export async function mountWorkshopApp(root) {
     context: () => ({ build: buildId, ...recordingContext(), observation: frame() }),
     checkpoint: () => workshop.checkpoint(),
   });
+  // After every mount-time surface (recording setup included) has had its chance to open.
+  view.considerWhatsNew();
   window.render_game_to_text = () => JSON.stringify(workshop.observe().frames[0]);
   window.advanceTime = (milliseconds) => {
     clock.pause();
@@ -808,6 +812,7 @@ export async function mountWorkshopApp(root) {
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
     readRenderedRopeEndpoints: () => view.readRenderedRopeEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
+    projectWorldPoint: (position) => view.projectWorldPoint(position),
     readInteractionState: () => {
       const state = view.readInteractionState();
       state.rendering.viewRenderMs = [...viewRenderMs];

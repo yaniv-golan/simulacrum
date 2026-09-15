@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"d7d0691d434a1f77007a920235afb28c2265a9f0c64c2a0c5fe646c7eda0cfd6","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"de7a62f8ef8ef938e5d971293eae581778486484caaa0fdadc69738477b971d2","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-load-cell-browser.mjs changed only its launch profile literal (focus → headless ui, now GPU-backed); the part recipe's steps and the check's assertions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f39390434f14274db0ece56447954bbf6665198098c4c2a488fef45e88cd7155","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ade9f30b85406d1da62b6e6c32a737f9dc87071906601f5d1ddae5f210c19c18","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): features.mjs adds UI_FEATURES.whatsNew (an M3b UI feature) and REPOSITORY_URL; the part recipe steps are unchanged; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -26,6 +26,11 @@ The [compiler](../../src/model/assembly.mjs) derives configuration; the renderer
 the same geometry. Do not select material or forces by name, role or fixture identity.
 
 Worked example: wheel diameter changes radius while keeping axle position and width.
+Beam length is the second authored dimension: [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives)
+scales the box along local X, faces and pads follow, and a dimension edit is refused by
+[resizeMovesMount](../../src/model/editing.mjs#symbol=resizeMovesMount) when any surface
+attachment of the edited part would move; the optional parameter's default must equal
+the canonical primitive ([assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)).
 Trace `partPrimitives`, then read [wheel diameter tests](../../test/wheel-diameter.test.mjs)
 and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, material/mass,
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated
@@ -85,7 +90,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"b212e87e4d2f01bb242b780740f0a8fe33969454f76147cfcc7dab59685070cb","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"54146972baa62deef9d98285a9c2a289a3b3f3989e010441c8767222142b2e8a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): indexed FNV preserves checkpoint bytes and numeric body admission preserves completed samples; replace-scene remains an atomic expectedCursor edit and camera-photo a Run-only input, and command validation, atomic publication and authored history are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"20609514cdf995994366fa35bd61038d45bce94d82321e0d69897c45aa959811","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"398327d725fbf7c6f52c425f9e5f7f0276bb158c2c178b66b703c327d98dcc06","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; no command surface change (Try it runs the existing example card launchers)."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -114,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"d81e821309cbcdc4adbab54222f5a901032e30b6503ca000cacf4802fa48eef8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"19f6cfd39ab752c0b73b2898e024d33af5cc314bd1c32f47870ddbbfc2a18ac6","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs gained the ui profile's GPU args and verify-mirror-browser.mjs changed only its launch profile literal; the interaction recipe (sensor → controller → telemetry → rendered/simulated agreement) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"57e5529db9df3f94ee53165cf9fd4b279845ea7f83379291f4cca50ab036642d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ce75fc9921112e23baae6e41fedf93146eefd265c8de3e730af270021836e1f0","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; interaction lifecycle, focus and key routing are unchanged (the notice follows the Teach-a-controller pattern)."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -163,7 +168,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"56d0691353cc95c4b8fc45dea834c07c160aad55ad3979fcac44c8c07af11539","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c0956b280abcc2246a94dc683ae56524aec4c5678c1f67b4a310013d538f3173","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): body fields and finite rejection are unchanged while admission is specialized; health explanations are refreshed on a bounded tick cadence in Run and immediately on failure, and scene/command additions grant diagnostics no simulation authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"8de52fc59f565033a796d297bf4e97ec23b9cbfc12546c0c9bd6ff5ecb05a93d","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5c099660747bcc869dfcc86121e72403fb929d3dc05b2f5acb068341d68527dc","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; readInteractionState gained a whatsNew diagnostics block, which follows the existing pattern the recipe describes."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -196,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"00881b4b9aad8659e4fcbda8ac70a60888b8e52d0af8b35bc51d2aa8e3f63060","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef79ef18a6c46f6a244f9402a75ee2bc12cae389c8165d8f2e4b7524d1d23c39","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): the drift is the pressure policy default (enforce), its test, the README scheduling paragraph and a hosted measurement-run record in the manifest; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still selects every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"86ce96c4be05f6b8c38c3109c2b8392da75b3ce15c03b856f43c6396236849d7","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f45f907b4623f1815eea2ca5698db0e5d69c3674de4c3552f500a5c5fd36222a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no physics, tick, contact or telemetry change; the listed dependencies are the What's new presentation/application modules, its checks, the version bump and the docs it cites."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +508,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"0f3e241c93d2eb536fe98f9cde92ff0150c47d65c128da416cfd98744413467f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"81e83220e01889a9f5e842fe9c39050909c270b4537d8b56b3764498a3949633","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): browser-session.mjs's profile change does not touch assembly authoring; the recipe is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"af1f45fa66fb6ea9c3829f4b6f2ac37c7a808153f23f6103f825c5bccf814417","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"21a2d6365c6ddeed861fa8adef342a7f9066cd1b32f371a7688d59d182b530a5","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; multi-part authoring is untouched."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -600,7 +605,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"4b696756e55e57de9d123aca251e5be654f81d5954c2bcf3763a508a5e185071","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0c455133fd47d2dbccfed551170a8a780ca2e6f2fdcb837438d91288d53a8f14","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): verify-rope-browser.mjs changed only its launch profile literal and browser-session.mjs its ui profile args; overlay ownership and the recipe's verification steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"aaff750a5dbb1bf612d076784355e04c2f323c4f41a60be3c5627c78e721878d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"b2c51e12f3fbc6e7c61e199c88889c511406836f40ee7c36e8f4f703caa1f676","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the What's new notice is a new overlay built as the recipe describes (section with the dialog role, own Escape and focus return, in-scene layering over the inspector column)."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -640,7 +645,7 @@ so shared shader programs stay available, while yielding before rendering and be
 types. Each completed image updates mounted palette, help and inspector icons and
 remains cached for later icons, including loaded-only parts. Completion, cancellation
 and errors release the meshes, preview environment and renderer once; stale callbacks
-cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains both the catalog lighting configuration and variants without part lights, since even an unpowered lamp changes shader light counts. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
+cannot publish after workshop disposal. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains the catalog lighting configuration with a shadow-casting lamp, the same configuration with an unshadowed lamp, and variants without part lights, since even an unpowered lamp changes shader light counts and a casting lamp changes them again. Temporary light visibility is restored before warmup meshes leave the scene. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
@@ -654,7 +659,9 @@ exploded markers remain schematic interaction overlays.
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths
-while open. Row pointer leave clears highlighting, but closing the panel, changing
+while open. It opens by itself for an actuator still missing its power or its shaft
+connection until the player closes it for that part; once both are connected the
+player's own open state rules (control is optional). Row pointer leave clears highlighting, but closing the panel, changing
 selection, removing the target and disposal clear reveal as well. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,
 tracing and exploded display state keep their existing owners; compose their inputs
@@ -749,7 +756,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"f2f35b43dfdd6f735f8665274a386edbca2cfdf95f17b32b2208c9b960e73b7f","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"c39aea8a209c488617e04f6293aaf9f834a7ab7dec4300e19d381ce5ff6b2835","disposition":"updated","rationale":"Read the complete nested section and checked graphics-quality thresholds:45 rendered samples,35ms downgrade,20ms recovery and30000ms wait remain unchanged. The quality thresholds remain unchanged; the browser journey now also exercises Lamp rendering under those same budgets. Load Cell adds an existing selected sensor-axis overlay; force readings do not enter quality policy or alter fixed stepping, so rendering budgets and human-evidence limits remain accurate. Incoming Lamp paragraph matches createLampView: one unshadowed spotlight/lens, modeled flux conversion and no quality omission. Optical performance evidence is explicitly separated from player/calibrated evidence. Re-read the added Build-orbit paragraph against final verify-spring-browser: mandatory ordinary Shift+right movement precedes the first quality check, the observed result must arrive within 45000 ms, and assertPresentationOnlyOrbit preserves blueprint, full physical poses and completed cursor while requiring camera movement. Slow callbacks are disabled before original held/released launcher and minimum-resolution checks. The measured diagnostic showed too few active callbacks, not idle resets; prose makes no overloaded-runtime qualification claim. The final warmup fix retains two shader light-count variants before animation; it does not alter quality thresholds or physics. The helper readiness wait precedes fixture loading in the adaptive-graphics, spring-performance and lamp-performance journeys; their original assertions and measured budgets remain intact. Resolved the competing spring witness in favor of the already tested Build-only Shift/right orbit with unchanged 45000 ms bound and blueprint, physical-pose, cursor and actual-camera-motion controls. Incoming protected file upload handling is retained. The original launcher/minimum-pixel checks still follow with delay disabled; no runtime-overload claim is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"e57fe6a866a78e7b5dcfe4877a71b2c3964c590ad72b29c271439492805174aa","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"1d0d4ab51ca4daf6fb4c3293bd68f485be7b3ec3cd0a003d3f0aad8691f68db1","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; adaptive graphics untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses
@@ -768,7 +775,12 @@ The final 50% to 40% step
 reduces pixel work by 36%, leaving the full scene present while sacrificing fine detail.
 DOM controls, authored geometry, picking, simulation rate and completed observations
 remain unchanged. Shadow enable/disable refreshes shader variants; old shadow targets
-are released. Resize uses the current scale without changing CSS coordinates.
+are released. Each level also carries a lamp shadow map size (1024, 512 and 256 pixels
+at the three shadowed levels, 0 below), applied to every lamp view on a level change;
+lamp shadow casting therefore flips only on the transition that already toggles the
+renderer shadow map, and Three's lights-state version handles the changed
+shadow-casting light count without another shader sweep. Resize uses the current
+scale without changing CSS coordinates.
 No permanent panel or action is added; the existing 3D view owns this behavior.
 
 The [graphics controls](../../test/graphics-quality.test.mjs) cover full startup,
@@ -787,11 +799,19 @@ simulation catch-up; it does not qualify overloaded runtime cadence.
 Agent screenshots are not target-player acceptance.
 
 The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
-completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
-lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+completed optical telemetry. Each admitted lamp retains one spotlight and lens. A hard
+cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
 concentration without adding modeled flux. Display exposure and tint are illustrative;
-black tint is dark while electrical demand remains. No lamp shadows are offered, so
-light can pass through occluders. Quality reduction retains every lamp. The
+black tint is dark while electrical demand remains. Whether a lamp casts shadows is a
+presentation budget, never telemetry: the graphics level supplies a lamp shadow map
+size through the view's `applyShadowBudget`, applied by the workshop's shared mesh
+factory to authored, surface-preview and placement-preview lamps alike so the
+shadow-casting light count never depends on which mesh is a preview. Changing the
+budget releases the old depth target and requests one reallocation pass. An unlit or
+black-tinted lamp skips its shadow pass (`shadow.autoUpdate` follows lit output), so
+eight mounted lamps cost depth passes only while lit. At reduced graphics levels lamp
+shadows are off and light passes through occluders. Quality reduction retains every
+lamp. The
 [lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
 [eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
 checks, not target-player or calibrated photometry evidence.

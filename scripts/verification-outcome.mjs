@@ -67,8 +67,10 @@ export function verificationOutcome(results, checks) {
   };
 }
 export function formatVerificationOutcome(outcome) {
+  // A passing bar with a later incomplete session still prints: the attempted
+  // session supplies no verdict, but hiding it would read as never attempted.
   const human = outcome.humanAcceptance.bars
-    .filter((bar) => bar.state !== 'GREEN')
+    .filter((bar) => bar.state !== 'GREEN' || bar.laterIncomplete)
     .map((bar) => `${bar.id}: ${bar.why}`)
     .join('; ');
   return [

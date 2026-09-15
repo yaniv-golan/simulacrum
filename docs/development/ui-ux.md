@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8c0ff796016b59a9b73babf7158bb31befc20798ee2bf23dcc5a8916e21993ed","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"3b0c479aab8c08aa420dcd29b6df96fc31dc429d8984fefa99e19dc734aa4bab","disposition":"still accurate","rationale":"Phased browser scheduler landing (tooling-tier-wall-clock on main 9157fbd): workshop-view.mjs changed only by the loopTicks render probe; no lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decisions and admission criteria stand."} -->
+<!-- doc-review {"version":1,"fingerprint":"5b10ab2ac76e47f16bf70acf21ed48f1f5ed65a3419d568df62bd3c6b2db15b7","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"53858d0c77a2d56db6e4a8f7a1bd4f0de7065f604d2fec86d71638a9253ebc9e","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no lesson, example, experiment or challenge was added, extended or replaced; the What's new notice carries at most one invitation to existing Learn & examples content and Help's Try it runs existing card launchers — recorded as no entry."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"da897d62c1ffdd1b48b8cfbade2d31565d625ab88c6fa4bcd071a18203ccb434","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8a63046a06bf500d156203c8a66cef87a23d1ff3e8cbbd5003ce3076b6ae489c","disposition":"updated","rationale":"Mechanical sound level fix (fix-mechanical-audio-level on main 1c36448): the sound-controls paragraph now states the level policy: levels derive from one registered nominal (a motor at 20 rad/s renders at about −19 dBFS at full volume, −28 dBFS at the 35 % default, less with distance; textures and actuators weighted against it), measured by the audio check against a calibration tone through the same output chain, and a slow motor keeps harmonics above the floor small speakers reproduce, checked as an absolute pitch floor. Verified against mechanical-audio-model.mjs and verify-mechanical-audio.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"49f40bd1e1d1dc2d5317fa4e297875fc3537bca6a03bbac33675790d058cb0ca","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"282337103dac12922c035c7cd318257a9066e5034462467034615390e994af7d","disposition":"updated","rationale":"What's-new candidate (pre-integration fe736bc): the Help paragraph now describes the What's new badge, notice, Help section and Try it with their trigger, dismissal, retrieval, yield rules and no-entry disposition, and a new paragraph covers the Source on GitHub link and the About line's version source; workshop-view.mjs, whats-new.mjs, workshop.css and workshop-app.mjs implement exactly that; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
 
 
 
@@ -231,8 +231,8 @@ replaces catalogue and inspector content while Editing scene is active; Done res
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
 a draft; Apply scene publishes one ordinary command. V/W/E select the same tools
-as their buttons; arrows and Page Up/Down move the proposal, and Alt plus these
-keys rotates it. Space retains Run/Pause and period retains single-step through
+as their buttons; arrows move the proposal on the floor, Shift+↑↓ or Page Up/Down
+lift and lower it, and Alt plus these keys rotates it. Space retains Run/Pause and period retains single-step through
 the existing workshop handler, including while scene editing remains open in Run or Paused.
 Unapplied scene drafts still block Run. Text fields retain native keyboard editing. A preview hides committed
 scene meshes, including objects proposed for removal, and Cancel restores them.
@@ -391,6 +391,17 @@ details. Bounciness and Grip may inherit Material default or use Custom values;
 changing material preserves visibly custom values, and choosing Material default
 removes the corresponding override. These edits are Build-only.
 
+The Beam uses the same selected-inspector size edit for length (100–1000 mm, 10 mm
+slider steps): the preview shows the new size and names an obstruction, confirming
+sends one parameter edit, and Escape restores the current value. A resize that would
+move a part attached to a beam end is rejected in place with "Detach it from the end
+first"; long-face mounts that no longer fit reject as out of bounds. Confirming the
+default on a beam that never stored a length is not an edit. Beam long faces mount
+through a 40 mm section pad, so a beam can lie on a plate or lap another beam; the
+existing pad markers on those faces now show the 40 mm footprint; end faces keep
+their whole face. Part help gains one sentence and one step; no lesson or example
+entry.
+
 The spring launcher now uses a loose Ball and an editable Catcher assembly of
 ordinary solids; its connected roller wheels remain. The existing entry invites
 moving the catcher and adjusting spring preload. Roll onto a spring extends the
@@ -425,12 +436,47 @@ Give feedback shares the existing workshop footer before, during and after recor
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
-readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
-is currently implemented. Future optional hints require an explicit trigger,
-dismissal/completion condition and retrieval route, with no timer hiding required
-instructions. Honor dismissal where persistence exists; local resets are not proof
-that someone wants another tour. Errors and consequential state are never dismissed
-by a teaching preference.
+readable and copyable here; the served marker remains for assessment evidence.
+
+Help also owns [What's new](../../src/presentation/whats-new.mjs#symbol=createWhatsNew):
+the player's task is to learn what changed since this device's last visit and where
+to try it. Notes are a tracked application module bound to the served build; the
+last-seen note id is stored per device. A returning device with unseen notes gets a
+dot on the Help button (the button's name stays "Help"; the state is described for
+assistive technology) and, once per new notes head, a compact non-modal notice — a
+section with the dialog role, never a `<dialog>`, so workshop keys stay alive whenever
+focus is outside it. The notice is the one automatic surface: its trigger is a new
+notes head on this device; it is dismissed by its ×, Escape or a click outside;
+opening it or Help marks the notes seen; it never opens while a dialog is open, a
+placement is active, the mode is Run or Paused, a recording is active, the scene is
+being edited or anything already has focus, and it yields to an open dialog by
+re-checking once that dialog closes. Its only invitation is one "Open Learn &
+examples" button, to existing admitted content. The Help section lists new and
+seen-before notes with "Try it" for entries that name an example; Try it runs that
+card's own launcher, so the Build-only rule and replacement confirmation apply. A
+first visit and a rolled-back build (unknown cursor) show nothing automatically; a
+browser that cannot store the cursor gets no badge or notice and a visible sentence
+in Help. Learning-content disposition: **no entry**. No other automatic hint or tour
+exists; future optional hints require an explicit trigger, dismissal/completion
+condition and retrieval route, with no timer hiding required instructions. Honor
+dismissal where persistence exists; local resets are not proof that someone wants
+another tour. Errors and consequential state are never dismissed by a teaching
+preference.
+
+Simulacrum is open source, so the header's document/help cluster carries a "Source on
+GitHub" icon link beside Help (the GitHub mark; `aria-label` and tooltip "Source on
+GitHub"; opens the repository in a new tab; in the filebar's tab order), and Help's About
+line, placed before Build information, reads "Simulacrum <version> · open source (MIT)
+· github.com/…". `<version>` is package.json's `version` read at build time and injected
+as the `app-version` meta, the one wired version source; a build with no semver package
+version, or one whose semver tag differs from it, names its build id instead (the
+[release runbook](playtesting.md#release-operations) owns the bump and tagging rule).
+Player task:
+find the project's source and licence and say which release they are on. Owning region:
+the header cluster and Help. Why visible: attribution and discoverability of the source
+are a maintainer's convention for an open-source project, not a frequent action; the link
+costs one icon's width. Lifecycle: visible whenever the header is (the narrow-screen
+placement mode hides the whole header); nothing to dismiss. Displaced UI: none.
 
 The [motion panel](../../src/presentation/motion-readout.mjs#source) separates requested
 measurements from boundary warnings. Stopping preserves the last run for inspection.
@@ -460,13 +506,13 @@ Its selected inspector owns Light color, Brightness and Beam spread in Build, wi
 actual input, requested/delivered watts and modeled light output in Run/Paused.
 Black tint warns that output is visually dark while consuming power. The existing
 requested part help explains receiver replacement of default-on behavior, weak supply,
-restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+restart and the eight-lamp limit with shadows only while graphics run smoothly. These controls leave with selection,
 displace no unique action and add no permanent panel. Learning admission is **no entry**:
 existing power and receiver explanations teach the same connection concept; contextual
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"076b15726ac7c2341253a3f2f3e617f8e9aff4bfa51bdc0fd1ccd93fe227daf1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"f3fbd6474ea000eb6001173dccc89a76c3c692351482fe68dcc4dd1e027804eb","disposition":"still accurate","rationale":"Only the linked playtesting remote-setup explanation changed; the verification guidance in this section (scope discovery, journeys, separation of automation from player evidence) does not describe feedback attachment defaults."} -->
+<!-- doc-review {"version":1,"fingerprint":"2141192d73f080bb166fbbd4e09819fd3230feef17e7715584ac3653bd5c8d3c","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"20e3fc88d5b12cc6943ff4f6ba30a7855e227c90aa6015fb231530be0cb863dd","disposition":"still accurate","rationale":"verify-authorable-scenes gained a Shift+ArrowUp/Down preview step under the same journey ownership; the section's rules on automation versus player evidence are unchanged."} -->
 
 
 

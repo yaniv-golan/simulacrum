@@ -161,7 +161,11 @@ real designated-player acceptance under F1 v2 plus instrumented F2 before progre
 M4b demonstrates every physical feasibility stage before M5 breadth. M5 freezes the
 Course apparatus and proves rover L0. M7 requires L1a, L1b and L1c. M8b integrates
 WebMCP through the player's command surface. M9 requires the unbroken legged Course,
-held-out robustness and all final product gates on one final source identity.
+held-out robustness and all product gates due by M9 on one final source identity.
+M10 and M11 extend the same allocation with the flight and space annexes on the
+unchanged 1/120 s single-integration and replay contract; M11's time-scale decision
+and its material-store mass rule are recorded in this contract before any orbital
+fixture is admitted.
 
 Ascent failures retain competing plant, power, controller, terrain, evaluator and
 engine hypotheses. Torque, charge, clearance and contact traces decide the repair.

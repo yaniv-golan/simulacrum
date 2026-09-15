@@ -152,3 +152,20 @@ test('identityFiles is the candidate identity files map: shas, modes, deletions,
   assert.deepEqual(identityFiles(root), files);
   assert.notEqual(candidateIdentity(root).index, before.index);
 });
+
+test('a base ref resolves to the commit it names now, so a moved ref is a different base', async (t) => {
+  const { resolveCandidateBase } = await import('../scripts/candidate.mjs');
+  const { root, g } = fixture(t);
+  const head = g('rev-parse', 'HEAD').trim();
+  assert.equal(resolveCandidateBase(root), head);
+  assert.equal(resolveCandidateBase(root, 'HEAD'), head);
+  assert.equal(resolveCandidateBase(root, head), head, 'a commit resolves to itself');
+  g('branch', 'topic', 'HEAD');
+  assert.equal(resolveCandidateBase(root, 'topic'), head);
+  g('commit', '--allow-empty', '-qm', 'move');
+  g('branch', '-f', 'topic', 'HEAD');
+  assert.notEqual(resolveCandidateBase(root, 'topic'), head, 'the moved ref names another commit');
+  assert.equal(resolveCandidateBase(root, 'topic'), g('rev-parse', 'HEAD').trim());
+  for (const bad of ['', '--output=/tmp/x', 'no-such-ref', 42])
+    assert.throws(() => resolveCandidateBase(root, bad));
+});

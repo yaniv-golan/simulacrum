@@ -79,6 +79,13 @@ export async function candidateMatchesOrigin(root, candidate) {
     return false;
   }
 }
+/** The commit a base ref names right now, as capture would pin it. */
+export function resolveCandidateBase(root, base = 'HEAD') {
+  if (typeof base !== 'string' || !base || base.startsWith('-')) throw Error('invalid base');
+  return git(root, ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`], {
+    encoding: 'utf8',
+  }).trim();
+}
 /** The checked-out branch name, or null when detached. */
 export function currentBranch(root) {
   try {

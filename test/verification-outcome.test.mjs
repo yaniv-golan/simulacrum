@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verificationOutcome } from '../scripts/verification-outcome.mjs';
+import {
+  verificationOutcome,
+  formatVerificationOutcome,
+} from '../scripts/verification-outcome.mjs';
 const result = (
   bars = [
     { id: 'F1', human: true, state: 'RED', assessment: 'pending', why: 'no recorded assessment' },
@@ -74,4 +77,30 @@ test('absent gate is not evaluated rather than an invented structural failure', 
     rows[2].result.failed = value;
     assert.equal(verificationOutcome(rows, []).exitCode, 1);
   }
+});
+test('a later incomplete session stays visible beside a passing human bar', () => {
+  const passed = {
+    id: 'F1',
+    human: true,
+    state: 'GREEN',
+    assessment: 'passed',
+    why: 'assessed 2026-09-05, participant designated-player',
+  };
+  const quiet = verificationOutcome(result([passed]), [{ id: 'test', ok: true }]);
+  assert.equal(quiet.exitCode, 0);
+  assert.doesNotMatch(formatVerificationOutcome(quiet), /incomplete/);
+  // The bar reader composes `why` with the same suffix it carries structurally.
+  const attempted = {
+    ...passed,
+    laterIncomplete: { date: '2026-09-06', app: 'app-1', notes: 'left before building' },
+    why: `${passed.why} — a later session on 2026-09-06 was incomplete: left before building`,
+  };
+  const out = verificationOutcome(result([attempted]), [{ id: 'test', ok: true }]);
+  assert.equal(out.exitCode, 0, 'an incomplete session supplies no verdict');
+  assert.equal(out.humanAcceptance.status, 'PASS');
+  assert.deepEqual(out.humanAcceptance.bars[0].laterIncomplete, attempted.laterIncomplete);
+  assert.match(
+    formatVerificationOutcome(out),
+    /F1: .*later session on 2026-09-06 .*incomplete: left before building/,
+  );
 });

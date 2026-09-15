@@ -70,6 +70,8 @@ import {
   sceneObjectDescriptors,
 } from '../model/environment.mjs';
 import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
+import { createWhatsNew } from './whats-new.mjs';
+import { REPOSITORY_URL } from '../model/features.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -113,6 +115,9 @@ function element(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+// One sentence for the direct-editing hint; every site that restores it uses this.
+const SELECT_HINT =
+  'Drag a part to move · Shift+↑↓ raises and lowers · Drag empty space to orbit · Scroll to zoom · Esc to clear';
 function button(text, fn, className = '') {
   const node = element('button', className, text);
   node.type = 'button';
@@ -137,6 +142,7 @@ export function createWorkshopView(
     sceneLibrary,
     onExportScene,
     learning,
+    releaseNotes = [],
     controllerHistory,
     cameraSession,
     builtInAssemblies = [],
@@ -161,6 +167,8 @@ export function createWorkshopView(
   let activeTool = 'select',
     draggingType = null,
     copySequence = 0,
+    keepViewOnInsert = null,
+    lastInsertFramed = false,
     followCenter = null,
     guideActive = false,
     editing,
@@ -799,7 +807,9 @@ export function createWorkshopView(
   recordingExport.dataset.command = 'export-session';
   recordingPanel.append(recordingToggle, recordingExport, recordingStatus);
   left.append(recordingPanel);
+  let recordingActive = false;
   function setRecordingState(state) {
+    recordingActive = Boolean(state.recording);
     recordingToggle.textContent = state.recording ? 'Stop recording' : 'Start recording';
     recordingExport.disabled = !state.available;
     recordingPanel.firstChild.textContent = state.recording
@@ -818,16 +828,24 @@ export function createWorkshopView(
   const partList = element('div', 'part-list');
   const viewport = element('section', 'viewport');
   viewport.setAttribute('aria-label', 'Three dimensional workbench');
-  const hint = element(
-    'div',
-    'canvas-hint',
-    'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear',
-  );
+  const hint = element('div', 'canvas-hint', SELECT_HINT);
   const empty = element('div', 'empty-hint');
+  // The guided first build is offered where a newcomer must look; it calls the
+  // same launcher as the Learn & examples card and leaves with the first part.
+  const guideInvitation = button('Build a rolling machine with the guide', () => {
+    if (!frame || frame.metadata.mode !== 'build') return;
+    chooseExample(
+      { name: 'Build a rolling machine', command: { type: 'new' }, guide: true },
+      guideInvitation,
+    );
+  });
+  guideInvitation.dataset.command = 'start-guide-hint';
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
     element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Or let the guide walk you through one:'),
+    guideInvitation,
   );
   const stage = element('div', 'stage'),
     buildId = element(
@@ -1100,10 +1118,26 @@ export function createWorkshopView(
   }
   const guideCues = new THREE.Group();
   scene.add(guideCues);
+  // Every lamp mesh this view creates, including surface and placement previews,
+  // receives the current lamp shadow budget so the shadow-casting light count never
+  // depends on which mesh is a preview.
+  const createBudgetedMesh = (part) => {
+    const mesh = createPartMesh(part);
+    mesh.userData.lamp?.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    return mesh;
+  };
+  // Authored and live preview lamps alike: a level change must reach every casting light.
+  const lampViews = () => {
+    const views = [];
+    scene.traverse((object) => {
+      if (object.userData.lamp) views.push(object.userData.lamp);
+    });
+    return views;
+  };
   const partResources = createResourceCache({
     key: partAppearanceKey,
     create: (part) => {
-      const mesh = createPartMesh(part),
+      const mesh = createBudgetedMesh(part),
         display = new THREE.Group();
       display.add(mesh);
       scene.add(display);
@@ -1123,6 +1157,45 @@ export function createWorkshopView(
   let portCueKey = '',
     previewEndpoint = null,
     socketPreview = null;
+  function viewportInsets() {
+    const rect = stage.getBoundingClientRect();
+    let top = 100,
+      bottom = 70;
+    for (const node of document.querySelectorAll(
+      '.edit-toolbar,.inspection-banner,.playtest-panel',
+    )) {
+      if (node.hidden || !node.getClientRects().length) continue;
+      const box = node.getBoundingClientRect();
+      if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
+      else bottom = Math.max(bottom, rect.bottom - box.top + 16);
+    }
+    return { top, bottom, left: 24, right: 24 };
+  }
+  // A copy that already sits inside the visible canvas (between the toolbar
+  // and footer insets) does not justify re-framing the whole machine.
+  function meshInView(mesh) {
+    if (!mesh) return false;
+    const box = new THREE.Box3().setFromObject(mesh);
+    if (box.isEmpty()) return false;
+    // The renderer refreshes the camera matrices only on the next frame; a
+    // synchronous render after a command must project against the current pose.
+    camera.updateMatrixWorld();
+    const width = renderer.domElement.clientWidth,
+      height = renderer.domElement.clientHeight,
+      { top, bottom, left, right } = viewportInsets();
+    for (let corner = 0; corner < 8; corner++) {
+      const point = new THREE.Vector3(
+        corner & 1 ? box.max.x : box.min.x,
+        corner & 2 ? box.max.y : box.min.y,
+        corner & 4 ? box.max.z : box.min.z,
+      ).project(camera);
+      if (!(point.z > -1 && point.z < 1)) return false;
+      const px = ((point.x + 1) / 2) * width,
+        py = ((1 - point.y) / 2) * height;
+      if (px < left || px > width - right || py < top || py > height - bottom) return false;
+    }
+    return true;
+  }
   editing = createEditingControls({
     scene,
     camera,
@@ -1132,20 +1205,7 @@ export function createWorkshopView(
     getBlueprint: () => frame.metadata.blueprint,
     getMode: () => (exploded || partPlacement?.active() ? 'inspection' : frame?.metadata.mode),
     getMeshes: () => meshes,
-    getViewportInsets: () => {
-      const rect = stage.getBoundingClientRect();
-      let top = 100,
-        bottom = 70;
-      for (const node of document.querySelectorAll(
-        '.edit-toolbar,.inspection-banner,.playtest-panel',
-      )) {
-        if (node.hidden || !node.getClientRects().length) continue;
-        const box = node.getBoundingClientRect();
-        if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
-        else bottom = Math.max(bottom, rect.bottom - box.top + 16);
-      }
-      return { top, bottom, left: 24, right: 24 };
-    },
+    getViewportInsets: viewportInsets,
     onCommit: send,
     onInvalidate: invalidateScene,
   });
@@ -1160,7 +1220,7 @@ export function createWorkshopView(
     send,
     onMessage: setMessage,
     onInteraction,
-    createMesh: createPartMesh,
+    createMesh: createBudgetedMesh,
     onInvalidate: invalidateScene,
   });
   function beginSurface(part, options) {
@@ -1353,12 +1413,13 @@ export function createWorkshopView(
   viewport.append(tools);
   const help = element('dialog', 'workshop-dialog');
   help.setAttribute('aria-label', 'Help');
+  const buildHeading = element('h3', '', 'Build');
   help.append(
     createDialogHeader(
       element('h2', '', 'Controls'),
       createDialogClose('Close help', () => help.close()),
     ),
-    element('h3', '', 'Build'),
+    buildHeading,
     element(
       'p',
       '',
@@ -1367,7 +1428,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Arrows move 2.5 cm. Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
+      'Arrows move 2.5 cm on the floor; Shift+↑↓ or Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
     ),
     element('h3', '', 'View'),
     element(
@@ -1406,9 +1467,84 @@ export function createWorkshopView(
     }),
     copyStatus,
   );
-  help.append(buildInfo);
+  // About: package.json's version at build time (the app-version meta), else the build id.
+  const appVersion = document.querySelector('meta[name=app-version]')?.content ?? '';
+  const about = element('p', 'help-about');
+  const repositoryLink = () => {
+    const link = element('a', '', REPOSITORY_URL.replace(/^https?:\/\//, ''));
+    link.href = REPOSITORY_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    return link;
+  };
+  about.append(
+    appVersion
+      ? `Simulacrum ${appVersion}`
+      : `Simulacrum · build ${buildId.textContent || 'unidentified'}`,
+    ' · open source (MIT) · ',
+    repositoryLink(),
+  );
+  help.append(about, buildInfo);
   root.append(help);
-  filebar.append(button('Help', () => help.showModal()));
+  // One opener for the button and the ? shortcut: opening Help counts as seeing the notes.
+  function openHelp() {
+    whatsNew.markSeen();
+    help.showModal();
+  }
+  const helpButton = button('Help', openHelp);
+  const sourceLink = element('a', 'github-link');
+  sourceLink.href = REPOSITORY_URL;
+  sourceLink.target = '_blank';
+  sourceLink.rel = 'noopener noreferrer';
+  sourceLink.setAttribute('aria-label', 'Source on GitHub');
+  sourceLink.title = 'Source on GitHub';
+  // GitHub mark from Primer Octicons, Copyright (c) GitHub Inc., MIT licence.
+  const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mark.setAttribute('viewBox', '0 0 16 16');
+  mark.setAttribute('width', '16');
+  mark.setAttribute('height', '16');
+  mark.setAttribute('aria-hidden', 'true');
+  mark.setAttribute('focusable', 'false');
+  const markPath = document.createElementNS(mark.namespaceURI, 'path');
+  markPath.setAttribute('fill', 'currentColor');
+  markPath.setAttribute(
+    'd',
+    'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z',
+  );
+  mark.append(markPath);
+  sourceLink.append(mark);
+  filebar.append(helpButton, sourceLink);
+  const whatsNew = createWhatsNew({
+    root,
+    helpButton,
+    help,
+    // Above the fold: the badge promised new content, so it comes before Controls.
+    insertBefore: buildHeading,
+    notes: releaseNotes,
+    storage: {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
+    buildId: buildId.textContent,
+    learnButton,
+    findExample: (example) => examples.querySelector(`[data-command="${CSS.escape(example)}"]`),
+    openExamples: () => {
+      exampleMessage.textContent = '';
+      if (!examples.open) examples.showModal();
+    },
+    // The notice is automatic, so it yields to anything the player is already doing.
+    gate: () => {
+      const dialog = document.querySelector('dialog[open]');
+      if (dialog) return { reason: 'dialog', dialog };
+      if (partPlacement?.active()) return { reason: 'placement' };
+      if (frame?.metadata.mode !== 'build') return { reason: 'run' };
+      if (recordingActive) return { reason: 'recording' };
+      if (sceneEditor?.active()) return { reason: 'scene' };
+      const active = document.activeElement;
+      if (active && active !== document.body) return { reason: 'focus' };
+      return null;
+    },
+  });
   const machinePanels = element('div', 'machine-panels');
   viewport.append(machinePanels);
   const motionReadout = createMotionReadout(machinePanels);
@@ -1539,7 +1675,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent =
       value === 'select'
-        ? 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear'
+        ? SELECT_HINT
         : value === 'rotate'
           ? 'Drag rings to rotate · V for direct part movement · Drag empty space to orbit'
           : 'Drag arrows to move · V for direct part movement · Drag empty space to orbit';
@@ -1569,7 +1705,7 @@ export function createWorkshopView(
       canvas: renderer.domElement,
       orbit: controls,
       getMachineMeshes: () => meshes.values(),
-      createMesh: createPartMesh,
+      createMesh: createBudgetedMesh,
       disposeMesh: disposePart,
       invalidate: invalidateScene,
       onState: refreshAssemblyState,
@@ -2147,7 +2283,9 @@ export function createWorkshopView(
         : null;
     const openSections =
       right.dataset.partId === selected
-        ? [...right.querySelectorAll('details[open]')].map((node) => node.className)
+        ? [...right.querySelectorAll('details[open]')]
+            .filter((node) => !node.closest('.connection-test'))
+            .map((node) => node.className)
         : [];
     right.dataset.partId = selected ?? '';
     right.dataset.inspectorType = part?.type ?? '';
@@ -2503,7 +2641,7 @@ export function createWorkshopView(
         element(
           'p',
           'parameter-help',
-          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps; no lamp shadows, so light can pass through objects.',
+          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps. Lamps cast shadows while the view is running smoothly; when graphics are reduced to keep up, light passes through objects.',
         ),
       );
       if (part.parameters.color === 0)
@@ -2579,30 +2717,40 @@ export function createWorkshopView(
       }
       right.append(controls);
     }
-    if (definition.parameterDefinitions.diameter) {
-      const dimensions = element('div', 'setting primary-setting'),
+    // One authored dimension per part: diameter (ball, wheel) or length (beam). Labels are
+    // explicit because registered checks assert them verbatim.
+    const dimension = definition.parameterDefinitions.diameter
+      ? 'diameter'
+      : definition.parameterDefinitions.length
+        ? 'length'
+        : null;
+    if (dimension) {
+      const rating = definition.parameterDefinitions[dimension],
+        dimensions = element('div', 'setting primary-setting'),
         number = element('input'),
         slider = element('input'),
         notice = element('p', 'parameter-help');
-      const value =
-        (part.parameters.diameter ?? definition.parameterDefinitions.diameter.default) * 1000;
-      dimensions.append(element('label', '', 'Diameter (mm)'));
+      const authored = dimension in part.parameters ? part.parameters[dimension] : undefined,
+        value = (authored ?? rating.default) * 1000,
+        title = dimension === 'diameter' ? 'Diameter' : 'Length',
+        subject = { ball: 'Ball', gripWheel: 'Wheel', beam: 'Beam' }[part.type] ?? definition.name;
+      dimensions.append(element('label', '', `${title} (mm)`));
       number.type = 'number';
       slider.type = 'range';
       for (const control of [number, slider]) {
-        control.min = String(definition.parameterDefinitions.diameter.minimum * 1000);
-        control.max = String(definition.parameterDefinitions.diameter.maximum * 1000);
+        control.min = String(rating.minimum * 1000);
+        control.max = String(rating.maximum * 1000);
         control.step = control === number ? 'any' : '10';
         control.value = String(value);
         control.disabled = !editable;
         control.setAttribute(
           'aria-label',
-          `${part.type === 'ball' ? 'Ball' : 'Wheel'} diameter${control === number ? ' (mm)' : ''}`,
+          `${subject} ${dimension}${control === number ? ' (mm)' : ''}`,
         );
       }
       const candidate = () => ({
         ...part,
-        parameters: { ...part.parameters, diameter: Number(number.value) / 1000 },
+        parameters: { ...part.parameters, [dimension]: Number(number.value) / 1000 },
       });
       const obstruction = (next) =>
         parts.find(
@@ -2612,10 +2760,10 @@ export function createWorkshopView(
               placementEnvelopes(other).some((b) => solidsOverlap(a, b)),
             ),
         );
-      function previewDiameter(control) {
+      function previewDimension(control) {
         number.value = slider.value = control.value;
         if (!number.checkValidity()) {
-          notice.textContent = `Choose a diameter from ${number.min} to ${number.max} mm.`;
+          notice.textContent = `Choose a ${dimension} from ${number.min} to ${number.max} mm.`;
           return;
         }
         const next = candidate(),
@@ -2627,15 +2775,22 @@ export function createWorkshopView(
         invalidateScene();
       }
       for (const control of [number, slider]) {
-        control.addEventListener('input', () => previewDiameter(control));
+        control.addEventListener('input', () => previewDimension(control));
         control.addEventListener('change', async () => {
           if (!number.checkValidity() || obstruction(candidate())) return;
           editing.clearPreview();
+          const next = Number(number.value) / 1000;
+          // Confirming the default on a part that never stored one is not an edit.
+          if (authored === undefined && next === rating.default) {
+            notice.textContent = '';
+            invalidateScene();
+            return;
+          }
           const result = await send({
             type: 'parameter',
             id: part.id,
-            key: 'diameter',
-            value: Number(number.value) / 1000,
+            key: dimension,
+            value: next,
           });
           if (!result?.ok)
             notice.textContent = explainFailure(result ?? {}, frame.metadata.blueprint);
@@ -3123,6 +3278,7 @@ export function createWorkshopView(
           ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'].includes(key)) ||
         part.type === 'poweredLamp' ||
         key === 'diameter' ||
+        key === 'length' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
         (part.type === 'poweredMotor' &&
@@ -3279,10 +3435,14 @@ export function createWorkshopView(
     placement.append(turn);
     right.append(mirrorButton, placement);
 
+    // Connect & test owns its own open state (it opens itself for an actuator
+    // still missing power or a shaft and remembers the player's closure); the
+    // inspector's memory must not close it behind that owner's back.
     for (const details of right.querySelectorAll('details'))
-      details.open =
-        openSections.includes(details.className) &&
-        !(mode !== 'build' && details.classList.contains('receiver-controls'));
+      if (!details.closest('.connection-test'))
+        details.open =
+          openSections.includes(details.className) &&
+          !(mode !== 'build' && details.classList.contains('receiver-controls'));
     if (focusLabel) {
       const replacement = [...right.querySelectorAll('[aria-label]')].find(
         (node) => node.getAttribute('aria-label') === focusLabel,
@@ -3881,7 +4041,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent = on
       ? 'Click a part or dashed connection to inspect · Drag to orbit · Esc clears selection'
-      : 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+      : SELECT_HINT;
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
   function render(next, cursor = getCursor?.()) {
@@ -3952,8 +4112,12 @@ export function createWorkshopView(
         frame.metadata.mode === 'build' ? null : frame.power?.lamps?.find((l) => l.node === index),
       );
     }
-    if (blueprint.parts.length > previousCount) editing.focus();
-    else if (
+    if (blueprint.parts.length > previousCount) {
+      // An insert frames the machine unless the caller asked to keep the view
+      // and the new part already sits inside the visible canvas.
+      lastInsertFramed = !(keepViewOnInsert && meshInView(meshes.get(keepViewOnInsert)));
+      if (lastInsertFramed) editing.focus();
+    } else if (
       !retryCamera &&
       previousMode &&
       previousMode !== 'build' &&
@@ -4000,9 +4164,7 @@ export function createWorkshopView(
     if (frame.metadata.mode !== 'build')
       hint.textContent =
         'Machine controls lists your keys · Space pauses · Drag empty space to orbit';
-    else if (previousMode !== 'build')
-      hint.textContent =
-        'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+    else if (previousMode !== 'build') hint.textContent = SELECT_HINT;
     partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
     partPlacement?.refresh();
     refreshAssemblyState();
@@ -4015,6 +4177,11 @@ export function createWorkshopView(
       const p = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
       return { id, x: p.x, y: p.y, z: p.z };
     });
+  }
+  /** Diagnostics: normalized device coordinates of a world point under the live camera. */
+  function projectWorldPoint(position) {
+    const p = new THREE.Vector3().fromArray(position).project(camera);
+    return { x: p.x, y: p.y, z: p.z };
   }
   function readRenderedTransforms() {
     return [...meshes].map(([id, mesh]) => ({
@@ -4056,11 +4223,21 @@ export function createWorkshopView(
     } while (bp.parts.some((p) => p.id === id));
     try {
       const part = duplicatePart(bp, selected, id, cameraAxes().forward.negate().toArray());
-      const result = await send({ type: 'insert', part });
+      // The insert renders synchronously inside send; render decides there
+      // whether the copy is already in view or the machine must be re-framed.
+      keepViewOnInsert = id;
+      lastInsertFramed = false;
+      let result;
+      try {
+        result = await send({ type: 'insert', part });
+      } finally {
+        keepViewOnInsert = null;
+      }
       if (result?.ok) {
-        editing.focus();
         setMessage(
-          'Copied toward the camera; view widened to show both. The copy has no connections.',
+          lastInsertFramed
+            ? 'Copied toward the camera and framed to show both. The copy has no connections.'
+            : 'Copied beside it, toward the camera. The copy has no connections.',
         );
       }
     } catch (error) {
@@ -4144,7 +4321,10 @@ export function createWorkshopView(
       return;
     }
     // Let focused controls activate natively without also running workshop shortcuts.
-    if (['BUTTON', 'SUMMARY'].includes(event.target.tagName) && ['Enter', ' '].includes(event.key))
+    if (
+      ['BUTTON', 'SUMMARY', 'A'].includes(event.target.tagName) &&
+      ['Enter', ' '].includes(event.key)
+    )
       return;
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -4166,7 +4346,7 @@ export function createWorkshopView(
     if (key === '?') {
       event.preventDefault();
       if (help.open) help.close();
-      else help.showModal();
+      else openHelp();
       return;
     }
     if (
@@ -4229,16 +4409,19 @@ export function createWorkshopView(
             .multiply(new THREE.Quaternion(...rotation))
             .toArray();
         } else {
+          // Shift with the up/down arrows lifts and lowers (world Y), the same
+          // step Page Up/Down give; arrows alone move on the floor plane.
+          const lift = event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key);
           const direction =
-            event.key === 'ArrowUp'
-              ? forward
-              : event.key === 'ArrowDown'
-                ? forward.negate()
-                : event.key === 'ArrowRight'
-                  ? right
-                  : event.key === 'ArrowLeft'
-                    ? right.negate()
-                    : new THREE.Vector3(0, event.key === 'PageUp' ? 1 : -1, 0);
+            lift || event.key.startsWith('Page')
+              ? new THREE.Vector3(0, ['ArrowUp', 'PageUp'].includes(event.key) ? 1 : -1, 0)
+              : event.key === 'ArrowUp'
+                ? forward
+                : event.key === 'ArrowDown'
+                  ? forward.negate()
+                  : event.key === 'ArrowRight'
+                    ? right
+                    : right.negate();
           position = new THREE.Vector3(...position).addScaledVector(direction, 0.025).toArray();
         }
         send({ type: 'transform', id: part.id, position, rotation });
@@ -4286,13 +4469,19 @@ export function createWorkshopView(
   const warmMeshes = Object.keys(CATALOG).map((type) =>
     createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
   );
-  const warmLights = [];
+  const warmLights = [],
+    warmLamps = warmMeshes.map((mesh) => mesh.userData.lamp).filter(Boolean);
   for (const mesh of warmMeshes)
     mesh.traverse((object) => {
       if (object.isLight) warmLights.push({ light: object, visible: object.visible });
     });
   try {
     scene.add(...warmMeshes);
+    // Shadow-casting light count is part of the shader key: warm the lamp-shadow
+    // variant, then the unshadowed variant used once graphics reduce.
+    for (const lamp of warmLamps) lamp.applyShadowBudget(graphicsQuality.read().lampShadowSize);
+    renderer.render(scene, camera);
+    for (const lamp of warmLamps) lamp.applyShadowBudget(0);
     renderer.render(scene, camera);
     // Light count is part of the shader key, even for unpowered lamps. Retain
     // the ordinary no-part-light variants too, including across New/Load.
@@ -4334,6 +4523,7 @@ export function createWorkshopView(
         pixelRatio: Math.min(window.devicePixelRatio, 2),
         width: stage.clientWidth,
         height: stage.clientHeight,
+        lampShadows: lampViews(),
       });
       invalidateScene();
     }
@@ -4478,7 +4668,9 @@ export function createWorkshopView(
       }),
     clearMeasurements: () => motionReadout.clear(),
     ingestMeasurements: (observation) => motionReadout.ingest(observation),
+    considerWhatsNew: () => whatsNew.consider(),
     readInteractionState: () => ({
+      whatsNew: whatsNew.read(),
       lamps: [...meshes]
         .filter(([, m]) => m.userData.lamp)
         .map(([id, m]) => ({
@@ -4490,6 +4682,7 @@ export function createWorkshopView(
           emission: m.userData.lamp.lens.material.emissiveIntensity,
           position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
           shadows: m.userData.lamp.light.castShadow,
+          shadowRefresh: m.userData.lamp.light.shadow.autoUpdate,
         })),
       cameraFrustum: cameraFrustum.read(),
       cameraPhoto: cameraSession
@@ -4575,6 +4768,7 @@ export function createWorkshopView(
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
     readRenderedRopeEndpoints: () => ropeView.readRenderedEndpoints(),
     readRenderedCenters,
+    projectWorldPoint,
     camera,
     dispose() {
       disposed = true;
@@ -4617,6 +4811,7 @@ export function createWorkshopView(
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
+      whatsNew.dispose();
       graphicsRenderer.dispose();
       finishEnvironment.dispose();
       renderer.dispose();

@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { liveWait } from './browser-idle.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 const out = browserArtifactPath('artifacts/lamp-performance');
 mkdirSync(out, { recursive: true });
@@ -111,7 +112,12 @@ try {
         'rendered lamp origin follows completed body',
       );
   }
-  assert.ok(sample.lamps.every((l) => l.flux > 0 && l.intensity > 0 && !l.shadows));
+  // The budget below is measured with eight shadow-casting lit lamps at full quality;
+  // a level drop during sampling would hide exactly the cost this check exists to bound.
+  assert.equal(sample.rendering.quality.level, 0, 'sampled at full quality');
+  assert.ok(sample.rendering.quality.lampShadowSize > 0);
+  assert.ok(sample.lamps.every((l) => l.flux > 0 && l.intensity > 0));
+  assert.ok(sample.lamps.every((l) => l.shadows && l.shadowRefresh));
   assert.equal(sample.frame.status, 'ready');
   assert.ok(report.cadenceP95 <= 40, `cadence ${report.cadenceP95}`);
   assert.ok(report.renderP95 <= 6, `render ${report.renderP95}`);
@@ -119,7 +125,9 @@ try {
   await page.screenshot({ path: `${out}/eight-on.png` });
   const waitTicks = async () => {
     const t = await page.evaluate(() => JSON.parse(window.render_game_to_text()).tick);
-    await page.waitForFunction((t) => JSON.parse(window.render_game_to_text()).tick >= t + 12, t);
+    await liveWait(page, (t) => JSON.parse(window.render_game_to_text()).tick >= t + 12, t, {
+      label: 'twelve ticks',
+    });
   };
   await page.keyboard.down('w');
   await waitTicks();
@@ -173,8 +181,9 @@ try {
   assert.ok(pixels.brightened > 300, 'powered beams must illuminate floor beyond the lenses');
   assert.ok(
     (await page.evaluate(() => window.workshopProbe.readInteractionState().lamps)).every(
-      (l) => l.flux === 0 && l.emission === 0,
+      (l) => l.flux === 0 && l.emission === 0 && l.shadowRefresh === false,
     ),
+    'unlit lamps skip their shadow pass',
   );
   await page.keyboard.down('w');
   await waitTicks();
@@ -182,10 +191,11 @@ try {
   await page.evaluate(() => {
     window.lampSlow = true;
   });
-  await page.waitForFunction(
+  await liveWait(
+    page,
     () => window.workshopProbe.readInteractionState().rendering.quality.level >= 3,
-    {},
-    { timeout: 30000 },
+    null,
+    { label: 'adaptive drop to level 3' },
   );
   await page.evaluate(() => {
     window.lampSlow = false;
@@ -196,6 +206,11 @@ try {
   }));
   assert.equal(after.ui.lamps.length, 8);
   assert.ok(after.ui.lamps.every((l) => l.flux > 0));
+  assert.equal(after.ui.rendering.quality.lampShadowSize, 0);
+  assert.ok(
+    after.ui.lamps.every((l) => !l.shadows),
+    'reduced graphics drop lamp shadows',
+  );
   assert.deepEqual(after.frame.metadata.blueprint, sample.frame.metadata.blueprint);
   for (let i = 0; i < 8; i++) {
     assert.equal(after.frame.power.lamps[i].requestedW, sample.frame.power.lamps[i].requestedW);

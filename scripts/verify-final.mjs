@@ -27,10 +27,11 @@ try {
   const options = parseCompletionArgs('final', process.argv.slice(2));
   report.priority = options;
   const context = createVerificationContext();
-  Object.assign(report, context.identity);
+  Object.assign(report, context.identity, { reach: 'timing' });
   const results = await runVerificationPhases(
     [
-      [LAUNCH_ADMISSION_ID, () => launchAdmission()],
+      // Qualification runs every browser check, timing rows included: full policy at launch.
+      [LAUNCH_ADMISSION_ID, () => launchAdmission({ reach: 'timing' })],
       ['ci', () => runCI(context)],
       ['browser', () => verifyBrowserSuite('all', { context, ...options })],
       ['gate', () => runGate(undefined, context)],

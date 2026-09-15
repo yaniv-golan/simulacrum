@@ -125,6 +125,24 @@ test('graphics transitions refresh shadow shader variants and release old target
   assert.equal(objects[1].geometry, geometry);
 });
 
+test('lamp shadows exist exactly where key-light shadows exist and follow the applied level', () => {
+  assert.ok(GRAPHICS_LEVELS[0].lampShadowSize > 0);
+  for (const level of GRAPHICS_LEVELS)
+    assert.equal(level.lampShadowSize > 0, level.shadowSize > 0, level.name);
+  const budgets = [];
+  const view = { applyShadowBudget: (size) => budgets.push(size) };
+  const renderer = { shadowMap: { enabled: true }, setPixelRatio() {}, setSize() {} };
+  const shadow = { map: null, mapPass: null, dispose() {}, mapSize: { set() {} } };
+  const scene = { traverse() {} };
+  const common = { renderer, scene, shadow, pixelRatio: 1, width: 10, height: 10 };
+  applyGraphicsQuality({ ...common, quality: GRAPHICS_LEVELS[0] });
+  assert.deepEqual(budgets, []);
+  applyGraphicsQuality({ ...common, quality: GRAPHICS_LEVELS[1], lampShadows: [view, view] });
+  assert.deepEqual(budgets, [GRAPHICS_LEVELS[1].lampShadowSize, GRAPHICS_LEVELS[1].lampShadowSize]);
+  applyGraphicsQuality({ ...common, quality: GRAPHICS_LEVELS[3], lampShadows: [view] });
+  assert.deepEqual(budgets.slice(2), [0]);
+});
+
 test('low quality renders the complete scene once into a retained single-sample target', async () => {
   const { createGraphicsRenderer } = await import('../src/presentation/graphics-quality.mjs');
   const calls = [],

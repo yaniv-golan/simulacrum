@@ -56,20 +56,147 @@ test('aggregate deadline bounds a blocking child while independent later work re
     'settlement',
   );
 });
-test('inherited verifier environment is identity-bound without recording secret values', async () => {
-  const { verificationIdentity } = await import('../scripts/verification-run.mjs');
-  const prior = process.env.SIM_VERIFIER_TEST_CONFIGURATION;
+test('identity binds the declared relevant environment only; the whole environment is forensic', async () => {
+  const { verificationIdentity, environmentForensics, RELEVANT_ENVIRONMENT } = await import(
+    '../scripts/verification-run.mjs'
+  );
+  const saved = Object.fromEntries(
+    ['SIM_VERIFIER_TEST_CONFIGURATION', 'FEEDBACK_SOURCE', 'PLAYWRIGHT_TEST_FLAG'].map((k) => [
+      k,
+      process.env[k],
+    ]),
+  );
+  const restore = () => {
+    for (const [k, v] of Object.entries(saved))
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+  };
   try {
+    delete process.env.FEEDBACK_SOURCE;
+    delete process.env.PLAYWRIGHT_TEST_FLAG;
     process.env.SIM_VERIFIER_TEST_CONFIGURATION = 'first-private-value';
-    const first = verificationIdentity();
+    const first = verificationIdentity(),
+      forensicFirst = environmentForensics();
     process.env.SIM_VERIFIER_TEST_CONFIGURATION = 'second-private-value';
     const second = verificationIdentity();
-    assert.notEqual(first.environmentDigest, second.environmentDigest);
+    // An undeclared variable (terminal, cwd, private configuration) must not change identity.
+    assert.equal(first.environmentDigest, second.environmentDigest);
+    assert.notEqual(environmentForensics().environmentDigest, forensicFirst.environmentDigest);
     assert.equal(JSON.stringify(second).includes('second-private-value'), false);
+    assert.ok(RELEVANT_ENVIRONMENT.names.includes('NODE_OPTIONS'));
+    // Every variable a reusable leaf reads binds identity: the feedback fixtures' client and
+    // remote sources, the power baseline stub and the load-cell matrix knobs included.
+    assert.ok(RELEVANT_ENVIRONMENT.names.includes('POWER_BASELINE_SOURCE'));
+    for (const prefix of ['FEEDBACK_', 'LOAD_CELL_MATRIX_', 'PLAYWRIGHT_', 'PLAYTEST_'])
+      assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes(prefix), prefix);
+    // The tier defaults NODE_ENV to production; an unset NODE_ENV must digest the same way.
+    const { relevantEnvironmentDigest } = await import('../scripts/verification-environment.mjs');
+    assert.equal(
+      relevantEnvironmentDigest({}),
+      relevantEnvironmentDigest({ NODE_ENV: 'production' }),
+    );
+    process.env.FEEDBACK_SOURCE = 'override';
+    assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
+    delete process.env.FEEDBACK_SOURCE;
+    process.env.PLAYWRIGHT_TEST_FLAG = '1';
+    assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
+    delete process.env.PLAYWRIGHT_TEST_FLAG;
+    // Counterexample from review: a unit leaf passing against a stubbed power baseline must not
+    // be reusable by an attempt that runs without the stub.
+    assert.notEqual(
+      relevantEnvironmentDigest({ POWER_BASELINE_SOURCE: '/tmp/stub.mjs' }),
+      relevantEnvironmentDigest({}),
+    );
+    assert.notEqual(
+      relevantEnvironmentDigest({ FEEDBACK_CLIENT_SOURCE: 'x' }),
+      relevantEnvironmentDigest({}),
+    );
   } finally {
-    if (prior === undefined) delete process.env.SIM_VERIFIER_TEST_CONFIGURATION;
-    else process.env.SIM_VERIFIER_TEST_CONFIGURATION = prior;
+    restore();
   }
+});
+
+test('every environment variable read in the tree binds identity or is exempted with a reason', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { isRelevantEnvironmentName, ENVIRONMENT_EXEMPTIONS } = await import(
+    '../scripts/verification-environment.mjs'
+  );
+  const root = new URL('../', import.meta.url).pathname;
+  const names = new Set();
+  const visit = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) visit(path);
+      else if (/\.(mjs|js|mts|ts)$/.test(name))
+        for (const m of readFileSync(path, 'utf8').matchAll(
+          /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[['"]([A-Za-z_][A-Za-z0-9_]*)['"]\])/g,
+        ))
+          names.add(m[1] ?? m[2]);
+    }
+  };
+  for (const dir of ['scripts', 'src', 'test']) visit(join(root, dir));
+  // Root-level configuration the verification runtime loads (vite/wrangler) counts as a read too.
+  for (const name of readdirSync(root))
+    if (/^[\w.-]+\.(mjs|js)$/.test(name) && statSync(join(root, name)).isFile())
+      for (const m of readFileSync(join(root, name), 'utf8').matchAll(
+        /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[['"]([A-Za-z_][A-Za-z0-9_]*)['"]\])/g,
+      ))
+        names.add(m[1] ?? m[2]);
+  assert.ok(names.has('SIMULACRUM_VITE_CACHE_DIR'), 'root vite config scanned');
+  assert.ok(names.has('NODE_ENV') && names.has('POWER_BASELINE_SOURCE'), 'scan found reads');
+  const exempt = new Set(Object.values(ENVIRONMENT_EXEMPTIONS).flat());
+  const unaccounted = [...names].filter((n) => !isRelevantEnvironmentName(n) && !exempt.has(n));
+  assert.deepEqual(unaccounted, [], 'reads that neither bind identity nor carry an exemption');
+  const both = [...exempt].filter((n) => isRelevantEnvironmentName(n));
+  assert.deepEqual(both, [], 'an exempted name cannot also be relevant');
+  for (const reason of Object.keys(ENVIRONMENT_EXEMPTIONS)) assert.ok(reason.length > 20, reason);
+});
+
+test('a ledger retry selection is admitted only in its declared shape and for its own attempt', async () => {
+  const { readRetrySelection } = await import('../scripts/verification-run.mjs');
+  const origin = { attempt: 'a1', report: '/r' };
+  assert.equal(readRetrySelection(undefined, { origin, attempt: 'a1' }), null);
+  assert.equal(readRetrySelection(null, { origin, attempt: 'a1' }), null);
+  assert.deepEqual(
+    readRetrySelection(
+      { changedFiles: ['b.mjs', 'a.mjs', 'a.mjs'], required: ['x'], covered: ['y'] },
+      { origin, attempt: 'a1' },
+    ),
+    { changedFiles: ['a.mjs', 'b.mjs'], required: ['x'], covered: ['y'] },
+  );
+  assert.deepEqual(readRetrySelection({}, { origin, attempt: 'a1' }), {
+    changedFiles: null,
+    required: [],
+    covered: [],
+  });
+  // A configuration written for another attempt, or read outside any attempt, is refused: a
+  // hand-written ledger file cannot narrow a direct tier.
+  assert.throws(() => readRetrySelection({}, { origin, attempt: 'a2' }), /bound to the attempt/);
+  assert.throws(() => readRetrySelection({}, { origin: null, attempt: 'a1' }), /bound/);
+  assert.throws(() => readRetrySelection({}, { origin, attempt: undefined }), /bound/);
+  for (const bad of [
+    [],
+    'x',
+    { changedFiles: 'a.mjs' },
+    { required: [''] },
+    { covered: [1] },
+    { unknown: [] },
+  ])
+    assert.throws(
+      () => readRetrySelection(bad, { origin, attempt: 'a1' }),
+      /invalid retry selection/,
+    );
+});
+
+test('a system browser channel is bound per check through its version, never assumed equal', async () => {
+  const { systemBrowserVersion } = await import('../scripts/verification-environment.mjs');
+  assert.throws(() => systemBrowserVersion('firefox'), /unknown browser channel/);
+  const here = systemBrowserVersion('chrome');
+  assert.equal(typeof here, 'string');
+  assert.ok(here === 'unavailable' || /chrome/i.test(here), here);
+  // A platform without a known system Chrome location reports it rather than a blank value.
+  assert.equal(systemBrowserVersion('chrome', 'sunos'), 'unavailable');
 });
 test('Vite receives an initialized environment before final verification identity is sealed', async () => {
   const { resolveConfig } = await import('vite');

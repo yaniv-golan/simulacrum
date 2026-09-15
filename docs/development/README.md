@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"62e473f146ef25ed2b58c28912ab708ff543caa0da39aa32b975edc6da81635d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b51347d6c15bb3f29f9876c1dd3efd59f0c8bcab3d135eb7710423f88fdc5153","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): AGENTS.md's verification paragraph was rewritten (timing-budget checks run in a merge tier only when the delta reaches what they measure); the guide's entry points, layer pointers and working loop are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4b4387e7fc672c4361a36b2a824ac5161b9db766a381652c17c597938a7ad7b9","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"e30cb5af50299cb41ca46504d8e3167781d132dde3dec5bc53db424c5c12550b","disposition":"still accurate","rationale":"Relative to base 3a50c9e the roadmap patch adds M10 (flight) and M11 (orbital) after M9 in AGENTS.md's milestone paragraph, states that every part those milestones need enters the shared catalog and is used as in any player design, and names the M4b/M7/M9 subject as a legged machine built from ordinary parts. This section only points readers to AGENTS.md, the architecture map and recipes and enumerates no milestones or parts, so the pointer remains correct."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,13 +90,13 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"ec7bab10b72ba33ef238dfb5c2babc761263b8afcb66e7c144d697cb866bc00e","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"1a9b2b5c3a1aeb189f618fe16440ebf2a076177c129f6f8c8002d8590e9cad6e","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): runtime-preflight.mjs gained assertAwake (the tier keeps the host awake itself); the commands this section names and their semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"889e9230e8a862a97e982f8a7116d171a668b072b40d9b81e63cc580729c2000","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"499834629d9130d1536275f6e82e0ef2caf7f32325ef06a3f22a18c0eb474e93","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the release runbook gained the version/tag rule, which does not alter how a change is verified."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
 - `npm run verify:local` runs CI and conservatively affected browser checks, with `artifacts/verification-local.json` recording the base, exact paths, selection reasons and source. Default base is HEAD; `--base <commit>` includes committed changes since that commit. Untracked files are included and clean source selects all checks. Exit 0 means local automation passed; qualification and human acceptance are explicitly NOT_EVALUATED.
 - `npm run verify:merge -- --base <commit>` runs CI, audited affected browser checks and the three registered merge smoke checks. It never runs the milestone gate or evaluates human acceptance.
-- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. All completion tiers stop after a failed prerequisite, including stale documentation, before starting browser work. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
+- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. All completion tiers stop after a failed prerequisite, including stale documentation, before starting browser work. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification. An `incomplete` human session (one that ended before any criterion could be judged) is recorded but supplies no verdict: the latest complete session governs, a bar with only incomplete sessions is pending, and a later incomplete session is named beside the governing verdict.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
 - `npm run test:browser:affected -- --files <paths>` selects, explains in its report, builds once and executes conservative browser coverage. Add `--summary` for source-bound discovery without building or opening sockets.
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"73101de62d7ee3e0083bbb5ace09be09f503844f69cd737b96a3885bfc5a47ca","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea9066920fcd1d3be32d9f20d31a2e731f107fd3e441889a5bf7bdf870686110","disposition":"updated","rationale":"The scheduled-coverage paragraph now describes the hosted profile: registered deadlines never shorter than local, performance-tier and timing-sensitive checks reported NOT_EVALUATED and listed apart by the coverage comparison, measurement-mode labelling and its hand-recorded run bookkeeping, unscaled in-script deadlines, tiers refusing any profile, and a dispatched release-package staying unprofiled. Review, check and batch commands are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"262fe1e81552a3731cbfedb209f17248aabb7bedc9789bc06706ca3b086aaf9a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bb068c3ecfabcac0b793a54482803d9020df2d8576585600261ac154e21ba1b7","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; reference.md was regenerated for the new release-notes check and browser rows; the documentation workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"ff104ce57e7b8799e668880ec8ffad881b0f5b2697ad2bf64f4dc041c7c8a047","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"307b982839439b3cc5cd1e2fbec74c7482042f2557b7146046774714458e06b7","disposition":"updated","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): PRESSURE_POLICY now defaults to enforce with SIMULACRUM_TIMING_PRESSURE=observe as the opt-out, the bounds (idle 80 %, foreign 40 %) read from the local tier's resting records (idle 86.5–88 %, busiest foreign 16 %); the scheduling paragraph now states the bounds and the opt-out instead of an enforce switch. The manifest change records the first hosted measurement run under hostProfiles and changes no selection or scheduling fact."} -->
+<!-- doc-review {"version":1,"fingerprint":"f34e32fdd95590751fd3a6d9b42c4c55424af1c87906ba8a3c1738e07766336e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"df83e4586c81e2952b0632b3009b60083e6b2fb61a5aa3ad16e650f3ce63f384","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the manifest adds one gate-integrity check (release-notes) and one parallel browser row (verify-whats-new-browser) plus regenerated scopes; features.mjs adds UI_FEATURES.whatsNew and REPOSITORY_URL; workshop-app.mjs injects notes and calls considerWhatsNew. Execution phases and selection rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -407,7 +407,15 @@ remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
 inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
 deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
-is a failed attempt whose only row is `launch-admission`, not evaluated. A leaf the host slept
+is a failed attempt whose only row is `launch-admission`, not evaluated. The launch applies the
+foreign-process bound only to a tier whose resolved selection reaches a timing row (`reach:
+timing`, recorded on the tier and on the row's `policy`); a tier that will measure nothing
+launches on load and idle alone (`reach: structural` — a window server at 55 % of one core does
+not starve a 5 s gate), and its selection phase refuses if the reach moved after launch, so no
+timing phase ever follows a lax launch. `WindowServer` in a refusal means someone's windows
+are drawing (an editor, a chat app); the cure is hiding or quitting them, never a laxer bound
+and never a dark display — the `focus` lane checks are headed and stall once macOS marks their
+window invisible, which is why the tier holds `caffeinate -d`. A leaf the host slept
 through (a wall-clock gap of more than a minute between the runner's heartbeats) is recorded
 `host slept … not evaluated`, never as a timeout, and the tier's summary names it. In a merge
 tier a timing-budget check runs only when the delta can reach what it measures (its manifest
@@ -506,7 +514,10 @@ comparisons. This reduces repeated parsing without removing byte-based drift che
 
 CI completes structural prerequisites, then admits invariant-control and remaining unit
 files through one four-worker pool. The standalone structural gate still runs its invariant
-unit controls. The 180-second CI obligation is unchanged.
+unit controls. The structural prerequisites include the `format` gate — the same
+`prettier --check` over `src`, `scripts` and `test` that the hosted `format:check` job runs,
+cached under `artifacts/format-gate` (never under `node_modules`, whose bytes the candidate
+digests) — so a layout defect cannot reach `main` through a local tier. The 180-second CI obligation is unchanged.
 
 The unit runner stops admitting queued tests when the iteration budget expires and
 reports their paths as `unexecuted`; they are not failed test executions. A started child
@@ -558,7 +569,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"6d41390ab605cb158779c3a325c5bc1d010e8a6f309b904e4371ade167b3e615","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"4ee661668f8a134cc4cdc01a6b39570d78c574158974a885f3616d18d1dde0fc","disposition":"still accurate","rationale":"Timing admission, measured-scope selection and sleep-proof launches (tooling-timing-admission-and-scope on main cac1282): run-check's process inventory moved to process-inventory.mjs and the runner gained a sleep heartbeat; the launch admission waits inside the window (≤ 60 s) — window ownership, wait notices and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"12109191fb7813ee2ba42bc0acdff5f7e9600331f49f84479492140b49fd5529","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"49cb86ee063a05c57d62b394b2b1154f4ad803099ca548d2a6df6c302ea9908a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the window scripts are untouched."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -607,11 +618,14 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"abe9df19c5a86df23b3cd56893a313dbc113605c6451134ad815f2c5f686b5da","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"69078cedd29df75edea4fd20499da32b3362cc91d90cf1a87a68c20f42394797","disposition":"still accurate","rationale":"Enforced pressure admission (tooling-timing-admission-and-scope on main cac1282, second closure): check-sequence.mjs only flipped the pressure policy default to enforce and the manifest recorded a hosted measurement run; candidate capture, dependency validation, resume, the launch niceness/sleep assertions and what a report certifies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"331b8563bc2f2dbcd2c621df3fbd5782975771b24533a812c2a730c20a8ac6df","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e90c1f9f8fccd7a2b10828abffe65079d747d81589c0236390afd0875f38dbb","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; manifest rows added; candidate capture and tiers are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
+Every candidate copy (and the frozen release snapshot) carries a `.metadata_never_index`
+marker at its root so Spotlight does not index the fresh tree while the tier runs; the
+marker sits above `source` and never enters the candidate's identity.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
 (or `-- local --base <commit>`). Launch it at ordinary priority: zsh nices every backgrounded
@@ -659,6 +673,89 @@ attempt retains its own report and parent link. Reused checks retain original ex
 duration and report lookup duration separately; resumed CI does not qualify a fresh
 full-CI duration. A candidate ownership lock refuses concurrent attempts and is never
 expired automatically: establish the prior process tree has stopped before recovery.
+
+A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
+--after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
+only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
+parent must be a `failed` report that completed its tier; an attempt that failed around the tier
+(window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
+no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs
+its own cause; optionally one cause on the aggregate that listed unexecuted files (for example
+`ci:budget`) covers exactly those files, and alongside failed leaves a cause on an aborted phase
+(`ci`, `browser`) may record that the leaves beneath it never ran. Rows a phase refused before
+they ran (timing rows under a refused admission) leave no receipt and the phase row names them
+(`notEvaluated`); rows a sleeping host skipped carry a receipt marked not evaluated. Both count as
+unexecuted leaves beneath their phase rather than as failures, so a cause on the phase covers
+them (a cause per row is also accepted) and the retry must observe each one executed and
+passing. A plain `resume` of a retry
+report is refused (retry it with `--after` so the chain is kept). The retry must repeat the
+parent's scope as the commits its refs name now — a moved `--base` or `--destination` is refused
+rather than re-pinned — and the parent's bytes, identity and installed dependencies are read
+from its signed candidate descriptor, never from the report; the report itself, whose receipts
+and coverage the retry classifies, is admitted only under the attestation the candidate wrote
+with its resume key (every candidate report carries one), so an edited report is refused. On identical source bytes, installed dependencies
+and relevant identity (runtime, platform and the declared relevant environment — `NODE_ENV`
+defaulting to `production` as the tier does, `NODE_OPTIONS`, `POWER_BASELINE_SOURCE`,
+`FEEDBACK_*`, `LOAD_CELL_MATRIX_*`, `PLAYWRIGHT_*` including `PLAYWRIGHT_BROWSERS_PATH`,
+`PLAYTEST_*`, `SIMULACRUM_BROWSER_*`, `SIMULACRUM_HOST_PROFILE`; every other variable the project's own code reads under
+`scripts`, `src`, `test` and the root configuration is listed with its reason in
+`ENVIRONMENT_EXEMPTIONS` and recorded forensically, not bound — variables consumed only by
+libraries, such as `CI`, `TZ`, `DEBUG` or `NODE_TLS_*`, are forensic too — which also lets a
+plain `resume` accept a different terminal) the retry reuses the parent directory and the parent's
+passing unit and browser leaves through the signed ledger, each naming its origin attempt and
+bounded to three chained attempts. Installed dependencies pin only the bundled Playwright
+browsers; checks registered `browserChannel: "chrome"` launch the system browser, directly or
+through a module they load, and its version is bound into that check's configuration so a
+browser update refuses those receipts alone.
+Non-pass leaves, the registered controls of their invariants, the checks of invariants a failed
+control guards (together the `required` set), checks registered `timingSensitive` or
+`mergeSmoke` in the manifest, structural gates, builds and aggregates always execute; the
+required browser checks are added to whatever the tier selects, a widening the tier reads from
+the attempt's private ledger configuration. When bytes, dependencies or identity differ, the
+retry captures a fresh candidate and loads no receipt. If only source bytes differ
+(`deltaSelection: source-only`), the byte delta between the two candidates reaches the tier
+through the same ledger configuration — never as a command-line flag; `--changed-files` is
+refused everywhere — together with the browser checks the parent chain already passed
+(`covered`). The tier still applies its own policy to the candidate's base diff and runs
+everything that selects, except a covered check the byte delta does not reach (classified by
+the same policy; risky paths and unknown inputs still select everything): those are recorded as
+`skippedByDelta`, reasoning rather than evidence, and validation refuses a skipped check that
+is not covered or that ran. A parent whose browser phase never ran covers nothing, so its retry
+runs the full fresh selection. If the runtime, platform, relevant
+environment or installed dependencies changed (`deltaSelection: fresh-policy`), every parent
+browser pass is stale and the tier runs its ordinary selection with nothing skipped. A retry
+that reused a receipt or skipped a leaf by delta reports `passed after failure`, never plain
+`passed`; a retry that re-executed everything reports `passed` with the same `after` block, and
+a resumed receipt without an origin attempt fails the report. Either way every required leaf
+must appear in the child as an executed passing receipt, and nothing re-executed may also be
+skipped, or the retry fails. Tampered or oversized receipts fail closed. The `after` block
+carries the causes, the chain (recorded before capture, three attempts at most), reused
+origins with their attempt and depth, the covered and skipped checks, the required and
+re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
+diagnosed retry the norm above requires, not a retry-to-green.
+
+The same `--after <attempt-report.json>` with a **passed** parent (status `passed` or
+`passed with reused receipts`; no `--cause`) is receipt reuse across candidates: an author's
+`local` attempt lending its workshop browser receipts to the reviewer's `merge` (or `local`)
+candidate on identical bytes. The child is its own candidate with its own capture, install,
+descriptor and key; it admits the parent only after its attestation verifies, it is a finished
+attempt (no `active-attempt` lock, a terminal tier report) on a `local` or `merge` tier, and it
+is not a hosted-profile or measurement report; `final` refuses reuse on either side. Reuse
+happens only when the child's frozen source, its installed dependencies and its relevant
+identity equal the parent's signed descriptor; otherwise the child runs plainly with nothing
+reused and no delta narrowing. The offered set is derived from manifest facts, never a list:
+browser rows of tier `browser` and environment `workshop` that are neither `mergeSmoke` nor
+`timingSensitive`, and only receipts the parent executed itself (depth 0 — a receipt is never
+cited twice). The child selects its own checks; CI, unit leaves, smoke, timing-sensitive,
+hosted and probe checks always execute. The ledger names the parent's leaves and key
+(`previous`, `previousKey`, `reuse`), and a browser receipt is offered only while the
+evidence it points at is intact: its value records the evidence directory, every file and the
+log with digests and sizes, an absent path executes the check again, altered bytes fail
+closed. A child that reused anything reports `passed with reused receipts` with an `after`
+block naming the offered, reused (with origin attempt and depth) and executed leaves;
+validation refuses a resumed receipt the parent did not offer or that is not depth 1 from
+that parent. Nothing here changes what a landing needs: candidate evidence still applies only
+to its recorded bytes.
 
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested
