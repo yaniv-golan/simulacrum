@@ -266,6 +266,14 @@ try {
       }
     } else options.base = resolveCandidateBase(origin, options.base);
     if (!reuse) {
+      if (
+        options.stack &&
+        ((parentDescriptor.candidate?.base ?? null) !== options.base ||
+          (parentDescriptor.options?.destination ?? null) !== options.destination)
+      )
+        throw Error(
+          `--after --stack ${options.stack}: the stack ref moved since the parent attempt (base or destination differ); the retry chain is over — start a fresh candidate with --stack ${options.stack}`,
+        );
       if ((parentDescriptor.candidate?.base ?? null) !== options.base)
         throw Error(
           "--after must repeat the parent attempt's --base (the ref now names another commit)",
@@ -748,7 +756,7 @@ try {
     }
   }
   write();
-  if (report.priority?.landingOrder && report.status === 'passed')
+  if (report.priority?.landingOrder && String(report.status).startsWith('passed'))
     console.log(landingOrderText(report.priority));
   console.log(
     JSON.stringify({

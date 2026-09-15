@@ -158,7 +158,7 @@ naming the commits, when HEAD does not contain the ref (merge it first, or re-me
 head), when HEAD is the ref, when the merge-base is not unique, and for `--stack main` (that is
 a plain merge candidate). The derived values are recorded as `priority.chain`, the window
 intent says `stacked on <ref>` to contenders, and the landing order (the ref, then this
-candidate) is printed at launch and with a passing result. A branch-pair merge candidate records the supplied name as
+candidate) is printed at launch and again with any passing result. A branch-pair merge candidate records the supplied name as
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
