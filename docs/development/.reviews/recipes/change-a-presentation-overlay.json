@@ -57,7 +57,7 @@
     "scripts/verify-rope-browser.mjs": "fc986c529e49e7fe2b09a16b9ff64427c76fda5cd8da7526ff6a40efbd29e85c",
     "src/presentation/release-state.mjs": "4363ab1d2803e20924e4a45511df743c490e87753f51b80fa2aa4e6e8e348001",
     "test/spring-view.test.mjs": "a231d9f43da219312b36edd2415811fd3c5c272ff14974a57361ebf4e49e1e79",
-    "scripts/verify-spring-browser.mjs": "a13b963b11790d2db4b90a6eb843a5edbd9069165b5e11bc1dcdc5a22baa2512",
+    "scripts/verify-spring-browser.mjs": "6ff95a99a99cd1b9d8a766e6a71a9287cb89d8034689aaf88b0c88c52464e320",
     "src/model/fixtures/spring-playground.mjs": "1292eb96994aee48d1561f1c578a82bb94fd84e7b217edf41927a62e445be6a5",
     "scripts/measure-springs.mjs": "b132a4c87c85b286263e759b122f97cabc9e139a0c6bbf9cb190af093f4cf4f2",
     "scripts/verify-spring-performance.mjs": "f57e96e615b99098daf7b57c647a30be07e59733bf1cf8155f0d44acc50e170f",

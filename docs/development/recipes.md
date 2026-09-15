@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"6c66170bfd1962b71f6bb1c3384066767b5701c2fdd61229d81c3c5704008b0f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b6ad7cd3b4183346da6457d0b94328879fb74f6fd98e476a43dfa3da877c3fb9","disposition":"still accurate","rationale":"This section's broad fan-out picked up the bench refresh's presentation, journey and documentation changes; no physics owner, law, integration step or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"2151b0c212818db7e653bc7a05f94a5c11e29060b286267c8120a49856634490","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f5394eae17dc2ad682481cdfe6d03bf8b94135f3247025b00c9bdf631fcd09da","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): This section's broad fan-out picked up the bench refresh's presentation, journey and documentation changes; no physics owner, law, integration step or evidence rule changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -611,7 +611,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"be95b8eca8b4d0ff4cdabb9ef3764a560783ee24f5e33b6565cd6e865be1211a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9d612ad4b7beaede1659249d4d7fb893b9fd6b7f5bb9d2219ec30a18850ed636","disposition":"still accurate","rationale":"Journeys gained openTools steps and the connection test's reason moved to its own reserved line; the overlay guidance (placement, lifecycle, displaced UI, journeys) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"97e12014ec85b338310cd0ee5cd65e56885d7e89775f45b340ed77c9293b1e24","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"be654b21cd7796fce46fc8e35746146fcaa639a2e0ed952751ab7eb0090265bb","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Journeys gained openTools steps and the connection test's reason moved to its own reserved line; the overlay guidance (placement, lifecycle, displaced UI, journeys) is unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -762,7 +762,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"70fab0fb32b7250892fb835b9e0c7427baf70bf586dff1dab211a84389f73122","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"7d5f86713cf30c4d8b058d1b24cf181ce55117586af90a6e68c53895b0c2ce14","disposition":"still accurate","rationale":"verify-spring-browser gained the openTools step before Measurements and Choose scene; the adaptive-graphics thresholds, warmup and evidence rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"48a10d46df93480169b47670e010daccd2a196cb7d8c4a653c445614ae93cd21","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"0790d873fe5018bee220b947fa83b585706e89f905c9201bb8bdbf0a31e8781b","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): verify-spring-browser gained the openTools step before Measurements and Choose scene; the adaptive-graphics thresholds, warmup and evidence rules are unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

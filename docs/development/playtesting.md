@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"3505c52e3bbfda2e77e03efcb1f71b32c350beda6e42d5a3a82b57ea7e1da342","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"182e9a5e9d1ea07959c6c860f4b4fd49992a6aef610f23526af8349194e7161c","disposition":"still accurate","rationale":"workshop-app.mjs now sequences the one-time first-run chooser after recording setup closes (setupClosed) and the view gained the chooser and the status-line footer; recording, playtest capture and evidence rules described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"887d794d99846078bd4355e8ee866b2a93408486b9ad20b03740572957bb796b","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"8defdbd8dad774321f5d9b15357e4759f48f670afb4a5afb3556eb132ae17485","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): workshop-app.mjs now sequences the one-time first-run chooser after recording setup closes (setupClosed) and the view gained the chooser and the status-line footer; recording, playtest capture and evidence rules described here are unchanged."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 

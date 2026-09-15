@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
-    "src/presentation/workshop-view.mjs": "57d2f159c237beb3836b10f75a64805b9db566c340d9025eb4691b095d0cc4b2",
+    "src/presentation/workshop-view.mjs": "099ebcf2b72aa7b3f4b79cf7f3f40489cc2e92edaf182232b3742839728a519e",
     "src/presentation/parts-browser.mjs": "9aeb4e5ac2d31ec7d37f0b539135fef380d77c2134a02a4d738a7cacd3f71932",
     "src/presentation/part-search.mjs": "8964e0f08b565066b11a6a0fdc98f7628b7ac611bfcb50901969cf6afdca5161",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
