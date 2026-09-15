@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"6fc1379adbb7e9fa3592d32ced6b54237fb5bec15370ad073f8ef42986775479","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"3bfae347346c1fe8b49113a2c20d55a3c00f1ded05dcb1dfdb807b81b5f0308b","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No milestone, bar or obligation changed; the amendments state contract rules for M10/M11 parts allocated already."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed03530469d28d41b3d7d7db43d9a48d841138ac6f6684287add3f7b03b7cad7","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"ff65bac1b87af62ea051f725501d39a06987f3f14e88175770643859dda5eecb","disposition":"still accurate","rationale":"Only consumerSourceHash rows of 16 script metadata entries changed in scripts/manifest.json for the summoned palette; no milestone, bar, rule or check allocation changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"ffd69114262317a23157a68fc9ec7dff877016ae65c653ec90e87141c68b9b7f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea6d00b366487bdf1cab62fc7a4692fc7d427a2bb1bc18eb76590218b37ab25f","disposition":"still accurate","rationale":"reference.md regenerated for the new verify-host module and the extended release guarantee (on the merged base (land-script 9c4e08d0: hosted-check-waits' wait scale/live slice/row budget, merge --stack, the land script and the assessment split) the release-path tooling change stands: FINAL_PHASES shared between verify-final and the package tests; the bounded launch wait budget recorded as budgetMs and stripped from leaves beside the hosted wait variables; the printed refusal with offenders; prepare-release's 300 s release wait, named refusal, releaseEnvelope and dryCheckRelease (release:prepare --dry-check); verify-host.mjs (npm run verify:host) on the admission's own code with describeOwner now carrying the stacked-on branch; the manifest guarantee and two controls of release-verification-single-pass); re-recorded after merging the frozen tip, whose own changes (browser wait scaling, --stack, land script, assessment split) carry their own reviews and do not alter this section's description."} -->
+<!-- doc-review {"version":1,"fingerprint":"cf0fcfc78895ebc935592863ab65fb623c41a20294ad994628b47ac2bb749b29","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"75c881d8c392fb5abd0f0b7b01ec0d90aeb294572515742a36a3c5d423d7a0cf","disposition":"still accurate","rationale":"reference.md was regenerated for the palette's source changes (parts-browser, workshop-view, workbench-content); the documentation workflow, commands and gates described here are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"a3c562f87740fd70b2ff73d250e707c04781b14fb450993e86cafbd62641ac39","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"419ba03fe48dca7ea2041bec44ac69acbd8177f154aa1cf545af3c3882da7779","disposition":"still accurate","rationale":"The manifest changes are the guided-spring-passivity control registration and nine consumerSourceHash refreshes accepted in the scope review (world.mjs is inside the served closure); browser selection rules, scope declarations and execution policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a0ad8c0e6bfbfbc2987d2b247e65847700159f6ccd900951fb911c9d0dcc341f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"dbca9377c4421b6e6fcca9b6196d26e0eb872edb184ba8547a7fec9e3506a541","disposition":"still accurate","rationale":"The manifest change is a consumerSourceHash refresh for 16 metadata entrypoints; no browser check was added or removed and scope selection, schedule and platform rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -690,7 +690,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"add2d7e23e4c64cc69a538494b7172deb7a3a6432caa79657b53200e839551e4","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e9b00425b068bc9f941731d59d3b555c3e362987b33a794577b8398d946c68ea","disposition":"still accurate","rationale":"The manifest edit registers two spring-physics controls and refreshes reviewed scope hashes; candidate isolation, evidence binding and stacking rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"46a852f3588215e475dc218b3e6f7154224dcded69580d8707802558a5d30bec","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"21cc0c4fa76cdcbd7eab7e24e82b801e164f9709d9b89d046feab61f1ee4bd9d","disposition":"still accurate","rationale":"catalog-browser-actions.mjs now opens the parts via [data-command=add-part] instead of Expand parts, and the manifest hashes refreshed; candidate capture, tiers and receipts are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

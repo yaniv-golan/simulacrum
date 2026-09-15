@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"c5296683a714a0a1d443be52ae707961de2811d484af0bc9a7f9d2ec1c7cfe55","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b5caef6a0098bacf221fb39d61e4c88f8f34f85deb309b1c27e86d4392bb4aaa","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The guided build now says what to do next and ticks a step from what the player built (k-th part of the step's type, k-th connection of its kind between the two types) with Do it for me as the fallback; Learn & examples remains the primary home and the first-run choice is a one-time entry, not a hint system. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7cef6bf88b9dc9c5118baff31f38133b80da3c1fcd0912033e959332beca686","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"77a34cef5987d16e92ee651aa5a65db4888d34acf629320ba3392197522ce736","disposition":"still accurate","rationale":"The summoned palette adds no teaching, example or challenge entry; workshop-view.mjs changes are header placement and the parts overlay, so the admission rules are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2c7a4dc75a703a1bc846ad9444a54ff75f67311512f5c6f6f68efa458889a959","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"21275fd07c2ac8ebf2ee4620d7dc25f9f50a1584b2203633112790eb7fdedd23","disposition":"still accurate","rationale":"playtesting.md#release-operations gained an operator-only paragraph on the dry check and launch wait (on the merged base (land-script 9c4e08d0: hosted-check-waits' wait scale/live slice/row budget, merge --stack, the land script and the assessment split) the release-path tooling change stands: FINAL_PHASES shared between verify-final and the package tests; the bounded launch wait budget recorded as budgetMs and stripped from leaves beside the hosted wait variables; the printed refusal with offenders; prepare-release's 300 s release wait, named refusal, releaseEnvelope and dryCheckRelease (release:prepare --dry-check); verify-host.mjs (npm run verify:host) on the admission's own code with describeOwner now carrying the stacked-on branch; the manifest guarantee and two controls of release-verification-single-pass); re-recorded after merging the frozen tip, whose own changes (browser wait scaling, --stack, land script, assessment split) carry their own reviews and do not alter this section's description."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b2f28450f56f4f6c5a268160c8258efac062077d6ae76580b6941f260ef0415","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Rewritten for the summoned parts: + Add part first with P, a non-modal Parts overlay at every width with its dismissals and snapshot restore, and Edit scene moved under Tools."} -->
 
 
 
@@ -564,7 +564,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"905f742af78fd84d17a22d4680f3ac4b81858ee021e8ec2dee99e14b7f7c2258","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"9d226fc27cb90d4ea42684e0d5ab78cb4703182f48d4cf8de19ae77a07dae2e8","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): verify-authorable-scenes routes three literal 2 s waits through `evidence.waitBudget`; the section's rules for verifying journeys and rendered layout and for reporting automation separately from player evidence are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f95675fd15042eba95a4c76ddb64504d7a8b68b57d85a411c9ebe389658581df","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3ab09b3876da0820025b408c440628bd68a3f332cc7f02bbc551aa012718085d","disposition":"still accurate","rationale":"workbench-content gained the palette key helper with unit coverage and verify-authorable-scenes opens Edit scene through Tools; the verification and review policy text is unchanged."} -->
 
 
 
