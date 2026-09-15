@@ -115,6 +115,9 @@ function element(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+// One sentence for the direct-editing hint; every site that restores it uses this.
+const SELECT_HINT =
+  'Drag a part to move · Shift+↑↓ raises and lowers · Drag empty space to orbit · Scroll to zoom · Esc to clear';
 function button(text, fn, className = '') {
   const node = element('button', className, text);
   node.type = 'button';
@@ -164,6 +167,8 @@ export function createWorkshopView(
   let activeTool = 'select',
     draggingType = null,
     copySequence = 0,
+    keepViewOnInsert = null,
+    lastInsertFramed = false,
     followCenter = null,
     guideActive = false,
     editing,
@@ -823,16 +828,24 @@ export function createWorkshopView(
   const partList = element('div', 'part-list');
   const viewport = element('section', 'viewport');
   viewport.setAttribute('aria-label', 'Three dimensional workbench');
-  const hint = element(
-    'div',
-    'canvas-hint',
-    'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear',
-  );
+  const hint = element('div', 'canvas-hint', SELECT_HINT);
   const empty = element('div', 'empty-hint');
+  // The guided first build is offered where a newcomer must look; it calls the
+  // same launcher as the Learn & examples card and leaves with the first part.
+  const guideInvitation = button('Build a rolling machine with the guide', () => {
+    if (!frame || frame.metadata.mode !== 'build') return;
+    chooseExample(
+      { name: 'Build a rolling machine', command: { type: 'new' }, guide: true },
+      guideInvitation,
+    );
+  });
+  guideInvitation.dataset.command = 'start-guide-hint';
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
     element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Or let the guide walk you through one:'),
+    guideInvitation,
   );
   const stage = element('div', 'stage'),
     buildId = element(
@@ -1144,6 +1157,45 @@ export function createWorkshopView(
   let portCueKey = '',
     previewEndpoint = null,
     socketPreview = null;
+  function viewportInsets() {
+    const rect = stage.getBoundingClientRect();
+    let top = 100,
+      bottom = 70;
+    for (const node of document.querySelectorAll(
+      '.edit-toolbar,.inspection-banner,.playtest-panel',
+    )) {
+      if (node.hidden || !node.getClientRects().length) continue;
+      const box = node.getBoundingClientRect();
+      if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
+      else bottom = Math.max(bottom, rect.bottom - box.top + 16);
+    }
+    return { top, bottom, left: 24, right: 24 };
+  }
+  // A copy that already sits inside the visible canvas (between the toolbar
+  // and footer insets) does not justify re-framing the whole machine.
+  function meshInView(mesh) {
+    if (!mesh) return false;
+    const box = new THREE.Box3().setFromObject(mesh);
+    if (box.isEmpty()) return false;
+    // The renderer refreshes the camera matrices only on the next frame; a
+    // synchronous render after a command must project against the current pose.
+    camera.updateMatrixWorld();
+    const width = renderer.domElement.clientWidth,
+      height = renderer.domElement.clientHeight,
+      { top, bottom, left, right } = viewportInsets();
+    for (let corner = 0; corner < 8; corner++) {
+      const point = new THREE.Vector3(
+        corner & 1 ? box.max.x : box.min.x,
+        corner & 2 ? box.max.y : box.min.y,
+        corner & 4 ? box.max.z : box.min.z,
+      ).project(camera);
+      if (!(point.z > -1 && point.z < 1)) return false;
+      const px = ((point.x + 1) / 2) * width,
+        py = ((1 - point.y) / 2) * height;
+      if (px < left || px > width - right || py < top || py > height - bottom) return false;
+    }
+    return true;
+  }
   editing = createEditingControls({
     scene,
     camera,
@@ -1153,20 +1205,7 @@ export function createWorkshopView(
     getBlueprint: () => frame.metadata.blueprint,
     getMode: () => (exploded || partPlacement?.active() ? 'inspection' : frame?.metadata.mode),
     getMeshes: () => meshes,
-    getViewportInsets: () => {
-      const rect = stage.getBoundingClientRect();
-      let top = 100,
-        bottom = 70;
-      for (const node of document.querySelectorAll(
-        '.edit-toolbar,.inspection-banner,.playtest-panel',
-      )) {
-        if (node.hidden || !node.getClientRects().length) continue;
-        const box = node.getBoundingClientRect();
-        if (box.top < rect.top + rect.height / 2) top = Math.max(top, box.bottom - rect.top + 16);
-        else bottom = Math.max(bottom, rect.bottom - box.top + 16);
-      }
-      return { top, bottom, left: 24, right: 24 };
-    },
+    getViewportInsets: viewportInsets,
     onCommit: send,
     onInvalidate: invalidateScene,
   });
@@ -1389,7 +1428,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Arrows move 2.5 cm. Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
+      'Arrows move 2.5 cm on the floor; Shift+↑↓ or Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
     ),
     element('h3', '', 'View'),
     element(
@@ -1636,7 +1675,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent =
       value === 'select'
-        ? 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear'
+        ? SELECT_HINT
         : value === 'rotate'
           ? 'Drag rings to rotate · V for direct part movement · Drag empty space to orbit'
           : 'Drag arrows to move · V for direct part movement · Drag empty space to orbit';
@@ -2244,7 +2283,9 @@ export function createWorkshopView(
         : null;
     const openSections =
       right.dataset.partId === selected
-        ? [...right.querySelectorAll('details[open]')].map((node) => node.className)
+        ? [...right.querySelectorAll('details[open]')]
+            .filter((node) => !node.closest('.connection-test'))
+            .map((node) => node.className)
         : [];
     right.dataset.partId = selected ?? '';
     right.dataset.inspectorType = part?.type ?? '';
@@ -3394,10 +3435,14 @@ export function createWorkshopView(
     placement.append(turn);
     right.append(mirrorButton, placement);
 
+    // Connect & test owns its own open state (it opens itself for an actuator
+    // still missing power or a shaft and remembers the player's closure); the
+    // inspector's memory must not close it behind that owner's back.
     for (const details of right.querySelectorAll('details'))
-      details.open =
-        openSections.includes(details.className) &&
-        !(mode !== 'build' && details.classList.contains('receiver-controls'));
+      if (!details.closest('.connection-test'))
+        details.open =
+          openSections.includes(details.className) &&
+          !(mode !== 'build' && details.classList.contains('receiver-controls'));
     if (focusLabel) {
       const replacement = [...right.querySelectorAll('[aria-label]')].find(
         (node) => node.getAttribute('aria-label') === focusLabel,
@@ -3996,7 +4041,7 @@ export function createWorkshopView(
     refreshSelectionVisuals();
     hint.textContent = on
       ? 'Click a part or dashed connection to inspect · Drag to orbit · Esc clears selection'
-      : 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+      : SELECT_HINT;
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
   function render(next, cursor = getCursor?.()) {
@@ -4067,8 +4112,12 @@ export function createWorkshopView(
         frame.metadata.mode === 'build' ? null : frame.power?.lamps?.find((l) => l.node === index),
       );
     }
-    if (blueprint.parts.length > previousCount) editing.focus();
-    else if (
+    if (blueprint.parts.length > previousCount) {
+      // An insert frames the machine unless the caller asked to keep the view
+      // and the new part already sits inside the visible canvas.
+      lastInsertFramed = !(keepViewOnInsert && meshInView(meshes.get(keepViewOnInsert)));
+      if (lastInsertFramed) editing.focus();
+    } else if (
       !retryCamera &&
       previousMode &&
       previousMode !== 'build' &&
@@ -4115,9 +4164,7 @@ export function createWorkshopView(
     if (frame.metadata.mode !== 'build')
       hint.textContent =
         'Machine controls lists your keys · Space pauses · Drag empty space to orbit';
-    else if (previousMode !== 'build')
-      hint.textContent =
-        'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
+    else if (previousMode !== 'build') hint.textContent = SELECT_HINT;
     partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
     partPlacement?.refresh();
     refreshAssemblyState();
@@ -4176,11 +4223,21 @@ export function createWorkshopView(
     } while (bp.parts.some((p) => p.id === id));
     try {
       const part = duplicatePart(bp, selected, id, cameraAxes().forward.negate().toArray());
-      const result = await send({ type: 'insert', part });
+      // The insert renders synchronously inside send; render decides there
+      // whether the copy is already in view or the machine must be re-framed.
+      keepViewOnInsert = id;
+      lastInsertFramed = false;
+      let result;
+      try {
+        result = await send({ type: 'insert', part });
+      } finally {
+        keepViewOnInsert = null;
+      }
       if (result?.ok) {
-        editing.focus();
         setMessage(
-          'Copied toward the camera; view widened to show both. The copy has no connections.',
+          lastInsertFramed
+            ? 'Copied toward the camera and framed to show both. The copy has no connections.'
+            : 'Copied beside it, toward the camera. The copy has no connections.',
         );
       }
     } catch (error) {
@@ -4352,16 +4409,19 @@ export function createWorkshopView(
             .multiply(new THREE.Quaternion(...rotation))
             .toArray();
         } else {
+          // Shift with the up/down arrows lifts and lowers (world Y), the same
+          // step Page Up/Down give; arrows alone move on the floor plane.
+          const lift = event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key);
           const direction =
-            event.key === 'ArrowUp'
-              ? forward
-              : event.key === 'ArrowDown'
-                ? forward.negate()
-                : event.key === 'ArrowRight'
-                  ? right
-                  : event.key === 'ArrowLeft'
-                    ? right.negate()
-                    : new THREE.Vector3(0, event.key === 'PageUp' ? 1 : -1, 0);
+            lift || event.key.startsWith('Page')
+              ? new THREE.Vector3(0, ['ArrowUp', 'PageUp'].includes(event.key) ? 1 : -1, 0)
+              : event.key === 'ArrowUp'
+                ? forward
+                : event.key === 'ArrowDown'
+                  ? forward.negate()
+                  : event.key === 'ArrowRight'
+                    ? right
+                    : right.negate();
           position = new THREE.Vector3(...position).addScaledVector(direction, 0.025).toArray();
         }
         send({ type: 'transform', id: part.id, position, rotation });
