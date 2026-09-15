@@ -7,6 +7,13 @@ test('live registry freshness and mirror coverage contract', async () => {
     documentation: async () => ({ value: { errors: [] } }),
   });
   const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  // A widened selection must name its cause here, not surface as sixty unexpected ids below.
+  const audit = affectedBrowserChecks(['scripts/verify-mirror-browser.mjs']).audit;
+  assert.equal(
+    audit.readKindsAudited,
+    true,
+    `opaque reads are not audited: ${audit.unaudited.map((u) => `${u.entrypoint ?? 'environment'}: ${u.reason}`).join('; ')}`,
+  );
   const docs = [
     'docs/development/.reviews/recipes/change-a-presentation-overlay.json',
     'docs/development/.reviews/recipes/change-an-interaction.json',

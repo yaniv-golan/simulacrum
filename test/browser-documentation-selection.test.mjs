@@ -53,3 +53,66 @@ test('unit-only documentation readers do not expand browsers, but browser and op
     ['help', 'other'],
   );
 });
+
+test('selection reports why a metadata row is not audited so a widened selection names its cause', () => {
+  const checks = [{ id: 'help', script: 'help', environment: 'workshop' }];
+  const graph = {
+    errors: [],
+    nodes: new Map([
+      ['help', { dependencies: ['reader'], imports: [] }],
+      [
+        'reader',
+        { dependencies: [], imports: [], opaqueInputs: true, opaqueReads: ['execFileSync(bin)'] },
+      ],
+      ['index.html', { dependencies: [], imports: [] }],
+      ['docs/development/README.md', { dependencies: [] }],
+    ]),
+  };
+  const row = (reads) => ({
+    entrypoint: 'reader',
+    sourceSha256: 'reader-source',
+    dependencies: [],
+    externalImports: [],
+    reads,
+    consumers: browserScopeConsumers(graph, 'reader'),
+    reachingChecks: browserScopeRoots(checks, graph, 'reader'),
+    checks: ['controls'],
+  });
+  const select = (metadataScopes) =>
+    selectAffectedBrowserChecks({
+      checks,
+      graph,
+      files: ['docs/development/README.md'],
+      scopes: [],
+      metadataScopes,
+      readSource: (p) => `${p}-source`,
+      // consumerSourceHash is computed by the selector; a row that omits it is unaudited for
+      // that reason, so the fixture asserts on the read reason it injects first.
+    });
+  // The 2026-09-15 row: purpose set, exclusions empty.
+  const partial = select([
+    row([{ expression: 'execFileSync(bin)', purpose: 'runtime', excludedInputs: [] }]),
+  ]);
+  assert.equal(partial.audit.readKindsAudited, false);
+  assert.ok(partial.audit.unaudited.length >= 1);
+  assert.equal(partial.audit.unaudited[0].entrypoint, 'reader');
+  assert.match(partial.audit.unaudited[0].reason, /execFileSync\(bin\)/);
+  assert.match(partial.audit.unaudited[0].reason, /must exclude documentation and unit-test/);
+  assert.ok(partial.checks.length >= 1, 'documentation reached an unaudited reader: conservative');
+  // No row at all names that, not a field.
+  const none = select([]);
+  assert.equal(none.audit.readKindsAudited, false);
+  assert.match(none.audit.unaudited[0].reason, /no metadata scope row/);
+  // Every return shape carries the audit block.
+  const doc = selectAffectedBrowserChecks({
+    checks,
+    graph,
+    files: ['docs/development/README.md'],
+    scopes: [],
+    metadataScopes: [],
+    readSource: (p) => p,
+    metadataEnvironmentSafe: false,
+  });
+  assert.equal(doc.audit.readKindsAudited, false);
+  assert.match(doc.audit.unaudited[0].reason, /environment override/);
+});
