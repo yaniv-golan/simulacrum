@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"16b4007f7d8023bed89f5f2abc56419b1182ec410016c6a2b646744fe77fefde","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"282b9b808ddb287e26291dbb8077d5332435cdf93e1eeba1d2e46ba70184a36f","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the manifest gained the candidate-citation-integrity invariant (tooling, no milestone or bar allocation changed) and AGENTS.md the citation row and rule; the milestone status this section states — the current construction loop and gate — is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"37af0a3dfa689f396437dc25b2a5da585d295e05fb20cf6d7199b0447a058b4a","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"c8310417e0a94d37b10fcb6f07e2d6e91b333f344d76001f5a400bc49841fb9f","disposition":"still accurate","rationale":"No milestone, bar or obligation changed; the manifest edit is an invariant registration and relocated unit controls under the existing gate-integrity rule."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -182,7 +182,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"207e6d00676fc6a7079e6c6107f2ba268043c5fbb9f0638e1bf1557911d0ef35","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e1ed6a0209454a049ea03af8118e79b53e48ef085bde38b202949612d1ca2e07","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): reference.md was regenerated for the new candidate-citation-integrity invariant row; the documentation workflow (prepare, review, check, sidecars, batch decisions) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"be52fa382dd05d6fa6e910999181c533af58500b9a023285fef79b6340f9ed20","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"33ce4c1afb9bf1376c50b9a76968deed38a90bbea140e2a8da89ec155ffc82f4","disposition":"still accurate","rationale":"reference.md regenerated only to add the app-identity-fingerprint row and to move the human-evidence-verdicts control paths to the split test files; the review workflow, sidecar rules and gate are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -323,7 +323,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"caa084b0cbfa8ad28bdf8ca8cd9e05f1effa499ebb4f25f12a4781bf460c1f44","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c2d843a6245b4c67a47ecf473d62ded59850e5a71d434d9453bc27a7fc4c0dad","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): verification-window.mjs gained the read-only `currentWindowOwner` (a pending citation records the owner it was captured beside) and the manifest a citation invariant plus regenerated consumer lists; browser scheduling, selection, admissions and the window protocol described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e932ec350746158460750a72054d53617b73d3b942056ce2ac5e8f12f6cb73f9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"57c917a2424585f608afd49e67742cd1cd26c29d31c3ab758085e60ae618d053","disposition":"still accurate","rationale":"The manifest change registers a unit-tested guarantee and relocates unit control paths; browser selection, scope declarations and execution policy are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -648,7 +648,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0644933249158914628033b19879df6334d3fc4f8dbe0c15fae80bf614335bcd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2d09e7093b9b04d7472fac89fdc02ac3d5c97bc357e37aeea9784b589799d616","disposition":"updated","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): a new paragraph documents the citation — `--satisfied-by <release directory>` reading the release's record before capture, the compared fields (head, path bytes and mode, installed digest; not the index or process identity), passed only with a terminal green final and a bound package, `pending final` (exit 3, pendingOn final|package) only with `--pending`, `cite-final <attempt report>` recording `landed`, and that a citation carries no receipts and is neither resumed nor retried. Verified against candidate-cite.mjs (compareIdentity, citeRelease, resolveCitation, packageRefusal), verify-candidate.mjs (the pre-capture gate, cite path and cite-final), package-verification.mjs and verification-outcome.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"c67b7535d2de687d1d7317a6c1cd4df25f6d1fd63a0409a189e82d034a65df0d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9e0bae35d7c46917d92246dd3e2f3cd1dd821826784e6c44d043035298f218fe","disposition":"still accurate","rationale":"The manifest gained the app-identity-fingerprint invariant and moved unit control paths; candidate isolation, evidence binding and stacking rules are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

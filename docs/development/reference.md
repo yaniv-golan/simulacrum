@@ -125,6 +125,7 @@ These are registered commands and checks, not evidence that they passed.
 | candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |
 | private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
 | human-evidence-verdicts | [evaluateBar](../../scripts/bars.mjs), [Records a human assessment](../../scripts/assess.mjs), [formatVerificationOutcome](../../scripts/verification-outcome.mjs) | verification-scope-configuration |
+| app-identity-fingerprint | [appFingerprint](../../scripts/app-fingerprint.mjs) | verification-scope-configuration |
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |

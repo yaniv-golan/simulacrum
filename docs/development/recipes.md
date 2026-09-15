@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"b823f7e440899394240572b29591bb64a2cd3bae9f5cc27e717b4ce4dd7971ee","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4bda4ee11741c9416e2eced464f8bc6526a97dc56eb0b8fa80d546aa9436befd","disposition":"still accurate","rationale":"test/assessment.test.mjs was split into four files sharing test/fixtures/assessment-fixture.mjs with no check changed; no physics door, contract or physical test contract in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
