@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { browseAllParts, placeCatalogPartByName } from './catalog-browser-actions.mjs';
+import { browseAllParts, placeCatalogPartByName, openTools } from './catalog-browser-actions.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
@@ -92,6 +92,7 @@ try {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.screenshot({ path: `${out}/compact.png` });
   // A second ordinary authored rig starts with near-limit tensile preload.
+  await openTools(page);
   await page.getByRole('button', { name: 'New', exact: true }).click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await place('Beam', [0, 1, 0]);

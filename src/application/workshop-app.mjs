@@ -395,7 +395,7 @@ export async function mountWorkshopApp(root) {
     if (command.type === 'guide-step') {
       const step = starterSteps().find((s) => !s.done(frame().metadata.blueprint));
       if (!step) return { ok: true, reasonCode: 'OK', path: '' };
-      for (const edit of step.commands) {
+      for (const edit of step.commands(frame().metadata.blueprint)) {
         const result = await onCommand(edit);
         if (!result.ok) return result;
       }
@@ -794,8 +794,13 @@ export async function mountWorkshopApp(root) {
     context: () => ({ build: buildId, ...recordingContext(), observation: frame() }),
     checkpoint: () => workshop.checkpoint(),
   });
-  // After every mount-time surface (recording setup included) has had its chance to open.
-  view.considerWhatsNew();
+  // Recording consent comes first on the hosted build; the first-run choice waits for it, and
+  // the what's-new notice yields to whichever of those is open (it re-considers on close).
+  (remote.setupClosed ?? Promise.resolve()).then(() => {
+    if (disposed) return;
+    view.offerFirstRun();
+    view.considerWhatsNew();
+  });
   window.render_game_to_text = () => JSON.stringify(workshop.observe().frames[0]);
   window.advanceTime = (milliseconds) => {
     clock.pause();

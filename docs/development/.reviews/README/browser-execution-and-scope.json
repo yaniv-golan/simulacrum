@@ -7,7 +7,7 @@
     "scripts/browser-selection.mjs": "ada7d647c6fe4548b4865724f304d21eddbf63bae8435a8d21a559ea82a9f55c",
     "scripts/host-profile.mjs": "8c4dcf2322b5c83f6c10f1784b12f795cc88466073ccf7280775e98372b97fc6",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "8cdebdd0781402edbdd2ab29ac76955561bb0ff6d7c8d0dcd45a9d967c6e3a54",
+    "scripts/manifest.json": "598e103b11bb5e937350ac7203a95c361c53920427ec9accce22c59fcaf4f343",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
@@ -42,7 +42,7 @@
     "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",
     "src/model/sensors.mjs": "e873492e9e9e78d20f0bc6efcf3ab0c734e6eef9b01119b307d2052eed96ab71",
     "scripts/browser-artifacts.mjs": "df675ef267c27905667ad978ec3b4b43551adcb785dad168eb5f83ec485df3a9",
-    "scripts/browser-session.mjs": "cb35667560f20d4b78fae33913caa610595c7355d6caaa007bdaa7b5b9a05bcb",
+    "scripts/browser-session.mjs": "874bf59a6be86cda29a23ac56dff24869832fa2aa0fb14e234de89944e6be4af",
     "scripts/ci.mjs": "2b4f2f3a3a5750825b3610ede288dfc2a9658d31ad0d7805735a4830b3894f0e",
     "scripts/gate-structural.mjs": "d778e4f915a3588f8a01859aa9af409c4685d14013d2ac389ba226254ea9cb71",
     "scripts/verification-tiers.mjs": "6aa90dd9e5a6eb96626ada161b951b9f9f3bc6192f8b912e14db2b5ada22d004",
@@ -66,7 +66,7 @@
     "src/model/surfaces.mjs": "886da321a58eeda9e8da961623d6d6860015258482e50c24c80bdc3d77336cea",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "scripts/browser-evidence.mjs": "3a16c5df47e863a9009bd708f9c68583748f1307ad17cae7a2d721d075263938",
-    "src/application/workshop-app.mjs": "4b4929de23b43f4f13313f53c81a109023dfb65fe18611f67660f1802cf6d9de",
+    "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
     "package.json#script=browser:scopes": "83a8c24f5eda5de8f45aedf8c85cae81860160b29677e9cd69e44d9dbbf5f91e",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
   }

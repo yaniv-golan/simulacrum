@@ -1,6 +1,7 @@
 import { verifyGearJourney } from './gear-browser-cases.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/learning-examples');
@@ -16,7 +17,13 @@ try {
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.screenshot({ path: `${out}/examples.png` });
   await page.locator('[data-command=start-guide]').click();
-  for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
+  evidence.assert('match', [await page.locator('.guide-next').innerText(), /^Next: Place Chassis/]);
+  // The player performs the first step by hand; the guide ticks it and moves on.
+  await placeCatalogPart(page, 'chassis');
+  await page.locator('.guide-progress').filter({ hasText: '1 / 16 steps' }).waitFor();
+  evidence.assert('equal', [await page.locator('.guide-progress').innerText(), '1 / 16 steps']);
+  evidence.assert('match', [await page.locator('.guide-next').innerText(), /^Next: Place Motor/]);
+  for (let i = 0; i < 15; i++) await page.locator('[data-command=guide-step]').click();
   evidence.assert('match', [
     await page.locator('.active-guide').innerText(),
     /Set Drive setting to 0/,

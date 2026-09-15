@@ -2,6 +2,7 @@ import {
   placeCatalogPart,
   placeCatalogPartByName,
   browseAllParts,
+  openTools,
 } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -163,6 +164,7 @@ try {
   await selectWheel();
   await startMirror();
   const chooser = page.waitForEvent('filechooser');
+  await openTools(page);
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await (await chooser).setFiles(`${out}/ui-built-source.json`);
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();

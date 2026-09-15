@@ -18,7 +18,13 @@ import {
   applyGraphicsQuality,
   createGraphicsRenderer,
 } from './graphics-quality.mjs';
-import { movementScope } from './workbench-content.mjs';
+import {
+  FIRST_RUN_KEY,
+  firstRunDecision,
+  footerModel,
+  modeControlState,
+  movementScope,
+} from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
@@ -61,7 +67,13 @@ import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { UI_FEATURES } from '../model/features.mjs';
 import { CATALOG, MATERIALS } from '../model/catalog.mjs';
-import { diagnoseMotion, motorShaftSpeed } from '../model/motion-diagnostics.mjs';
+import {
+  diagnoseMotion,
+  motorShaftSpeed,
+  readinessLine,
+  readinessNext,
+} from '../model/motion-diagnostics.mjs';
+import { CONNECTION_LABELS, inspectorSummary } from './inspector-summary.mjs';
 import { explainReason, explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
 import {
@@ -99,14 +111,7 @@ const parameterHelp = {
   defaultDuty: '−1 reverse · 0 off · 1 forward. Sets drive strength, not a guaranteed speed.',
   capacityJ: 'More stored energy supports a longer run.',
 };
-const labels = {
-  spring: 'Slide',
-  power: 'Power',
-  shaft: 'Shaft',
-  gear: 'Gear mesh',
-  fixed: 'Mount',
-  signal: 'Signal',
-};
+const labels = CONNECTION_LABELS;
 
 const format = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
 function element(tag, className, text) {
@@ -147,6 +152,7 @@ export function createWorkshopView(
     cameraSession,
     builtInAssemblies = [],
     guideSteps = [],
+    firstRun = 'modal',
   },
 ) {
   const learningControls = learning
@@ -171,6 +177,7 @@ export function createWorkshopView(
     lastInsertFramed = false,
     followCenter = null,
     guideActive = false,
+    footerReady = false,
     editing,
     mirror,
     frame = null,
@@ -300,7 +307,42 @@ export function createWorkshopView(
   build.dataset.command = 'build';
   const stepButton = button('Step', () => send({ type: 'step' }));
   stepButton.dataset.command = 'step';
-  modebar.append(run, pause, build, stepButton);
+  // Visible key badges on the control the key currently triggers; names stay the plain verb.
+  const keyBadge = (control, key) => {
+    control.setAttribute('aria-label', control.textContent);
+    control.title = `${control.textContent} · ${key}`;
+    control.append(element('kbd', 'key-badge', key));
+  };
+  keyBadge(run, 'Space');
+  keyBadge(pause, 'Space');
+  keyBadge(stepButton, '.');
+  // One Build | Run switch; Pause and Step appear only once the clock can run.
+  const modeSwitch = element('div', 'mode-switch');
+  modeSwitch.setAttribute('role', 'group');
+  modeSwitch.setAttribute('aria-label', 'Mode');
+  build.title = 'Return to Build restores the editable starting machine';
+  modeSwitch.append(build, run);
+  modebar.append(modeSwitch, pause, stepButton);
+  // Occasional tools live under one menu; each keeps its name and data-command.
+  const toolsMenu = element('details', 'tools-menu'),
+    toolsSummary = element('summary', '', 'Tools ⋯'),
+    toolsList = element('div', 'tools-list');
+  toolsSummary.setAttribute('aria-label', 'Tools');
+  toolsMenu.append(toolsSummary, toolsList);
+  toolsList.addEventListener('click', (event) => {
+    if (event.target.closest('button')) toolsMenu.open = false;
+  });
+  toolsMenu.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && toolsMenu.open) {
+      toolsMenu.open = false;
+      toolsSummary.focus();
+      event.stopPropagation();
+    }
+  });
+  toolsMenu.addEventListener('focusout', (event) => {
+    if (!toolsMenu.contains(event.relatedTarget)) toolsMenu.open = false;
+  });
+  modebar.append(toolsMenu);
   const filebar = element('div', 'filebar');
   const failureButton = button('Failure record', () => onFailure?.());
   failureButton.dataset.command = 'failure-record';
@@ -325,11 +367,11 @@ export function createWorkshopView(
     loadInput.value = '';
   });
   const newButton = button('New', () =>
-    chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, newButton),
+    chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, toolsSummary),
   );
   newButton.dataset.command = 'new';
+  const loadButton = button('Load', () => loadInput.click());
   filebar.append(
-    newButton,
     button('Save', async () => {
       try {
         await onSave();
@@ -337,8 +379,6 @@ export function createWorkshopView(
         setMessage('The machine could not be saved. Try again.');
       }
     }),
-    button('Load', () => loadInput.click()),
-    failureButton,
     loadInput,
   );
   const undo = button('Undo', () => send({ type: 'undo' })),
@@ -501,9 +541,30 @@ export function createWorkshopView(
     if (!examples.open) examples.showModal();
     cancelReplacement.focus();
   }
+  // The footer follows the guide as well as the frame: entering or leaving a guide changes
+  // "Next:" without a new frame.
+  function refreshFooter() {
+    if (!frame || !footerReady) return;
+    const blueprint = frame.metadata.blueprint;
+    const footerState = footerModel({
+      mode: frame.metadata.mode,
+      status: frame.status,
+      tick: frame.tick,
+      parts: blueprint.parts.length,
+      message: message.textContent,
+      next: guideActive
+        ? guideSteps.find((s) => !s.done(blueprint))?.label
+        : (healthSample?.next ?? null),
+    });
+    modeLabel.textContent = footerState.mode;
+    partsLabel.textContent = footerState.parts;
+    nextLabel.textContent = footerState.next;
+    nextLabel.hidden = !footerState.next;
+  }
   function refreshGuide() {
     // Static requested content must retain focus, disclosure and scroll during ticks.
     if (!guideActive && renderedGuideActive === false) return;
+    refreshFooter();
     renderedGuideActive = guideActive;
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
@@ -704,16 +765,18 @@ export function createWorkshopView(
     }
     if (guideReceipt) guide.append(element('p', 'guide-receipt', `✓ ${guideReceipt.message}`));
     if (step) {
-      guide.append(element('p', '', step.description));
+      // The player performs the step; the button is the fallback, not the instruction.
+      const description = element('p', '', step.description);
+      guide.append(element('p', 'guide-next', `Next: ${step.label}`), description);
       const next = button(
-        step.label,
+        'Do it for me',
         async () => {
           editing.clearPreview();
+          const planned = step.commands(bp).find((c) => c.type === 'connect');
           const result = await send({ type: 'guide-step' });
           if (result?.ok) {
-            const command = step.commands.find((c) => c.type === 'connect'),
-              edge =
-                command && frame.metadata.blueprint.connections.find((c) => c.id === command.id);
+            const edge =
+              planned && frame.metadata.blueprint.connections.find((c) => c.id === planned.id);
             if (edge) {
               select(edge.b.part);
               sourcePort = { ...edge.b };
@@ -727,13 +790,16 @@ export function createWorkshopView(
             editing.focus();
           }
         },
-        'primary',
+        'quiet',
       );
       next.dataset.command = 'guide-step';
+      next.setAttribute('aria-label', `Do it for me: ${step.label}`);
       next.disabled = frame?.metadata.mode !== 'build';
       const preview = () => {
         if (step.part) editing.showPreview([step.part]);
-        const connection = step.commands.find((c) => c.type === 'connect');
+        const connection = step
+          .commands(frame.metadata.blueprint)
+          .find((c) => c.type === 'connect');
         if (connection) showGuideConnection(connection, false);
       };
       const leave = () => {
@@ -750,6 +816,7 @@ export function createWorkshopView(
       next.addEventListener('focus', preview);
       next.addEventListener('pointerleave', leave);
       next.addEventListener('blur', leave);
+      // A fixed slot right after the progress line: the button must not move between steps.
       guide.insertBefore(next, guide.children[1]);
       if (step.part) preview();
     } else {
@@ -847,6 +914,79 @@ export function createWorkshopView(
     element('p', '', 'Or let the guide walk you through one:'),
     guideInvitation,
   );
+  // Once per remembered device: how to start. Escape and the × both mean the empty bench.
+  function offerFirstRun() {
+    let keys = null;
+    try {
+      // A blocked store throws on read; enumerate only after a read has succeeded.
+      localStorage.getItem(FIRST_RUN_KEY);
+      keys = Array.from({ length: localStorage.length ?? 0 }, (_, i) => localStorage.key(i));
+    } catch {
+      keys = null;
+    }
+    const shape = firstRunDecision({
+      keys: keys ?? [],
+      storage: keys !== null,
+      hasContent: hasWorkshopContent(frame.metadata.blueprint),
+      guideActive,
+      shape: firstRun,
+    });
+    if (!shape) return false;
+    const dialog = element('dialog', 'workshop-dialog first-run');
+    dialog.setAttribute('aria-label', 'How do you want to start?');
+    let launch = null;
+    const answer = (action) => {
+      launch = action;
+      dialog.close();
+    };
+    const guided = button(
+      'Guided build',
+      () =>
+        answer(() =>
+          chooseExample({ name: 'the guided build', command: { type: 'new' }, guide: true }),
+        ),
+      'primary',
+    );
+    guided.dataset.command = 'first-run-guide';
+    const example = button('Drive an example', () =>
+      answer(() =>
+        chooseExample({
+          name: 'the driving example',
+          command: { type: 'driving-example', replace: true },
+        }),
+      ),
+    );
+    example.dataset.command = 'first-run-example';
+    const actions = element('div', 'first-run-actions');
+    actions.append(guided, example);
+    dialog.append(
+      createDialogHeader(
+        element('h2', '', 'How do you want to start?'),
+        createDialogClose('Close · start on the empty bench', () => dialog.close()),
+      ),
+      element(
+        'p',
+        '',
+        'Build your first rolling machine one step at a time, drive a finished one, or start on the empty bench.',
+      ),
+      actions,
+      element('p', 'muted small', 'Close this (Escape) to start on the empty bench.'),
+    );
+    dialog.addEventListener('close', () => {
+      try {
+        localStorage.setItem(FIRST_RUN_KEY, new Date().toISOString());
+      } catch {
+        // Without storage the decision above never opens this dialog again this load.
+      }
+      dialog.remove();
+      launch?.();
+    });
+    root.append(dialog);
+    if (shape === 'modal') dialog.showModal();
+    else dialog.show();
+    guided.focus();
+    return true;
+  }
   const stage = element('div', 'stage'),
     buildId = element(
       'div',
@@ -917,7 +1057,8 @@ export function createWorkshopView(
       setMessage('Finish or cancel the assembly operation first.');
       return;
     }
-    savedAssemblies.open();
+    // The launcher lives in the Tools menu, closed by now; focus returns to the visible control.
+    savedAssemblies.open(toolsSummary);
   });
   const createAssembly = button('Create assembly…', () => {
     if (assemblyPlacement.active()) {
@@ -995,13 +1136,14 @@ export function createWorkshopView(
   });
   mirrorButton.dataset.command = 'mirror-assembly';
   const footer = element('footer', 'workshop-footer'),
-    modeLabel = element('span', 'mode-label', 'BUILD'),
-    tickLabel = element('span', 'tick-label', 'Tick 0'),
+    modeLabel = element('span', 'mode-label', 'Build'),
+    partsLabel = element('span', 'parts-label', '0 parts'),
     message = element('span', 'status-message', 'Choose your first part.'),
-    shortcut = element('span', 'shortcuts', 'Space: run / pause · .: one tick');
+    nextLabel = element('span', 'next-step', '');
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
-  footer.append(modeLabel, tickLabel, message, shortcut);
+  footer.append(modeLabel, partsLabel, message, nextLabel);
+  footerReady = true;
   body.append(left, viewport, rightPanel);
   root.append(header, body, footer, partHelp.panel);
   const graphicsQuality = createGraphicsQuality();
@@ -1343,7 +1485,6 @@ export function createWorkshopView(
   const tools = element('div', 'edit-toolbar');
   const checkButton = button('Check machine', showMachineCheck);
   checkButton.dataset.command = 'check-machine';
-  modebar.append(checkButton);
   const editGroup = element('div', 'edit-tool-group');
   editGroup.setAttribute('role', 'group');
   editGroup.setAttribute('aria-label', 'Edit tools');
@@ -1554,7 +1695,7 @@ export function createWorkshopView(
     motionReadout.setVisible(open);
   });
   measurements.setAttribute('aria-pressed', 'false');
-  modebar.append(measurements);
+  toolsList.append(checkButton, measurements, savedLauncher, newButton, loadButton, failureButton);
   const machineControlRegion = element('div', 'machine-control-region');
   machinePanels.append(machineControlRegion);
   const vehicleControls = createVehicleControls({ send, select, container: machineControlRegion });
@@ -1715,9 +1856,8 @@ export function createWorkshopView(
         placeAnother.hidden = false;
         refreshAssemblyState();
       },
-      onCancel: () => savedAssemblies.open(savedLauncher),
+      onCancel: () => savedAssemblies.open(toolsSummary),
     });
-    left.insertBefore(savedLauncher, palette);
     rightPanel.insertBefore(createAssembly, machinePicker);
     rightPanel.insertBefore(assemblies.panel, right);
     rightPanel.insertBefore(placeAnother, right);
@@ -2325,8 +2465,14 @@ export function createWorkshopView(
     aboutPart.title = 'About this part';
     aboutPart.replaceChildren(icon, element('span', 'help-badge', 'ⓘ'));
     identity.append(aboutPart, element('h2', '', part.name));
-    if (part.name !== definition.name)
-      identity.append(element('span', 'part-kind', definition.name));
+    // Type and primary connection at a glance; the Connections list below owns the detail.
+    identity.append(
+      element(
+        'span',
+        'part-kind part-summary',
+        inspectorSummary(part, frame.metadata.blueprint, frame.metadata.connections),
+      ),
+    );
     const actions = element('div', 'part-actions'),
       duplicate = button('Copy · C', () => copySelected(), 'quiet'),
       remove = button('Delete · X', () => send({ type: 'delete', id: part.id }), 'danger quiet');
@@ -3456,29 +3602,39 @@ export function createWorkshopView(
     return motorShaftSpeed(frame, motor.node);
   }
   function refreshHealth() {
+    // Build: the readiness line, re-derived per edit. Run: the first blocker after a second.
     health.hidden = true;
-    if (frame.metadata.mode !== 'run' || frame.tick < 120) {
+    const mode = frame.metadata.mode,
+      build = mode === 'build';
+    if (build ? sceneEditor?.active() : mode !== 'run' || frame.tick < 120) {
       healthSample = null;
       return;
     }
-    const bucket = Math.floor(frame.tick / 30);
+    const bucket = build ? null : Math.floor(frame.tick / 30);
     if (
       !healthSample ||
       healthSample.blueprint !== frame.metadata.blueprint ||
+      healthSample.mode !== mode ||
       healthSample.epoch !== renderedCursor?.epoch ||
       healthSample.session !== renderedCursor?.session ||
       healthSample.bucket !== bucket
-    )
+    ) {
+      const issues = diagnoseMotion(frame),
+        blocker = issues.find((issue) => issue.code !== 'COMMAND_OFF');
       healthSample = {
         blueprint: frame.metadata.blueprint,
+        mode,
         epoch: renderedCursor?.epoch,
         session: renderedCursor?.session,
         bucket,
-        issue: diagnoseMotion(frame).find((issue) => issue.code !== 'COMMAND_OFF'),
+        text: build
+          ? readinessLine(issues, frame.metadata.blueprint)
+          : blocker && `${blocker.title} · Check machine`,
+        next: build ? readinessNext(issues, frame.metadata.blueprint) : null,
       };
-    const issue = healthSample.issue;
-    if (issue) {
-      health.textContent = `${issue.title} · Check machine`;
+    }
+    if (healthSample.text) {
+      health.textContent = healthSample.text;
       health.hidden = false;
     }
   }
@@ -4149,15 +4305,20 @@ export function createWorkshopView(
     refreshHealth();
     failureButton.hidden = frame.status !== 'failed';
     empty.hidden = sceneEditor?.active() || blueprint.parts.length > 0 || guideActive;
-    tickLabel.textContent = `Tick ${frame.tick}`;
-    modeLabel.textContent =
-      frame.status === 'failed' ? 'STOPPED' : frame.metadata.mode.toUpperCase();
+    refreshFooter();
+    run.classList.toggle('keyed', frame.metadata.mode !== 'run');
+    pause.classList.toggle('keyed', frame.metadata.mode === 'run');
+    stepButton.classList.toggle('keyed', frame.metadata.mode === 'paused');
     retryButton.hidden = frame.metadata.mode === 'build';
     retryButton.disabled = !!retryCamera;
+    const modeState = modeControlState(frame.metadata.mode);
     run.disabled = frame.metadata.mode === 'run';
+    run.setAttribute('aria-pressed', String(modeState.run));
+    build.setAttribute('aria-pressed', String(modeState.build));
+    pause.hidden = stepButton.hidden = !modeState.stepping;
     pause.disabled = frame.metadata.mode !== 'run';
-    stepButton.disabled = frame.metadata.mode !== 'paused';
-    build.classList.toggle('active', frame.metadata.mode === 'build');
+    stepButton.disabled = !modeState.stepEnabled;
+    build.classList.toggle('active', modeState.build);
     for (const tool of (editToolNodes ??= tools.querySelectorAll('[data-edit-tool], .edit-hint')))
       tool.hidden = frame.metadata.mode !== 'build';
     surfaceSnapLabel.hidden = frame.metadata.mode !== 'build';
@@ -4625,6 +4786,7 @@ export function createWorkshopView(
   draw();
   return {
     utilityHost: footer,
+    offerFirstRun,
     readCompletedDraw: () => structuredClone(completedDraw),
     updateSound: (state) => soundControls.update(state),
     audioListener: () => {

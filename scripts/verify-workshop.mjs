@@ -1,5 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
-import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, browseAllParts, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -160,6 +160,7 @@ try {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   const download = await downloadPromise;
   await download.saveAs(browserArtifactPath('artifacts/browser-workshop/saved-machine.json'));
+  await openTools(page);
   await page.locator('[data-command=new]').click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.waitForFunction(

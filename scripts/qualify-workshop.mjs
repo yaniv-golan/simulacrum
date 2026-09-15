@@ -2,7 +2,7 @@ import {
   RENDER_SUBMISSION_METRIC,
   FIRST_TICK_METRIC,
 } from '../src/application/render-submission.mjs';
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -185,6 +185,7 @@ export async function qualifyWorkshop(
       const previousMachine = await page.evaluate(
         () => window.workshopProbe.observe().frames[0].metadata.blueprint.id,
       );
+      await openTools(page);
       await page.locator('[data-command=new]').click();
       if (cycle > 1)
         await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
