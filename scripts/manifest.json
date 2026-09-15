@@ -4262,15 +4262,15 @@
       "controls": {
         "positive": [
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-verdicts.test.mjs",
             "anchor": "valid assessment passes; newer failure supersedes it"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "only incomplete sessions leave the bar pending, not failed"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a newer incomplete session does not demote a pass and is named beside it"
           },
           {
@@ -4278,18 +4278,56 @@
             "anchor": "a later incomplete session stays visible beside a passing human bar"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a later incomplete session on the current build is named beside a stale pass"
           }
         ],
         "negative": [
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a newer incomplete session does not clear a fail"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "an F1 session from another participant is rejected even when it does not govern"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "app-identity-fingerprint",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "The app fingerprint that binds human evidence to served builds hashes every non-documentation file outside docs/, assessments/, scripts/, .github/ and test/ — imported or not — plus every literal dependency those inputs import, including imported markdown and git-ignored files; unimported documentation leaves it unchanged, an unreadable or missing import fails closed, and a non-literal import refuses a certifying fingerprint.",
+      "owners": [
+        {
+          "path": "scripts/app-fingerprint.mjs",
+          "anchor": "appFingerprint"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "arbitrary config and imported markdown change app identity"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "ignored imported dependency is included and missing import fails closed"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "unimported documentation preserves app identity"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "nonliteral imports refuse a certifying fingerprint"
           }
         ]
       },
