@@ -28,6 +28,7 @@
     "package.json#script=test:browser:smoke": "8bfc62c5e49cb78384f9bc0bdcd9f1aee1e5b7901b08996981b0054c31ad6dd6",
     "package.json#script=test:performance": "2d6ca68ebffe9b11d9d2131624417503b7f6d7c0450d2e4cf33ed2f2f2b4205e",
     "package.json#script=format": "ef05253c916d239ff45cf48973f920de06053a1c36cd7adc76d9a5304bc5e054",
-    "package.json#script=replay": "ca85cb1b8ca2f88fb66317807b8fc4fda7a411879afeb377af34f92d190732c9"
+    "package.json#script=replay": "ca85cb1b8ca2f88fb66317807b8fc4fda7a411879afeb377af34f92d190732c9",
+    "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
   }
 }

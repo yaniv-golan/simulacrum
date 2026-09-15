@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
+<!-- doc-review {"version":1,"fingerprint":"fb4bb591effd1eaacff5730b0056732e860584cedd154ec004680ba5d863579e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0a8f56c8729991c02b4a08d19686b66adee7740debf55ef0997afd3d77c8da49","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): the drift is verification tooling — a derived stacking flag, its parser, window intent, tests and documentation; no simulation, physics-door, power, checkpoint or contact behavior changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

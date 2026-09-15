@@ -5,8 +5,8 @@
     "scripts/process-inventory.mjs": "e1041b6c52628e19eb48c46c3d3d804be3e0e12565bfd4e8c47dbb2d4f985d70",
     "scripts/run-check.mjs": "75eb78439df937509acb13b77b68817c029177417c8558fed065fa3f517d6343",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
-    "scripts/verification-window.mjs": "a35627fd4e8f5579fbebd45d46d0ac6f672665349a9c4120b4e7df00e8e584b0",
-    "docs/development/README.md#verify-a-change": "368273343e7aafd9328be5447e8af6553783d2d27e346bdb59f5dffd9d075a65",
+    "scripts/verification-window.mjs": "d1149c3faaa82194052d6c6b1cfd3ebd95c2aff55be8bbc4531bf02d102d5ef8",
+    "docs/development/README.md#verify-a-change": "d5d88c157de8c8da1c5641379e08829355a1d1a7370d98b26789cf3910d14671",
     "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c"
   }
 }

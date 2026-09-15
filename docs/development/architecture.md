@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"f3f1166c07043f3c66aa01cd4d344716007f3ea46a3b44ad78fd643f6223da0e","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"aab2aea4189568d51c0b5940a951b42279b9ace713d0cd5e9219e73d65e43cc0","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md changed by the citation row and rule; layer ownership, the registry reader's role and the module map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"75bfbccb78a0e7447a2b7b7517c86d9f7e535ae9e7826cc60af128dd383682ce","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e2e4518ebb69f6bc42d63b6d343fa89173c008413e2237270f958ccd022ebd33","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): AGENTS.md changed by the --stack row and the stacking paragraph; layer ownership, the registry reader's role and the module map are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

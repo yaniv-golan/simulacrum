@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"7d6d90c82e4ce05db4418d04d0e1b593c6b432e02db8fe8b69768e8e7bbeed00","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b2304db96f057e2e3ff235b16deab2bd7dc76cf608c88105f492b017fadac405","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md gained the `--satisfied-by` table row and the rule paragraph that a release's final on byte-identical code is merge evidence when cited and that nothing targets main while it is pending; the guide's entry points, layer pointers and working loop are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c5eb00a7ae782aeb2221ba5a0d73536d4de8c21e45fe50e59d04b1285229566e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"5d89c63ae382feb704c439d4c95ef5883551bbfc7bfc57000180f55723987604","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): AGENTS.md gained the `merge --stack <ref>` table row and its Collaboration paragraph now names the flag in place of the three typed numbers; the guide's entry points, layer pointers and working loop are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -9,7 +9,7 @@ serve a stable build. The page displays its build identity.
 
 ## Milestone status
 
-<!-- doc-review {"version":1,"fingerprint":"16b4007f7d8023bed89f5f2abc56419b1182ec410016c6a2b646744fe77fefde","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"282b9b808ddb287e26291dbb8077d5332435cdf93e1eeba1d2e46ba70184a36f","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the manifest gained the candidate-citation-integrity invariant (tooling, no milestone or bar allocation changed) and AGENTS.md the citation row and rule; the milestone status this section states — the current construction loop and gate — is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"93e3410ed4f0d4377b2e455f8f01da763b310e5dd5e06f11ec26df35ef752814","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"e21cde98471dc300a8aaf84e9dce9ebbc7a53364685e2effa01123dd4f7e2a62","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): AGENTS.md changed only in the verification table and the stacking paragraph; no milestone, bar or gate allocation changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -117,7 +117,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"3456b163f9e6e3b254b08cd1044c9a7cb449aa66ceedc10f194b595de0cf27e0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a090ccca1d431b83cd30eb0e6a72532cea8dac88bb1a603c7927891982dad8f","disposition":"updated","rationale":"Added the launch-boundary paragraph: every harness context is marked a returning device so the workshop's one-time first-run choice never opens inside an unrelated journey, and a first-visit check passes firstRun: true; tiers, commands and evidence requirements are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac4de780d7e5e42fb3690aad9365d16434ea0c52789d8c44e5bdb82651fa4412","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"295c0ec41d828fd077408c36733d85ec87155559f5c64f3269759833244b60a3","disposition":"updated","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): the stacked-integrations paragraph now documents `merge --stack <ref>` — destination = the named branch, incoming = the branch's pre-integration tip (linear-on-ref integrates whole with the ref as base), base = the unique merge-base, refusals by name (HEAD without the ref, HEAD is the ref, criss-cross, --stack main), `priority.chain`, the window intent and the printed landing order — with the long form kept. Verified against candidate-stack.mjs (deriveStack), verify-candidate.mjs (applyStack at both parse sites) and verification-tiers.mjs (parseCompletionArgs)."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -333,7 +333,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"caa084b0cbfa8ad28bdf8ca8cd9e05f1effa499ebb4f25f12a4781bf460c1f44","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c2d843a6245b4c67a47ecf473d62ded59850e5a71d434d9453bc27a7fc4c0dad","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): verification-window.mjs gained the read-only `currentWindowOwner` (a pending citation records the owner it was captured beside) and the manifest a citation invariant plus regenerated consumer lists; browser scheduling, selection, admissions and the window protocol described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1a7fbe27ebfc9243c2cde77b95320a5aaf6c4ed6c0a062efbe257327861ab87b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b0bdbad3677f670239f4ea7a79fc9134c99017fca46e0111bcac5c9202cb33ea","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): verification-tiers.mjs's parser accepts --stack for merge and verification-window.mjs's intent gained the `stack` field; browser scheduling, selection, admissions and the window protocol described here are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -609,7 +609,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"b45ad40e045f48efe99b359e3bba6c2768ff737c833f8743fcfa2a7de6a04ad3","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"b6e3d2561f60ed9722e6c42f328fdc87d7f128646648d8916e5a4eaf020c622d","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): `currentWindowOwner` reads owner.json and liveness without entering the window; ownership, wait notices, intent publication and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"36651e7a70594f4160c2750691e930dcd4a691e91c281770252d9c1f51bb23d1","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"bfee2ebae6e3b58d8f92e657f4ca23603e3d1d0e417fcfb7042b32c3680d5671","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): the owner's published intent may now carry `stack` and the wait notice renders 'stacked on <ref>' and names `merge --stack <owner branch>` as the way to stack; ownership, wait limits and stacking-instead-of-racing are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -658,7 +658,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0644933249158914628033b19879df6334d3fc4f8dbe0c15fae80bf614335bcd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2d09e7093b9b04d7472fac89fdc02ac3d5c97bc357e37aeea9784b589799d616","disposition":"updated","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): a new paragraph documents the citation — `--satisfied-by <release directory>` reading the release's record before capture, the compared fields (head, path bytes and mode, installed digest; not the index or process identity), passed only with a terminal green final and a bound package, `pending final` (exit 3, pendingOn final|package) only with `--pending`, `cite-final <attempt report>` recording `landed`, and that a citation carries no receipts and is neither resumed nor retried. Verified against candidate-cite.mjs (compareIdentity, citeRelease, resolveCitation, packageRefusal), verify-candidate.mjs (the pre-capture gate, cite path and cite-final), package-verification.mjs and verification-outcome.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"1d74622b13a04270da97a42c5e0d27fde970538263efe2f4888806bc7d349a2b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"359b38d438344e6c893f35509d0a6adedb7489ad441e9395e162f149fc13f29c","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): verify-candidate.mjs derives base/incoming/destination from --stack before the ordinary merge scope resolution (recorded in priority.chain; allowed with --after — a moved stack ref ends the retry chain by name — and with --satisfied-by, whose usage string names the flag); capture, dependency validation, resume, attestation and what a report certifies are unchanged; the stacking recipe itself lives in the verify-a-change section."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
