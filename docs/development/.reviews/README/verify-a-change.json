@@ -2,9 +2,9 @@
   "version": 1,
   "dependencies": {
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
-    "docs/development/playtesting.md#release-operations": "74ea5d5b068949f520da454b6b2a422dfa41bef33a445d5bcbc381b89ae7b004",
+    "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",
     "docs/development/playtesting.md#remote-setup": "9d5bef5012be1ca2226f1bb760960b936c70d09596bd048a43d9bec1705c48ff",
-    "package.json": "ca97aeb2b333a6f04415bf2798f29514ae045a4e179271182a3a399919763beb",
+    "package.json": "a962532e8054c98366687614bf0a255eb268221d3ba331534a58966de3d0c944",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
     "package-lock.json": "8c8ca50a0c7def8d5ec499258ce55a2540d26ba436be81c7aa19fdf3175881e9",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",

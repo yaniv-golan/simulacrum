@@ -1,12 +1,13 @@
 {
   "version": 1,
   "dependencies": {
-    "package.json": "5fc8b66f08eaf4c44cba667f6bb1fc378a76ada8e2b652df28f66958ad16561d",
+    "package.json": "81835c16b5903f44f6434bc973dee399b4bc8a6e00e8c025352868682d19df9e",
     "scripts/process-inventory.mjs": "e1041b6c52628e19eb48c46c3d3d804be3e0e12565bfd4e8c47dbb2d4f985d70",
     "scripts/run-check.mjs": "75eb78439df937509acb13b77b68817c029177417c8558fed065fa3f517d6343",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
-    "scripts/verification-window.mjs": "a35627fd4e8f5579fbebd45d46d0ac6f672665349a9c4120b4e7df00e8e584b0",
+    "scripts/verification-window.mjs": "54510f97bed5104d6e561aa9bd6f17708252d06b0706f9bdbbd7eed3e9b90ee1",
     "docs/development/README.md#verify-a-change": "fba1ce87535aba36ce984b926937199aa69c11e3e522a78c6eb859f40ef2579d",
-    "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c"
+    "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c",
+    "package.json#script=verify:host": "6e25deed7ab93c2a07a8afbbae60cebad20889ef8f67a526c41e81d8ac7904ca"
   }
 }

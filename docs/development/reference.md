@@ -65,6 +65,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run typecheck | node scripts/check-boundary-types.mjs |
 | npm run verify:candidate | node scripts/verify-candidate.mjs |
 | npm run verify:final | node scripts/verification-window.mjs scripts/verify-final.mjs |
+| npm run verify:host | node scripts/verify-host.mjs |
 | npm run verify:local | node scripts/verification-window.mjs scripts/verify-local.mjs |
 | npm run verify:merge | node scripts/verify-merge.mjs |
 | npm run verify:merge:shadow | node scripts/verify-merge-shadow.mjs |

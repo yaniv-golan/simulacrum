@@ -38,7 +38,7 @@
     "scripts/verify-release-coupler.mjs": "94a966f0d1d2ed4b426b7b0f298a86a0921a2656d9cbf39cd710561aa655db55",
     "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
     "src/presentation/whats-new.mjs": "96f39c8134c1bc653af9dbeda0f4567dafe9ee0b78e63e181202d8ea2b45a199",
-    "docs/development/playtesting.md#release-operations": "74ea5d5b068949f520da454b6b2a422dfa41bef33a445d5bcbc381b89ae7b004",
+    "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",
     "src/presentation/motion-readout.mjs": "33dc9f01af53c86b50a9ab7ddce19bb89b36949f6b3c830dbe243306e31f31df"
   }
 }
