@@ -75,6 +75,7 @@ export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
     'CALL_LOG',
     'DRIFT',
     'FAIL_AUTOMATION',
+    'MUTATE_DEPS',
     'SIM_VERIFIER_TEST_CONFIGURATION',
   ],
 });

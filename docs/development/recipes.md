@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ecdd93613353aaa6e4a899a440350ecb0462691db5b814b21f619471885c4539","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2206993e2396847c02b76ea1137481acb471716aaac808edbfcd9982cd8bae14","disposition":"still accurate","rationale":"Item 50 on main 458e9b3c: an admission-refused timing row is now recorded on its run row at the refusal site and named on the browser phase failure, so a diagnosed retry can complete it. No simulation, physics-door, power, checkpoint or contact behavior changed; the dependency drift is one verification harness file (verify-browser-suite.mjs) and its test. The recipe's analytical, conservation and qualification requirements are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f58e2076addfc57ee9a6786aa3d680b079869397cf9708b0a5f35ef8d204053","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"69514b9affe7fa494f4555e755cac2747b09f2d2c61631ea8fd4b94200f069ad","disposition":"still accurate","rationale":"scripts/verification-environment.mjs changed only by adding MUTATE_DEPS to the test-owned-knob exemption group (a fixture variable the release identity test sets for the child it spawns); the relevant-environment set, digest and identity semantics are unchanged; the physics recipe's ownership, invariants and verification steps are unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

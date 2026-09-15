@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once, records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2521,6 +2521,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ],
         "negative": [
@@ -2535,6 +2539,10 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
           }
         ]
       },
