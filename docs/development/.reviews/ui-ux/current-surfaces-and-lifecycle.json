@@ -33,7 +33,7 @@
     "scripts/browser-evidence.mjs": "6d8b3558c4ed075b865cf5e897e11318dbd6d800a90010f5ade62aaab43176df",
     "scripts/browser-idle.mjs": "b17d378b5138753c0c12b57032a44585bcbb6aadc8eedfa03447d010fa0b658e",
     "scripts/browser-session.mjs": "35bfae89d868ed1ee974ad7b0920149bfa20b401c00df1457861cb76c05ba48e",
-    "scripts/host-profile.mjs": "bed35e396ad688822432484013295953fa25ffe331af9bfd57d97a1c1500aed4",
+    "scripts/host-profile.mjs": "ca01a1ce6ff5f5186df3dd003d551c900bac313e68ae79a040f96075f0a2c200",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
