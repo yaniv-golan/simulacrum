@@ -41,3 +41,16 @@ export function descendantsOf(rows, rootPid) {
     for (const row of rows) if (row.ppid === tree[i].pid && !tree.includes(row)) tree.push(row);
   return tree;
 }
+/** Wrong-trace stubs: no target is ever sampled and memory is never read. Replaced next commit. */
+export function selectSampleTargets() {
+  return [];
+}
+export function readMemoryCounters() {
+  return { unsupported: 'stub' };
+}
+export function sampleProcess(pid) {
+  return { pid, unsupported: 'stub' };
+}
+export function waitChannelOf() {
+  return null;
+}
