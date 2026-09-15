@@ -17,10 +17,12 @@ import {
 import { checkReleaseNotes, latestNoteDate } from '../scripts/check-release-notes.mjs';
 import { REPOSITORY_URL } from '../src/model/features.mjs';
 
+// The same date bound the manifest check applies, so notes dated by a landing later
+// today validate here as they do there.
 const context = () => ({
   featureKeys: Object.keys(UI_FEATURES),
   partTypes: Object.keys(CATALOG),
-  latestDate: '2026-09-14',
+  latestDate: latestNoteDate(),
 });
 const notes = (overrides = []) => {
   const copy = RELEASE_NOTES.map((note) => ({ ...note }));
@@ -33,7 +35,7 @@ test('seed release notes validate against this build and every field rule reject
   const cases = [
     ['duplicate id', 1, { id: RELEASE_NOTES[0].id }, /id/],
     ['date out of order', 1, { date: '2026-09-20', id: '2026-09-20-late' }, /order/],
-    ['future date', 0, { date: '2026-09-15', id: '2026-09-15-soon' }, /future/],
+    ['future date', 0, { date: '2999-01-01', id: '2999-01-01-soon' }, /future/],
     ['unknown feature', 0, { feature: 'nope' }, /feature/],
     ['summary too long', 0, { summary: 'x'.repeat(141) }, /summary/],
     ['summary with a URL', 0, { summary: 'See https://example.test' }, /summary/],
@@ -61,7 +63,10 @@ test('unseen notes follow the stored cursor and never treat an unknown cursor as
   assert.deepEqual(unseenNotes(seed, seed[0].id), { firstVisit: false, unseen: [] });
   const twoBack = unseenNotes(seed, seed[2].id);
   assert.equal(twoBack.firstVisit, false);
-  assert.deepEqual(twoBack.unseen.map((n) => n.id), [seed[0].id, seed[1].id]);
+  assert.deepEqual(
+    twoBack.unseen.map((n) => n.id),
+    [seed[0].id, seed[1].id],
+  );
   assert.deepEqual(unseenNotes(seed, '2020-01-01-rolled-back'), { firstVisit: true, unseen: [] });
 });
 

@@ -46,12 +46,13 @@ export async function checkReleaseNotes(root = process.cwd()) {
     );
   // Literal specifiers keep the module graph exact for selection and scope tools; the
   // root only scopes the markdown scan and the commit date.
-  const [{ RELEASE_NOTES, validateReleaseNotes }, { UI_FEATURES }, { CATALOG }] =
-    await Promise.all([
+  const [{ RELEASE_NOTES, validateReleaseNotes }, { UI_FEATURES }, { CATALOG }] = await Promise.all(
+    [
       import('../src/application/release-notes.mjs'),
       import('../src/model/features.mjs'),
       import('../src/model/catalog.mjs'),
-    ]);
+    ],
+  );
   const errors = validateReleaseNotes(RELEASE_NOTES, {
     featureKeys: Object.keys(UI_FEATURES),
     partTypes: Object.keys(CATALOG),

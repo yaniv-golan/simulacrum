@@ -97,10 +97,10 @@ try {
     await page.waitForFunction(() => window.workshopProbe);
     await notice(page).waitFor({ state: 'visible' });
     assert.equal(await page.locator('dialog[open]').count(), 0, 'the notice is not a dialog');
-    assert.deepEqual(
-      await notice(page).locator('h4').allInnerTexts(),
-      [RELEASE_NOTES[0].name, RELEASE_NOTES[1].name],
-    );
+    assert.deepEqual(await notice(page).locator('h4').allInnerTexts(), [
+      RELEASE_NOTES[0].name,
+      RELEASE_NOTES[1].name,
+    ]);
     const s = await state(page);
     assert.equal(s.badge, true);
     assert.equal(s.noticeOpen, true);

@@ -84,7 +84,8 @@ export const RELEASE_NOTES = Object.freeze(
       id: '2026-09-14-feedback-attachment-steady',
       date: '2026-09-14',
       name: 'Feedback attachments stay steady',
-      summary: 'The attachment checkbox no longer flickers while your feedback draft is being saved.',
+      summary:
+        'The attachment checkbox no longer flickers while your feedback draft is being saved.',
     },
     {
       id: '2026-09-14-motor-readout-steady',
