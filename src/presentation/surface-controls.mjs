@@ -298,6 +298,8 @@ export function createSurfaceControls({
       preview.remove(mesh);
       mesh.traverse((o) => {
         if (!mesh.isArrowHelper) o.geometry?.dispose();
+        // A preview lamp's light owns a shadow depth target while it casts.
+        if (o.isLight) o.dispose();
         const materials = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of materials) {
           m?.map?.dispose();

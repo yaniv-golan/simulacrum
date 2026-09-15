@@ -86,7 +86,14 @@ requires the playable build loop and real F1 plus instrumented F2. M4 attacks th
 sandbox. M4b demonstrates standing, weight transfer, clearance, alternating contact
 and stopping after repairs; listing blockers does not authorize M5. M5 qualifies
 the rover on the frozen Course before legged qualification. M7 requires L1a/L1b/L1c.
-M8 adds product completion, M8b WebMCP, M9 the full robust legged circuit.
+M8 adds product completion, M8b WebMCP, M9 the full robust legged circuit. M10 adds
+flight (V1 hover, V2 circuit) from air, rotor and drag laws with an ordinary IMU; M11
+adds orbital flight (O1 insertion, O2 return) from position-dependent gravity, owned
+propellant mass, ablation and a recorded clock decision. The legged subject for M4b,
+M7 and M9 is a legged machine built from ordinary parts. Every part these milestones
+need enters the shared catalog and is placed, connected, commanded and configured
+exactly as in any player design; no legged, flight or orbital milestone admits a
+demo-only part, rig-only force or sequence its machine could not author.
 
 Parts and UI features declare a milestone. Do not introduce future breadth to escape
 a physical blocker. Initial contract reconciliation may implement acceptance predicates

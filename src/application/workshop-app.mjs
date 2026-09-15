@@ -812,6 +812,7 @@ export async function mountWorkshopApp(root) {
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
     readRenderedRopeEndpoints: () => view.readRenderedRopeEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
+    projectWorldPoint: (position) => view.projectWorldPoint(position),
     readInteractionState: () => {
       const state = view.readInteractionState();
       state.rendering.viewRenderMs = [...viewRenderMs];
