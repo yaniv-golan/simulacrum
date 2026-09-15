@@ -17,6 +17,7 @@ import {
 import { tmpdir, getPriority } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import {
   captureCandidate,
   candidateMatchesOrigin,
@@ -57,6 +58,17 @@ import {
   verifyAttestation,
 } from './candidate-after.mjs';
 import { environmentForensics, processIdentity } from './verification-environment.mjs';
+import {
+  parseCiteArgs,
+  readRelease,
+  citeRelease,
+  resolveCitation,
+  citationVerification,
+  pendingOn,
+  recordRefusal,
+  exitCodeFor,
+} from './candidate-cite.mjs';
+import { currentWindowOwner } from './verification-window.mjs';
 /** Spotlight indexes every fresh copy under /var/folders (three mdworker_shared workers per
  * candidate, observed tripping 30 s unit watchdogs); the marker at the candidate root, above
  * `source`, keeps the tree out of the index without entering the candidate's identity. */
@@ -96,9 +108,69 @@ const timing = createTiming({
 // Read selected prior report before overwriting the ordinary latest pointer.
 let argv = process.argv.slice(2),
   previous,
-  retry = null;
+  retry = null,
+  cite = null;
 try {
   // Argument errors must still publish a failed report rather than leave a stale green one.
+  if (argv[0] === 'cite-final') {
+    // Resolve a pending citation once the release's final has ended: no capture, no tier.
+    // The merge report is trusted only under its own candidate key; the release is pinned by
+    // the bytes the citation read; the candidate's bytes are re-compared; `landed` records
+    // whether main is the cited head at resolution.
+    if (argv.length !== 2) throw Error('Usage: verify:candidate -- cite-final <merge report>');
+    const path = resolve(argv[1]);
+    const merge = JSON.parse(readFileSync(path, 'utf8'));
+    verifyAttestation(merge, () => readFileSync(join(resolve(merge.directory), 'resume-key')));
+    if (merge.status !== 'pending final' || !merge.mergeReadiness?.pending)
+      throw Error(
+        'cite-final needs a merge report whose merge readiness is pending a release final',
+      );
+    // The attempt report is the record; the latest pointer is a copy that would otherwise be
+    // resolved while the attempt stayed pending forever.
+    if (typeof merge.attemptReport !== 'string' || resolve(merge.attemptReport) !== path)
+      throw Error(`cite-final needs the attempt report itself: ${merge.attemptReport}`);
+    const release = readRelease(resolve(merge.mergeReadiness.satisfiedBy.release));
+    // `landed`: whether main is the cited head where the command runs; null outside a repo.
+    let landed = null;
+    try {
+      landed =
+        execFileSync('git', ['rev-parse', '--verify', '--end-of-options', 'main^{commit}'], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim() === merge.candidate.head;
+    } catch {
+      landed = null;
+    }
+    const resolved = resolveCitation({
+      citation: merge,
+      candidate: merge.candidate,
+      installed: merge.installedDependencies,
+      release,
+      landed,
+    });
+    Object.assign(report, merge, {
+      status: resolved.status === 'refused' ? 'failed' : resolved.status,
+      mergeReadiness: resolved.mergeReadiness ?? merge.mergeReadiness,
+      citationResolvedAt: new Date().toISOString(),
+      ...(resolved.reason ? { error: resolved.reason } : {}),
+    });
+    report.verification = citationVerification({
+      tier: 'merge',
+      citation: resolved,
+      options: merge.priority,
+      source: merge.verification?.source ?? null,
+    });
+    attestKey = readFileSync(join(resolve(merge.directory), 'resume-key'));
+    attemptOutput = path;
+    process.exitCode = exitCodeFor(resolved.status);
+    write();
+    // Nothing else runs for cite-final (no lock, no candidate); the summary is flushed before
+    // the process ends so a piped stdout never loses it.
+    process.stdout.write(`${resolved.summary ?? resolved.reason}\n`, () => process.exit());
+    await new Promise(() => {});
+  }
+  const citeArgs = parseCiteArgs(argv);
+  argv = citeArgs.rest;
   const afterArgs = parseAfterArgs(argv);
   argv = afterArgs.rest;
   previous =
@@ -107,9 +179,15 @@ try {
     throw Error(
       'resume cannot continue a diagnosed retry; retry from its report with --after so the chain is kept',
     );
+  if (previous?.mergeReadiness || previous?.verification?.citation)
+    throw Error('citation reports are not attempts; nothing to resume');
+  if (citeArgs.satisfiedBy)
+    cite = { release: resolve(citeArgs.satisfiedBy), pending: citeArgs.pending };
   if (afterArgs.after) {
     // A diagnosed retry: every non-pass leaf of the parent needs a cause before anything runs.
     const parent = JSON.parse(readFileSync(afterArgs.after, 'utf8'));
+    if (parent?.mergeReadiness || parent?.verification?.citation)
+      throw Error('citation reports are not attempts; nothing to retry or reuse');
     // The parent report is trusted only when its own candidate key attests it: the receipts
     // it classifies and the coverage it claims are then this candidate's own record.
     verifyAttestation(parent, () => readFileSync(join(resolve(parent.directory), 'resume-key')));
@@ -319,6 +397,26 @@ try {
         options.destinationName = scope.refs.destinationName;
       }
     }
+    if (cite) {
+      // The release is read before anything is captured: a release without the record, or
+      // one whose final is still running when nobody asked for a pending citation, refuses
+      // here — no capture runs beside a final unless the slot owner says so.
+      if (!options.incoming)
+        throw Error(
+          '--satisfied-by needs --incoming and --destination: a citation is integration evidence for a named destination',
+        );
+      const release = readRelease(cite.release);
+      const unrecorded = recordRefusal(release);
+      if (unrecorded) throw Error(unrecorded);
+      const waiting = pendingOn(release);
+      if (waiting && !cite.pending)
+        throw Error(
+          `release ${waiting} ${release.directory} has not ended; cite after it ends, or pass --pending as the slot owner (no capture runs beside a final)`,
+        );
+      // Forensics for a pending citation: what owned the verification window when the
+      // capture began, so a later reader can tell whether the capture ran beside the final.
+      if (waiting) report.citedBeside = currentWindowOwner();
+    }
     await timing.measure('preflight', () => assertVerificationReady(origin));
     directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
     excludeFromIndexing(directory);
@@ -434,153 +532,187 @@ try {
     ...(installedAt ? { installedAt } : {}),
   });
   write();
-  // Copy scheduling hints as artifacts only; no prior report or receipt is admitted.
-  const historyPath = 'artifacts/browser-suite/scheduling-history.json';
-  const originHistory = join(origin, historyPath),
-    candidateHistory = join(candidate.destination, historyPath);
-  try {
-    writeBrowserHistory(
-      candidateHistory,
-      [...readBrowserHistory(originHistory).values()].map((row) => ({
-        ...row,
-        observedAt: row.observedAt ?? 1,
-      })),
-    );
-  } catch (error) {
-    report.historyWarning = error.message;
-  }
-  const candidateBrowserReport = join(
-    candidate.destination,
-    'artifacts/browser-suite/last-run.json',
-  );
-  const previousBrowserRun = browserHistoryRunId(candidateBrowserReport);
-  let result;
-  try {
-    result = await timing.measure('tier-including-window', () =>
-      runProcess(
-        process.execPath,
-        [
-          'scripts/verification-window.mjs',
-          `scripts/verify-${tier}.mjs`,
-          ...(['local', 'merge'].includes(tier) ? ['--base', candidate.base] : []),
-          ...(tier === 'merge' && options.incoming
-            ? ['--incoming', options.incoming, '--destination', options.destination]
-            : []),
-          ...(options.priorityFiles.length ? ['--priority-files', ...options.priorityFiles] : []),
-        ],
-        {
-          cwd: candidate.destination,
-          timeoutMs: 3600000,
-          inheritOutput: true,
-          env: {
-            ...process.env,
-            SIMULACRUM_LEAF_LEDGER: ledger,
-            SIMULACRUM_VERIFICATION_ATTEMPT: attempt,
-            ...(installedAt ? { SIMULACRUM_CANDIDATE_INSTALLED_AT: installedAt } : {}),
-            // Published to window contenders so a competing integration can stack
-            // instead of racing; origin is the integrating worktree, not the candidate.
-            SIMULACRUM_VERIFICATION_INTENT: JSON.stringify({
-              script: `verify-${tier}.mjs`,
-              tier,
-              origin,
-              ...(originBranch ? { head: originBranch } : {}),
-              ...(candidate.base ? { base: candidate.base } : {}),
-              ...(tier === 'merge' && options.incoming
-                ? {
-                    incoming: options.incoming,
-                    destination: options.destination,
-                    destinationName: options.destinationName ?? options.destination,
-                  }
-                : {}),
-            }),
-            SIMULACRUM_VITE_CACHE_DIR: join(directory, 'cache', 'vite'),
-            MINIFLARE_CACHE_DIR: join(directory, 'cache', 'miniflare'),
-          },
-        },
-      ),
-    );
-  } catch (error) {
-    result = error;
-  }
-  try {
-    returnBrowserHistory(originHistory, candidateBrowserReport, previousBrowserRun);
-  } catch (error) {
-    report.historyWarning = error.message;
-  }
-  report.verification = JSON.parse(
-    readFileSync(join(candidate.destination, `artifacts/verification-${tier}.json`), 'utf8'),
-  );
-  requireAttemptReport(report.verification, attempt);
-  const windows = join(candidate.destination, 'artifacts/verification-windows');
-  report.windowReports = readdirSync(windows)
-    .map((f) => ({
-      path: join(windows, f),
-      value: JSON.parse(readFileSync(join(windows, f), 'utf8')),
-    }))
-    .filter((r) => r.value.startedAt >= report.startedAt);
-  report.suiteReports = [
-    ...new Set(
-      (report.verification.results ?? []).flatMap((r) =>
-        Array.isArray(r.result)
-          ? r.result.map((x) => x.evidenceOrigin?.reportPath).filter(Boolean)
-          : [],
-      ),
-    ),
-  ];
-  if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
-    throw Error('Candidate changed during verification');
-  if (dependencyDigest(candidate.destination) !== installed)
-    throw Error('Installed dependencies changed during verification');
-  report.originStillMatches = await candidateMatchesOrigin(origin, candidate);
-  // A named destination that moved makes this evidence stale for that integration.
-  report.destinationStillMatches =
-    tier === 'merge' && options.incoming
+  if (cite) {
+    // A release's final on identical bytes is this commit's merge evidence: the candidate was
+    // captured, installed and digested exactly as a merge candidate, the integration scope
+    // validated (base = unique merge-base, incoming within head, destination recorded); in
+    // place of the tier the release record is compared and the citation recorded. Nothing
+    // runs, nothing is reusable. The release was read before capture (the gate above); it
+    // is read again here so a final that ended during the capture is cited as it ended.
+    const release = readRelease(cite.release);
+    const citation = citeRelease({ candidate, installed, release });
+    report.verification = citationVerification({
+      tier,
+      citation,
+      options,
+      source: { head: candidate.head },
+    });
+    report.windowReports = [];
+    report.suiteReports = [];
+    if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
+      throw Error('Candidate changed during citation');
+    report.originStillMatches = await candidateMatchesOrigin(origin, candidate);
+    report.destinationStillMatches = options.incoming
       ? destinationStillMatches(origin, {
           destination: options.destination,
           destinationName: options.destinationName,
         })
       : 'NOT_EVALUATED';
-  report.status = report.verification.status;
-  if (retry) {
-    // Δ-skipped leaves are what the tier's selection left out on the strength of a parent
-    // receipt the delta does not reach: reasoning, never receipts. Validation refuses any entry
-    // outside the covered set, any that ran, and any overlap with re-execution.
-    const skippedByDelta =
-      retry.mode === 'delta' &&
-      retry.deltaSelection === 'source-only' &&
-      retry.classification.kind === 'retry'
-        ? (report.verification.selection?.skippedByDelta ?? []).map((id) => ({
-            id: `browser:${id}`,
-            parentAttempt: retry.coveringAttempt.get(`browser:${id}`) ?? retry.parent.attempt,
-          }))
-        : [];
-    const summary =
-      retry.classification.kind === 'reuse'
-        ? reuseSummary({
-            parent: retry.parent,
-            mode: retry.mode,
-            sameBytes: report.after.sameBytes,
-            offered: retry.offered,
-            child: report.verification,
+    if (citation.mergeReadiness) report.mergeReadiness = citation.mergeReadiness;
+    report.status = citation.status === 'refused' ? 'failed' : citation.status;
+    if (citation.status === 'refused') report.error = citation.reason;
+    report.qualification = 'NOT_EVALUATED';
+    process.exitCode = exitCodeFor(citation.status);
+    console.log(citation.summary ?? citation.reason);
+  } else {
+    // Copy scheduling hints as artifacts only; no prior report or receipt is admitted.
+    const historyPath = 'artifacts/browser-suite/scheduling-history.json';
+    const originHistory = join(origin, historyPath),
+      candidateHistory = join(candidate.destination, historyPath);
+    try {
+      writeBrowserHistory(
+        candidateHistory,
+        [...readBrowserHistory(originHistory).values()].map((row) => ({
+          ...row,
+          observedAt: row.observedAt ?? 1,
+        })),
+      );
+    } catch (error) {
+      report.historyWarning = error.message;
+    }
+    const candidateBrowserReport = join(
+      candidate.destination,
+      'artifacts/browser-suite/last-run.json',
+    );
+    const previousBrowserRun = browserHistoryRunId(candidateBrowserReport);
+    let result;
+    try {
+      result = await timing.measure('tier-including-window', () =>
+        runProcess(
+          process.execPath,
+          [
+            'scripts/verification-window.mjs',
+            `scripts/verify-${tier}.mjs`,
+            ...(['local', 'merge'].includes(tier) ? ['--base', candidate.base] : []),
+            ...(tier === 'merge' && options.incoming
+              ? ['--incoming', options.incoming, '--destination', options.destination]
+              : []),
+            ...(options.priorityFiles.length ? ['--priority-files', ...options.priorityFiles] : []),
+          ],
+          {
+            cwd: candidate.destination,
+            timeoutMs: 3600000,
+            inheritOutput: true,
+            env: {
+              ...process.env,
+              SIMULACRUM_LEAF_LEDGER: ledger,
+              SIMULACRUM_VERIFICATION_ATTEMPT: attempt,
+              ...(installedAt ? { SIMULACRUM_CANDIDATE_INSTALLED_AT: installedAt } : {}),
+              // Published to window contenders so a competing integration can stack
+              // instead of racing; origin is the integrating worktree, not the candidate.
+              SIMULACRUM_VERIFICATION_INTENT: JSON.stringify({
+                script: `verify-${tier}.mjs`,
+                tier,
+                origin,
+                ...(originBranch ? { head: originBranch } : {}),
+                ...(candidate.base ? { base: candidate.base } : {}),
+                ...(tier === 'merge' && options.incoming
+                  ? {
+                      incoming: options.incoming,
+                      destination: options.destination,
+                      destinationName: options.destinationName ?? options.destination,
+                    }
+                  : {}),
+              }),
+              SIMULACRUM_VITE_CACHE_DIR: join(directory, 'cache', 'vite'),
+              MINIFLARE_CACHE_DIR: join(directory, 'cache', 'miniflare'),
+            },
+          },
+        ),
+      );
+    } catch (error) {
+      result = error;
+    }
+    try {
+      returnBrowserHistory(originHistory, candidateBrowserReport, previousBrowserRun);
+    } catch (error) {
+      report.historyWarning = error.message;
+    }
+    report.verification = JSON.parse(
+      readFileSync(join(candidate.destination, `artifacts/verification-${tier}.json`), 'utf8'),
+    );
+    requireAttemptReport(report.verification, attempt);
+    const windows = join(candidate.destination, 'artifacts/verification-windows');
+    report.windowReports = readdirSync(windows)
+      .map((f) => ({
+        path: join(windows, f),
+        value: JSON.parse(readFileSync(join(windows, f), 'utf8')),
+      }))
+      .filter((r) => r.value.startedAt >= report.startedAt);
+    report.suiteReports = [
+      ...new Set(
+        (report.verification.results ?? []).flatMap((r) =>
+          Array.isArray(r.result)
+            ? r.result.map((x) => x.evidenceOrigin?.reportPath).filter(Boolean)
+            : [],
+        ),
+      ),
+    ];
+    if (!(await candidateMatchesOrigin(candidate.destination, candidate)))
+      throw Error('Candidate changed during verification');
+    if (dependencyDigest(candidate.destination) !== installed)
+      throw Error('Installed dependencies changed during verification');
+    report.originStillMatches = await candidateMatchesOrigin(origin, candidate);
+    // A named destination that moved makes this evidence stale for that integration.
+    report.destinationStillMatches =
+      tier === 'merge' && options.incoming
+        ? destinationStillMatches(origin, {
+            destination: options.destination,
+            destinationName: options.destinationName,
           })
-        : afterSummary({
-            parent: retry.parent,
-            mode: retry.mode,
-            deltaSelection: retry.deltaSelection ?? null,
-            causes: retry.causes,
-            coverage: retry.coverage,
-            reexecute: retry.reexecute,
-            required: retry.required,
-            child: report.verification,
-            skippedByDelta,
-            covered: retry.covered,
-          });
-    report.status = summary.status;
-    report.after = { ...report.after, ...summary.after };
-    validateAfterReport(report);
+        : 'NOT_EVALUATED';
+    report.status = report.verification.status;
+    if (retry) {
+      // Δ-skipped leaves are what the tier's selection left out on the strength of a parent
+      // receipt the delta does not reach: reasoning, never receipts. Validation refuses any entry
+      // outside the covered set, any that ran, and any overlap with re-execution.
+      const skippedByDelta =
+        retry.mode === 'delta' &&
+        retry.deltaSelection === 'source-only' &&
+        retry.classification.kind === 'retry'
+          ? (report.verification.selection?.skippedByDelta ?? []).map((id) => ({
+              id: `browser:${id}`,
+              parentAttempt: retry.coveringAttempt.get(`browser:${id}`) ?? retry.parent.attempt,
+            }))
+          : [];
+      const summary =
+        retry.classification.kind === 'reuse'
+          ? reuseSummary({
+              parent: retry.parent,
+              mode: retry.mode,
+              sameBytes: report.after.sameBytes,
+              offered: retry.offered,
+              child: report.verification,
+            })
+          : afterSummary({
+              parent: retry.parent,
+              mode: retry.mode,
+              deltaSelection: retry.deltaSelection ?? null,
+              causes: retry.causes,
+              coverage: retry.coverage,
+              reexecute: retry.reexecute,
+              required: retry.required,
+              child: report.verification,
+              skippedByDelta,
+              covered: retry.covered,
+            });
+      report.status = summary.status;
+      report.after = { ...report.after, ...summary.after };
+      validateAfterReport(report);
+    }
+    report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
+    process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
   }
-  report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
-  process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
 } catch (error) {
   report.status = 'failed';
   report.qualification = 'NOT_EVALUATED';

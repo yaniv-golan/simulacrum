@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ba8131270a6830320217c3250614ed54e5a1b03a6422a59e1373eaec0938170e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8ecc4ab2cf7198c454694ef9166a46673b68303e36a0321605900da363ee3760","disposition":"still accurate","rationale":"Its README and developer-guide dependencies changed only by the player-facing README rewrite and the developer guide's new milestone-status section; physics ownership, the simulation door, law inputs, the named invariants and the verification steps of this recipe are unchanged and were re-read against src/simulation at cd8109aa."} -->
+<!-- doc-review {"version":1,"fingerprint":"44f625cc3d66a2ea95fd23279e449e5b4e41ec4ce73fe59f55a0a6705f69cfc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ef9b3f0493c30718a09cd74f85f130c5ddb881badf99e9c9cd9300cb4166dd68","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the drift is the README rewrite (root README for a person; milestone status moved into the developer guide) merged beside the citation tooling; no simulation, physics-door, power, checkpoint or contact behavior changed and a physics delta still runs every timing-budget check."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
