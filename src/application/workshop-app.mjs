@@ -1,5 +1,6 @@
 import { createRenderSubmissionTracker, FIRST_TICK_METRIC } from './render-submission.mjs';
 import { assertRecordableObservation } from './recording-admission.mjs';
+import { RELEASE_NOTES } from './release-notes.mjs';
 import { createSceneLibrary } from './scene-library.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
 import { createCameraSession } from './camera-session.mjs';
@@ -728,6 +729,7 @@ export async function mountWorkshopApp(root) {
   }
   view = createWorkshopView(root, {
     learning,
+    releaseNotes: RELEASE_NOTES,
     controllerHistory,
     beforeDraw: (now) => {
       try {
@@ -792,9 +794,12 @@ export async function mountWorkshopApp(root) {
     context: () => ({ build: buildId, ...recordingContext(), observation: frame() }),
     checkpoint: () => workshop.checkpoint(),
   });
-  // Recording consent comes first on the hosted build; the first-run choice waits for it.
-  remote.setupClosed?.then(() => {
-    if (!disposed) view.offerFirstRun();
+  // Recording consent comes first on the hosted build; the first-run choice waits for it, and
+  // the what's-new notice yields to whichever of those is open (it re-considers on close).
+  (remote.setupClosed ?? Promise.resolve()).then(() => {
+    if (disposed) return;
+    view.offerFirstRun();
+    view.considerWhatsNew();
   });
   window.render_game_to_text = () => JSON.stringify(workshop.observe().frames[0]);
   window.advanceTime = (milliseconds) => {

@@ -82,6 +82,8 @@ import {
   sceneObjectDescriptors,
 } from '../model/environment.mjs';
 import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
+import { createWhatsNew } from './whats-new.mjs';
+import { REPOSITORY_URL } from '../model/features.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -145,6 +147,7 @@ export function createWorkshopView(
     sceneLibrary,
     onExportScene,
     learning,
+    releaseNotes = [],
     controllerHistory,
     cameraSession,
     builtInAssemblies = [],
@@ -870,7 +873,9 @@ export function createWorkshopView(
   recordingExport.dataset.command = 'export-session';
   recordingPanel.append(recordingToggle, recordingExport, recordingStatus);
   left.append(recordingPanel);
+  let recordingActive = false;
   function setRecordingState(state) {
+    recordingActive = Boolean(state.recording);
     recordingToggle.textContent = state.recording ? 'Stop recording' : 'Start recording';
     recordingExport.disabled = !state.available;
     recordingPanel.firstChild.textContent = state.recording
@@ -1546,12 +1551,13 @@ export function createWorkshopView(
   viewport.append(tools);
   const help = element('dialog', 'workshop-dialog');
   help.setAttribute('aria-label', 'Help');
+  const buildHeading = element('h3', '', 'Build');
   help.append(
     createDialogHeader(
       element('h2', '', 'Controls'),
       createDialogClose('Close help', () => help.close()),
     ),
-    element('h3', '', 'Build'),
+    buildHeading,
     element(
       'p',
       '',
@@ -1599,9 +1605,84 @@ export function createWorkshopView(
     }),
     copyStatus,
   );
-  help.append(buildInfo);
+  // About: package.json's version at build time (the app-version meta), else the build id.
+  const appVersion = document.querySelector('meta[name=app-version]')?.content ?? '';
+  const about = element('p', 'help-about');
+  const repositoryLink = () => {
+    const link = element('a', '', REPOSITORY_URL.replace(/^https?:\/\//, ''));
+    link.href = REPOSITORY_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    return link;
+  };
+  about.append(
+    appVersion
+      ? `Simulacrum ${appVersion}`
+      : `Simulacrum · build ${buildId.textContent || 'unidentified'}`,
+    ' · open source (MIT) · ',
+    repositoryLink(),
+  );
+  help.append(about, buildInfo);
   root.append(help);
-  filebar.append(button('Help', () => help.showModal()));
+  // One opener for the button and the ? shortcut: opening Help counts as seeing the notes.
+  function openHelp() {
+    whatsNew.markSeen();
+    help.showModal();
+  }
+  const helpButton = button('Help', openHelp);
+  const sourceLink = element('a', 'github-link');
+  sourceLink.href = REPOSITORY_URL;
+  sourceLink.target = '_blank';
+  sourceLink.rel = 'noopener noreferrer';
+  sourceLink.setAttribute('aria-label', 'Source on GitHub');
+  sourceLink.title = 'Source on GitHub';
+  // GitHub mark from Primer Octicons, Copyright (c) GitHub Inc., MIT licence.
+  const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mark.setAttribute('viewBox', '0 0 16 16');
+  mark.setAttribute('width', '16');
+  mark.setAttribute('height', '16');
+  mark.setAttribute('aria-hidden', 'true');
+  mark.setAttribute('focusable', 'false');
+  const markPath = document.createElementNS(mark.namespaceURI, 'path');
+  markPath.setAttribute('fill', 'currentColor');
+  markPath.setAttribute(
+    'd',
+    'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z',
+  );
+  mark.append(markPath);
+  sourceLink.append(mark);
+  filebar.append(helpButton, sourceLink);
+  const whatsNew = createWhatsNew({
+    root,
+    helpButton,
+    help,
+    // Above the fold: the badge promised new content, so it comes before Controls.
+    insertBefore: buildHeading,
+    notes: releaseNotes,
+    storage: {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
+    buildId: buildId.textContent,
+    learnButton,
+    findExample: (example) => examples.querySelector(`[data-command="${CSS.escape(example)}"]`),
+    openExamples: () => {
+      exampleMessage.textContent = '';
+      if (!examples.open) examples.showModal();
+    },
+    // The notice is automatic, so it yields to anything the player is already doing.
+    gate: () => {
+      const dialog = document.querySelector('dialog[open]');
+      if (dialog) return { reason: 'dialog', dialog };
+      if (partPlacement?.active()) return { reason: 'placement' };
+      if (frame?.metadata.mode !== 'build') return { reason: 'run' };
+      if (recordingActive) return { reason: 'recording' };
+      if (sceneEditor?.active()) return { reason: 'scene' };
+      const active = document.activeElement;
+      if (active && active !== document.body) return { reason: 'focus' };
+      return null;
+    },
+  });
   const machinePanels = element('div', 'machine-panels');
   viewport.append(machinePanels);
   const motionReadout = createMotionReadout(machinePanels);
@@ -4398,7 +4479,10 @@ export function createWorkshopView(
       return;
     }
     // Let focused controls activate natively without also running workshop shortcuts.
-    if (['BUTTON', 'SUMMARY'].includes(event.target.tagName) && ['Enter', ' '].includes(event.key))
+    if (
+      ['BUTTON', 'SUMMARY', 'A'].includes(event.target.tagName) &&
+      ['Enter', ' '].includes(event.key)
+    )
       return;
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -4420,7 +4504,7 @@ export function createWorkshopView(
     if (key === '?') {
       event.preventDefault();
       if (help.open) help.close();
-      else help.showModal();
+      else openHelp();
       return;
     }
     if (
@@ -4743,7 +4827,9 @@ export function createWorkshopView(
       }),
     clearMeasurements: () => motionReadout.clear(),
     ingestMeasurements: (observation) => motionReadout.ingest(observation),
+    considerWhatsNew: () => whatsNew.consider(),
     readInteractionState: () => ({
+      whatsNew: whatsNew.read(),
       lamps: [...meshes]
         .filter(([, m]) => m.userData.lamp)
         .map(([id, m]) => ({
@@ -4884,6 +4970,7 @@ export function createWorkshopView(
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
+      whatsNew.dispose();
       graphicsRenderer.dispose();
       finishEnvironment.dispose();
       renderer.dispose();
