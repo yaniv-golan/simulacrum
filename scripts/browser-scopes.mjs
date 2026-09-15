@@ -41,6 +41,14 @@ export async function scopeCLI(args, root = process.cwd()) {
     writeFileSync(out, JSON.stringify(proposal, null, 2) + '\n');
     console.log(summarizeScopeProposal(proposal));
     console.log(`Saved ${out}`);
+    if (proposal.declarationSkeletons) {
+      // Unclassified reads: hand the operator the declaration to author rather than a refusal.
+      const skeleton = out.replace(/\.json$/, '') + '.declarations.json';
+      writeFileSync(skeleton, JSON.stringify(proposal.declarationSkeletons, null, 2) + '\n');
+      console.log(
+        `Declaration skeleton saved to ${skeleton}: choose each read's purpose, keep both exclusions, then rerun prepare with --declarations ${skeleton}`,
+      );
+    }
     return proposal.blocked.length ? 1 : 0;
   }
   if (

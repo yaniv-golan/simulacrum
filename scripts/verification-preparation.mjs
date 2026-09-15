@@ -26,6 +26,11 @@ function requireFreshRegistry(proposal) {
     ...(proposal.blocked.length || stale.length
       ? [
           `Browser registry is stale: ${[...proposal.blocked, ...stale.map((r) => `${r.kind}:${r.entrypoint}`)].join('; ')}`,
+          ...(proposal.declarationSkeletons
+            ? [
+                `Unclassified reads need a declaration; browser:scopes -- prepare --out <proposal.json> writes a skeleton next to the proposal for: ${proposal.declarationSkeletons.map((s) => s.entrypoint).join(', ')}`,
+              ]
+            : []),
         ]
       : []),
     ...(reviewOnly.length

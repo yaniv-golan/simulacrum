@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   selectAffectedBrowserChecks,
   browserScopeConsumers,
@@ -70,7 +71,7 @@ test('selection reports why a metadata row is not audited so a widened selection
   };
   const row = (reads) => ({
     entrypoint: 'reader',
-    sourceSha256: 'reader-source',
+    sourceSha256: createHash('sha256').update('reader-source').digest('hex'),
     dependencies: [],
     externalImports: [],
     reads,

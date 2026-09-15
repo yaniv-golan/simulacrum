@@ -1,4 +1,10 @@
 import { createHash } from 'node:crypto';
+import {
+  classifyReads,
+  declarationSkeleton,
+  READ_PURPOSES,
+  REQUIRED_EXCLUSIONS,
+} from './read-classification.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -53,9 +59,9 @@ function validateDeclaration(d) {
           !only(r, ['expression', 'purpose', 'excludedInputs']) ||
           typeof r.expression !== 'string' ||
           !r.expression ||
-          !['identity', 'fixture', 'runtime', 'source-analysis'].includes(r.purpose) ||
+          !READ_PURPOSES.includes(r.purpose) ||
           !strings(r.excludedInputs) ||
-          r.excludedInputs.some((k) => !['documentation', 'unit-test'].includes(k)),
+          r.excludedInputs.some((k) => !REQUIRED_EXCLUSIONS.includes(k)),
       ))
   )
     throw Error('Invalid read classification');
@@ -162,7 +168,8 @@ export function deriveScopeProposal(
   }
   const before = JSON.parse(manifestText),
     after = structuredClone(before),
-    blocked = [...graph.errors];
+    blocked = [...graph.errors],
+    skeletons = [];
   const checks = before.browserChecks;
   const roots = checks.map((c) => `${c.id}:${c.environment}:${c.script}`).sort();
   const closures = browserCheckClosures(checks, graph),
@@ -250,8 +257,20 @@ export function deriveScopeProposal(
           if (index >= 0) return d?.reads ? available[index] : available.splice(index, 1)[0];
           return { expression, purpose: null, excludedInputs: [] };
         });
-        if (proposed.reads.some((r) => r.purpose === null))
+        if (proposed.reads.some((r) => r.purpose === null)) {
           blocked.push(`${key}: unclassified reads require explicit declarations`);
+          skeletons.push(
+            declarationSkeleton(
+              path,
+              proposed.reads.filter((r) => r.purpose === null).map((r) => r.expression),
+              { checks: proposed.checks ?? [] },
+            ),
+          );
+        }
+        // A classification selection would not trust is refused here, naming the read and the
+        // field, instead of surfacing later as a widened selection inside the witness battery.
+        const classified = classifyReads(proposed.reads.filter((r) => r.purpose !== null));
+        if (!classified.ok) blocked.push(`${key}: ${classified.reasons.join('; ')}`);
         if (d?.reads?.some((r) => !expressions.includes(r.expression)))
           blocked.push(`${key}: declaration names an absent read`);
         proposed.sourceSha256 = digest(read(path));
@@ -292,6 +311,7 @@ export function deriveScopeProposal(
     declarations,
     roots: { current: roots, note: 'Recorded root digests do not preserve historical membership.' },
     blocked: [...new Set(blocked)].sort(),
+    ...(skeletons.length ? { declarationSkeletons: skeletons } : {}),
     changes,
     affectedNotWitnessed: skipped,
     proposedManifest,

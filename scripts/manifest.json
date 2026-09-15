@@ -4041,11 +4041,19 @@
       "id": "local-browser-scope-safety",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Local browser coverage expands when audited inputs, reverse consumers or browser roots change; non-runtime classification cannot omit runtime documents or fixtures.",
+      "guarantee": "Local browser coverage expands when audited inputs, reverse consumers or browser roots change; non-runtime classification cannot omit runtime documents or fixtures. One read-classification predicate is applied by selection, the scope proposal and the manifest validator: a read selection would not trust is refused at prepare naming the read and field, a hand-edited row is refused by the validator, and a widened selection names the unaudited entrypoint and reason.",
       "owners": [
         {
           "path": "scripts/browser-selection.mjs",
           "anchor": "selectAffectedBrowserChecks"
+        },
+        {
+          "path": "scripts/read-classification.mjs",
+          "anchor": "classifyRead"
+        },
+        {
+          "path": "scripts/browser-scope-proposal.mjs",
+          "anchor": "deriveScopeProposal"
         }
       ],
       "checks": [
@@ -4056,12 +4064,32 @@
           {
             "path": "test/browser-registry-live.test.mjs",
             "anchor": "live registry freshness and mirror coverage contract"
+          },
+          {
+            "path": "test/read-classification.test.mjs",
+            "anchor": "an audited read names its purpose and excludes both documentation and unit tests"
+          },
+          {
+            "path": "test/read-classification.test.mjs",
+            "anchor": "a declaration skeleton lists every unclassified expression"
           }
         ],
         "negative": [
           {
             "path": "test/browser-registry.test.mjs",
             "anchor": "shared scopes expand for new reverse consumers and new browser roots"
+          },
+          {
+            "path": "test/browser-scope-proposal.test.mjs",
+            "anchor": "a declaration selection would not trust is blocked at prepare naming the read and the field"
+          },
+          {
+            "path": "test/browser-documentation-selection.test.mjs",
+            "anchor": "selection reports why a metadata row is not audited"
+          },
+          {
+            "path": "test/manifest.test.mjs",
+            "anchor": "a metadata scope row with a partially excluded read is refused by the manifest validator"
           }
         ]
       },

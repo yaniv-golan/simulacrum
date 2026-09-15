@@ -187,6 +187,11 @@ export function summarizeChangeInspection({ analysis, value: report }) {
     lines.push(`  affected (${reason}, ${ids.length}): ${ids.join(', ')}`);
   if (report.browserSelection.unknownInputs?.length)
     lines.push(`  Unknown browser inputs: ${report.browserSelection.unknownInputs.join(', ')}`);
+  const audit = report.browserSelection.audit;
+  if (audit && !audit.readKindsAudited)
+    lines.push(
+      `  Unaudited opaque reads (selection widened): ${audit.unaudited.map((u) => `${u.entrypoint ?? 'environment'}: ${u.reason}`).join('; ')}`,
+    );
   lines.push('Affected documentation:');
   for (const row of report.documentation.sections)
     lines.push(`  ${row.stale ? 'STALE' : 'current'} ${row.file}#${row.id}`);

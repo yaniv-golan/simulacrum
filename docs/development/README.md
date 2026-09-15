@@ -371,8 +371,20 @@ Review hashes alongside the source; a hash cannot explain the old implementation
 New opaque reads remain blocked until explicitly classified. Optional
 `--declarations artifacts/scope-declarations.json` accepts an array of
 `{kind: "metadata", entrypoint, reads, checks}` (or `kind: "local"` without reads).
-Each read supplies `expression`, `purpose` and `excludedInputs`; computed hashes are
-not accepted as declarations. Existing classifications carry forward visibly.
+Each read supplies `expression`, a `purpose` (`identity`, `fixture`, `runtime` or
+`source-analysis`) and `excludedInputs` naming both `documentation` and `unit-test`; that
+is the one classification selection trusts, and the proposal, the manifest validator and
+selection all apply it from [read-classification](../../scripts/read-classification.mjs#implementation).
+A declaration that selection would not trust is blocked at prepare naming the read and
+the missing field, rather than surfacing later as a widened selection inside the witness
+battery; when reads are unclassified, prepare writes a declaration skeleton next to the
+proposal (`<proposal>.declarations.json`) with the purpose left to choose. Computed
+hashes are not accepted as declarations. Existing classifications carry forward visibly.
+Selection reports why a row is not audited (`audit.unaudited`, shown by `inspect:change`
+as "Unaudited opaque reads"), and the live registry contract asserts it before its mirror
+list, so a widened selection names its cause. That mirror list changes only when a browser
+check is declared on the mirror rows; edit the contract before `browser:scopes prepare`
+in the same candidate.
 Optional `--base <commit>` (also on `verify:prepare`) names the candidate delta; the
 proposal, its summary and the apply report then carry `affectedNotWitnessed` — the
 checks that delta would select which no witness of this proposal executes. It is
