@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"e18960b229775fee9542858b86bdd275290699a351e613c666a8c123b2ebd530","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8c2668f507ddd42c3c23ccbdb0375843a898a58bb11f37a9193ed2d39ab2f62f","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f0ffd440e88595bce54475d538e8ff57b1d3efe440ee9fdb83be3aca107d29c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"06f7e63c6fa16e953b6a728cad09cd95b8ab544a4281ca6fb1d35f59b250c08c","disposition":"still accurate","rationale":"Package verification launch row (fix-package-verification-launch-row on main 125a5ae): the drift is the release package's phase check admitting the launch-admission row and its control; no simulation, physics-door, power, checkpoint or contact behavior changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
