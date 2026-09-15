@@ -29,7 +29,7 @@ try {
     'the parts catalogue must not start with an unsolicited lesson/example panel',
   ]);
   evidence.assert('equal', [
-    await page.locator('.empty-hint [data-command=hint-guide]').isVisible(),
+    await page.locator('.empty-hint [data-command=start-guide-hint]').isVisible(),
     true,
     'the empty bench keeps the guide reachable after the choice',
   ]);

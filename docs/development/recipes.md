@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"15415d3765c4fa17ea4a75c87d0054275462f52d3659e263419789e46948c317","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2fe8e1e76d5effa398fae2f9cc7eac60c35f46696535b61ea4383cd98e4a86a1","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): no physics, tick, contact or telemetry change; the listed dependencies are the presentation files and lamp checks this section cites, and their changes are the presentation-only lamp shadow budget."} -->
+<!-- doc-review {"version":1,"fingerprint":"27e0cf0c19691afec86103d49955cfe2849b89a50b0fd8cb615888fb755effd2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"465096f67fd27b8133d718ec46fa9f6d066acf3eea00dced4e4be58af61e9bbb","disposition":"still accurate","rationale":"The candidate changes duplication placement (grid steps beside the original), the copy/lift/hint/Connect & test presentation and their browser checks; no physics door, contract or admission path in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -611,7 +611,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"00c8fcf5edd91f6473724c5add8212805451055c222609d1978640e1efb798c1","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"328a9627a25ea47d761e8a4e0c8168df95f8b6b8920cfebda9739a58e0697555","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the warm-up sentence now names the three warmed variants (shadow-casting lamp, unshadowed lamp, no part lights) because shadow-casting light count is part of the shader key."} -->
+<!-- doc-review {"version":1,"fingerprint":"13d8dc0399ede8115b203913740f1e2d7582bd143056678f93c2407812254748","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9495b3e2e18590b6c3c2f3c09de01745e7758b4e54c3f3ab9b175b9b4d90bbc5","disposition":"updated","rationale":"The Connect & test paragraph now states the auto-open rule: the disclosure opens by itself while power or the shaft is missing until the player closes it for that part; once both are connected the player's own open state rules."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -665,7 +665,9 @@ exploded markers remain schematic interaction overlays.
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths
-while open. Row pointer leave clears highlighting, but closing the panel, changing
+while open. It opens by itself for an actuator still missing its power or its shaft
+connection until the player closes it for that part; once both are connected the
+player's own open state rules (control is optional). Row pointer leave clears highlighting, but closing the panel, changing
 selection, removing the target and disposal clear reveal as well. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,
 tracing and exploded display state keep their existing owners; compose their inputs

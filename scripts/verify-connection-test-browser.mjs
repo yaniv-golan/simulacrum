@@ -74,8 +74,11 @@ try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await placeCatalogPart(page, 'poweredMotor');
   await section.waitFor({ state: 'visible' });
-  await section.locator('summary').click();
+  // A motor with nothing connected opens Connect & test on its own: the
+  // missing power, control and shaft rows are readable without a click.
+  evidence.assert('equal', [await section.locator('details').evaluate((el) => el.open), true]);
   evidence.assert('match', [await section.innerText(), /Connect power/]);
+  evidence.assert('match', [await section.innerText(), /Connect shaft/]);
   await placeCatalogPart(page, 'powerCell');
   await browseAllParts(page);
   await placeCatalogPart(page, 'commandReceiver');
@@ -83,11 +86,19 @@ try {
   await page.getByRole('button', { name: /Wheel axle/ }).click();
   await page.getByRole('button', { name: /Attach to Powered Motor · shaft/ }).click();
   await select('Powered Motor');
-  await section.locator('summary').click();
+  // The wheel fills the shaft row but power is still missing: reselected, the
+  // panel is still open on its own, so Connect power is reachable without a click.
+  evidence.assert('equal', [await section.locator('details').evaluate((el) => el.open), true]);
   await section.getByRole('button', { name: 'Connect power', exact: true }).click();
   await page.getByRole('button', { name: /Wire Power Cell · power/ }).click();
   await section.getByRole('button', { name: 'Connect control', exact: true }).click();
   await page.getByRole('button', { name: /Wire Command Receiver · signal/ }).click();
+  // Power and shaft both connected: reselected from another part, the panel is
+  // closed as before and needs the player's click.
+  await select('Power Cell');
+  await select('Powered Motor');
+  evidence.assert('equal', [await section.locator('details').evaluate((el) => el.open), false]);
+  await section.locator('summary').click();
   evidence.assert('match', [await section.innerText(), /Power Cell/]);
   evidence.assert('match', [await section.innerText(), /Command Receiver/]);
   evidence.assert('match', [await section.innerText(), /Grip Wheel/]);

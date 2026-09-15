@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3306dd93accff93f4bcd96a6c8f3bc7d79ac71e87208a25b88c92cf5fe99d77c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"64e86236db2531da781161c88b0c10d9b15bbff3f63114f11041c4afea19ef59","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): no lesson, example, experiment, challenge or invitation was added, extended or replaced; the lamp shadow explanation extends existing contextual help (no entry)."} -->
+<!-- doc-review {"version":1,"fingerprint":"e09cb850cf30be3b9edf714a1fffb6363d32f17c8cd60fd1be7c7d9b1f677248","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4a1a020e6ad0bb0651a7450003f242ee7e87202412a055c349fdcfbb20b9d053","disposition":"still accurate","rationale":"The empty-hint guide button calls the existing rolling-machine guide launcher (no new lesson, example or entry); the policy's admission rules and dispositions are unchanged."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"eab957112ef2a85a8bd8316b8b744fe97c9c9f69e9f5214b6de8e54527b1224c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0181cbb1a4512553412fd0855e2ded31f7aec34ceffa97ad6e45fad81c28ee02","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the lamp help sentence now says the eight-lamp limit with shadows only while graphics run smoothly; no surface, region or lifecycle changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"8765dddaf2f911ad8002553a41864b802a2ac04e79a0855f0f7e42b66c05a833","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b6cacf05300267db5f2c1b191d75352cc63febda6a4b7b3b3043e60a19286f30","disposition":"updated","rationale":"Scene and workshop keyboard text now names Shift+↑/↓ for height; the empty-workshop hint carries the guide invitation; Copy places beside the original and keeps the view when the copy is visible; the Connect & test disclosure keeps its own open state instead of the inspector's per-section memory."} -->
 
 
 
@@ -245,8 +245,8 @@ replaces catalogue and inspector content while Editing scene is active; Done res
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
 a draft; Apply scene publishes one ordinary command. V/W/E select the same tools
-as their buttons; arrows and Page Up/Down move the proposal, and Alt plus these
-keys rotates it. Space retains Run/Pause and period retains single-step through
+as their buttons; arrows move the proposal on the floor, Shift+↑↓ or Page Up/Down
+lift and lower it, and Alt plus these keys rotates it. Space retains Run/Pause and period retains single-step through
 the existing workshop handler, including while scene editing remains open in Run or Paused.
 Unapplied scene drafts still block Run. Text fields retain native keyboard editing. A preview hides committed
 scene meshes, including objects proposed for removal, and Cancel restores them.
@@ -518,7 +518,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"076b15726ac7c2341253a3f2f3e617f8e9aff4bfa51bdc0fd1ccd93fe227daf1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"f3fbd6474ea000eb6001173dccc89a76c3c692351482fe68dcc4dd1e027804eb","disposition":"still accurate","rationale":"Only the linked playtesting remote-setup explanation changed; the verification guidance in this section (scope discovery, journeys, separation of automation from player evidence) does not describe feedback attachment defaults."} -->
+<!-- doc-review {"version":1,"fingerprint":"2141192d73f080bb166fbbd4e09819fd3230feef17e7715584ac3653bd5c8d3c","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"20e3fc88d5b12cc6943ff4f6ba30a7855e227c90aa6015fb231530be0cb863dd","disposition":"still accurate","rationale":"verify-authorable-scenes gained a Shift+ArrowUp/Down preview step under the same journey ownership; the section's rules on automation versus player evidence are unchanged."} -->
 
 
 
