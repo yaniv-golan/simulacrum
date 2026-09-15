@@ -102,7 +102,7 @@ the operator notes; the data directory's `README.md` (rewritten each run) states
 
 ## Release operations
 
-<!-- doc-review {"version":1,"fingerprint":"69803d7cfac82bab5ed4594ac252e7bea72bae2450af8c1c5d89575b6d290021","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"d29ea13015e34cb3ec95fc6fcc5afe3aa48adcfca9e8e9cdcbd7363fc7e9d37d","disposition":"still accurate","rationale":"--stack + item 52 stacked on claude/hosted-check-waits 94c85e92 (tooling-stack-flag, base 458e9b3c): candidate-after.mjs changed only in how a diagnosed retry keys a required structural check (`structural:<id>`, the receipt the gate writes); release preparation, the package envelope, deployment authorization and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7cc37ef83293583b261f1258e8bfd75019c33cbfd1fc0fa9ca75a875001183d1","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"cc45c1abb212ba96003aa4e7e2cbd857e8254870941c8dddba3ba478790ffe7f","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): no dependency of this section changed in this candidate's delta; the sidecar re-keys on the merged tree."} -->
 
 The app names its release from package.json's `version`, read at build time into the served
 `app-version` meta; the last candidate of a release carries the version bump (a minor bump for
