@@ -6,6 +6,8 @@ import { resolve, join as pathJoin } from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { writeSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 const diagnosticStart = performance.now();
 let stageStart = diagnosticStart;
 let stageName = 'setup';
@@ -25,6 +27,30 @@ const countSettled = (name, total) => {
   let settled = 0;
   return (promise) => promise.finally(() => report(`${name} settled=${++settled}/${total}`));
 };
+// Two timed execs of the esbuild service binary before any bundling: a slow first exec
+// with a fast second names per-exec gating of the binary (Gatekeeper/XProtect on a fresh
+// install); two fast execs with a slow bundle point at the bundle itself. Diagnostics only.
+const esbuildBinary = (() => {
+  try {
+    return createRequire(import.meta.url).resolve(
+      `@esbuild/${process.platform}-${process.arch}/bin/esbuild`,
+    );
+  } catch {
+    return null;
+  }
+})();
+if (esbuildBinary) {
+  const timedExec = () => {
+    const started = performance.now();
+    try {
+      execFileSync(esbuildBinary, ['--version'], { stdio: 'ignore', timeout: 10000 });
+      return (performance.now() - started).toFixed(1);
+    } catch (error) {
+      return `failed:${error.code ?? error.message}`;
+    }
+  };
+  report(`esbuild exec firstMs=${timedExec()} secondMs=${timedExec()}`);
+} else report('esbuild exec binary unresolved');
 begin('bundle');
 const persistence = await mkdtemp(pathJoin(tmpdir(), 'capture-restart-'));
 const options = convertV4MiniflareOptions({

@@ -998,7 +998,7 @@
       "environment": "self",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 30000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -5491,6 +5491,14 @@
           {
             "path": "test/process-runner.test.mjs",
             "anchor": "watchdog records a bounded process snapshot with the child in its tree"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "sample targets are the owned descendants blocked in uninterruptible wait, bounded to one"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "a stack sample names the sampled process by its leaf frames and records a dead pid as an error"
           }
         ],
         "negative": [

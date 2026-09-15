@@ -1,5 +1,12 @@
 import { spawn, execFileSync } from 'node:child_process';
-import { listProcesses, descendantsOf } from './process-inventory.mjs';
+import {
+  listProcesses,
+  descendantsOf,
+  selectSampleTargets,
+  sampleProcess,
+  readMemoryCounters,
+  waitChannelOf,
+} from './process-inventory.mjs';
 import { pathToFileURL } from 'node:url';
 import { loadavg } from 'node:os';
 import { basename } from 'node:path';
@@ -50,6 +57,7 @@ function processSnapshot(rows, rootPid, at) {
     rssKb,
     time,
     etime,
+    wchan: waitChannelOf(pid),
     comm,
   });
   const tree = descendantsOf(rows, rootPid);
@@ -69,8 +77,27 @@ function processSnapshot(rows, rootPid, at) {
       .slice(0, SNAPSHOT_LIST_ROWS)
       .map(brief),
     tree: tree.slice(0, SNAPSHOT_LIST_ROWS).map(brief),
+    ...timedMemory(),
     ...(root && at === 'watchdog' ? timedHint(root.executable) : {}),
+    ...(at === 'watchdog' ? timedSamples(rows, rootPid) : { samples: [], sampleMs: 0 }),
   };
+}
+function timedMemory() {
+  const started = performance.now();
+  const memory = readMemoryCounters();
+  return { memory, memoryMs: performance.now() - started };
+}
+/** A stall's evidence: the syscall each blocked owned descendant sleeps in. Bounded to a
+ * few processes and a second each; only paid at a watchdog. */
+function timedSamples(rows, rootPid) {
+  const started = performance.now();
+  const samples = selectSampleTargets(rows, rootPid).map((row) => ({
+    comm: row.comm,
+    stat: row.stat,
+    wchan: waitChannelOf(row.pid),
+    ...sampleProcess(row.pid),
+  }));
+  return { samples, sampleMs: performance.now() - started };
 }
 function signalGroup(child, signal, observe = () => {}) {
   try {
@@ -132,6 +159,9 @@ export function runProcess(
       firstChild = activeChildren.size === 0 && process.platform !== 'win32';
     const processDiagnostics = {
       startedAt: new Date().toISOString(),
+      // Paging counters at start, for rows long enough to stall (a unit file is not);
+      // the watchdog snapshot reads them again so a stall's page-in is a measured delta.
+      memoryAtStart: timeoutMs >= 10_000 ? readMemoryCounters() : { unsupported: 'short row' },
       events: [],
       droppedEvents: 0,
     };
@@ -179,7 +209,12 @@ export function runProcess(
         processDiagnostics.snapshot = {
           ...snapshot,
           enumerationMs,
-          snapshotMs: performance.now() - snapshotStarted - (snapshot.hintMs ?? 0),
+          snapshotMs:
+            performance.now() -
+            snapshotStarted -
+            (snapshot.hintMs ?? 0) -
+            snapshot.sampleMs -
+            snapshot.memoryMs,
         };
       } catch (error) {
         processDiagnostics.snapshot = {

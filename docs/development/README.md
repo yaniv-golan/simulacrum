@@ -496,9 +496,15 @@ A failed row additionally carries `processSnapshot` from the
 same bounded process enumeration that terminates the owned tree also retains load
 averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
 Spotlight daemons regardless of rank, the check's own tree (executable names only,
-never arguments or environment), and on macOS whether the stalled executable still
+never arguments or environment; on Linux each row carries its kernel wait channel, which
+macOS does not export), paging counters at that moment (`memory`, units named per
+platform) beside the row's `memoryAtStart` for rows with at least a ten-second deadline,
+on macOS one bounded stack sample of the first owned descendant blocked in
+uninterruptible wait (`sample`, one second, killed after three, output to the runner's
+pipe: its top-of-stack section names each thread's leaf frame and so the blocking
+syscall), and on macOS whether the stalled executable still
 carried quarantine or provenance attributes; a non-zero exit retains a post-hoc snapshot
-without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost and `hintMs` the attribute lookup. macOS
+without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost, `hintMs` the attribute lookup, `memoryMs` the counter read and `sampleMs` the stack sample. macOS
 `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time` and `etime`
 accompany it. The snapshot is context for a person, never attribution, and a failure to
 take it is recorded without changing the outcome. Failed browser rows also carry
