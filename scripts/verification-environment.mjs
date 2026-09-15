@@ -75,7 +75,16 @@ export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
     'CALL_LOG',
     'DRIFT',
     'FAIL_AUTOMATION',
+    'MUTATE_DEPS',
+    'PARENT_ATTEMPT',
+    'PARENT_REPORT',
+    'PURGED',
     'SIM_VERIFIER_TEST_CONFIGURATION',
+  ],
+  'terminal colour conventions read by third-party CLIs; the format gate pins them for prettier': [
+    'CI',
+    'NO_COLOR',
+    'FORCE_COLOR',
   ],
 });
 export const isRelevantEnvironmentName = (name) =>

@@ -61,7 +61,7 @@ async function expectDuties(expected, label) {
       });
     },
     expected,
-    { timeout: 6000 },
+    { timeout: evidence.waitBudget(6000) },
   );
   await sample(label);
 }

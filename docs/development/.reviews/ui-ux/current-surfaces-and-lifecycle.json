@@ -30,15 +30,17 @@
     "package.json": "7f619018c19301663b76334ab52419aeced8e84690956186063cc383c033029d",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",
     "scripts/browser-artifacts.mjs": "05ef6fc079ee5c185860889ec11ec6425a74968f56f24480c408a55239508399",
-    "scripts/browser-evidence.mjs": "7c7a2c6107430f9a335cb61a2b977109f2245e74b756f83f3c2da7f8577477a5",
-    "scripts/browser-session.mjs": "874bf59a6be86cda29a23ac56dff24869832fa2aa0fb14e234de89944e6be4af",
+    "scripts/browser-evidence.mjs": "6d8b3558c4ed075b865cf5e897e11318dbd6d800a90010f5ade62aaab43176df",
+    "scripts/browser-idle.mjs": "b17d378b5138753c0c12b57032a44585bcbb6aadc8eedfa03447d010fa0b658e",
+    "scripts/browser-session.mjs": "35bfae89d868ed1ee974ad7b0920149bfa20b401c00df1457861cb76c05ba48e",
+    "scripts/host-profile.mjs": "bed35e396ad688822432484013295953fa25ffe331af9bfd57d97a1c1500aed4",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-release-coupler.mjs": "94a966f0d1d2ed4b426b7b0f298a86a0921a2656d9cbf39cd710561aa655db55",
     "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
     "src/presentation/whats-new.mjs": "96f39c8134c1bc653af9dbeda0f4567dafe9ee0b78e63e181202d8ea2b45a199",
-    "docs/development/playtesting.md#release-operations": "a11c941eb331bb97bfd0affca679849d77e9c450c94316d97c897960fabf9b90",
+    "docs/development/playtesting.md#release-operations": "74ea5d5b068949f520da454b6b2a422dfa41bef33a445d5bcbc381b89ae7b004",
     "src/presentation/motion-readout.mjs": "33dc9f01af53c86b50a9ab7ddce19bb89b36949f6b3c830dbe243306e31f31df"
   }
 }

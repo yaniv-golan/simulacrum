@@ -143,7 +143,7 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
     'unit:test/geometry.test.mjs',
     'browser:perf',
     'build:browser',
-    'check:layers',
+    'structural:layers',
     'ci:budget',
   ])
     assert.ok(executed.includes(id), `${id} executed`);
@@ -160,7 +160,7 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   assert.deepEqual(retry.report.after.required, ['browser:x', 'unit:test/geometry.test.mjs']);
   assert.ok(retry.report.after.controls.includes('unit:test/geometry.test.mjs'));
   assert.ok(retry.report.after.alwaysFresh.includes('build:browser'));
-  assert.ok(retry.report.after.alwaysFresh.includes('check:layers'));
+  assert.ok(retry.report.after.alwaysFresh.includes('structural:layers'));
   assert.deepEqual(retry.report.after.notSelected, []);
   assert.equal(retry.report.after.causes['browser:x'], 'late pause landed after the load fell');
   assert.deepEqual(retry.report.after.chain, [first.report.attempt]);
@@ -462,7 +462,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
     'browser:smoke',
     'browser:hosted',
     'build:browser',
-    'check:layers',
+    'structural:layers',
     'ci:budget',
   ])
     assert.ok(executed.includes(id), `${id} executed`);

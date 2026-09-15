@@ -217,7 +217,7 @@ export async function runPartHelpCases(partition, evidence, browser) {
         p.waitForFunction(
           (value) => JSON.parse(window.render_game_to_text()).power.sources[0]?.duty === value,
           value,
-          { timeout: 2500 },
+          { timeout: evidence.waitBudget(2500) },
         );
       await p
         .locator('canvas')

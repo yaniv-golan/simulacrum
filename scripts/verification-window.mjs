@@ -68,6 +68,7 @@ const INTENT_FIELDS = [
   'destinationName',
   'origin',
   'head',
+  'stack',
 ];
 /** Owner-declared purpose published to contenders: printable single-line strings
  * (paths and ref names), never environment values. */
@@ -277,7 +278,12 @@ if (
         const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
         const target = declared.destinationName ?? declared.destination;
         const branch = declared.head ? ` on ${declared.head}` : '';
-        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
+        const to = declared.stack
+          ? ` → stacked on ${declared.stack}`
+          : target
+            ? ` → destination ${target}`
+            : '';
+        return `PID ${owner.pid}, ${what}${branch}${to}, ${where}`;
       };
       const run = () => {
         childStarted = true;
@@ -293,7 +299,7 @@ if (
             intent,
             onWait: ({ elapsedMs, waitMs, owner }) =>
               console.error(
-                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it. ` : ''}Cancel to return to editing.`,
+                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it (merge it, then merge --stack ${owner.intent.head ?? '<that branch>'}). ` : ''}Cancel to return to editing.`,
               ),
           });
       Object.assign(report, {
