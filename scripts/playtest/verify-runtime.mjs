@@ -1,4 +1,4 @@
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 // Local workerd proof; never contacts a Cloudflare account.
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import assert from 'node:assert/strict';
@@ -6,8 +6,6 @@ import { resolve, join as pathJoin } from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { writeSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
 const diagnosticStart = performance.now();
 let stageStart = diagnosticStart;
 let stageName = 'setup';
@@ -27,30 +25,20 @@ const countSettled = (name, total) => {
   let settled = 0;
   return (promise) => promise.finally(() => report(`${name} settled=${++settled}/${total}`));
 };
-// Two timed execs of the esbuild service binary before any bundling: a slow first exec
-// with a fast second names per-exec gating of the binary (Gatekeeper/XProtect on a fresh
-// install); two fast execs with a slow bundle point at the bundle itself. Diagnostics only.
-const esbuildBinary = (() => {
+// Two timed trivial transforms before any bundling: the first spawns the esbuild service
+// binary (the exec whose gating a stall would name — Gatekeeper/XProtect on a fresh
+// install), the second reuses it. A slow first and fast second name per-exec gating; two
+// fast ones with a slow bundle point at the bundle itself. Diagnostics only.
+const timedTransform = async () => {
+  const started = performance.now();
   try {
-    return createRequire(import.meta.url).resolve(
-      `@esbuild/${process.platform}-${process.arch}/bin/esbuild`,
-    );
-  } catch {
-    return null;
+    await transform('1', { loader: 'js' });
+    return (performance.now() - started).toFixed(1);
+  } catch (error) {
+    return `failed:${error.code ?? error.message}`;
   }
-})();
-if (esbuildBinary) {
-  const timedExec = () => {
-    const started = performance.now();
-    try {
-      execFileSync(esbuildBinary, ['--version'], { stdio: 'ignore', timeout: 10000 });
-      return (performance.now() - started).toFixed(1);
-    } catch (error) {
-      return `failed:${error.code ?? error.message}`;
-    }
-  };
-  report(`esbuild exec firstMs=${timedExec()} secondMs=${timedExec()}`);
-} else report('esbuild exec binary unresolved');
+};
+report(`esbuild service firstMs=${await timedTransform()} secondMs=${await timedTransform()}`);
 begin('bundle');
 const persistence = await mkdtemp(pathJoin(tmpdir(), 'capture-restart-'));
 const options = convertV4MiniflareOptions({
