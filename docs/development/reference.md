@@ -83,6 +83,7 @@ These are registered commands and checks, not evidence that they passed.
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
 | format | gate-integrity | M0 | [scripts/check-format.mjs](../../scripts/check-format.mjs) |
 | verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
+| release-notes | gate-integrity | M3b | [scripts/check-release-notes.mjs](../../scripts/check-release-notes.mjs) |
 | verification-scope-configuration | gate-integrity | M3b | [scripts/verification-window.mjs](../../scripts/verification-window.mjs) |
 
 ## Invariant owners

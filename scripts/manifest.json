@@ -7101,6 +7101,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -7249,6 +7250,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -7342,6 +7344,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -7444,6 +7447,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -7947,7 +7951,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8011,7 +8015,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
+      "consumerSourceHash": "ae670ccfdf1d923ed7d8decb97bc4ab05b821c6090521445fbd1cdce9ff232f0",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8077,6 +8081,7 @@
         "scripts/verify-surface-browser.mjs",
         "scripts/verify-ui-lifecycle-browser.mjs",
         "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-whats-new-browser.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/assembly-partitions.test.mjs",
@@ -8152,6 +8157,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -8178,7 +8184,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
+      "consumerSourceHash": "ae670ccfdf1d923ed7d8decb97bc4ab05b821c6090521445fbd1cdce9ff232f0",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8265,6 +8271,7 @@
         "scripts/verify-surface-browser.mjs",
         "scripts/verify-ui-lifecycle-browser.mjs",
         "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-whats-new-browser.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/assembly-partitions.test.mjs",
@@ -8363,6 +8370,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -8395,13 +8403,30 @@
             "documentation",
             "unit-test"
           ]
+        },
+        {
+          "expression": "execFileSync(\n        'git',\n        ['describe', '--tags', '--exact-match', '--match', 'v[0-9]*.[0-9]*.[0-9]*'],\n        { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },\n      )",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(join(cwd, 'package.json'), 'utf8')",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
         }
       ],
-      "consumerSourceHash": "551a8987ce86dcd8a821839dc91f1f003e97d3d3e3b3d6429eade15e12827ad3",
+      "consumerSourceHash": "ad85243a47bba2bcb945a752f4c11a550084cb1567e869c0011d0805fcbdd307",
       "externalImports": [
         "node:child_process",
         "node:crypto",
-        "node:fs"
+        "node:fs",
+        "node:path"
       ],
       "consumers": [
         "scripts/assembly-ux-cases.mjs",
@@ -8415,6 +8440,7 @@
         "scripts/browser-selection.mjs",
         "scripts/change-inspection.mjs",
         "scripts/check-entry.mjs",
+        "scripts/check-release-notes.mjs",
         "scripts/checks.mjs",
         "scripts/ci.mjs",
         "scripts/gate-structural.mjs",
@@ -8502,6 +8528,7 @@
         "scripts/verify-surface-browser.mjs",
         "scripts/verify-ui-lifecycle-browser.mjs",
         "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-whats-new-browser.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/assembly-partitions.test.mjs",
@@ -8535,6 +8562,7 @@
         "test/part-help-partitions.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-release.test.mjs",
+        "test/release-notes.test.mjs",
         "test/release-pipeline.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/source-identity.test.mjs",
@@ -8546,7 +8574,7 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
+      "sourceSha256": "e79099344d470f16e8191cbe2f29a3695dd068c53ce2ae8ccfbab66f6a0f01c1",
       "entrypoint": "scripts/source-identity.mjs",
       "dependencies": [],
       "reachingChecks": [
@@ -8610,6 +8638,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -8671,7 +8700,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "1e8103b404cb61e623355a45c1c66fefc939432c48972815ef8032835fc267dd",
+      "consumerSourceHash": "9fe265bf20b2105a45bd8a48d783482994f8a68c948bb8da2b6feac76ca36ea6",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -8705,7 +8734,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -8782,7 +8811,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -8853,7 +8882,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -8896,7 +8925,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9049,7 +9078,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "d7704b105df7b620550035fae6df4f0e3ddaca5b0b711d19e9a399ec182c1a84",
+      "consumerSourceHash": "bebc0d4ebed8c85bbb9fd662a8ee10ef51d48d1548d542914a556b8aad399873",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9142,6 +9171,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -9200,7 +9230,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e2178e845df0e1294996f87caef799f41b63bed65d049293d78f7c40d6583e17",
+      "consumerSourceHash": "ae670ccfdf1d923ed7d8decb97bc4ab05b821c6090521445fbd1cdce9ff232f0",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9313,6 +9343,7 @@
         "scripts/verify-surface-browser.mjs",
         "scripts/verify-ui-lifecycle-browser.mjs",
         "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-whats-new-browser.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/analysis-snapshot.test.mjs",
@@ -9432,6 +9463,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -9522,7 +9554,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9607,7 +9639,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "bf9088653eb25c99147eebef67be1bd55bd9e034ba5fb423745089d7b3e26b13",
+      "consumerSourceHash": "9f12632fffe30de5eb1977dcd350a616b85075e871254b7f8e5125bf01f15ff9",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9667,6 +9699,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -9707,7 +9740,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "bf9088653eb25c99147eebef67be1bd55bd9e034ba5fb423745089d7b3e26b13",
+      "consumerSourceHash": "9f12632fffe30de5eb1977dcd350a616b85075e871254b7f8e5125bf01f15ff9",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9767,6 +9800,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]
@@ -9858,7 +9892,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "9fe1aaecaa9c989a48686ba58f4f9e738a04c228c3fac02c28460cc07baa1dbf",
+      "consumerSourceHash": "a452d2f868a7c73fe7b678d722f4559e4822ff8774aaf59a6c12138c461977e2",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9941,7 +9975,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "d7704b105df7b620550035fae6df4f0e3ddaca5b0b711d19e9a399ec182c1a84",
+      "consumerSourceHash": "bebc0d4ebed8c85bbb9fd662a8ee10ef51d48d1548d542914a556b8aad399873",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10001,6 +10035,7 @@
         "verify-surface-browser",
         "verify-ui-lifecycle-browser",
         "verify-vehicle-controls",
+        "verify-whats-new-browser",
         "verify-workbench-content",
         "verify-workshop"
       ]

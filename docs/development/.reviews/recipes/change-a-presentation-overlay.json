@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
-    "package.json": "4e723c76460ae753b9da7a34719016708efe8e734bd7718b5f79912952e5c4f0",
+    "package-lock.json": "8c8ca50a0c7def8d5ec499258ce55a2540d26ba436be81c7aa19fdf3175881e9",
+    "package.json": "7f619018c19301663b76334ab52419aeced8e84690956186063cc383c033029d",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/generated/blueprint-types.d.ts": "25b36ea7aec5e1fa650f4d0a0066b56f8ee17d6a98bcf01cdd23eeea016b3674",
     "src/presentation/connection-render.d.ts": "02001295a3479db418af35d00e4dd6f610c69b882b38f5dd6850a846fd5fcd5b",
@@ -52,7 +52,7 @@
     "scripts/browser-session.mjs": "cb35667560f20d4b78fae33913caa610595c7355d6caaa007bdaa7b5b9a05bcb",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
-    "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
+    "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-rope-browser.mjs": "8ccb67000f2aa9f325ed557c31cbfc4b71e15473e0aefc8db02a764773c1fa05",
     "src/presentation/release-state.mjs": "4363ab1d2803e20924e4a45511df743c490e87753f51b80fa2aa4e6e8e348001",

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"e09cb850cf30be3b9edf714a1fffb6363d32f17c8cd60fd1be7c7d9b1f677248","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4a1a020e6ad0bb0651a7450003f242ee7e87202412a055c349fdcfbb20b9d053","disposition":"still accurate","rationale":"The empty-hint guide button calls the existing rolling-machine guide launcher (no new lesson, example or entry); the policy's admission rules and dispositions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5b10ab2ac76e47f16bf70acf21ed48f1f5ed65a3419d568df62bd3c6b2db15b7","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"53858d0c77a2d56db6e4a8f7a1bd4f0de7065f604d2fec86d71638a9253ebc9e","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no lesson, example, experiment or challenge was added, extended or replaced; the What's new notice carries at most one invitation to existing Learn & examples content and Help's Try it runs existing card launchers — recorded as no entry."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"8765dddaf2f911ad8002553a41864b802a2ac04e79a0855f0f7e42b66c05a833","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b6cacf05300267db5f2c1b191d75352cc63febda6a4b7b3b3043e60a19286f30","disposition":"updated","rationale":"Scene and workshop keyboard text now names Shift+↑/↓ for height; the empty-workshop hint carries the guide invitation; Copy places beside the original and keeps the view when the copy is visible; the Connect & test disclosure keeps its own open state instead of the inspector's per-section memory."} -->
+<!-- doc-review {"version":1,"fingerprint":"49f40bd1e1d1dc2d5317fa4e297875fc3537bca6a03bbac33675790d058cb0ca","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"282337103dac12922c035c7cd318257a9066e5034462467034615390e994af7d","disposition":"updated","rationale":"What's-new candidate (pre-integration fe736bc): the Help paragraph now describes the What's new badge, notice, Help section and Try it with their trigger, dismissal, retrieval, yield rules and no-entry disposition, and a new paragraph covers the Source on GitHub link and the About line's version source; workshop-view.mjs, whats-new.mjs, workshop.css and workshop-app.mjs implement exactly that; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
 
 
 

@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"591052e4b20a2aa3d04ba00dc72fae6987ac75e415928923ac110346cde578e7","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"5cb9509e6b9d13750f485f1ae4440168918502e17b43716eed70e600a24c78fe","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): part-help-content.mjs changed one lamp help sentence; the part recipe steps, help placement and admission rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f39390434f14274db0ece56447954bbf6665198098c4c2a488fef45e88cd7155","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ade9f30b85406d1da62b6e6c32a737f9dc87071906601f5d1ddae5f210c19c18","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): features.mjs adds UI_FEATURES.whatsNew (an M3b UI feature) and REPOSITORY_URL; the part recipe steps are unchanged; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -90,7 +90,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"f21cc34e6456c5b70ba05488d9a63ffb7782f10e4b59cbaadb43029ec74dbd48","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6ef14d4a9d698fed1462040bb975229b9a1c5ecdcb515ccad0f0eeb9414661c9","disposition":"still accurate","rationale":"Parametric beam: no new command; the existing parameter command gained one admission step in createWorkshop and the beam length edit is registered in the editing-contracts list exactly as this recipe prescribes (reuse the editing contract assertions)."} -->
+<!-- doc-review {"version":1,"fingerprint":"20609514cdf995994366fa35bd61038d45bce94d82321e0d69897c45aa959811","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"398327d725fbf7c6f52c425f9e5f7f0276bb158c2c178b66b703c327d98dcc06","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; no command surface change (Try it runs the existing example card launchers)."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -119,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"ed0eaf32bb9baf0183a880d36206fc73fbb7b75de2cb55866fdde10be771fef9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"60c8ebff77747ae28384a8731f58ae14498d64e2d85cd2e274f2fd547c434c3f","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): surface-controls.mjs now disposes a preview lamp light with the rest of the preview; interaction lifecycle, focus and key routing are unchanged. part-help-content.mjs changed copy only."} -->
+<!-- doc-review {"version":1,"fingerprint":"57e5529db9df3f94ee53165cf9fd4b279845ea7f83379291f4cca50ab036642d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ce75fc9921112e23baae6e41fedf93146eefd265c8de3e730af270021836e1f0","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; interaction lifecycle, focus and key routing are unchanged (the notice follows the Teach-a-controller pattern)."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -168,7 +168,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"92f340f717f6fa302b7dea6ade3ae017b5e83798c98efdfe739e94d413dfdb7e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"69007290b80973bbccb1fe455ee3ccfa5f78ab12f738ad643e05a77f8d4a82e3","disposition":"still accurate","rationale":"Parametric beam: no diagnostic or telemetry channel changed; the new rejection is an ordinary reason code with player copy in messages.mjs, which is the explanation path this recipe already describes."} -->
+<!-- doc-review {"version":1,"fingerprint":"8de52fc59f565033a796d297bf4e97ec23b9cbfc12546c0c9bd6ff5ecb05a93d","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5c099660747bcc869dfcc86121e72403fb929d3dc05b2f5acb068341d68527dc","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; readInteractionState gained a whatsNew diagnostics block, which follows the existing pattern the recipe describes."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"776beb41e3aaea1a476d74a3828742b0532ec25434a4d18d13cdb35ad46e0d9d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8174956f5fde2f96b7f15886496dfccc5df10087cc1cdc0916b2f85a14327a3e","disposition":"still accurate","rationale":"Only the human-assessment writer/reader, the verification outcome formatter, protocols and the README verify sentence changed; no physics door, contract or test contract in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"86ce96c4be05f6b8c38c3109c2b8392da75b3ce15c03b856f43c6396236849d7","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f45f907b4623f1815eea2ca5698db0e5d69c3674de4c3552f500a5c5fd36222a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no physics, tick, contact or telemetry change; the listed dependencies are the What's new presentation/application modules, its checks, the version bump and the docs it cites."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -508,7 +508,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"89b6e27e1018e75c15205a4d2c93faa6866d7d812849ecb2a7070e0ae4d4fc1d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d830eb4b3ee4c657fcd2d4f1be6374ef85f0c87c27443fe580a557cbb9208f99","disposition":"still accurate","rationale":"Parametric beam: assembly capture, insertion and mirroring copy part parameters by structuredClone, so a beam's length travels with library items and mirrored copies as this recipe assumes; a new test asserts it."} -->
+<!-- doc-review {"version":1,"fingerprint":"af1f45fa66fb6ea9c3829f4b6f2ac37c7a808153f23f6103f825c5bccf814417","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"21a2d6365c6ddeed861fa8adef342a7f9066cd1b32f371a7688d59d182b530a5","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; multi-part authoring is untouched."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -605,7 +605,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"13d8dc0399ede8115b203913740f1e2d7582bd143056678f93c2407812254748","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9495b3e2e18590b6c3c2f3c09de01745e7758b4e54c3f3ab9b175b9b4d90bbc5","disposition":"updated","rationale":"The Connect & test paragraph now states the auto-open rule: the disclosure opens by itself while power or the shaft is missing until the player closes it for that part; once both are connected the player's own open state rules."} -->
+<!-- doc-review {"version":1,"fingerprint":"aaff750a5dbb1bf612d076784355e04c2f323c4f41a60be3c5627c78e721878d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"b2c51e12f3fbc6e7c61e199c88889c511406836f40ee7c36e8f4f703caa1f676","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the What's new notice is a new overlay built as the recipe describes (section with the dialog role, own Escape and focus return, in-scene layering over the inspector column)."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -756,7 +756,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"ee0fd61e0beb09bb4a1ccbdd86352b50c680d50b06877d0b0d2eca393bd20138","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76e2310708e76557f1392bc588032d5f50a1a842f4c0ee1ff0693061c0b3448","disposition":"updated","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): the section now describes the per-level lamp shadow map size, that lamp casting flips only with the key-light shadow toggle, and the lamp renderer paragraph explains applyShadowBudget, the shared mesh factory, released depth targets and unlit lamps skipping their pass."} -->
+<!-- doc-review {"version":1,"fingerprint":"e57fe6a866a78e7b5dcfe4877a71b2c3964c590ad72b29c271439492805174aa","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"1d0d4ab51ca4daf6fb4c3293bd68f485be7b3ec3cd0a003d3f0aad8691f68db1","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; adaptive graphics untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

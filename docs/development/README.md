@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b5d64ae0ad7090ec5ec2837fb8f7aae023f996862610fc6f5c88ac0ba19da9d1","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"fddd51d09c2b9a760818f769b534499ffa6fd297dda13d0dbf755f93639e312b","disposition":"updated","rationale":"The outcome sentence now states that an incomplete human session is recorded but supplies no verdict, a bar with only incomplete sessions is pending, and a later incomplete session is named beside the governing verdict."} -->
+<!-- doc-review {"version":1,"fingerprint":"889e9230e8a862a97e982f8a7116d171a668b072b40d9b81e63cc580729c2000","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"499834629d9130d1536275f6e82e0ef2caf7f32325ef06a3f22a18c0eb474e93","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the release runbook gained the version/tag rule, which does not alter how a change is verified."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"553530ae32ad41bcfaf1e3be4e4926247e24494bf5d67369ee8b788ce186789a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"42f9adbfbf1e06325b3c233bb32b30ddc8589e0b7cf56b06ed60099e89bc1515","disposition":"still accurate","rationale":"reference.md regenerated only to add the human-evidence-verdicts row (bars.mjs, assess.mjs, verification-outcome.mjs owners); the review workflow, sidecar rules and gate described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"262fe1e81552a3731cbfedb209f17248aabb7bedc9789bc06706ca3b086aaf9a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bb068c3ecfabcac0b793a54482803d9020df2d8576585600261ac154e21ba1b7","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; reference.md was regenerated for the new release-notes check and browser rows; the documentation workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"da4525235287a9a9a25b1aead9253610d0cf11ff89405d588992d9d7faaaa758","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d1433aab8685786f43b64b46b2e301df1b0c28c08f14811daee3f3eca7d24931","disposition":"still accurate","rationale":"bars.mjs and verification-outcome.mjs changed only in human-bar verdict handling and the formatter's GREEN-bar line; browser selection, scope and execution rules are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"f34e32fdd95590751fd3a6d9b42c4c55424af1c87906ba8a3c1738e07766336e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"df83e4586c81e2952b0632b3009b60083e6b2fb61a5aa3ad16e650f3ce63f384","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the manifest adds one gate-integrity check (release-notes) and one parallel browser row (verify-whats-new-browser) plus regenerated scopes; features.mjs adds UI_FEATURES.whatsNew and REPOSITORY_URL; workshop-app.mjs injects notes and calls considerWhatsNew. Execution phases and selection rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -569,7 +569,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"63de528b073517fa877ba51223f67bf25e870a274eb8cf214151dae77d7f3a4f","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"2ea5f5a71febb195140c273370b84e8131181e8ca48114518269592044143159","disposition":"still accurate","rationale":"The verify-a-change sentence about incomplete human sessions does not change window ownership, tier serialization or candidate stacking described here."} -->
+<!-- doc-review {"version":1,"fingerprint":"12109191fb7813ee2ba42bc0acdff5f7e9600331f49f84479492140b49fd5529","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"49cb86ee063a05c57d62b394b2b1154f4ad803099ca548d2a6df6c302ea9908a","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the window scripts are untouched."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -618,7 +618,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"169ad3a5925d8b4aa0b20767871c11b3632d1f07d5b1192920a5c05faf3c7c1c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"469c8fa222ff795ae3dfd073bfce0b920145ad58f01a99f689f7500d073469a8","disposition":"still accurate","rationale":"The manifest gained the human-evidence-verdicts invariant under gate-integrity; candidate isolation, evidence binding and completion rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"331b8563bc2f2dbcd2c621df3fbd5782975771b24533a812c2a730c20a8ac6df","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e90c1f9f8fccd7a2b10828abffe65079d747d81589c0236390afd0875f38dbb","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; manifest rows added; candidate capture and tiers are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
