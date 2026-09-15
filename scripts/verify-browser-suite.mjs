@@ -59,8 +59,14 @@ export function browserSuiteFailure(outcomes, runs) {
     failures.map((outcome) => outcome.error),
     `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
   );
+  // A refused row is recognised by its run row OR by the refusal on its outcome's error, so a
+  // row the runner never reached still counts (the run row is marked at the refusal site too).
   error.notEvaluated = failures
-    .filter((outcome) => runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS)
+    .filter(
+      (outcome) =>
+        runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS ||
+        outcome.error?.notEvaluated === true,
+    )
     .map((outcome) => outcome.id)
     .sort();
   error.failedChecks = failures
@@ -436,6 +442,18 @@ async function executeBrowserSuite(
             const refused = Error(`not evaluated: ${report.timingAdmission.reason}`);
             refused.notEvaluated = true;
             refused.failureKind = 'host-load';
+            // The row is marked here, before the throw: this refusal never reaches the per-row
+            // catch below, and the phase failure built afterwards reads the rows to name the
+            // refused ids a diagnosed retry must complete.
+            Object.assign(row, {
+              status: NOT_EVALUATED_STATUS,
+              reason: refused.message,
+              ok: false,
+              failureKind: refused.failureKind,
+              observedAt: performance.timeOrigin + performance.now(),
+              checkKind: check.tier,
+            });
+            publish();
             throw refused;
           }
           row.status = 'running';
