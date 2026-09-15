@@ -761,6 +761,32 @@ validation refuses a resumed receipt the parent did not offer or that is not dep
 that parent. Nothing here changes what a landing needs: candidate evidence still applies only
 to its recorded bytes.
 
+A release's `final` on byte-identical code is that commit's merge evidence when recorded as a
+citation: `npm run verify:candidate -- merge --base <commit> --incoming <commit> --destination
+<ref> --satisfied-by <release directory>` reads the release's own record first (`source.json`,
+which `release:prepare` writes after `npm ci` and before `verify:final`; a release without it
+is refused, so a citation exists only during or after the release's final, never before), then
+captures, installs and digests the candidate exactly as a merge candidate and validates the
+integration scope, and — in place of the tier — compares the candidate's head, every tracked
+and non-ignored path's bytes and mode and its installed dependency digest with that record
+(the git index and the process identity are not compared). Identical bytes, a final whose
+report is terminal and passed, and a packaged `release.json` whose verification envelope
+binds the same source record `mergeReadiness` (`satisfiedBy` names the release, its
+`source.json`, final report and package by sha256, the head and the installed digest) and the
+report passes; a differing path, digest or head, a final on another head, or a package that
+does not bind are refused by name with no merge readiness recorded, and a red final is refused
+with the failure recorded (`mergeReadiness.failed`). The final's report exists from its first
+phase (`status: running`), so a release whose final has not ended, or whose green final is not
+yet packaged, is `pending final` (exit 3, `mergeReadiness.pendingOn: final | package`) — and
+only with `--pending`: without it the command refuses before any capture, because no capture
+runs beside a final unless the slot owner asks (a pending citation records the window owner it
+was captured beside). `npm run verify:candidate -- cite-final <attempt report>` resolves it
+once the release is complete, against the same release bytes (a re-prepared release is
+refused), recording `landed` (whether `main` is the cited head where it runs). A citation
+carries no receipts, is never reusable, and can be neither resumed nor retried. The landing
+message says whether the final is pending; while it is, nothing names `main` or the landing's
+branch as a destination.
+
 Candidate timing reports separate capture, installation, dependency validation and the
 tier's execution/window interval; linked window reports identify queue delay. Nested
 intervals overlap and must not be summed as wall time. Tier results are published as
