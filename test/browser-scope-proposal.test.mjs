@@ -378,10 +378,12 @@ test('a declaration selection would not trust is blocked at prepare naming the r
       checks: ['controls'],
     },
   ]);
-  // A skeleton handed back with a placeholder purpose left in is refused by name, not as "invalid".
-  assert.throws(
-    () => deriveScopeProposal(input, none.declarationSkeletons),
-    /metadata:scripts\/read\.mjs: read `execFileSync\(esbuild\)` needs purpose in identity\|fixture\|runtime\|source-analysis/,
+  // A skeleton handed back with a placeholder purpose left in is blocked by name, not thrown.
+  const placeholder = deriveScopeProposal(input, none.declarationSkeletons);
+  assert.equal(placeholder.blocked.length, 1, placeholder.blocked.join('\n'));
+  assert.match(
+    placeholder.blocked[0],
+    /metadata:scripts\/read\.mjs: choose a purpose for `execFileSync\(esbuild\)`/,
   );
   // A carried-forward row that predates the predicate blocks every proposal until re-declared.
   const legacy = fixture();

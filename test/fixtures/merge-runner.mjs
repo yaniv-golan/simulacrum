@@ -16,7 +16,7 @@ const replacements = {
         : 'null'
   }}}`,
   'ci.mjs': `export async function runCI(){return {ok:${behavior !== 'ci-fail'}}}`,
-  'browser-selection.mjs': `export function affectedBrowserChecks(){return {checks:[]}}`,
+  'browser-selection.mjs': `export function affectedBrowserChecks(){return {checks:[]}} export const unauditedLine=()=>'';`,
   // mirror is a timing budget: a retry that requires it makes the tier reach a timing phase.
   'browser-registry.mjs': `export function browserChecks(){return [{id:'smoke',mergeSmoke:true},{id:'foo'},{id:'bar'},{id:'mirror',timingSensitive:true}]}`,
   // The fresh scope (src/foo.mjs changed) selects foo and bar beside the smoke row; a docs-only

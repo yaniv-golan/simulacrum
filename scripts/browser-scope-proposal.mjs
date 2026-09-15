@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { classifyRead, classifyReads, declarationSkeleton } from './read-classification.mjs';
+import { classifyReads, declarationSkeleton } from './read-classification.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -53,10 +53,11 @@ function validateDeclaration(d) {
       throw Error(
         `${d.kind}:${d.entrypoint}: a read declares expression, purpose and excludedInputs only`,
       );
-    // The same predicate selection trusts, so a refusal here names the read and the field — a
-    // skeleton with a placeholder purpose left in is refused by name, not as "invalid".
-    const classified = classifyRead(r);
-    if (!classified.ok) throw Error(`${d.kind}:${d.entrypoint}: ${classified.reason}`);
+    if (typeof r.expression !== 'string' || !r.expression)
+      throw Error(`${d.kind}:${d.entrypoint}: a read declares a non-empty expression`);
+    // Classification is judged by the shared predicate below and reported as a blocked row
+    // naming the read and the field (a skeleton with a placeholder purpose left in included),
+    // so prepare and verify:prepare report BLOCKED_SCOPE rather than crashing.
   }
   if (d.reads && new Set(d.reads.map((r) => r.expression)).size !== d.reads.length)
     throw Error('Duplicate read classification');
@@ -258,8 +259,15 @@ export function deriveScopeProposal(
         }
         // A classification selection would not trust is refused here, naming the read and the
         // field, instead of surfacing later as a widened selection inside the witness battery.
-        const classified = classifyReads(proposed.reads.filter((r) => r.purpose !== null));
+        const classified = classifyReads(
+          proposed.reads.filter((r) => r.purpose !== null && !/^<one of /.test(r.purpose ?? '')),
+        );
         if (!classified.ok) blocked.push(`${key}: ${classified.reasons.join('; ')}`);
+        const placeholders = proposed.reads.filter((r) => /^<one of /.test(r.purpose ?? ''));
+        if (placeholders.length)
+          blocked.push(
+            `${key}: choose a purpose for ${placeholders.map((r) => `\`${r.expression}\``).join(', ')} (skeleton placeholder left in)`,
+          );
         if (d?.reads?.some((r) => !expressions.includes(r.expression)))
           blocked.push(`${key}: declaration names an absent read`);
         proposed.sourceSha256 = digest(read(path));
