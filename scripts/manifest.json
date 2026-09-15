@@ -998,7 +998,7 @@
       "environment": "self",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 30000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -2494,7 +2494,7 @@
       "id": "release-verification-single-pass",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Frozen release preparation verifies one source/build once and rejects drift or missing required workflow checks. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; pending humans remain separate.",
+      "guarantee": "Frozen release preparation verifies one source/build once here (its final waiting up to five minutes for a quiet host, a refusal named with its offenders and never a package; a dry check rehearses the prerequisites and the package shape against the tier's own phase list without a tier, a snapshot or the window, and is never evidence), records the prepared tree's candidate identity and the installed-dependency digest its final ran on (refusing a tier that changed them), and rejects drift or missing required workflow checks; an explicitly authorized experimental release may additionally cite a byte-identical, attested merge candidate's workshop receipts, naming every reused receipt with its origin and evidence checksums in the envelope, copying the cited evidence into the frozen tree, executing ci, smoke, timing-sensitive, hosted, probe, gate and release-only checks itself, and refusing local, hosted or measurement parents. Package consumers require an integrity-bound complete automation envelope matching source, build, runtime and payload; a package that cites reused receipts is consumed only by an experimental exception, including rollback or recovery of such a package, and never by qualified or CI paths; a citing package that executed everything is a plain pass; pending humans remain separate.",
       "owners": [
         {
           "path": "scripts/playtest/prepare-release.mjs",
@@ -2521,6 +2521,26 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation cites an attested byte-identical merge parent and names every reused receipt"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "release package names every reused receipt and only an experimental release accepts one"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release launch refusal names the busiest foreign processes and waits the release budget"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release dry check rehearses packaging on the tier phase list and creates nothing"
           }
         ],
         "negative": [
@@ -2535,6 +2555,26 @@
           {
             "path": "test/playtest-release.test.mjs",
             "anchor": "release package rejects changed bytes, expiry and incompatible capture rollback"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation cites an attested byte-identical merge parent and names every reused receipt"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "release package names every reused receipt and only an experimental release accepts one"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "frozen preparation records the candidate identity and the dependency digest its final ran on"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release launch refusal names the busiest foreign processes and waits the release budget"
+          },
+          {
+            "path": "test/release-pipeline.test.mjs",
+            "anchor": "release dry check rehearses packaging on the tier phase list and creates nothing"
           }
         ]
       },
@@ -4270,15 +4310,15 @@
       "controls": {
         "positive": [
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-verdicts.test.mjs",
             "anchor": "valid assessment passes; newer failure supersedes it"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "only incomplete sessions leave the bar pending, not failed"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a newer incomplete session does not demote a pass and is named beside it"
           },
           {
@@ -4286,18 +4326,56 @@
             "anchor": "a later incomplete session stays visible beside a passing human bar"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a later incomplete session on the current build is named beside a stale pass"
           }
         ],
         "negative": [
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "a newer incomplete session does not clear a fail"
           },
           {
-            "path": "test/assessment.test.mjs",
+            "path": "test/assessment-incomplete.test.mjs",
             "anchor": "an F1 session from another participant is rejected even when it does not govern"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "app-identity-fingerprint",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "The app fingerprint that binds human evidence to served builds hashes every non-documentation file outside docs/, assessments/, scripts/, .github/ and test/ — imported or not — plus every literal dependency those inputs import, including imported markdown and git-ignored files; unimported documentation leaves it unchanged, an unreadable or missing import fails closed, and a non-literal import refuses a certifying fingerprint.",
+      "owners": [
+        {
+          "path": "scripts/app-fingerprint.mjs",
+          "anchor": "appFingerprint"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "arbitrary config and imported markdown change app identity"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "ignored imported dependency is included and missing import fails closed"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "unimported documentation preserves app identity"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "nonliteral imports refuse a certifying fingerprint"
           }
         ]
       },
@@ -5289,6 +5367,52 @@
       "qualificationBars": []
     },
     {
+      "id": "landing-integrity",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "A landing fast-forwards main only from a passing merge attempt report for exactly the landed tip, read from its own candidate's attempts at the recorded path and attested by that candidate's resume key, whose integrated commit is the current main, whose recorded index, file bytes and modes equal the tip's, with no untracked verified bytes, no drifted destination and no final, hosted-profile or measurement evidence; a newer unlandable report never hides an older landable one, and every refusal names its reason without moving main.",
+      "owners": [
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "assertLandable"
+        },
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "findLandingReports"
+        },
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "land"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land fast-forwards main only for a passing merge report of exactly this tip on this main"
+          },
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land takes routine merge evidence pinned to main and skips a newer report against another destination"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land refuses every wrong trace a person used to check by hand"
+          },
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "landing report lookup returns only passing reports for the tip, newest first"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "candidate-citation-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
@@ -5453,6 +5577,14 @@
           {
             "path": "test/process-runner.test.mjs",
             "anchor": "watchdog records a bounded process snapshot with the child in its tree"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "sample targets are the owned descendants blocked in uninterruptible wait, bounded to one"
+          },
+          {
+            "path": "test/process-runner.test.mjs",
+            "anchor": "a stack sample names the sampled process by its leaf frames and records a dead pid as an error"
           }
         ],
         "negative": [
@@ -6088,6 +6220,44 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "text-only stores attach nothing by default and keep the controls hidden"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-sync-read-only",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The local feedback sync issues only GET requests to the admin feedback, session listing, snapshot and object routes; it never deletes, drains or mutates hosted feedback or recordings, and every listed submission is either saved with its attachments, recorded as gone, or reported as failed with a non-zero exit.",
+      "owners": [
+        {
+          "path": "scripts/playtest/sync-feedback.mjs",
+          "anchor": "syncFeedback"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync saves every listed feedback across pages with text, media and context"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "sync issues only GET requests to admin feedback and session routes"
+          },
+          {
+            "path": "test/feedback-sync.test.mjs",
+            "anchor": "an export whose receipt hash does not match is recorded as failed without a final directory"
           }
         ]
       },
@@ -7975,7 +8145,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "4f2f027ea2973ef1a94aa9aa65710537d0ced1a1fd9d4362a2262e392ae6f388",
+      "sourceSha256": "3a054e9a566e1ff0314f36f27d653ae43b70c68f4f63b8fdeeb4c67e9db30cd0",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -8115,7 +8285,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8124,7 +8294,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "e8ba4649dd63158c94bf9fd7fc022e51cb69ccefc31e1185faf4c921e2293033",
+      "sourceSha256": "7b091ae6d37f0ab41d4391dae6c4aba5198364205242a0a0b3fdc490c58ec5ed",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -8179,7 +8349,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "95ce8fedc5ba23533fcfbf273770f7b7c10fac90011d97a4a15ce07c52a34a8c",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8253,7 +8423,7 @@
         "test/f2.test.mjs",
         "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "7e0f551e0a30874a2ac39b324d7985f05175dc5d9ba7df05f94ae7e5d538fd85",
+      "sourceSha256": "581bdebc5d8e7bb31434237fa921b9da34d6e2d33ed8c20514c663bdaf41b47d",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -8348,7 +8518,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "95ce8fedc5ba23533fcfbf273770f7b7c10fac90011d97a4a15ce07c52a34a8c",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8585,7 +8755,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8fa115db852916c17c009911e630e598d3cac1be3b05ed259a38ccb416aa3b38",
+      "consumerSourceHash": "e32c47892ab2acceb0f75217c01dc32b1c06b2d98847f67428e4f68cf677ea58",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8866,7 +9036,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "442c7fae24b3579aed874db628bb5f7b050518826e3b198899ab664d082c5949",
+      "consumerSourceHash": "7a7a241ff429816210a950777ec0c6c2a96dfc7661c872c2bb17dec269f99ce6",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -8900,7 +9070,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -8977,7 +9147,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9048,7 +9218,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9091,7 +9261,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9108,6 +9278,7 @@
         "scripts/playtest/experiments.mjs",
         "scripts/playtest/load.mjs",
         "scripts/playtest/release.mjs",
+        "scripts/playtest/sync-feedback.mjs",
         "scripts/playtest/verify-deployment.mjs",
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs",
@@ -9117,6 +9288,7 @@
         "test/experiment-transport.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-load.test.mjs",
+        "test/feedback-sync.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-corpus.test.mjs",
         "test/playtest-load.test.mjs",
@@ -9244,7 +9416,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8e26e8b2ef4af857c12ca2aa036d68ef3c6ca73ea7fb92b7f84e2f5a0d41d4f8",
+      "consumerSourceHash": "8e61d1ec387b9819a294ca9b4ee7fa375f3604a4afc630667213a6ec5e3e5fd4",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9396,7 +9568,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "95ce8fedc5ba23533fcfbf273770f7b7c10fac90011d97a4a15ce07c52a34a8c",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9722,7 +9894,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9807,7 +9979,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "173084dd7b8968c02c0d280f06ba4c83e8063296da388165b2051602f5e9cbf3",
+      "consumerSourceHash": "e205230b34ac43337753a042ce91ad18fb424025038819d5938da1c7466586a3",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9906,9 +10078,11 @@
         "test/feedback-attachments.test.mjs",
         "test/feedback-backend.test.mjs",
         "test/feedback-client-state.test.mjs",
+        "test/feedback-sync.test.mjs",
+        "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "173084dd7b8968c02c0d280f06ba4c83e8063296da388165b2051602f5e9cbf3",
+      "consumerSourceHash": "e205230b34ac43337753a042ce91ad18fb424025038819d5938da1c7466586a3",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10061,7 +10235,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10144,7 +10318,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "8e26e8b2ef4af857c12ca2aa036d68ef3c6ca73ea7fb92b7f84e2f5a0d41d4f8",
+      "consumerSourceHash": "8e61d1ec387b9819a294ca9b4ee7fa375f3604a4afc630667213a6ec5e3e5fd4",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10331,7 +10505,7 @@
           ]
         }
       ],
-      "sourceSha256": "403f6e09c0618ecac5f8309f8936d36dd56f96673fe58f25b1bb5294b3a59b1b",
+      "sourceSha256": "12d18c7458078104fc04dcaa37e93ce5935558ef4902e5675c838e5a6c71d541",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
@@ -10381,7 +10555,7 @@
           ]
         }
       ],
-      "sourceSha256": "a7faaea8dee43b077d41e8d5e58acbe224b3d25e2bf040e135e8b7d025255a24",
+      "sourceSha256": "3067826085df0447532da9ef28a298ea973160cb535e6f0f699871edbd9b4ccf",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
@@ -10408,13 +10582,15 @@
     "github-ubuntu-2cpu": {
       "measurement": true,
       "measurementRuns": [
-        "34889806209"
+        "34921754847"
       ],
       "moduleTimeoutMs": 30000,
       "unitTimeoutMs": 120000,
       "unitWorkers": 2,
       "ciBudgetMs": 900000,
       "browserWorkers": 2,
+      "waitScale": 10,
+      "liveSliceMs": 10000,
       "browserTimeoutMs": {
         "default": {
           "cap": 600000,

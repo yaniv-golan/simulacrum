@@ -26,11 +26,34 @@ function readOwner(directory) {
     throw error;
   }
 }
+/** The owner line the wait notice and the readiness probe print: tier, branch, destination and
+ * origin worktree when declared. */
+export function describeOwner(owner) {
+  if (!owner) return 'unpublished';
+  const declared = owner.intent ?? {};
+  const what = declared.tier ?? declared.script ?? 'no declared intent';
+  const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
+  const target = declared.destinationName ?? declared.destination;
+  const branch = declared.head ? ` on ${declared.head}` : '';
+  const to = declared.stack
+    ? ` → stacked on ${declared.stack}`
+    : target
+      ? ` → destination ${target}`
+      : '';
+  return `PID ${owner.pid}, ${what}${branch}${to}, ${where}`;
+}
 /** The live window owner, if any: `{pid, startedAt, directory, cwd, intent?}` for a running
  * process, else null. Read-only; never enters the window. */
 export function currentWindowOwner(directory = defaultDirectory()) {
   const owner = readOwner(directory);
   return owner && alive(owner.pid) ? owner : null;
+}
+/** Read-only window state for a poller: free, owned by a live process, or abandoned (an owner
+ * file whose process is gone — the tier would refuse it, recovery is explicit). */
+export function windowState(directory = defaultDirectory()) {
+  const owner = readOwner(directory);
+  if (!owner) return { state: 'free' };
+  return alive(owner.pid) ? { state: 'owned', owner } : { state: 'abandoned', owner };
 }
 function removeOwned(directory, token) {
   const owner = readOwner(directory);
@@ -68,6 +91,7 @@ const INTENT_FIELDS = [
   'destinationName',
   'origin',
   'head',
+  'stack',
 ];
 /** Owner-declared purpose published to contenders: printable single-line strings
  * (paths and ref names), never environment values. */
@@ -270,15 +294,7 @@ if (
       const intent = process.env.SIMULACRUM_VERIFICATION_INTENT
         ? validateIntent(JSON.parse(process.env.SIMULACRUM_VERIFICATION_INTENT))
         : { script: basename(script) };
-      const describe = (owner) => {
-        if (!owner) return 'unpublished';
-        const declared = owner.intent ?? {};
-        const what = declared.tier ?? declared.script ?? 'no declared intent';
-        const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
-        const target = declared.destinationName ?? declared.destination;
-        const branch = declared.head ? ` on ${declared.head}` : '';
-        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
-      };
+      const describe = describeOwner;
       const run = () => {
         childStarted = true;
         return runProcess(process.execPath, [script, ...args], {
@@ -293,7 +309,7 @@ if (
             intent,
             onWait: ({ elapsedMs, waitMs, owner }) =>
               console.error(
-                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it. ` : ''}Cancel to return to editing.`,
+                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it (merge it, then merge --stack ${owner.intent.head ?? '<that branch>'}). ` : ''}Cancel to return to editing.`,
               ),
           });
       Object.assign(report, {

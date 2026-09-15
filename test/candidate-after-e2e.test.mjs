@@ -143,7 +143,7 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
     'unit:test/geometry.test.mjs',
     'browser:perf',
     'build:browser',
-    'check:layers',
+    'structural:layers',
     'ci:budget',
   ])
     assert.ok(executed.includes(id), `${id} executed`);
@@ -160,7 +160,7 @@ test('a diagnosed retry reuses the failed attempt on identical bytes, re-execute
   assert.deepEqual(retry.report.after.required, ['browser:x', 'unit:test/geometry.test.mjs']);
   assert.ok(retry.report.after.controls.includes('unit:test/geometry.test.mjs'));
   assert.ok(retry.report.after.alwaysFresh.includes('build:browser'));
-  assert.ok(retry.report.after.alwaysFresh.includes('check:layers'));
+  assert.ok(retry.report.after.alwaysFresh.includes('structural:layers'));
   assert.deepEqual(retry.report.after.notSelected, []);
   assert.equal(retry.report.after.causes['browser:x'], 'late pause landed after the load fell');
   assert.deepEqual(retry.report.after.chain, [first.report.attempt]);
@@ -337,6 +337,26 @@ test('a phase refused before its rows ran is retried through the phase cause and
     retry.report.after.reused.some((r) => r.id === 'browser:x'),
     'the passing row reused',
   );
+  // `@refusal` cites the parent's recorded admission refusal verbatim; the expanded text and its
+  // source are on the report, the typed shorthand is not.
+  const cited = run(['after', first.root, parent, 'x=pass', '--cause=browser=@refusal']);
+  assert.equal(cited.status, 0, cited.stderr);
+  assert.equal(cited.report.status, 'passed after failure');
+  assert.equal(
+    cited.report.after.causes.browser,
+    first.report.verification.results.find((r) => r.id === 'browser').refusal.reason,
+  );
+  assert.equal(
+    cited.report.after.causes.browser,
+    'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+  );
+  assert.deepEqual(cited.report.after.causeSources, { browser: 'parent refusal' });
+  // Only the phase id may cite it; a refused expansion leaves the typed text on the failed report.
+  const wrongId = run(['after', first.root, parent, 'x=pass', '--cause=browser:perf=@refusal']);
+  assert.equal(wrongId.status, 1);
+  assert.match(wrongId.report.error, /only the phase id browser/);
+  assert.equal(wrongId.report.after.causes['browser:perf'], '@refusal');
+  assert.equal(wrongId.report.after.causeSources, undefined);
   // Refused again in the child: the observation fails the retry rather than passing on the plan.
   const again = run([
     'after',
@@ -348,6 +368,50 @@ test('a phase refused before its rows ran is retried through the phase cause and
   ]);
   assert.equal(again.status, 1);
   assert.equal(again.report.status, 'failed');
+});
+
+test('@refusal is refused when the parent recorded no admission refusal, and covers only the refused rows beside a real failure', (t) => {
+  // A browser check that ran and failed carries no refusal: the shorthand is not a diagnosis.
+  const failed = run(['first', 'new', '', 'x=fail']);
+  cleanup(t, failed);
+  const template = run([
+    'after',
+    failed.root,
+    failed.report.attemptReport,
+    'x=pass',
+    '--cause=browser=@refusal',
+  ]);
+  assert.equal(template.status, 1);
+  assert.match(template.report.error, /records no admission refusal/);
+  assert.equal(
+    template.calls.some((c) => c.kind === 'process'),
+    false,
+  );
+  // A failure beside a refusal: @refusal covers the refused row, the failed row still needs its
+  // own diagnosed cause.
+  const both = run(['first', 'new', '', 'x=fail', 'refuse=timing']);
+  cleanup(t, both);
+  const onlyRefusal = run([
+    'after',
+    both.root,
+    both.report.attemptReport,
+    'x=pass',
+    '--cause=browser=@refusal',
+  ]);
+  assert.equal(onlyRefusal.status, 1);
+  assert.match(onlyRefusal.report.error, /browser:x/);
+  const bothCauses = run([
+    'after',
+    both.root,
+    both.report.attemptReport,
+    'x=pass',
+    '--cause=browser=@refusal',
+    '--cause=browser:x=late pause landed after the load fell',
+  ]);
+  assert.equal(bothCauses.status, 0, bothCauses.stderr);
+  assert.equal(bothCauses.report.status, 'passed after failure');
+  assert.deepEqual(bothCauses.report.after.coverage.browser.covers, ['browser:perf']);
+  assert.deepEqual(bothCauses.report.after.causeSources, { browser: 'parent refusal' });
 });
 
 test('an attempt that failed around a green tier needs the candidate cause, and a retry that dies after capture keeps its chain', (t) => {
@@ -462,7 +526,7 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
     'browser:smoke',
     'browser:hosted',
     'build:browser',
-    'check:layers',
+    'structural:layers',
     'ci:budget',
   ])
     assert.ok(executed.includes(id), `${id} executed`);
@@ -563,4 +627,185 @@ test('a passed local attempt lends its workshop browser receipts to a merge cand
   ]);
   assert.equal(caused.status, 1);
   assert.match(caused.report.error, /nothing failed/);
+});
+
+test('--when-quiet polls the launch admission outside the window before capture and never touches identity', (t) => {
+  // Admitted at once: the wait is recorded and the run proceeds exactly as without the flag.
+  const plain = run(['first', 'new', '', 'x=pass']);
+  cleanup(t, plain);
+  const quiet = run(['first', 'new', '', 'x=pass', 'quiet=admit', '--when-quiet=60000']);
+  cleanup(t, quiet);
+  assert.equal(quiet.status, 0, quiet.stderr);
+  assert.equal(quiet.report.status, 'passed');
+  assert.equal(quiet.report.whenQuiet.admitted, true);
+  assert.equal(quiet.report.whenQuiet.waitedMs, 0);
+  assert.equal(quiet.report.whenQuiet.maxWaitMs, 60000);
+  assert.equal(quiet.report.whenQuiet.reach.basis, 'origin selection');
+  assert.ok(['timing', 'structural'].includes(quiet.report.whenQuiet.reach.value));
+  assert.equal(quiet.report.whenQuiet.samples.count, 1);
+  assert.ok(quiet.admissions >= 1, 'the launch admission was consulted');
+  // Scheduling only: the tier's priority record and the tier arguments are byte-identical.
+  assert.deepEqual(quiet.report.priority, plain.report.priority);
+  assert.equal(quiet.report.verification.argv.includes('--when-quiet'), false);
+  assert.equal(plain.report.whenQuiet, undefined);
+  // A refused host: the poll expires (one interval past a 1 ms budget), nothing is captured,
+  // the failed report is published before any key exists and names the last refusal.
+  const refused = run(['first', 'new', '', 'x=pass', 'quiet=refuse', '--when-quiet=1']);
+  cleanup(t, refused);
+  assert.equal(refused.status, 1);
+  assert.equal(refused.report.status, 'failed');
+  assert.match(refused.report.error, /--when-quiet expired after \d+ ms/);
+  assert.match(refused.report.error, /WindowServer/);
+  assert.equal(refused.report.whenQuiet.admitted, false);
+  assert.equal(refused.report.attestation, undefined);
+  assert.equal(refused.report.directory, undefined);
+  assert.equal(
+    refused.calls.some((c) => c.kind === 'capture' || c.kind === 'process'),
+    false,
+  );
+  // An owned window holds the poll without consulting the admission; the owner is recorded.
+  // (The window is host-wide, so the fixture scripts it: a free host is not a free window.)
+  const held = run(['first', 'new', '', 'x=pass', 'quiet=admit', 'window=owned', '--when-quiet=1']);
+  cleanup(t, held);
+  assert.equal(held.status, 1);
+  assert.match(held.report.error, /--when-quiet expired .* verification window owned by pid 4242/);
+  assert.equal(held.admissions, 0, 'the admission is not consulted while the window is owned');
+  assert.deepEqual(
+    held.report.whenQuiet.windowOwners.map((o) => o.pid),
+    [4242],
+  );
+  assert.equal(held.report.whenQuiet.samples.transitions[0].kind, 'window-owned');
+});
+
+test('--when-quiet on a diagnosed retry waits after the parent is admitted and before its bytes are compared', (t) => {
+  const first = run(['first', 'new', '', 'x=fail']);
+  cleanup(t, first);
+  const retry = run([
+    'after',
+    first.root,
+    first.report.attemptReport,
+    'x=pass',
+    'quiet=admit',
+    '--when-quiet=60000',
+    '--cause=browser:x=late pause',
+  ]);
+  assert.equal(retry.status, 0, retry.stderr);
+  assert.equal(retry.report.status, 'passed after failure');
+  assert.equal(retry.report.whenQuiet.admitted, true);
+  assert.equal(retry.report.after.mode, 'same-bytes');
+  // The admission is refused before capture: the parent's classification stands on the report,
+  // the wait is recorded, nothing ran.
+  const held = run([
+    'after',
+    first.root,
+    first.report.attemptReport,
+    'x=pass',
+    'quiet=refuse',
+    '--when-quiet=1',
+    '--cause=browser:x=late pause',
+  ]);
+  assert.equal(held.status, 1);
+  assert.match(held.report.error, /--when-quiet expired/);
+  assert.equal(held.report.after.parentAttempt, first.report.attempt);
+  assert.equal(held.report.after.sameBytes, undefined, 'bytes are compared only after the wait');
+  assert.equal(
+    held.calls.some((c) => c.kind === 'process'),
+    false,
+  );
+});
+
+test('--when-quiet on a merge candidate polls at the reach the merge policy gives the delta, not the bare affected selection', (t) => {
+  // Review blocker: verify-merge widens a risky delta (scripts/, src/model…) to every functional
+  // row and runs a timing row only when the delta reaches what it measures; the bare affected
+  // selection reaches neither. Polling on the bare selection would admit a structural poll
+  // before a timing launch — the exact lax poll the flag exists to avoid — or the reverse.
+  // Widened: no check script is in the delta (bare reach: structural), but scripts/ is risky and
+  // src/core/ is inside the render row's measured scope, so the tier launches timing.
+  const widened = run([
+    'first',
+    'new',
+    '',
+    'tier=merge',
+    'smokes=3',
+    'quiet=refuse',
+    '--when-quiet=1',
+    'merge-files=scripts/tool.mjs,src/core/a.mjs',
+  ]);
+  cleanup(t, widened);
+  assert.equal(widened.status, 1);
+  assert.match(widened.report.error, /--when-quiet expired/);
+  assert.equal(widened.report.whenQuiet.reach.value, 'timing');
+  assert.equal(widened.report.whenQuiet.reach.basis, 'merge selection');
+  assert.match(widened.report.whenQuiet.reach.fullReason, /scripts\/tool\.mjs/);
+  assert.equal(widened.report.whenQuiet.reach.files, 2);
+  assert.equal(widened.report.attestation, undefined);
+  // The reverse: the delta names the timing row's own script (bare reach: timing), but that
+  // script is outside what the row measures, so the merge tier omits it and launches structural.
+  const narrowed = run([
+    'first',
+    'new',
+    '',
+    'tier=merge',
+    'smokes=3',
+    'quiet=refuse',
+    '--when-quiet=1',
+    'merge-files=scripts/perf.mjs',
+  ]);
+  cleanup(t, narrowed);
+  assert.equal(narrowed.status, 1);
+  assert.match(narrowed.report.error, /--when-quiet expired/);
+  assert.equal(narrowed.report.whenQuiet.reach.value, 'structural');
+  assert.equal(narrowed.report.whenQuiet.reach.basis, 'merge selection');
+  assert.equal(
+    [widened, narrowed].some((r) => r.calls.some((c) => c.kind === 'capture')),
+    false,
+  );
+});
+
+test('--when-quiet is refused beside --satisfied-by in the real argument order, before any poll', (t) => {
+  // The citation arguments are stripped before the flag is parsed, so a parser-side check would
+  // never see them: the refusal lives after both parses.
+  const cited = run([
+    'first',
+    'new',
+    '',
+    'tier=merge',
+    'quiet=admit',
+    '--when-quiet=60000',
+    '--arg=--satisfied-by',
+    '--arg=/nowhere',
+  ]);
+  cleanup(t, cited);
+  assert.equal(cited.status, 1);
+  assert.match(cited.report.error, /--when-quiet cannot accompany --satisfied-by/);
+  assert.equal(cited.admissions, 0, 'no poll ran');
+  assert.equal(cited.report.whenQuiet, undefined);
+  assert.equal(cited.report.attestation, undefined);
+  assert.equal(
+    cited.calls.some((c) => c.kind === 'capture' || c.kind === 'process'),
+    false,
+  );
+});
+
+test('--when-quiet on a resume publishes an unattested failed report when it expires', (t) => {
+  // The candidate key exists (the descriptor is read under it) but nothing of this attempt ran:
+  // an expired wait is published before the key attests anything.
+  const first = run(['first', 'new', '', 'x=pass']);
+  cleanup(t, first);
+  const held = run([
+    'resume',
+    first.root,
+    first.report.attemptReport,
+    'quiet=refuse',
+    '--when-quiet=1',
+  ]);
+  assert.equal(held.status, 1);
+  assert.match(held.report.error, /--when-quiet expired/);
+  assert.equal(held.report.parentAttempt, first.report.attempt);
+  assert.equal(held.report.whenQuiet.admitted, false);
+  assert.equal(held.report.attestation, undefined);
+  assert.equal(
+    held.calls.some((c) => c.kind === 'process' || c.kind === 'capture'),
+    false,
+  );
 });

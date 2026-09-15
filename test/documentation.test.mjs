@@ -192,14 +192,20 @@ test('referenced Markdown contracts bind authored text, never receipt metadata o
 });
 test('external resolved dependencies and opaque module behavior invalidate scoped provenance', (t) => {
   const f = fixture(t);
-  f.put('package-lock.json', '{"version":1}');
+  // A resolved dependency version is coverage; the lockfile's own release version is not.
+  const lock = (resolved) =>
+    JSON.stringify({
+      version: '1.0.0',
+      packages: { 'node_modules/some-package': { version: resolved } },
+    });
+  f.put('package-lock.json', lock('1'));
   f.put(
     'src/model/tool.mjs',
     "import {work} from 'some-package'; export function run(x){return work(x);}",
   );
   f.put('docs/development/guide.md', '# Owner\n[run](../../src/model/tool.mjs#symbol=run)\n');
   reviewSection(f.root, 'docs/development/guide.md', 'owner', receipt);
-  f.put('package-lock.json', '{"version":2}');
+  f.put('package-lock.json', lock('2'));
   assert.equal(f.inspect().sections[0].stale, true);
   f.put(
     'scripts/opaque.mjs',

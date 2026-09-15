@@ -160,8 +160,7 @@ try {
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/machine.json`);
-  await page.reload();
-  await page.waitForFunction(() => window.render_game_to_text);
+  await evidence.reload(page);
   await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   evidence.assert('equal', [

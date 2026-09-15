@@ -180,8 +180,7 @@ try {
     ['Powered Motor', 'Command Receiver', 'Bottom'],
     ['Power Cell', 'Powered Motor', 'Left'],
   ]) {
-    await page.reload();
-    await page.waitForFunction(() => window.render_game_to_text);
+    await evidence.reload(page);
     await placeCatalogPartByName(page, support);
     await browseAllParts(page);
     await placeCatalogPartByName(page, source);

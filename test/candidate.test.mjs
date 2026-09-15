@@ -4,7 +4,12 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, symlinkSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { captureCandidate, candidateMatchesOrigin } from '../scripts/candidate.mjs';
+import {
+  captureCandidate,
+  candidateMatchesOrigin,
+  candidateIdentity,
+  identityFiles,
+} from '../scripts/candidate.mjs';
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'candidate-test-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -126,6 +131,26 @@ test('destination drift is detected for named refs and not evaluated for bare co
     'UNRESOLVED',
   );
   assert.equal(destinationStillMatches(root, {}), 'NOT_EVALUATED');
+});
+
+// The per-path record a release cites is the candidate's own `files` map, from one function.
+test('identityFiles is the candidate identity files map: shas, modes, deletions, no index', async (t) => {
+  const { root, g } = fixture(t);
+  rmSync(join(root, 'deleted'));
+  writeFileSync(join(root, 'keep'), 'working');
+  writeFileSync(join(root, 'new'), 'untracked');
+  execFileSync('chmod', ['755', join(root, 'new')]);
+  const files = identityFiles(root);
+  const before = candidateIdentity(root);
+  assert.deepEqual(files, before.files);
+  assert.deepEqual(files.deleted, { deleted: true });
+  assert.equal(files.new.mode, 0o755);
+  assert.match(files.keep.sha256, /^[a-f0-9]{64}$/);
+  assert.equal('index' in files, false);
+  // Staging a byte-identical file changes the index, never the files map.
+  g('add', 'keep');
+  assert.deepEqual(identityFiles(root), files);
+  assert.notEqual(candidateIdentity(root).index, before.index);
 });
 
 test('a base ref resolves to the commit it names now, so a moved ref is a different base', async (t) => {
