@@ -10400,7 +10400,7 @@
     "github-ubuntu-2cpu": {
       "measurement": true,
       "measurementRuns": [
-        "34889806209"
+        "34921754847"
       ],
       "moduleTimeoutMs": 30000,
       "unitTimeoutMs": 120000,
