@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"52855d8bfed5d6dc19dc8cc016a634d722f7077ab414038605ffed73c6c80c26","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"7a2f40e84991612556e04e77d1ef29cbe4da92a66876e8164da0e92e4d02abd8","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): the edit path is unchanged; workshop-view.mjs gained the What's new/About/GitHub-link wiring and openHelp, workshop-app.mjs injects the release notes and calls considerWhatsNew after remote mount; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
+<!-- doc-review {"version":1,"fingerprint":"88359dd4bfd04d7b87e14b366ed85511e2a2962aa833abf63da77d2762c93384","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"34782e5f8e3b06813eb2bcab8163e50f80fc282d57713538afa101e4c2e58673","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The left column no longer hosts the Assemblies launcher (it lives in the header's Tools menu with Check machine, Measurements, New and Load), the header has one Build | Run switch with Pause and Step shown once the clock can run, the footer is a status line (mode, part count, status message, Next:) composed by footerModel, and the application calls view.offerFirstRun() after the remote playtest's setupClosed promise; the edit trace itself (command → session → frame → render) is unchanged. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -50,7 +50,13 @@ interpreting an active phase or a no-damage result as physical failure coverage.
 
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside
-the workshop root. Ordinary offline feedback does not add a second workbench row. Optional
+the workshop root. Ordinary offline feedback does not add a second workbench row. That
+footer is otherwise a status line (mode, part count, status message, the pending step)
+composed by [footerModel](../../src/presentation/workbench-content.mjs#symbol=footerModel);
+the header holds one Build | Run switch and a Tools menu (Check machine, Measurements,
+Assemblies, New, Load), so the left column is the parts catalogue alone; and the
+application offers the one-time first-run choice through `view.offerFirstRun()` only after
+the remote playtest's `setupClosed` promise resolves, keeping recording consent first. Optional
 [feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)
 combines the ordinary authored save with current UI state. It never requests a replay
 checkpoint or native physics bytes; recording keeps its separate capture path.
@@ -162,7 +168,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"831d0249395c8e61318771f1808ce17b945c8a1c7356c2ab640822c07e8ad1da","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"a3249eb86e5b2baad77e91e37d573581c280830c5b7039a6b7d4a86b3d873b5d","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; no canonical decision moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"4bbe74789f35abc23daa0d246c6de629efa24236806cf0e7fcf611ec9f1a37e8","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"c121fdf314d17b8611ac809169d3a577926750da670c4d9ca904279d71015548","disposition":"still accurate","rationale":"motion-diagnostics gained readinessLine/readinessNext derived from the same diagnoseMotion issues (no new authority), part-search's essentials list is the catalogue's one owner of that order, and the connection test's live line split its reason onto its own element; the canonical-decision reuse rules described here are unchanged."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |

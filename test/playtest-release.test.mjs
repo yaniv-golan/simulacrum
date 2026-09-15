@@ -82,6 +82,26 @@ test('release package rejects changed bytes, expiry and incompatible capture rol
     await save(wrong);
     await assert.rejects(verifyPackage(root), /verification/i);
   }
+  // Every tier since the launch admission opens its results with that row: a passed one is
+  // admitted ahead of the three phases; a refused one, a misplaced one or any other extra row
+  // is not a package.
+  const admitted = structuredClone(manifest);
+  admitted.verification.results.unshift({ id: 'launch-admission', ok: true });
+  admitted.verificationHash = verificationHash(admitted.verification);
+  await save(admitted);
+  assert.equal((await verifyPackage(root)).artifact, manifest.artifact);
+  for (const [mutate, message] of [
+    [(m) => (m.verification.results[0].ok = false), /launch admission did not pass/],
+    [(m) => m.verification.results.push(m.verification.results.shift()), /Incomplete/],
+    [(m) => m.verification.results.push({ id: 'scope-stability', ok: true }), /Incomplete/],
+    [(m) => (m.verification.results[0].id = 'admission'), /Incomplete/],
+  ]) {
+    const wrong = structuredClone(admitted);
+    mutate(wrong);
+    wrong.verificationHash = verificationHash(wrong.verification);
+    await save(wrong);
+    await assert.rejects(verifyPackage(root), message);
+  }
   await save(manifest);
   await writeFile(join(root, 'payload/worker.js'), 'substituted');
   await assert.rejects(verifyPackage(root), /integrity/);

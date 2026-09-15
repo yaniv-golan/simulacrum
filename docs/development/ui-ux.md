@@ -17,6 +17,9 @@ primary home; keyboard shortcuts may supplement it. A new part or example must n
 automatically add another permanent workbench panel. Keep selected identity,
 mechanical movement scope, electrical networks and saved assemblies distinct.
 
+Controls are anchored so that content which grows or appears with state moves away from
+them, never through them (the reserved reason lines beside the hold buttons are the pattern);
+live numbers beside a control use tabular figures.
 Use short verb/object labels, with shortcuts secondary. Explain what happens rather
 than repeating the label. Name causes only when the evidence establishes them;
 otherwise give the observation and a useful next check. Do not shrink text to make
@@ -24,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"5b10ab2ac76e47f16bf70acf21ed48f1f5ed65a3419d568df62bd3c6b2db15b7","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"53858d0c77a2d56db6e4a8f7a1bd4f0de7065f604d2fec86d71638a9253ebc9e","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): no lesson, example, experiment or challenge was added, extended or replaced; the What's new notice carries at most one invitation to existing Learn & examples content and Help's Try it runs existing card launchers — recorded as no entry."} -->
+<!-- doc-review {"version":1,"fingerprint":"c5296683a714a0a1d443be52ae707961de2811d484af0bc9a7f9d2ec1c7cfe55","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b5caef6a0098bacf221fb39d61e4c88f8f34f85deb309b1c27e86d4392bb4aaa","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The guided build now says what to do next and ticks a step from what the player built (k-th part of the step's type, k-th connection of its kind between the two types) with Do it for me as the fallback; Learn & examples remains the primary home and the first-run choice is a one-time entry, not a hint system. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,18 +128,29 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"49f40bd1e1d1dc2d5317fa4e297875fc3537bca6a03bbac33675790d058cb0ca","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"282337103dac12922c035c7cd318257a9066e5034462467034615390e994af7d","disposition":"updated","rationale":"What's-new candidate (pre-integration fe736bc): the Help paragraph now describes the What's new badge, notice, Help section and Try it with their trigger, dismissal, retrieval, yield rules and no-entry disposition, and a new paragraph covers the Source on GitHub link and the About line's version source; workshop-view.mjs, whats-new.mjs, workshop.css and workshop-app.mjs implement exactly that; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
+<!-- doc-review {"version":1,"fingerprint":"54ffdcdd917643863e3301c7f7c5ec4464e244548086500c71e453c90c7647a3","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"51af65f7ec5433baa5166ee952819501309fb9fd9705d7f222ed054320baadc5","disposition":"still accurate","rationale":"Re-recorded after the fix pass: Rewritten for the bench refresh: header (Build | Run switch, Pause/Step once running, Tools menu contents, what stays visible), footer status line and key badges, the readiness line's two faces, the inspector summary line, the six essentials with purpose lines, the first-run choice (trigger, completion, retrieval, hosted ordering, harness seeding), the reserved reason lines beside controls, and the anchoring rule; feedback, recording and learning dispositions are unchanged. Merged with what's-new's paragraph: two automatic surfaces exist and never coincide — the first-run choice on a first visit, the what's-new notice on a returning device with unseen notes — and the application offers the first-run choice before considering the notice, which yields to it and re-checks on its close. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
 
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-document and run actions in the header; parts in the left catalogue; separate edit
-and view groups at the workbench edge; selected properties and operations in the
-inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
+in the header, one Build | Run switch (Pause and Step appear once the clock can run;
+Step acts only while paused), Undo, Redo, Save, Choose scene, Edit scene, Learn &
+examples and Help stay visible, and the occasional commands — Check machine,
+Measurements, Assemblies, New, Load — live under one Tools ⋯ menu that closes on pick,
+Escape or leaving it, each keeping its name and `data-command`; parts in the left
+catalogue; separate edit and view groups at the workbench edge; selected properties and
+operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+The selected part's header carries one summary line from
+[inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
+type, the primary compiled connection (shaft before gear, power, signal, slide, rope and
+mount) with its peer's name, and the count of compiled connections — a rejected connection
+is not wired. It absorbs the former type line and never collapses a section.
 
 The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
-Recent and locally saved Favorites. Search covers the whole available catalog and
+Recent and locally saved Favorites. Essentials are the six parts a first machine needs
+(cell, motor, wheel, beam, hinge, plate), in build order, and only those tiles show the
+part's one-line purpose from the help content; every other category shows the name. Search covers the whole available catalog and
 ranks names, aliases, actions and related roles in that order, preferring complete
 query coverage across identity and function fields. Complete conservative typo corrections
 precede partial direct matches; numeric identities are exact.
@@ -152,7 +166,7 @@ Escape first cancels an active pickup, including when search has focus, and rest
 the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
 header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
 At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
-full width while Assemblies and recording remain retrievable.
+full width while Assemblies (in the Tools menu) and recording remain retrievable.
 Recent records accepted catalog placements. Expanded and compact catalogs are requested
 surfaces; picking closes them and cancellation restores the origin. The existing About
 window retains Overview and How to connect, with diagram links that reveal catalog
@@ -262,7 +276,7 @@ body, origin tick, window and sample count. New runs, selection and restored ses
 identity start a visibly new window; missing completed history makes the measurement
 unavailable. Closing measurements neither resets the plant nor hides boundary faults.
 
-Assemblies opens a bounded, searchable browser with rendered geometry and All assemblies,
+Assemblies (under the header's Tools menu) opens a bounded, searchable browser with rendered geometry and All assemblies,
 Built-in and My saved filters. Spring strut is supplied as a built-in definition by the
 application; it is not seeded into personal browser storage. Built-ins share the placement
 preview and have no rename/remove actions. The separate Spring strut palette button is removed.
@@ -312,7 +326,10 @@ dismissal remains a per-dialog choice. The nonmodal Part help window keeps its o
 titlebar pair (expand and close) as an adjacent, separately owned surface.
 Learn & examples opens a bounded browser. The top-right close control, Escape, or a
 click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
-into the parts area; leaving removes it. New examples enlarge this browser, not the
+into the parts area; leaving removes it. The guided build says what to do next ("Next:
+Place Motor") and ticks a step from what the player built, not from who placed it: the
+k-th part of the step's type, or the k-th connection of its kind between the two types,
+counts wherever it sits; "Do it for me" is the fallback and wires the player's own parts. New examples enlarge this browser, not the
 ordinary toolbar. The introductory activities identify their format and outcome: a guided
 rolling build with an independent motor-setting attempt, a keyboard driving task, and
 a spring-settling experiment. The spring inspector offers a requested damping comparison
@@ -436,7 +453,19 @@ Give feedback shares the existing workshop footer before, during and after recor
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
-readable and copyable here; the served marker remains for assessment evidence.
+readable and copyable here; the served marker remains for assessment evidence. Two
+automatic surfaces exist and never coincide. The first is the first-run choice
+([firstRunDecision](../../src/presentation/workbench-content.mjs#source)): once per
+remembered device, on an empty workshop with no guide active, a dialog asks how to
+start — guided build, the driving example, or (its × and Escape alike) the empty bench —
+and any answer is stored under `simulacrum-first-run-v1`; any earlier `simulacrum` key
+counts as a prior visit, and without storage the dialog never opens, so nobody is asked
+on every load. Its trigger is the first visit, its completion is any answer, and its
+retrieval route is Learn & examples (the primary home of both launchers) plus the empty
+bench's own guide button. On the hosted build it waits for recording setup to close, so
+consent precedes it and the recorder never captures the answer without consent. The
+browser harness marks every context a returning device unless a check asks for a first
+visit.
 
 Help also owns [What's new](../../src/presentation/whats-new.mjs#symbol=createWhatsNew):
 the player's task is to learn what changed since this device's last visit and where
@@ -445,12 +474,14 @@ last-seen note id is stored per device. A returning device with unseen notes get
 dot on the Help button (the button's name stays "Help"; the state is described for
 assistive technology) and, once per new notes head, a compact non-modal notice — a
 section with the dialog role, never a `<dialog>`, so workshop keys stay alive whenever
-focus is outside it. The notice is the one automatic surface: its trigger is a new
+focus is outside it. The notice is the second automatic surface, for returning devices only (a first visit
+has no cursor and gets the first-run choice instead): its trigger is a new
 notes head on this device; it is dismissed by its ×, Escape or a click outside;
 opening it or Help marks the notes seen; it never opens while a dialog is open, a
 placement is active, the mode is Run or Paused, a recording is active, the scene is
 being edited or anything already has focus, and it yields to an open dialog by
-re-checking once that dialog closes. Its only invitation is one "Open Learn &
+re-checking once that dialog closes — the first-run choice included, which the
+application offers first. Its only invitation is one "Open Learn &
 examples" button, to existing admitted content. The Help section lists new and
 seen-before notes with "Try it" for entries that name an example; Try it runs that
 card's own launcher, so the Build-only rule and replacement confirmation apply. A
@@ -488,12 +519,25 @@ measurements closed. No measurement is permission to invent physical causality.
 Closing Measurements suppresses formatting of hidden readings while completed-tick
 measurement accumulation continues. Reopening displays the retained window and
 current readings. Boundary warnings remain independent of this preference.
+The workshop footer is a status line composed by
+[footerModel](../../src/presentation/workbench-content.mjs#source): the mode (with the
+tick once the clock runs), the part count, the live status message (`role=status`) and
+"Next: …" — the guide's current step while a guide is active, otherwise the first missing
+readiness class from the diagnosis owner, and nothing when nothing is pending. The
+Space and "." keys are shown as badges on the control they currently trigger (Run,
+Pause, Step) instead of a footer hint; the badge never enters the control's name.
 Inspector readouts update their DOM only when formatted values change, and a live readout
 that shows a shaft speed reserves two lines for its reason line, so the hold buttons and
 sections below it stay put whether the command reads zero or "Powered" (a three-line
-paused reason can still shift them). The running
-health hint refreshes in 30-tick bands after tick 120 and invalidates its cached
-diagnosis when blueprint, session, epoch or operating mode changes.
+paused reason can still shift them). The machine
+health line has two faces from one diagnosis owner: in Build it is the readiness line
+("Ready to run · power ✓ · axles ✓ · drive set ✓ · Check machine"), re-derived per
+edit, claiming readiness only when every remaining issue is a zero drive setting and
+deferring to an issue's own title outside those three classes, and saying nothing for a
+machine holding an actuator the diagnosis does not check (hinge, linear actuator); while running it refreshes
+in 30-tick bands after tick 120 with the first blocker. Both invalidate the cached
+diagnosis when blueprint, session, epoch or operating mode changes; clicking either
+opens Check machine.
 
 Machine controls and measurements share a bounded layout at the lower workbench edge.
 They sit beside one another where space allows and stack on narrower workbenches,
@@ -512,7 +556,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"2141192d73f080bb166fbbd4e09819fd3230feef17e7715584ac3653bd5c8d3c","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"20e3fc88d5b12cc6943ff4f6ba30a7855e227c90aa6015fb231530be0cb863dd","disposition":"still accurate","rationale":"verify-authorable-scenes gained a Shift+ArrowUp/Down preview step under the same journey ownership; the section's rules on automation versus player evidence are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1fb638c2ad2ff26afa7ab580603c48e994c11ef4bd96bdfc047e70835a0cfadf","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"051905c6bbcb3dcddfec1721f8b12681543c3dc11a9146c164dee85039752f61","disposition":"still accurate","rationale":"The workbench-content and learning-examples journeys gained the first-run, footer and guide assertions and workbench-content.mjs gained pure models with unit controls; the verification guidance (scope discovery, journeys, separation of automation from player evidence) is unchanged."} -->
 
 
 

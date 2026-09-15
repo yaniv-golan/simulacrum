@@ -5,6 +5,7 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
+import { openTools } from './catalog-browser-actions.mjs';
 const browserEvidence = createBrowserEvidence();
 
 const out = browserArtifactPath('artifacts/edit-cycles');
@@ -131,6 +132,7 @@ try {
       const pending = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await (await pending).saveAs(`${out}/saved-machine.json`);
+      await openTools(page);
       await page.locator('[data-command=new]').click();
       await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
       await page.waitForFunction(

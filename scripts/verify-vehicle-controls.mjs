@@ -1,4 +1,4 @@
-import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, browseAllParts, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -118,9 +118,11 @@ try {
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/bindings.json`);
+  await openTools(page);
   await command('new');
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
+  await openTools(page);
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await (await chooser).setFiles(`${out}/bindings.json`);
   await page.waitForFunction(

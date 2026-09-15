@@ -1,5 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { assemblyPartition } from './assembly-scenarios.mjs';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -90,6 +90,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       await load(rover);
       const group = await selectAssembly(p, 'Rover corner');
       await group.getByRole('button', { name: 'Save to library', exact: true }).click();
+      await openTools(p);
       await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
       return p.getByRole('dialog', { name: 'Assemblies', exact: true });
     }
@@ -266,6 +267,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       const g = await selectAssembly(p, 'Rover corner');
       await g.getByRole('button', { name: 'Save to library', exact: true }).click();
       await g.getByRole('button', { name: 'Save to library', exact: true }).click();
+      await openTools(p);
       await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
       evidence.assert('equal', [
         await p
@@ -291,12 +293,14 @@ export async function runAssemblyCases(partition, evidence, browser) {
           .textContent(),
         /Rover corner-2 · Power/,
       ]);
+      await openTools(p);
       await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
       evidence.assert('equal', [await g.isVisible(), false]);
     });
     await attempt('sidebar-layout', async (p, load) => {
       await load(rover);
       await selectAssembly(p, 'Rover corner');
+      await openTools(p);
       await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
       evidence.assert('equal', [await p.locator('.assembly-instance').first().isVisible(), false]);
     });
@@ -358,6 +362,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       evidence.assert('deepEqual', [created.parts, before.parts]);
       evidence.assert('deepEqual', [created.connections, before.connections]);
       // Display rounding must not become an authored edit when a field is only visited.
+      await openTools(p);
       await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
       const dialog = p.getByRole('dialog', { name: 'Assemblies', exact: true });
       await dialog.getByRole('button', { name: 'My assembly', exact: true }).click();
@@ -381,6 +386,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       const group = await selectAssembly(p, 'Rover corner');
       await group.getByRole('button', { name: 'Save to library', exact: true }).click();
       const before = (await observed()).metadata.blueprint;
+      await openTools(p);
       const launcher = p.getByRole('button', { name: 'Assemblies', exact: true });
       await launcher.click();
       const dialog = p.getByRole('dialog', { name: 'Assemblies', exact: true });
@@ -398,11 +404,21 @@ export async function runAssemblyCases(partition, evidence, browser) {
       await search.fill('corner');
       await search.press('Escape');
       evidence.assert('equal', [await dialog.isVisible(), false]);
+      // The launcher sits in the Tools menu; leaving the browser hands focus to that control.
+      // The browser restores focus in the dialog's close event, a task queued after close()
+      // returns, so wait for it rather than reading once (the wrong trace — no focus restore —
+      // times this wait out).
+      await p.waitForFunction(
+        () => document.activeElement === document.querySelector('details.tools-menu > summary'),
+      );
       evidence.assert('equal', [
-        await launcher.evaluate((node) => node === document.activeElement),
+        await p
+          .locator('details.tools-menu > summary')
+          .evaluate((node) => node === document.activeElement),
         true,
       ]);
       evidence.assert('deepEqual', [(await observed()).metadata.blueprint, before]);
+      await openTools(p);
       await launcher.click();
       evidence.assert('equal', [await search.inputValue(), 'corner']);
       await p.setViewportSize({ width: 640, height: 360 });
@@ -462,6 +478,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       const bp = createEmptyBlueprint('hinge', 'Articulation');
       bp.parts.push(createPart('poweredHinge', 'hinge', [0, 1, 0]));
       await load(bp);
+      await openTools(p);
       await p.getByRole('button', { name: 'Check machine', exact: true }).click();
       const text = await p.getByRole('dialog', { name: 'Check machine' }).textContent();
       evidence.assert('doesNotMatch', [text, /Add a motor, a power cell and a driven wheel/]);
@@ -469,8 +486,13 @@ export async function runAssemblyCases(partition, evidence, browser) {
     });
     await attempt('failure-layout', async (p) => {
       await placeCatalogPart(p, 'poweredMotor');
+      // Build already shows the readiness line; the Run line is a different, later text.
+      await p.locator('.machine-health', { hasText: /^Not ready to run/ }).waitFor();
       await p.locator('[data-command=run]').click();
-      await p.locator('.machine-health').waitFor({ state: 'visible', timeout: 6000 });
+      // Running replaces the readiness line with the first blocker's own title.
+      await p
+        .locator('.machine-health', { hasNotText: /ready to run/ })
+        .waitFor({ state: 'visible', timeout: 6000 });
       const health = await p.locator('.machine-health').boundingBox(),
         follow = await p
           .getByRole('checkbox', { name: 'Follow motion' })

@@ -198,3 +198,45 @@ export function diagnoseMotion(frame) {
     }
   return issues;
 }
+const READINESS_CLASSES = [
+  ['power', 'MISSING_POWER'],
+  ['axles', 'MISSING_AXLE'],
+  ['drive set', 'COMMAND_OFF'],
+];
+// Powered parts the diagnosis does not check; a machine holding one gets no machine-wide verdict.
+const UNCHECKED_ACTUATORS = ['poweredHinge', 'linearActuator'];
+const uncovered = (parts) => parts.some((p) => UNCHECKED_ACTUATORS.includes(p.type));
+/**
+ * Build-mode readiness from diagnoseMotion issues. "Ready to run" only when every issue is
+ * COMMAND_OFF; an issue outside the three glyph classes keeps its own title so a bolted wheel
+ * never reads "axles ✓". Null when the line has nothing honest to say: an empty bench, or a
+ * machine with an actuator the diagnosis does not cover (hinge, linear actuator) — "power ✓"
+ * would then speak for parts nobody checked.
+ */
+export function readinessLine(issues, blueprint) {
+  const parts = blueprint.parts;
+  if (!parts.length || uncovered(parts)) return null;
+  if (!parts.some((p) => p.type === 'poweredMotor')) return 'No motor yet · Check machine';
+  const other = issues.find((i) => !READINESS_CLASSES.some(([, code]) => code === i.code));
+  if (other) return `${other.title} · Check machine`;
+  const codes = new Set(issues.map((i) => i.code));
+  const ready = issues.every((i) => i.code === 'COMMAND_OFF');
+  const glyphs = READINESS_CLASSES.map(
+    ([label, code]) => `${label} ${codes.has(code) ? '✗' : '✓'}`,
+  ).join(' · ');
+  return `${ready ? 'Ready to run' : 'Not ready to run'} · ${glyphs} · Check machine`;
+}
+const NEXT_STEPS = {
+  MISSING_POWER: 'wire a cell to the motor',
+  MISSING_AXLE: 'connect the motor to a wheel',
+  COMMAND_OFF: 'set the drive above zero',
+};
+/** The first missing readiness class as a step, or null when the health line owns the story. */
+export function readinessNext(issues, blueprint) {
+  const parts = blueprint.parts;
+  if (!parts.length || uncovered(parts)) return null;
+  if (!parts.some((p) => p.type === 'poweredMotor')) return 'add a motor';
+  if (issues.some((i) => !Object.hasOwn(NEXT_STEPS, i.code))) return null;
+  const code = Object.keys(NEXT_STEPS).find((c) => issues.some((i) => i.code === c));
+  return code ? NEXT_STEPS[code] : null;
+}

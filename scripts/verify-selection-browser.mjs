@@ -2,6 +2,7 @@ import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { openTools } from './catalog-browser-actions.mjs';
 const browserEvidence = createBrowserEvidence();
 
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
@@ -63,6 +64,7 @@ try {
     await page.getByRole('spinbutton', { name: 'Drive setting', exact: true }).inputValue(),
     '0.5',
   ]);
+  await openTools(page);
   await page.locator('[data-command=new]').click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();

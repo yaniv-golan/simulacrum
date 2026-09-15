@@ -2,21 +2,75 @@ import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { openTools } from './catalog-browser-actions.mjs';
 
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/workbench-content');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, firstRun: true });
+const read = (p = page) => p.evaluate(() => JSON.parse(window.render_game_to_text()));
 try {
-  await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
+  await evidence.goto(page, url);
   await page.waitForFunction(() => window.workshopProbe);
   page.setDefaultTimeout(6000);
+  // A first visit asks how to start; × (or Escape) means the empty bench and is remembered.
+  const chooser = page.locator('dialog.first-run');
+  await chooser.waitFor({ state: 'visible' });
+  evidence.assert('equal', [await chooser.getAttribute('aria-label'), 'How do you want to start?']);
+  await page.getByRole('button', { name: 'Close · start on the empty bench', exact: true }).click();
+  await chooser.waitFor({ state: 'detached' });
+  evidence.assert('equal', [await chooser.count(), 0, 'an answered chooser leaves the DOM']);
+  evidence.assert('equal', [(await read()).metadata.blueprint.parts.length, 0]);
   evidence.assert('equal', [
     await page.locator('.starter-guide').isVisible(),
     false,
     'the parts catalogue must not start with an unsolicited lesson/example panel',
+  ]);
+  evidence.assert('equal', [
+    await page.locator('.empty-hint [data-command=start-guide-hint]').isVisible(),
+    true,
+    'the empty bench keeps the guide reachable after the choice',
+  ]);
+  await evidence.reload(page);
+  await page.waitForFunction(() => window.workshopProbe);
+  evidence.assert('equal', [await chooser.count(), 0, 'the answer is remembered on this device']);
+  // The launcher runs from the dialog's queued close event; wait for its effect, never read once.
+  for (const [command, expect] of [
+    ['first-run-guide', (p) => p.locator('.starter-guide.active-guide').waitFor()],
+    [
+      'first-run-example',
+      (p) =>
+        p.waitForFunction(
+          () => JSON.parse(window.render_game_to_text()).metadata.blueprint.parts.length > 0,
+        ),
+    ],
+  ]) {
+    const fresh = await browser.newPage({ viewport: { width: 1280, height: 720 }, firstRun: true });
+    await evidence.goto(fresh, url);
+    await fresh.waitForFunction(() => window.workshopProbe);
+    await fresh.locator('dialog.first-run').waitFor({ state: 'visible' });
+    await fresh.locator(`[data-command=${command}]`).click();
+    await fresh.locator('dialog.first-run').waitFor({ state: 'detached' });
+    evidence.assert('equal', [await fresh.locator('dialog.first-run').count(), 0]);
+    await expect(fresh);
+    evidence.assert('ok', [true, `${command} ran its launcher`]);
+    await fresh.close();
+  }
+  const footer = page.locator('.workshop-footer');
+  evidence.assert('equal', [
+    await footer.locator('.next-step').isVisible(),
+    false,
+    'an empty bench has no invented next step',
+  ]);
+  evidence.assert('match', [await footer.locator('.mode-label').textContent(), /^Build$/]);
+  evidence.assert('equal', [
+    await page
+      .getByRole('button', { name: '▶ Run', exact: true })
+      .locator('.key-badge')
+      .textContent(),
+    'Space',
   ]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   evidence.assert('equal', [
@@ -67,9 +121,21 @@ try {
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
+  await footer.locator('.next-step').filter({ hasText: 'Next: Place Chassis' }).waitFor();
+  evidence.assert('equal', [
+    await footer.locator('.next-step').textContent(),
+    'Next: Place Chassis',
+    'the footer repeats the guide’s current step',
+  ]);
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
   evidence.assert('equal', [await page.locator('.starter-guide').isVisible(), false]);
+  evidence.assert('match', [await footer.locator('.parts-label').textContent(), /^8 parts$/]);
+  evidence.assert('equal', [
+    await footer.locator('.next-step').isVisible(),
+    false,
+    'a ready machine has nothing pending',
+  ]);
   const before = await read();
   evidence.assert('equal', [await page.locator('.selection-actions').count(), 0]);
   await page.locator('canvas').focus();
@@ -98,14 +164,41 @@ try {
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.screenshot({ path: `${out}/build.png` });
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), false]);
-  await page.locator('[data-command=run]').click();
+  // Pause and Step appear only once the clock can run; the switch marks the current mode.
+  const pauseButton = page.locator('[data-command=pause]'),
+    stepControl = page.locator('[data-command=step]'),
+    runButton = page.locator('[data-command=run]'),
+    buildButton = page.locator('[data-command=build]');
+  evidence.assert('equal', [await pauseButton.isVisible(), false, 'no Pause in Build']);
+  evidence.assert('equal', [await stepControl.isVisible(), false, 'no Step in Build']);
+  evidence.assert('equal', [await buildButton.getAttribute('aria-pressed'), 'true']);
+  await runButton.click();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
-  await page.locator('[data-command=pause]').click();
+  await pauseButton.waitFor({ state: 'visible' });
+  evidence.assert('equal', [await runButton.getAttribute('aria-pressed'), 'true']);
+  evidence.assert('equal', [await stepControl.isDisabled(), true, 'Step acts only while paused']);
+  await pauseButton.click();
+  await page.waitForFunction(() => !document.querySelector('[data-command=step]').disabled);
   evidence.assert('equal', [await page.locator('.move-scope').isVisible(), false]);
+  const toolsMenu = page.locator('details.tools-menu');
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+  evidence.assert('equal', [
+    await toolsMenu.evaluate((node) => node.open),
+    false,
+    'the Tools menu closes on pick',
+  ]);
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), true]);
+  await openTools(page);
+  await page.keyboard.press('Escape');
+  evidence.assert('equal', [
+    await toolsMenu.evaluate((node) => node.open),
+    false,
+    'Escape closes the Tools menu',
+  ]);
   await page.locator('[data-command=build]').click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
@@ -174,6 +267,7 @@ try {
   await page.getByRole('button', { name: 'I saved the file — open example', exact: true }).click();
   evidence.assert('notDeepEqual', [(await read()).metadata.blueprint, preserved]);
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await page.getByText('What is measured?', { exact: true }).click();
@@ -238,6 +332,7 @@ try {
     }
   }
   await page.locator('[data-command=build]').click();
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   // Requested content must remain stable while the simulation updates.
   await page.locator('[data-command=run]').click();
@@ -267,6 +362,7 @@ try {
   evidence.assert('equal', [await learn.evaluate((el) => el === document.activeElement), true]);
   await page.locator('[data-command=build]').click();
   const stable = (await read()).metadata.blueprint;
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await uploadWorkshopFile(page, {
@@ -283,6 +379,7 @@ try {
   });
   await page.getByText('Machine opened. Choose Run to try it.', { exact: true }).waitFor();
   evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
 
   // A compact effective viewport exercises dialog reflow; this is not browser zoom.

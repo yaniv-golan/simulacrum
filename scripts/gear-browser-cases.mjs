@@ -2,6 +2,7 @@ import {
   placeCatalogPart,
   placeCatalogPartByName,
   browseAllParts,
+  openTools,
 } from './catalog-browser-actions.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
@@ -83,6 +84,7 @@ async function verifyGearConstruction({ page, evidence, out }) {
   const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const started = performance.now();
   await page.locator('[data-command=build]').click();
+  await openTools(page);
   await page.getByRole('button', { name: 'New', exact: true }).click();
   const replace = page.getByRole('button', { name: 'Replace without saving', exact: true });
   if (await replace.isVisible()) await replace.click();

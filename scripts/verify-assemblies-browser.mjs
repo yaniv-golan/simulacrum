@@ -1,5 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, openTools } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -32,6 +32,7 @@ try {
   page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.render_game_to_text);
   const emptyMachine = (await observed()).metadata.blueprint;
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   const browserDialog = page.locator('.assembly-browser');
   evidence.assert('equal', [
@@ -65,6 +66,7 @@ try {
   evidence.assert('equal', [strut.assemblies[0].name, 'Spring strut']);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   evidence.assert('deepEqual', [(await observed()).metadata.blueprint, emptyMachine]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   await browserDialog
     .getByRole('combobox', { name: 'Assembly collection', exact: true })
@@ -91,6 +93,7 @@ try {
   evidence.assert('equal', [original.assemblies.length, 1]);
   evidence.assert('equal', [original.parts.length, 2]);
   evidence.assert('equal', [original.connections.length, 1]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Search assemblies' }).fill('missing');
   evidence.assert('equal', [await page.locator('.assembly-card').count(), 0]);
@@ -159,6 +162,7 @@ try {
   await (await download).saveAs(`${out}/machine.json`);
   await page.reload();
   await page.waitForFunction(() => window.render_game_to_text);
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   evidence.assert('equal', [
     await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).count(),
@@ -175,6 +179,7 @@ try {
   );
   const loaded = await snapshot('loaded');
   evidence.assert('deepEqual', [loaded, rotated]);
+  await openTools(page);
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).click();
   await libraryDialog.getByText('Saved item actions', { exact: true }).click();

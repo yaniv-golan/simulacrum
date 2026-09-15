@@ -45,6 +45,7 @@ export function createConnectionTest({
     selectedId,
     paths,
     live,
+    reason,
     warning,
     start,
     build,
@@ -103,7 +104,7 @@ export function createConnectionTest({
     frame = next;
     selectedId = part?.id;
     holdButtons = [];
-    live = warning = start = null;
+    live = reason = warning = start = null;
     if (!part || !['poweredMotor', 'poweredHinge'].includes(part.type)) return null;
     pathBlueprint = next.metadata.blueprint;
     paths = connectionTestPaths(pathBlueprint, part.id);
@@ -247,7 +248,9 @@ export function createConnectionTest({
         ),
       );
     live = node('p', '', 'connection-test-live');
-    disclosure.append(live);
+    // The reason keeps its own reserved line so the readings and the buttons above never move.
+    reason = node('p', '', 'connection-test-reason');
+    disclosure.append(live, reason);
     parent?.append(section);
     update(next);
     return section;
@@ -289,6 +292,7 @@ export function createConnectionTest({
       button.disabled = next.metadata.mode !== 'run' || !paths.manualReceiver;
     if (next.metadata.mode === 'build') {
       live.textContent = 'Run to read current and motion.';
+      reason.textContent = '';
       return;
     }
     const index = next.metadata.blueprint.parts.indexOf(part);
@@ -298,10 +302,9 @@ export function createConnectionTest({
       prefix +
       (part.type === 'poweredHinge'
         ? `${number(motor?.current, 'A')} · angle ${number(radiansToDegrees(motor?.position?.angle), '°')} · target ${number(radiansToDegrees(motor?.position?.targetAngle), '°')} · command ${number(motor?.position?.controlDuty, '')}`
-        : `${number(motor?.current, 'A')} · shaft ${number(motorShaftSpeed(next, index), 'rad/s')}`) +
-      (motor?.reasonCode && motor.reasonCode !== 'OK'
-        ? ` · ${explainReason(motor.reasonCode)}`
-        : '');
+        : `${number(motor?.current, 'A')} · shaft ${number(motorShaftSpeed(next, index), 'rad/s')}`);
+    reason.textContent =
+      motor?.reasonCode && motor.reasonCode !== 'OK' ? explainReason(motor.reasonCode) : '';
   }
   const visibility = () => {
     if (document.hidden) release();

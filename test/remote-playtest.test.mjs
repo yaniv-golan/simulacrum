@@ -78,6 +78,7 @@ async function fixture(t, options = {}) {
     }
     close() {
       this.open = false;
+      for (const [type, fn] of this.listeners ?? []) if (type === 'close') fn();
     }
     remove() {
       this.removed = true;
@@ -92,7 +93,9 @@ async function fixture(t, options = {}) {
     click() {
       return this.onclick?.();
     }
-    addEventListener() {}
+    addEventListener(type, fn) {
+      (this.listeners ??= []).push([type, fn]);
+    }
     removeEventListener() {}
     pause() {}
     async play() {
@@ -499,4 +502,30 @@ test('every playtest dialog dismisses through one named top-right × and no embe
   }
   assert.equal(new Set(labels).size, labels.length, 'accessible names identify each dialog');
   f.mount.dispose();
+});
+test('setupClosed settles only once recording setup is dismissed', async (t) => {
+  const f = await fixture(t);
+  // Recording setup is the one dialog the mount opens by itself (the feedback client's own
+  // dialogs are created first and stay closed).
+  const setup = f.nodes.find(
+    (n) => n.tag === 'dialog' && n.className === 'playtest-dialog' && n.open,
+  );
+  let settled = false;
+  f.mount.setupClosed.then(() => {
+    settled = true;
+  });
+  await settle();
+  assert.equal(settled, false, 'consent is still open');
+  setup.close();
+  await settle();
+  assert.equal(settled, true, 'the first-run chooser may follow now');
+});
+test('setupClosed settles at once when there is no recording server to consent to', async (t) => {
+  const offline = await fixture(t, { configUnavailable: true });
+  let immediate = false;
+  offline.mount.setupClosed.then(() => {
+    immediate = true;
+  });
+  await settle();
+  assert.equal(immediate, true, 'no recording server: nothing to wait for');
 });

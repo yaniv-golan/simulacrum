@@ -35,7 +35,7 @@ milestones above are met; each v2 release's notes name its deferred checks.
 
 ## Working loop
 
-<!-- doc-review {"version":1,"fingerprint":"364e2ae29312e97672580ca12471edcd7dce06abbbeb940e42265f8c4cb50a64","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The complete loop still matches current navigation, inspection, red-before-green and candidate owners. This integration adds a registered coupled physical regression and preserves the same completion tiers; source preparation and semantic review precede capture, and merged source requires its own merge candidate. No workflow command or human-evidence boundary changed. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"96ec854d7c9bb7de55f5f2ce367f006708b8225ac90b05ac19e816e94e3ac04c","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"100fe5c738cf156112b1a06eae8025f10351baf676498a05c1dc9498b51f7b95","disposition":"still accurate","rationale":"Only the linked ui-ux before-changing-player-facing-ui section re-fingerprinted (its placement paragraph gained the anchoring rule); the loop's steps are unchanged."} -->
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"889e9230e8a862a97e982f8a7116d171a668b072b40d9b81e63cc580729c2000","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"499834629d9130d1536275f6e82e0ef2caf7f32325ef06a3f22a18c0eb474e93","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the release runbook gained the version/tag rule, which does not alter how a change is verified."} -->
+<!-- doc-review {"version":1,"fingerprint":"3456b163f9e6e3b254b08cd1044c9a7cb449aa66ceedc10f194b595de0cf27e0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a090ccca1d431b83cd30eb0e6a72532cea8dac88bb1a603c7927891982dad8f","disposition":"updated","rationale":"Added the launch-boundary paragraph: every harness context is marked a returning device so the workshop's one-time first-run choice never opens inside an unrelated journey, and a first-visit check passes firstRun: true; tiers, commands and evidence requirements are otherwise unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -182,7 +182,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"262fe1e81552a3731cbfedb209f17248aabb7bedc9789bc06706ca3b086aaf9a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bb068c3ecfabcac0b793a54482803d9020df2d8576585600261ac154e21ba1b7","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; reference.md was regenerated for the new release-notes check and browser rows; the documentation workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"163d8b59794e273133bb45b6cb14477a3039ce83259a7e5d41b35dccec6f6e12","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7a19b675a5735f063e1053f9fade4c8ed01fe04cb2bcb4597f8f5a1a495127aa","disposition":"still accurate","rationale":"Only this section's linked dependencies re-fingerprinted (the bench refresh's documentation edits and the stacked integrations' reviews); the docs:prepare/review/check workflow it describes is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -323,7 +323,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"f34e32fdd95590751fd3a6d9b42c4c55424af1c87906ba8a3c1738e07766336e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"df83e4586c81e2952b0632b3009b60083e6b2fb61a5aa3ad16e650f3ce63f384","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; the manifest adds one gate-integrity check (release-notes) and one parallel browser row (verify-whats-new-browser) plus regenerated scopes; features.mjs adds UI_FEATURES.whatsNew and REPOSITORY_URL; workshop-app.mjs injects notes and calls considerWhatsNew. Execution phases and selection rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"82ec3bd22b7171a70b994dafee1cc3d9067d893018ca7572d4e0ef3617da5f64","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1f4c9d8f253b4e0938b3d90fe0418ec7cad1d14b7b6f264ed6e8615f30f75c17","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -462,6 +462,10 @@ Source changes stop new dispatches and drain already-started work.
 The [shared browser launch boundary](../../scripts/browser-session.mjs#implementation) checks the resolved profile and headless option against
 the child process execution policy, so passing a profile through a variable cannot bypass
 exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
+Every context it opens is marked a returning device (an init script stores the
+`simulacrum-first-run-v1` answer) so the workshop's one-time first-run choice never opens
+inside an unrelated journey; a check that is about the first visit passes
+`firstRun: true` to `newPage`/`newContext` and gets a clean device.
 Reports preserve manifest order, all failures, worker configuration and source identity.
 Every check records its planned schedule index, dispatch time, active browser peers and
 host load averages. These describe admission conditions; they do not establish stable
@@ -644,7 +648,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"331b8563bc2f2dbcd2c621df3fbd5782975771b24533a812c2a730c20a8ac6df","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e90c1f9f8fccd7a2b10828abffe65079d747d81589c0236390afd0875f38dbb","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; manifest rows added; candidate capture and tiers are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"fedaf593daea3d4c5e69dec044ba4cf78b45d49e6c14d166f05e1d3610f9fbb7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cb1f84c19a7f92c5f46ae9ba1448ea2f6dd7a162d62c4f3e5012fb28fce8425d","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

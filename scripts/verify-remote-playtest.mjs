@@ -88,7 +88,7 @@ const browser = await browserEvidence.launch({
     ],
   },
 });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, firstRun: true }),
   errors = browserEvidence.errors;
 
 page.setDefaultTimeout(15000);
@@ -157,6 +157,12 @@ try {
         throw Error('Data capture requested screen access');
       };
     });
+  // Recording consent comes first; the one-time first-run choice waits until setup closes.
+  browserEvidence.assert('equal', [
+    await page.locator('dialog.first-run').count(),
+    0,
+    'the first-run chooser must not compete with recording setup',
+  ]);
   await page.locator('[data-start]').click();
   console.log('share clicked');
   await page
@@ -172,6 +178,8 @@ try {
     });
   phase('capture');
   console.log('sharing');
+  await page.locator('dialog.first-run[open]').waitFor({ state: 'visible', timeout: 6000 });
+  await page.getByRole('button', { name: 'Close · start on the empty bench', exact: true }).click();
   const captureSeconds = Number(process.env.PLAYTEST_CAPTURE_SECONDS ?? 3);
   if (!Number.isFinite(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
     throw Error('Invalid capture duration');

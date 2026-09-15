@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOG } from '../src/model/catalog.mjs';
 import { PART_HELP, PART_EXAMPLES } from '../src/presentation/part-help-content.mjs';
-import { PRIMARY_PARTS, MORE_PARTS } from '../src/presentation/part-palette.mjs';
+import { ESSENTIAL_PARTS } from '../src/presentation/part-search.mjs';
 import { createEmptyBlueprint, createPart, loadSave } from '../src/model/blueprint.mjs';
 import { compileAssembly, snapConnection, proposeSurfaceMount } from '../src/model/assembly.mjs';
 function coverage(content) {
@@ -18,11 +18,17 @@ test('catalog help coverage rejects an omitted supported loaded type', () => {
   const missing = { ...PART_HELP };
   delete missing.logicController;
   assert.throws(() => coverage(missing));
-  assert.deepEqual(PRIMARY_PARTS, ['powerCell', 'poweredMotor', 'gripWheel']);
-  assert.deepEqual(
-    MORE_PARTS,
-    Object.keys(CATALOG).filter((type) => !PRIMARY_PARTS.includes(type)),
-  );
+  assert.deepEqual(ESSENTIAL_PARTS, [
+    'powerCell',
+    'poweredMotor',
+    'gripWheel',
+    'beam',
+    'poweredHinge',
+    'plate',
+  ]);
+  // Each essential tile shows its purpose line, so that copy must stay one short line.
+  for (const type of ESSENTIAL_PARTS)
+    assert.ok(PART_HELP[type].purpose.length <= 40, `${type}: ${PART_HELP[type].purpose}`);
   const loaded = {
     ...createEmptyBlueprint('help', 'Help'),
     parts: [createPart('logicController', 'logic', [0, 1, 0])],

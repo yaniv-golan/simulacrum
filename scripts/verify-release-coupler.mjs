@@ -1,4 +1,4 @@
-import { placeCatalogPartByName } from './catalog-browser-actions.mjs';
+import { placeCatalogPartByName, openTools } from './catalog-browser-actions.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -12,6 +12,7 @@ try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   page.setDefaultTimeout(6000);
+  await openTools(page);
   await page.getByRole('button', { name: 'New', exact: true }).click();
   const replace = page.getByRole('button', { name: 'Replace without saving', exact: true });
   if (await replace.isVisible()) await replace.click();

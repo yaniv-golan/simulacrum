@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"f39390434f14274db0ece56447954bbf6665198098c4c2a488fef45e88cd7155","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ade9f30b85406d1da62b6e6c32a737f9dc87071906601f5d1ddae5f210c19c18","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): features.mjs adds UI_FEATURES.whatsNew (an M3b UI feature) and REPOSITORY_URL; the part recipe steps are unchanged; package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change."} -->
+<!-- doc-review {"version":1,"fingerprint":"e6ac8ff86436c54e28888be55b7e3f40306755eae87d8b5a53b94fabfaecb8e8","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c75622a87f091b17a2e5ac9e6276ffb465588bedefb4edc3e45f1809604a4de9","disposition":"still accurate","rationale":"part-search's ESSENTIAL_PARTS is now the six essentials in build order (the catalogue's one owner of that list; PRIMARY_PARTS removed) and the load-cell journey opens Tools before New; adding a part still means catalogue, help, search vocabulary and manifest entries as described."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -119,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"57e5529db9df3f94ee53165cf9fd4b279845ea7f83379291f4cca50ab036642d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ce75fc9921112e23baae6e41fedf93146eefd265c8de3e730af270021836e1f0","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; interaction lifecycle, focus and key routing are unchanged (the notice follows the Teach-a-controller pattern)."} -->
+<!-- doc-review {"version":1,"fingerprint":"dbb0e9e66d85612ce9bfee2f5b37c4a726a34473209934e8783a1f52a5629caf","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9481b8c37c4a0ba68918a339f6f324bb851ccfffbe8503c5a52ba83f0061519a","disposition":"still accurate","rationale":"part-palette.mjs was removed (its unused PRIMARY_PARTS list duplicated the essentials), journeys gained openTools steps and the harness seeds the first-run cursor; the interaction-change guidance is unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -168,12 +168,17 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"8de52fc59f565033a796d297bf4e97ec23b9cbfc12546c0c9bd6ff5ecb05a93d","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5c099660747bcc869dfcc86121e72403fb929d3dc05b2f5acb068341d68527dc","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; readInteractionState gained a whatsNew diagnostics block, which follows the existing pattern the recipe describes."} -->
+<!-- doc-review {"version":1,"fingerprint":"456f72c30b2d61dd2ff0f5a7231e17c1e57ccc9c20b8ddb8f8255961c28e9bcc","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"7c7fb4833f67739bf302592de8ac2fcf61da844704188388d5fac2328572016b","disposition":"updated","rationale":"The recipe now names readinessLine and readinessNext beside diagnoseMotion: the Build readiness line and the footer's next step derive from the same issue list and claim nothing the diagnosis did not check (null for machines holding a hinge or linear actuator); the health hint's Run-mode cadence paragraph was updated for the two faces."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
-from a machine name.
+from a machine name. The Build readiness line and the footer's next step derive from the
+same issue list through [readinessLine](../../src/model/motion-diagnostics.mjs#symbol=readinessLine)
+and `readinessNext`: they claim nothing the diagnosis did not check (Ready only when every
+remaining issue is a zero drive setting; an issue outside the three checked classes keeps
+its own title; null for a machine holding a hinge or linear actuator), so a new diagnostic
+class needs a decision about which face carries it.
 
 Worked example: opposing-drive diagnostics identify command-adjusted axes on a shared
 assembly and suggest checking direction. Read [opposed-drive tests](../../test/opposed-drive-diagnostic.test.mjs)
@@ -181,9 +186,10 @@ and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include 
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
 
-The compact running health hint caches its diagnosis in 30-tick buckets after tick
-120. Blueprint, session and epoch changes retire that sample; leaving Run clears
-it. Preserve the completed-data diagnosis owner and independently drained
+The compact health hint caches its diagnosis: in Build per blueprint/session/epoch
+(the readiness line from `readinessLine`), while running in 30-tick buckets after tick
+120 (the first non-`COMMAND_OFF` blocker). Blueprint, session, epoch and mode changes
+retire that sample; the scene editor and the first running second clear it. Preserve the completed-data diagnosis owner and independently drained
 measurement/history cursors.
 
 For controller decisions, use [completed decision projection](../../src/model/controller-decision.mjs)
@@ -201,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"9c67ea264b2b64dd0e161d45cb04b7103dcf5268a584e4481e80aab4b28f97fe","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"57aca44e6fd20a58efc230ced6d5c5ba07098255cf1cffc437bc0a8531e6fbe3","disposition":"still accurate","rationale":"The recipe's dependency on the root README and the developer guide is documentary: the README was rewritten for players (what it is, status, install) and the developer guide gained the milestone-status section that received the README's qualification paragraph; neither change alters physics ownership, the simulation door, law inputs, the invariants the recipe names or its verification steps, which were re-read against src/simulation at this revision."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f0ffd440e88595bce54475d538e8ff57b1d3efe440ee9fdb83be3aca107d29c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"06f7e63c6fa16e953b6a728cad09cd95b8ab544a4281ca6fb1d35f59b250c08c","disposition":"still accurate","rationale":"Package verification launch row (fix-package-verification-launch-row on main 125a5ae): the drift is the release package's phase check admitting the launch-admission row and its control; no simulation, physics-door, power, checkpoint or contact behavior changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -508,7 +514,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"af1f45fa66fb6ea9c3829f4b6f2ac37c7a808153f23f6103f825c5bccf814417","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"21a2d6365c6ddeed861fa8adef342a7f9066cd1b32f371a7688d59d182b530a5","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; multi-part authoring is untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"84574a57634607a158e5c015705d66eb9ade6d7287bfc9a10be34ddb490b58c9","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1cfeb1003e885d1f323024ed21186fab45c106e279fe3003721121b36356db67","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -605,7 +611,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"aaff750a5dbb1bf612d076784355e04c2f323c4f41a60be3c5627c78e721878d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"b2c51e12f3fbc6e7c61e199c88889c511406836f40ee7c36e8f4f703caa1f676","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; scripts/source-identity.mjs gained releaseVersion() (package.json version with a semver-tag cross-check), an identity read that changes nothing about source or fingerprint identity; the What's new notice is a new overlay built as the recipe describes (section with the dialog role, own Escape and focus return, in-scene layering over the inspector column)."} -->
+<!-- doc-review {"version":1,"fingerprint":"97e12014ec85b338310cd0ee5cd65e56885d7e89775f45b340ed77c9293b1e24","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"be654b21cd7796fce46fc8e35746146fcaa639a2e0ed952751ab7eb0090265bb","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Journeys gained openTools steps and the connection test's reason moved to its own reserved line; the overlay guidance (placement, lifecycle, displaced UI, journeys) is unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -756,7 +762,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"e57fe6a866a78e7b5dcfe4877a71b2c3964c590ad72b29c271439492805174aa","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"1d0d4ab51ca4daf6fb4c3293bd68f485be7b3ec3cd0a003d3f0aad8691f68db1","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; adaptive graphics untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"48a10d46df93480169b47670e010daccd2a196cb7d8c4a653c445614ae93cd21","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"0790d873fe5018bee220b947fa83b585706e89f905c9201bb8bdbf0a31e8781b","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): verify-spring-browser gained the openTools step before Measurements and Choose scene; the adaptive-graphics thresholds, warmup and evidence rules are unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

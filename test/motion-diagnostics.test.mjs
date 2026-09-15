@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStarterVehicle } from '../src/model/starter-vehicle.mjs';
 import { createPart } from '../src/model/blueprint.mjs';
-import { diagnoseMotion } from '../src/model/motion-diagnostics.mjs';
+import { diagnoseMotion, readinessLine, readinessNext } from '../src/model/motion-diagnostics.mjs';
 function fixture() {
   const blueprint = createStarterVehicle();
   return {
@@ -133,4 +133,66 @@ test('production telemetry distinguishes healthy, disconnected, stopped and depl
       workshop.dispose();
     }
   }
+});
+test('build readiness line claims ready only when every issue is a zero drive setting', () => {
+  const f = fixture(),
+    line = () => readinessLine(diagnoseMotion(f), f.metadata.blueprint);
+  assert.equal(line(), 'Ready to run · power ✓ · axles ✓ · drive set ✓ · Check machine');
+  f.metadata.blueprint.parts[1].parameters.defaultDuty = 0;
+  assert.equal(
+    line(),
+    'Ready to run · power ✓ · axles ✓ · drive set ✗ · Check machine',
+    'zero drive coasts; it must not read drive set ✓',
+  );
+  f.metadata.blueprint.parts[1].parameters.defaultDuty = 1;
+  f.metadata.blueprint.connections = f.metadata.blueprint.connections.filter(
+    (c) => c.kind !== 'power',
+  );
+  assert.equal(line(), 'Not ready to run · power ✗ · axles ✓ · drive set ✓ · Check machine');
+  f.metadata.blueprint.connections = f.metadata.blueprint.connections.filter(
+    (c) => c.kind !== 'shaft',
+  );
+  assert.equal(line(), 'Not ready to run · power ✗ · axles ✗ · drive set ✓ · Check machine');
+});
+test('build readiness line defers to other issues and says nothing on an empty bench', () => {
+  const f = fixture(),
+    line = () => readinessLine(diagnoseMotion(f), f.metadata.blueprint),
+    shaft = f.metadata.blueprint.connections.find((c) => c.kind === 'shaft');
+  f.metadata.connections.find((c) => c.id === shaft.id).reasonCode = 'AXIS_MISMATCH';
+  assert.equal(line(), 'Motor needs its axle checked · Check machine', 'never "axles ✓" here');
+  assert.doesNotMatch(line(), /Ready/);
+  f.metadata.blueprint.parts = f.metadata.blueprint.parts.filter((p) => p.type !== 'poweredMotor');
+  f.metadata.blueprint.connections = [];
+  assert.equal(line(), 'No motor yet · Check machine');
+  f.metadata.blueprint.parts.push(createPart('poweredHinge', 'hinge', [0, 1, 0]));
+  assert.equal(line(), null, 'hinge-only machines are not "missing" a motor');
+  f.metadata.blueprint.parts = [createPart('linearActuator', 'ram', [0, 1, 0])];
+  assert.equal(line(), null, 'an actuator the diagnosis does not check gets no verdict');
+  const g = fixture();
+  g.metadata.blueprint.parts.push(createPart('poweredHinge', 'hinge', [0, 1, 0]));
+  assert.equal(
+    readinessLine(diagnoseMotion(g), g.metadata.blueprint),
+    null,
+    '"power ✓" must not speak for an unchecked hinge beside a ready motor',
+  );
+  f.metadata.blueprint.parts = [];
+  assert.equal(line(), null, 'the empty bench explains itself');
+});
+test('the next step names the first missing readiness class and nothing else', () => {
+  const f = fixture(),
+    next = () => readinessNext(diagnoseMotion(f), f.metadata.blueprint);
+  assert.equal(next(), null, 'a ready machine has no invented next step');
+  f.metadata.blueprint.parts[1].parameters.defaultDuty = 0;
+  assert.equal(next(), 'set the drive above zero');
+  f.metadata.blueprint.connections = f.metadata.blueprint.connections.filter(
+    (c) => c.kind !== 'power',
+  );
+  assert.equal(next(), 'wire a cell to the motor', 'power comes before the drive setting');
+  const shaft = f.metadata.blueprint.connections.find((c) => c.kind === 'shaft');
+  f.metadata.connections.find((c) => c.id === shaft.id).reasonCode = 'AXIS_MISMATCH';
+  assert.equal(next(), null, 'an alignment blocker is the health line’s story');
+  f.metadata.blueprint.parts = [createPart('linearActuator', 'ram', [0, 1, 0])];
+  assert.equal(next(), null, 'no "add a motor" for a machine built on another actuator');
+  f.metadata.blueprint.parts = [];
+  assert.equal(next(), null);
 });
