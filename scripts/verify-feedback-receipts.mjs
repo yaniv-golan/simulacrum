@@ -1172,7 +1172,7 @@ try {
           .querySelector('[data-completion-status]')
           ?.textContent.includes('Recording received'),
       undefined,
-      { timeout: 120000 },
+      { timeout: browserEvidence.waitBudget(120000) },
     );
     browserEvidence.assert('match', [
       await page.locator('[data-completion-status]').innerText(),

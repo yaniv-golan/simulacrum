@@ -190,7 +190,7 @@ test('the production save policy is the reusable-leaf predicate: non-process, ag
     });
     const run = createVerificationRun({ readIdentity: () => identity, writeLedger: ledger });
     await run.check('ci:budget', {}, () => ({ elapsedMs: 1 }));
-    await run.check('check:layers', {}, () => undefined);
+    await run.check('structural:layers', {}, () => undefined);
     await run.check('browser:perf', {}, () => ({ code: 0 }));
     await run.check('browser:smoke', {}, () => ({ code: 0 }));
     await run.check('browser:mirror', {}, () => ({ code: 0 }));
@@ -202,7 +202,7 @@ test('the production save policy is the reusable-leaf predicate: non-process, ag
     const reader = (id) =>
       createLeafLedger({ directory: dir, key, identity, eligible: [id] }).load(id, {});
     assert.equal(reader('ci:budget'), null);
-    assert.equal(reader('check:layers'), null);
+    assert.equal(reader('structural:layers'), null);
     assert.equal(reader('browser:perf'), null);
     assert.equal(reader('browser:smoke'), null);
     assert.equal(reader('browser:mirror')?.origin.attempt, 'a');

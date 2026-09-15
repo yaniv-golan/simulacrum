@@ -22,7 +22,7 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).tick >= 120,
     {},
-    { timeout: 10000 },
+    { timeout: browserEvidence.waitBudget(10000) },
   );
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   const realTimeTick = (await read()).tick;

@@ -25,11 +25,21 @@ export function checkFormat(root = process.cwd(), { timeoutMs = 60000 } = {}) {
         join(root, 'artifacts', 'format-gate', 'prettier-cache'),
         ...targets,
       ],
-      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs },
+      {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: timeoutMs,
+        // Prettier colours its warnings whenever CI is set (GitHub's runner), even through a
+        // pipe; the gate reads file names, not colours.
+        env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+      },
     );
   } catch (error) {
+    const plain = (line) => line.replace(/\x1B\[[0-9;]*m/g, '');
     const flagged = `${error.stdout ?? ''}${error.stderr ?? ''}`
       .split('\n')
+      .map(plain)
       .filter((line) => line.startsWith('[warn] ') && !/Code style issues|Run Prettier/.test(line))
       .map((line) => line.slice('[warn] '.length).trim());
     throw Error(

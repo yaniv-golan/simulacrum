@@ -17,6 +17,8 @@ import {
   resolveRetrySelection,
   attestReport,
   verifyAttestation,
+  expandRefusalCauses,
+  REFUSAL_CAUSE,
   reusableAcrossCandidates,
   reuseSet,
   reuseSummary,
@@ -73,7 +75,7 @@ function parent(overrides = {}) {
         { id: 'browser', status: 'failed' },
       ],
       checks: [
-        receipt('check:layers', true),
+        receipt('structural:layers', true),
         receipt('unit:test/geometry.test.mjs', true),
         receipt('unit:test/mirror.test.mjs', true),
         receipt('unit:test/other.test.mjs', true),
@@ -134,7 +136,7 @@ test('parent leaves classify into passing, failed, unexecuted and aborted aggreg
   assert.deepEqual(
     c.passing.map((r) => r.id),
     [
-      'check:layers',
+      'structural:layers',
       'unit:test/geometry.test.mjs',
       'unit:test/mirror.test.mjs',
       'unit:test/other.test.mjs',
@@ -336,7 +338,7 @@ test('reexecution covers non-pass leaves, their registered controls and every al
     'unit:test/geometry-wrong.test.mjs',
     'browser:spring-perf',
     'browser:audio',
-    'check:layers',
+    'structural:layers',
     'build:browser',
   ])
     assert.ok(r.has(id), id);
@@ -349,11 +351,11 @@ test('reexecution covers non-pass leaves, their registered controls and every al
   q.verification.checks.find((x) => x.id === 'browser:ball').ok = true;
   const r2 = reexecutionSet({ classification: classifyParentLeaves(q), manifest });
   assert.ok(r2.has('browser:mirror'));
-  assert.ok(r2.has('check:layers'));
+  assert.ok(r2.has('structural:layers'));
   assert.equal(r2.has('browser:ball'), false);
   // A failed structural check pulls the controls of the invariants it guards.
   const q2 = parent();
-  q2.verification.checks.find((x) => x.id === 'check:layers').ok = false;
+  q2.verification.checks.find((x) => x.id === 'structural:layers').ok = false;
   q2.verification.checks.find((x) => x.id === 'browser:ball').ok = true;
   assert.ok(
     reexecutionSet({ classification: classifyParentLeaves(q2), manifest }).has(
@@ -366,7 +368,7 @@ test('reexecution covers non-pass leaves, their registered controls and every al
   assert.equal(reusableLeaf('browser:smoke', manifest), false);
   assert.ok(r.has('browser:smoke'));
   assert.equal(reusableLeaf('unit:test/x.test.mjs', manifest), true);
-  assert.equal(reusableLeaf('check:layers', manifest), false);
+  assert.equal(reusableLeaf('structural:layers', manifest), false);
   assert.equal(reusableLeaf('ci:budget', manifest), false);
   // The required set is the observed part: non-pass leaves and invariant-derived leaves, never
   // the always-fresh classes that merely lack a receipt.
@@ -490,7 +492,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
   const child = {
     status: 'passed',
     checks: [
-      receipt('check:layers', true),
+      receipt('structural:layers', true),
       receipt('unit:test/geometry.test.mjs', true),
       receipt('unit:test/geometry-wrong.test.mjs', true),
       receipt('unit:test/mirror.test.mjs', true, {
@@ -536,7 +538,7 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
     'browser:smoke',
     'browser:spring-perf',
     'build:browser',
-    'check:layers',
+    'structural:layers',
   ]);
   assert.deepEqual(summary.after.required, [
     'browser:ball',
@@ -636,6 +638,85 @@ test('the summary names reused origins, re-executed leaves and maps a passing ti
       child,
     }).after.chain,
     ['00000000-0000-4000-8000-000000000000', p.attempt],
+  );
+});
+
+test("a failed unit control requires its invariant's structural check under the receipt key the gate writes, so a passing child validates", () => {
+  // Item 52: a failed unit file that controls an invariant naming a structural check
+  // (mirror.test.mjs → mirror-truth → layers) must require `structural:layers` — the id
+  // gate-structural.mjs keys the receipt by — never `check:layers`, which no child can carry.
+  const p = parent();
+  p.verification.results = [
+    { id: 'ci', status: 'failed', error: 'unit tests failed: test/mirror.test.mjs' },
+  ];
+  p.verification.checks = [
+    receipt('structural:layers', true),
+    receipt('unit:test/geometry.test.mjs', true),
+    receipt('unit:test/mirror.test.mjs', false),
+    receipt('ci:budget', false),
+  ];
+  const classification = classifyParentLeaves(p);
+  const required = requiredReexecution({ classification, manifest });
+  assert.ok(required.has('structural:layers'));
+  assert.ok(required.has('browser:mirror'));
+  assert.equal(
+    [...required].some((id) => id.startsWith('check:')),
+    false,
+  );
+  const reexecute = reexecutionSet({ classification, manifest });
+  const causes = new Map([
+    ['unit:test/mirror.test.mjs', 'host pressure: 0 tests ran in 30 s'],
+    ['ci:budget', 'host pressure: budget expired'],
+  ]);
+  const coverage = validateCauses(classification, causes);
+  // The child ran the structural gates (as every tier does), the control and the check.
+  const child = {
+    status: 'passed',
+    checks: [
+      receipt('structural:layers', true),
+      receipt('unit:test/geometry.test.mjs', true, {
+        resumed: true,
+        origin: { attempt: p.attempt, report: p.attemptReport, depth: 1 },
+      }),
+      receipt('unit:test/mirror.test.mjs', true),
+      receipt('ci:budget', true),
+      receipt('build:browser', true),
+      receipt('browser:mirror', true),
+      receipt('browser:smoke', true),
+    ],
+  };
+  const summary = afterSummary({
+    parent: p,
+    mode: 'same-bytes',
+    causes,
+    coverage,
+    reexecute,
+    required,
+    child,
+  });
+  assert.equal(summary.status, 'passed after failure');
+  assert.ok(summary.after.reexecuted.includes('structural:layers'));
+  validateAfterReport({ status: summary.status, after: summary.after, verification: child });
+  // Plausible wrong: a child that never ran the structural check is refused by name.
+  const withoutGate = structuredClone(child);
+  withoutGate.checks = withoutGate.checks.filter((c) => c.id !== 'structural:layers');
+  const partial = afterSummary({
+    parent: p,
+    mode: 'same-bytes',
+    causes,
+    coverage,
+    reexecute,
+    required,
+    child: withoutGate,
+  });
+  assert.throws(
+    () =>
+      validateAfterReport({
+        status: partial.status,
+        after: partial.after,
+        verification: withoutGate,
+      }),
+    /non-pass leaf structural:layers was not re-executed/,
   );
 });
 
@@ -876,7 +957,7 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
     sameBytes: { sameSource: true, sameDependencies: true, sameIdentity: true },
     offered: ['browser:ball', 'browser:mirror'],
     child: child([
-      receipt('check:layers', true),
+      receipt('structural:layers', true),
       receipt('browser:ball', true, { resumed: true, origin }),
       receipt('browser:smoke', true),
     ]),
@@ -885,7 +966,7 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
   assert.equal(summary.after.kind, 'reuse');
   assert.deepEqual(summary.after.reused, [{ id: 'browser:ball', origin }]);
   assert.deepEqual(summary.after.notSelected, ['browser:mirror']);
-  assert.deepEqual(summary.after.executed, ['browser:smoke', 'check:layers']);
+  assert.deepEqual(summary.after.executed, ['browser:smoke', 'structural:layers']);
   assert.deepEqual(summary.after.counts, { offered: 2, reused: 1, executed: 2 });
   assert.deepEqual(summary.after.chain, []);
   assert.equal(summary.after.parentTier, 'local');
@@ -980,4 +1061,66 @@ test('a reuse child is passed with reused receipts exactly when it resumed a rec
   );
   // validateAfterReport dispatches on the block kind.
   assert.equal(validateAfterReport(consistent), consistent);
+});
+
+test("@refusal expands only the browser phase cause, only from the attested parent's recorded refusal", () => {
+  const refusal = {
+    phase: 'timing',
+    failureKind: 'host-load',
+    reason: 'host pressure: WindowServer 55.8 % (foreign ≥ 40 %)',
+    ids: ['spring-perf', 'audio'],
+    suiteReport: '/tmp/suite/report.json',
+  };
+  const refused = parent();
+  refused.verification.checks = refused.verification.checks.filter(
+    (r) => !r.id.startsWith('browser:'),
+  );
+  refused.verification.results[2] = {
+    id: 'browser',
+    status: 'failed',
+    error: 'Browser checks failed: spring-perf, audio',
+    notEvaluated: ['spring-perf', 'audio'],
+    refusal,
+  };
+  assert.equal(REFUSAL_CAUSE, '@refusal');
+  const expanded = expandRefusalCauses(new Map([['browser', '@refusal']]), refused);
+  assert.deepEqual([...expanded.causes], [['browser', refusal.reason]]);
+  assert.deepEqual(expanded.sources, { browser: 'parent refusal' });
+  // A literal cause passes through untouched and unsourced.
+  const literal = expandRefusalCauses(new Map([['browser', 'desktop was drawing']]), refused);
+  assert.deepEqual([...literal.causes], [['browser', 'desktop was drawing']]);
+  assert.deepEqual(literal.sources, {});
+  // Only the phase id `browser` may cite the refusal.
+  for (const id of ['browser:spring-perf', 'unit:test/a.test.mjs', 'candidate', 'ci'])
+    assert.throws(
+      () => expandRefusalCauses(new Map([[id, '@refusal']]), refused),
+      /only the phase id browser/,
+    );
+  // A parent that records no refusal (a check that ran and failed; a pre-link parent) refuses
+  // the shorthand: a cause must be a diagnosis, never a template.
+  const failedRow = parent();
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), failedRow),
+    /records no admission refusal/,
+  );
+  const noReason = structuredClone(refused);
+  delete noReason.verification.results[2].refusal;
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), noReason),
+    /records no admission refusal/,
+  );
+  // The refusal must name exactly the rows the phase recorded as not evaluated.
+  const mismatch = structuredClone(refused);
+  mismatch.verification.results[2].refusal = { ...refusal, ids: ['spring-perf'] };
+  assert.throws(
+    () => expandRefusalCauses(new Map([['browser', '@refusal']]), mismatch),
+    /does not match/,
+  );
+  // The refused rows still classify as unexecuted beneath the phase, so the expanded cause
+  // covers them and nothing else changes.
+  const c = classifyParentLeaves(refused);
+  assert.deepEqual(validateCauses(c, expanded.causes).browser.covers, [
+    'browser:audio',
+    'browser:spring-perf',
+  ]);
 });

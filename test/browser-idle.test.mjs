@@ -43,10 +43,10 @@ test('a window with a stalled third is refused rather than proving nothing chang
 
 // A page whose predicate becomes true after `trueAfter` slices; loopTicks advance per read
 // unless the renderer is declared stalled.
-const waitingPage = ({ trueAfter, stalledFrom = Infinity, giveUpAfter = 40 }) => {
+const waitingPage = ({ trueAfter, stalledFrom = Infinity, giveUpAfter = 40, sliceMs = 2000 }) => {
   let reads = 0,
     slices = 0;
-  const timeout = Object.assign(Error('Timeout 2000ms exceeded'), { name: 'TimeoutError' });
+  const timeout = Object.assign(Error(`Timeout ${sliceMs}ms exceeded`), { name: 'TimeoutError' });
   return {
     evaluate: async () => (reads++ < stalledFrom ? reads : stalledFrom),
     // The real slice must be forwarded (a wait without it would fall back to the page's private
@@ -55,7 +55,7 @@ const waitingPage = ({ trueAfter, stalledFrom = Infinity, giveUpAfter = 40 }) =>
     waitForFunction: async (predicate, argument, options) => {
       assert.equal(typeof predicate, 'function');
       assert.equal(argument, 'sentinel');
-      assert.deepEqual(options, { timeout: 2000 });
+      assert.deepEqual(options, { timeout: sliceMs });
       if (++slices > giveUpAfter) throw Error('fake page asked too often');
       if (slices >= trueAfter) return { slices };
       throw timeout;
@@ -97,4 +97,88 @@ test('a live wait outlasts a private deadline while the loop ticks, and refuses 
     liveWait(broken, () => true, 'sentinel'),
     /Target closed/,
   );
+});
+test('live waits scale their patience from the hosted environment, never their starvation slice', async (t) => {
+  const { LIVE_SLICE_VARIABLE, WAIT_SCALE_VARIABLE } = await import('../scripts/host-profile.mjs');
+  const previous = {
+    scale: process.env[WAIT_SCALE_VARIABLE],
+    slice: process.env[LIVE_SLICE_VARIABLE],
+  };
+  t.after(() => {
+    for (const [key, value] of [
+      [WAIT_SCALE_VARIABLE, previous.scale],
+      [LIVE_SLICE_VARIABLE, previous.slice],
+    ])
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+  });
+  process.env[WAIT_SCALE_VARIABLE] = '10';
+  process.env[LIVE_SLICE_VARIABLE] = '10000';
+  // Slice comes from the profile (10 s), patience from the scale (30 s × 10 = 300 s = 30 slices):
+  // a predicate true on the 20th slice (200 s) is still inside the budget.
+  assert.deepEqual(
+    await liveWait(waitingPage({ trueAfter: 20, sliceMs: 10000 }), () => true, 'sentinel'),
+    {
+      slices: 20,
+    },
+  );
+  // An explicit maxMs is scaled the same way (2000 → 20000 = 2 slices of 10 s).
+  await assert.rejects(
+    liveWait(waitingPage({ trueAfter: 99, sliceMs: 10000 }), () => true, 'sentinel', {
+      maxMs: 2000,
+      label: 'duty 1',
+    }),
+    /duty 1 stayed false for 20000 ms \(2 slices\)/,
+  );
+  // Starvation is still "no frame in a slice" — the slice is the platform's, the verdict is not.
+  await assert.rejects(
+    liveWait(
+      waitingPage({ trueAfter: 99, stalledFrom: 2, sliceMs: 10000 }),
+      () => true,
+      'sentinel',
+    ),
+    (error) => {
+      assert.match(error.message, /renderer starved: no animation frame in a 10000 ms wait slice/);
+      assert.equal(error.failureKind, 'renderer-starved');
+      return true;
+    },
+  );
+});
+test('live waits report their slices and loop ticks to a registered sink for the platform record', async (t) => {
+  const { recordLiveWaits } = await import('../scripts/browser-idle.mjs');
+  const samples = [];
+  const stop = recordLiveWaits((sample) => samples.push(sample));
+  t.after(stop);
+  await liveWait(waitingPage({ trueAfter: 3 }), () => true, 'sentinel', { label: 'ready' });
+  assert.equal(samples.length, 1);
+  assert.equal(samples[0].label, 'ready');
+  assert.equal(samples[0].slices, 3);
+  assert.equal(samples[0].sliceMs, 2000);
+  assert.deepEqual(samples[0].ticksPerSlice.length, 3);
+  assert.ok(samples[0].ticksPerSlice.every((n) => n >= 1));
+  await assert.rejects(
+    liveWait(waitingPage({ trueAfter: 99, stalledFrom: 2 }), () => true, 'sentinel', {
+      label: 'stalled',
+    }),
+  );
+  assert.equal(samples[1].label, 'stalled');
+  assert.equal(samples[1].outcome, 'renderer-starved');
+  assert.equal(samples[1].ticksPerSlice.at(-1), 0);
+});
+test('driven ticks count from the tick the page saw the command, not from the harness key press', async () => {
+  const { drivenTicks } = await import('../scripts/browser-idle.mjs');
+  const waits = [];
+  const page = {
+    // loopTicks for liveness, then the tick at which the drive was first observed (late: 300).
+    evaluate: async (fn) => (String(fn).includes('loopTicks') ? Date.now() : 300),
+    waitForFunction: async (predicate, argument) => {
+      waits.push({ predicate: String(predicate), argument });
+      return { slices: 1 };
+    },
+  };
+  assert.equal(await drivenTicks(page, 480, { label: 'KeyW' }), 300);
+  assert.equal(waits.length, 2);
+  assert.match(waits[0].predicate, /sources\.some/);
+  assert.equal(waits[1].argument, 780);
+  assert.match(waits[1].predicate, /tick >= t/);
 });

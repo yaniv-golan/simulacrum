@@ -148,6 +148,41 @@ export function classifyParentLeaves(parent) {
   return { kind, passing, failed, unexecuted, unexecutedBy, abortedAggregates, candidateFailure };
 }
 
+/** `--cause browser=@refusal` cites the admission refusal the parent's browser phase recorded
+ * (the attested attempt report is the only admissible source); the text is expanded here and
+ * its provenance recorded. A parent that recorded no refusal, a refusal whose rows differ from
+ * the phase's not-evaluated list, or any id other than the phase id refuses the shorthand. */
+export const REFUSAL_CAUSE = '@refusal';
+export function expandRefusalCauses(causes, parent) {
+  const expanded = new Map(),
+    sources = {};
+  for (const [id, text] of causes) {
+    if (text !== REFUSAL_CAUSE) {
+      expanded.set(id, text);
+      continue;
+    }
+    if (id !== 'browser')
+      throw Error(
+        `--cause ${id}=${REFUSAL_CAUSE}: only the phase id browser may cite a recorded refusal`,
+      );
+    const row = (parent?.verification?.results ?? []).find((r) => r.id === 'browser');
+    const refusal = row?.refusal;
+    if (!refusal || typeof refusal.reason !== 'string' || !refusal.reason.trim())
+      throw Error(
+        'parent records no admission refusal for browser; write the cause (a check that ran and failed is diagnosed, not cited)',
+      );
+    const recorded = [...(row.notEvaluated ?? [])].sort(),
+      cited = [...(refusal.ids ?? [])].sort();
+    if (JSON.stringify(recorded) !== JSON.stringify(cited))
+      throw Error(
+        `parent refusal names ${cited.join(', ') || 'nothing'}, which does not match the rows the browser phase left not evaluated (${recorded.join(', ') || 'none'})`,
+      );
+    expanded.set(id, refusal.reason.trim());
+    sources[id] = 'parent refusal';
+  }
+  return { causes: expanded, sources };
+}
+
 /** Every failed or unexecuted leaf needs its own cause; a failed aggregate may carry one for the
  * leaves that never ran beneath it (optional: each such leaf may carry its own instead). A
  * candidate-level failure needs `--cause candidate=<reason>`. Unknown targets are refused. */
@@ -219,6 +254,7 @@ export function validateCauses(
 
 const browserId = (id) => (id.startsWith('browser:') ? id.slice('browser:'.length) : null);
 const unitFile = (id) => (id.startsWith('unit:') ? id.slice('unit:'.length) : null);
+const structuralId = (id) => (id.startsWith('structural:') ? id.slice('structural:'.length) : null);
 /** Only unit leaves and browser checks registered neither timing-sensitive nor as merge smoke
  * may carry a receipt forward. Always-fresh is derived: the registered timingSensitive and
  * mergeSmoke facts plus the structural classes (gates, builds, aggregates, hosted and human bars). */
@@ -263,12 +299,14 @@ export function requiredReexecution({ classification, manifest }) {
   const invariants = manifest.invariants ?? [];
   const controlsOf = (invariant) =>
     [...invariant.controls.positive, ...invariant.controls.negative].map((c) => `unit:${c.path}`);
+  // A structural check's receipt is keyed `structural:<id>` (gate-structural.mjs); a required
+  // id must name a receipt the child can carry, or no passing child could ever validate.
   const leafOfCheck = (checkId) =>
     manifest.browserChecks.some((c) => c.id === checkId)
       ? `browser:${checkId}`
-      : `check:${checkId}`;
+      : `structural:${checkId}`;
   for (const id of [...set]) {
-    const check = browserId(id) ?? (id.startsWith('check:') ? id.slice(6) : null),
+    const check = browserId(id) ?? structuralId(id),
       file = unitFile(id);
     for (const invariant of invariants) {
       if (check && invariant.checks?.includes(check))

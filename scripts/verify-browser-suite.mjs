@@ -40,6 +40,7 @@ import {
   measurementRotation,
   finalSuiteRuns,
   hostedReportFields,
+  checkWaitEnvironment,
 } from './host-profile.mjs';
 /** What a browser receipt is bound to: the registered row and its budget under the host
  * profile, not the run. The worker count is a scheduling condition recorded on the row
@@ -52,20 +53,37 @@ export const NOT_EVALUATED_STATUS = 'not evaluated';
 /** The suite's failure names both classes of non-pass row: rows that ran and failed, and rows
  * refused before they ran (an admission refusal leaves no receipt at all), so a diagnosed retry
  * can require the refused rows without a receipt to read. */
-export function browserSuiteFailure(outcomes, runs) {
+export function browserSuiteFailure(outcomes, runs, timingAdmission = null, suiteReport = null) {
   const failures = outcomes.filter((outcome) => outcome.ok === false);
   const error = new AggregateError(
     failures.map((outcome) => outcome.error),
     `Browser checks failed: ${failures.map((outcome) => outcome.id).join(', ')}`,
   );
+  // A refused row is recognised by its run row OR by the refusal on its outcome's error, so a
+  // row the runner never reached still counts (the run row is marked at the refusal site too).
   error.notEvaluated = failures
-    .filter((outcome) => runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS)
+    .filter(
+      (outcome) =>
+        runs.find((row) => row.id === outcome.id)?.status === NOT_EVALUATED_STATUS ||
+        outcome.error?.notEvaluated === true,
+    )
     .map((outcome) => outcome.id)
     .sort();
   error.failedChecks = failures
     .map((outcome) => outcome.id)
     .filter((id) => !error.notEvaluated.includes(id))
     .sort();
+  // A refused timing admission rides the failure with its reason, the refused ids and the
+  // suite report that recorded it: the phase row keeps it inside the attested attempt report,
+  // the only record a diagnosed retry may cite for its cause.
+  if (timingAdmission && timingAdmission.admitted === false && error.notEvaluated.length)
+    error.refusal = {
+      phase: 'timing',
+      failureKind: 'host-load',
+      reason: timingAdmission.reason ?? 'timing admission refused',
+      ids: [...error.notEvaluated],
+      suiteReport,
+    };
   return error;
 }
 export function browserReceiptConfiguration(check, budget = { timeoutMs: check.timeoutMs }) {
@@ -435,6 +453,18 @@ async function executeBrowserSuite(
             const refused = Error(`not evaluated: ${report.timingAdmission.reason}`);
             refused.notEvaluated = true;
             refused.failureKind = 'host-load';
+            // The row is marked here, before the throw: this refusal never reaches the per-row
+            // catch below, and the phase failure built afterwards reads the rows to name the
+            // refused ids a diagnosed retry must complete.
+            Object.assign(row, {
+              status: NOT_EVALUATED_STATUS,
+              reason: refused.message,
+              ok: false,
+              failureKind: refused.failureKind,
+              observedAt: performance.timeOrigin + performance.now(),
+              checkKind: check.tier,
+            });
+            publish();
             throw refused;
           }
           row.status = 'running';
@@ -453,7 +483,10 @@ async function executeBrowserSuite(
             });
           };
           try {
-            const budget = browserBudget(hostProfile, check);
+            const budget = {
+              ...browserBudget(hostProfile, check),
+              ...(hostProfile ? { waitScale: hostProfile.waitScale } : {}),
+            };
             const result = await context.check(
               `browser:${check.id}`,
               browserReceiptConfiguration(check, budget),
@@ -485,8 +518,12 @@ async function executeBrowserSuite(
                         [check.script, target],
                         {
                           timeoutMs: budget.timeoutMs,
+                          // The child sees the platform's patience as numbers and never the
+                          // profile id (or a scale the parent shell exported).
                           env: {
-                            ...process.env,
+                            ...checkWaitEnvironment(process.env, hostProfile, {
+                              rowBudgetMs: budget.timeoutMs,
+                            }),
                             SIMULACRUM_BROWSER_ARTIFACT_ROOT: origin.evidenceDirectory,
                             SIMULACRUM_BROWSER_EXECUTION: check.execution ?? 'exclusive',
                           },
@@ -574,7 +611,12 @@ async function executeBrowserSuite(
         { workers, failFast },
       );
       if (outcomes.some((outcome) => outcome.ok === false))
-        throw browserSuiteFailure(outcomes, runs);
+        throw browserSuiteFailure(
+          outcomes,
+          runs,
+          report.timingAdmission ?? null,
+          report.reportPath,
+        );
     },
     async () => {
       report.runs = finalSuiteRuns(checks, runs, hosted.notEvaluated);
