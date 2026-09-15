@@ -8029,7 +8029,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "4f2f027ea2973ef1a94aa9aa65710537d0ced1a1fd9d4362a2262e392ae6f388",
+      "sourceSha256": "3a054e9a566e1ff0314f36f27d653ae43b70c68f4f63b8fdeeb4c67e9db30cd0",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -8169,7 +8169,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8178,7 +8178,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "e8ba4649dd63158c94bf9fd7fc022e51cb69ccefc31e1185faf4c921e2293033",
+      "sourceSha256": "7b091ae6d37f0ab41d4391dae6c4aba5198364205242a0a0b3fdc490c58ec5ed",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -8233,7 +8233,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "90be8cfeb89081cfbb0d0f70dee1c4b9523b6df63620b2999e04c78652717926",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8307,7 +8307,7 @@
         "test/f2.test.mjs",
         "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "7e0f551e0a30874a2ac39b324d7985f05175dc5d9ba7df05f94ae7e5d538fd85",
+      "sourceSha256": "581bdebc5d8e7bb31434237fa921b9da34d6e2d33ed8c20514c663bdaf41b47d",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -8402,7 +8402,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "90be8cfeb89081cfbb0d0f70dee1c4b9523b6df63620b2999e04c78652717926",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8639,7 +8639,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8fa115db852916c17c009911e630e598d3cac1be3b05ed259a38ccb416aa3b38",
+      "consumerSourceHash": "89357df99bd5adec43a4936c7e964de365504d1b0fd1aeafeffb71d1aeeb6bd9",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8920,7 +8920,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "442c7fae24b3579aed874db628bb5f7b050518826e3b198899ab664d082c5949",
+      "consumerSourceHash": "8e0ca1358e994b85b6e6d401c397e81b744daa95077a0747d8859d326e7f2f7e",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -8954,7 +8954,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9031,7 +9031,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9102,7 +9102,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9145,7 +9145,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9300,7 +9300,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8e26e8b2ef4af857c12ca2aa036d68ef3c6ca73ea7fb92b7f84e2f5a0d41d4f8",
+      "consumerSourceHash": "1156f9dadf74de661d2ec73fa49dfdb08ce622c09adde0ab1bb89883396d100c",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9452,7 +9452,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "ac219ccb962960b1dead9384411918a49cd49057d1f41102a4dc97a65f956675",
+      "consumerSourceHash": "90be8cfeb89081cfbb0d0f70dee1c4b9523b6df63620b2999e04c78652717926",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9778,7 +9778,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -9863,7 +9863,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "173084dd7b8968c02c0d280f06ba4c83e8063296da388165b2051602f5e9cbf3",
+      "consumerSourceHash": "05a1f583f6aa3fde75b7d01a4e6547880e5c1b9a7290246b335f9829d6227279",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9966,7 +9966,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "173084dd7b8968c02c0d280f06ba4c83e8063296da388165b2051602f5e9cbf3",
+      "consumerSourceHash": "05a1f583f6aa3fde75b7d01a4e6547880e5c1b9a7290246b335f9829d6227279",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10119,7 +10119,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "66b08c851c715b766833177cdc99342cb83452f745f62da8c76d4f0a17bc3896",
+      "consumerSourceHash": "f84a41fef2a3e4df766213771a32d6aa8cac5ebe947988bc61eb200edbcd39bb",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10202,7 +10202,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "8e26e8b2ef4af857c12ca2aa036d68ef3c6ca73ea7fb92b7f84e2f5a0d41d4f8",
+      "consumerSourceHash": "1156f9dadf74de661d2ec73fa49dfdb08ce622c09adde0ab1bb89883396d100c",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10389,7 +10389,7 @@
           ]
         }
       ],
-      "sourceSha256": "403f6e09c0618ecac5f8309f8936d36dd56f96673fe58f25b1bb5294b3a59b1b",
+      "sourceSha256": "12d18c7458078104fc04dcaa37e93ce5935558ef4902e5675c838e5a6c71d541",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
@@ -10439,7 +10439,7 @@
           ]
         }
       ],
-      "sourceSha256": "a7faaea8dee43b077d41e8d5e58acbe224b3d25e2bf040e135e8b7d025255a24",
+      "sourceSha256": "3067826085df0447532da9ef28a298ea973160cb535e6f0f699871edbd9b4ccf",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",
@@ -10466,13 +10466,15 @@
     "github-ubuntu-2cpu": {
       "measurement": true,
       "measurementRuns": [
-        "34889806209"
+        "34921754847"
       ],
       "moduleTimeoutMs": 30000,
       "unitTimeoutMs": 120000,
       "unitWorkers": 2,
       "ciBudgetMs": 900000,
       "browserWorkers": 2,
+      "waitScale": 10,
+      "liveSliceMs": 10000,
       "browserTimeoutMs": {
         "default": {
           "cap": 600000,

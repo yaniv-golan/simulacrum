@@ -26,7 +26,7 @@
     "scripts/playtest/release.mjs": "1736c11ff217461ac9f4bbe0ecb0d96362b6f54c663787deeaf0d90dee690e90",
     "scripts/playtest/verify-deployment.mjs": "9de9e604298f58817bc2bd4f8b9f5ef50fc997b4df8ed3e6f3c60187799abcf5",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
-    "scripts/verification-environment.mjs": "d9f9036e1fb0b79651ce6da0c4dce86a88bd2949a84d35991fefd1eb53ed7ad4",
+    "scripts/verification-environment.mjs": "ad339dba757c3fa4e51eba05dbe99ce461cb37e9f85993f5f7934a73eb47393d",
     "scripts/verification-outcome.mjs": "63c9130044bce9e0c628547a619cf012bd9913027ff99288b0bb79a1d0351250",
     "scripts/verification-resume.mjs": "90f693a7939b0f23d63722293b5c8f43813217895b1d2695642e213e895501b4",
     "src/application/feedback-protocol.mjs": "66d655f34eed88c4461203b16eda0fd3da311e315f303c6100b61ec70173396e",

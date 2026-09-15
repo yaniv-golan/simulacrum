@@ -186,9 +186,9 @@ try {
   // Apply bounded test-only frame pressure to the real adaptive owner. This is
   // a visual check, not a real-time performance measurement.
   await page.evaluate(
-    () =>
+    (budgetMs) =>
       new Promise((resolve, reject) => {
-        const deadline = performance.now() + 45000;
+        const deadline = performance.now() + budgetMs;
         function pressure() {
           if (window.workshopProbe.readInteractionState().rendering.quality.level === 5)
             return resolve();
@@ -201,6 +201,7 @@ try {
         }
         requestAnimationFrame(pressure);
       }),
+    evidence.waitBudget(45000),
   );
   assert.equal(
     await page.evaluate(

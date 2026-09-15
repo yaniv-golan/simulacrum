@@ -40,6 +40,7 @@ import {
   measurementRotation,
   finalSuiteRuns,
   hostedReportFields,
+  checkWaitEnvironment,
 } from './host-profile.mjs';
 /** What a browser receipt is bound to: the registered row and its budget under the host
  * profile, not the run. The worker count is a scheduling condition recorded on the row
@@ -471,7 +472,10 @@ async function executeBrowserSuite(
             });
           };
           try {
-            const budget = browserBudget(hostProfile, check);
+            const budget = {
+              ...browserBudget(hostProfile, check),
+              ...(hostProfile ? { waitScale: hostProfile.waitScale } : {}),
+            };
             const result = await context.check(
               `browser:${check.id}`,
               browserReceiptConfiguration(check, budget),
@@ -503,8 +507,12 @@ async function executeBrowserSuite(
                         [check.script, target],
                         {
                           timeoutMs: budget.timeoutMs,
+                          // The child sees the platform's patience as numbers and never the
+                          // profile id (or a scale the parent shell exported).
                           env: {
-                            ...process.env,
+                            ...checkWaitEnvironment(process.env, hostProfile, {
+                              rowBudgetMs: budget.timeoutMs,
+                            }),
                             SIMULACRUM_BROWSER_ARTIFACT_ROOT: origin.evidenceDirectory,
                             SIMULACRUM_BROWSER_EXECUTION: check.execution ?? 'exclusive',
                           },
