@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"7c35e7d49fb7c4fcfbc409b5b648c10ac357d0b9f09ee4dce6b978a4d59aa64c","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"22174dfcbd0bb27789e58c5d49a118fbdc50f75f4c0f634192441334b8c4a659","disposition":"still accurate","rationale":"workshop-view changes (copy placement, hint button, Shift-lift) do not touch recording, feedback or the playtest panel host; the section's capture and consent statements hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"80472807777f1398413712a99a63ded0e00f7ed8a2db08228318d71f8e7e75f9","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"040256c33f8e7e4b411eb8266995523a9481dac054cb8b69a48d96c8a96317f6","disposition":"updated","rationale":"The F1 protocol now defines an incomplete session (ended before any criterion could be judged) recorded with the incomplete verdict; it supplies no verdict and the latest complete session governs."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 
@@ -82,7 +82,7 @@ not execute or convert historical opaque checkpoints.
 
 ## Release operations
 
-<!-- doc-review {"version":1,"fingerprint":"4c841ddc23faee9c57f83472fef9bc7efd9f73cc33e3b69aedd4a3fb6c6f4eca","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"28659fa5edf3327597f9c84b036da59b6f989a7ec3297f28a031653f57896d55","disposition":"still accurate","rationale":"prepare-release now writes a `.metadata_never_index` marker at the release root before cloning the snapshot so Spotlight does not index the frozen copy; the marker sits outside the `source` map and the packaged payload, and every release rule in this section (frozen inputs, single verification pass, exception path, publisher ownership) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"906bbcc0038c1c5175698bf9483746d71025855f5a318d9fff16f6717762b4ae","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"88c102c0598f456f66844d708b3677f4491ef5e70bdebcc48bedbfcceb90b092","disposition":"still accurate","rationale":"verification-outcome.mjs prints a passing human bar that carries a later incomplete session; release admission reads the same status values (pending/failed/invalid/passed) as before."} -->
 
 [Release policy](../../scripts/playtest/release-policy.json) names `main` as the release branch. The [shared release tool](../../scripts/playtest/release.mjs#implementation) freezes selected working-tree inputs, runs release verification in an isolated private copy and builds one package. `npm run release:prepare -- .release-private/<new-name>` accepts modified/untracked source without committing it. It rejects input drift and keeps the source copy outside public artifacts. The package manifest binds the actual Worker/assets bytes, source digest and capture protocol. Expired or altered packages cannot be promoted normally.
 

@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"59867d1cf8ec4d1bfc4b3fd3503c3014c928d2bea12af3ad38de01869e757b26","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"4c0e07e49f931f679a9888aba0d9572b358c388ae22ac2087e62b73f09917b0b","disposition":"still accurate","rationale":"Relative to base 3a50c9e the roadmap patch adds package.json scripts bar:V1, bar:V2, bar:O1 and bar:O2, each of the existing form node scripts/bars.mjs <id>; the verification tiers, gate, engines.node guidance and bars command described here are unchanged and no individual bar script is named in the section."} -->
+<!-- doc-review {"version":1,"fingerprint":"b5d64ae0ad7090ec5ec2837fb8f7aae023f996862610fc6f5c88ac0ba19da9d1","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"fddd51d09c2b9a760818f769b534499ffa6fd297dda13d0dbf755f93639e312b","disposition":"updated","rationale":"The outcome sentence now states that an incomplete human session is recorded but supplies no verdict, a bar with only incomplete sessions is pending, and a later incomplete session is named beside the governing verdict."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -156,7 +156,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b28c74fda8294f847fd8d29717b0e362145725c42a75a901778e02f5a528ea34","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e07a46e771526626f538169436773722c7a9fef265f8ed2fadfc9a921ce6a6eb","disposition":"still accurate","rationale":"reference.md regenerated only its copied-graph-integrity row (the duplication owner and its three controls); the review workflow, sidecar rules and gate described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"553530ae32ad41bcfaf1e3be4e4926247e24494bf5d67369ee8b788ce186789a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"42f9adbfbf1e06325b3c233bb32b30ddc8589e0b7cf56b06ed60099e89bc1515","disposition":"still accurate","rationale":"reference.md regenerated only to add the human-evidence-verdicts row (bars.mjs, assess.mjs, verification-outcome.mjs owners); the review workflow, sidecar rules and gate described here are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c4836e5e89b03315fbcde454a53602f3457fd2f67598d3c752e9559ca95348ea","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d3f3f5b4b8d50dfe511b2c00beb44f5bf757e6d77c6ab8649513118e11078c31","disposition":"still accurate","rationale":"The manifest changes are the copied-graph-integrity registration and nine consumerSourceHash refreshes accepted in the scope review; browser selection rules, scope declarations and execution policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"da4525235287a9a9a25b1aead9253610d0cf11ff89405d588992d9d7faaaa758","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d1433aab8685786f43b64b46b2e301df1b0c28c08f14811daee3f3eca7d24931","disposition":"still accurate","rationale":"bars.mjs and verification-outcome.mjs changed only in human-bar verdict handling and the formatter's GREEN-bar line; browser selection, scope and execution rules are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -569,7 +569,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"817c1a5a46aee5f2eae7d056f76e257f77d10a33c252bcd3e52cabdd4303e725","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fe8edc4a097de23b1453cb9a5172c44a32561128bd39ce7c3c57df35ff334ab8","disposition":"still accurate","rationale":"Relative to base 3a50c9e package.json gains four bar:<id> scripts that invoke scripts/bars.mjs directly rather than through the verification window; the window's scripts and semantics described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"63de528b073517fa877ba51223f67bf25e870a274eb8cf214151dae77d7f3a4f","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"2ea5f5a71febb195140c273370b84e8131181e8ca48114518269592044143159","disposition":"still accurate","rationale":"The verify-a-change sentence about incomplete human sessions does not change window ownership, tier serialization or candidate stacking described here."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -618,7 +618,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"5c2714f61c95f04ca68f8ddccacedbe414a871ad5c9c923b85d3eb315b4154e6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"368778c8958debaea67e367a84e0a735f8c574a12e47611e6fbc268b0c7280de","disposition":"still accurate","rationale":"The manifest edit registers a duplication guarantee and refreshes reviewed scope hashes; candidate isolation, evidence binding and stacking rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"169ad3a5925d8b4aa0b20767871c11b3632d1f07d5b1192920a5c05faf3c7c1c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"469c8fa222ff795ae3dfd073bfce0b920145ad58f01a99f689f7500d073469a8","disposition":"still accurate","rationale":"The manifest gained the human-evidence-verdicts invariant under gate-integrity; candidate isolation, evidence binding and completion rules are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
