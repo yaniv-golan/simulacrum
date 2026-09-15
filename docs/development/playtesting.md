@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"e298600c50aef937a6b2ff86e2ffd2d843a1b08c00b08fce50d4e29c9bd1fb41","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"6b7aa7595632a57bdd6c1a49951d83e932b2005ab1feae3be725398ab22561f9","disposition":"still accurate","rationale":"Lamp shadows landing (lamp-shadows, pre-integration 059068c): recording, playtest and feedback flows are untouched; the workshop-app.mjs and workshop-view.mjs changes are the lamp shadow budget and the projectWorldPoint/shadowRefresh diagnostics."} -->
+<!-- doc-review {"version":1,"fingerprint":"7c35e7d49fb7c4fcfbc409b5b648c10ac357d0b9f09ee4dce6b978a4d59aa64c","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"22174dfcbd0bb27789e58c5d49a118fbdc50f75f4c0f634192441334b8c4a659","disposition":"still accurate","rationale":"workshop-view changes (copy placement, hint button, Shift-lift) do not touch recording, feedback or the playtest panel host; the section's capture and consent statements hold."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 
