@@ -73,6 +73,26 @@
       "dueAt": "M8b",
       "human": true,
       "contract": "A player, using their own browser agent, gets an actionable answer to 'why isn't this working' without leaving the game. Judged by watching a person."
+    },
+    "V1": {
+      "dueAt": "M10",
+      "human": false,
+      "contract": "Flight annex hover: from rest on the pad, lift off under authored control, hold inside the annex's hover box for 20 seconds within its attitude and altitude bands, land inside the pad, and reach the annex-defined ground hold; all whole-run invariants as redefined by the flight annex (fall, support eligibility, hold) apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "V2": {
+      "dueAt": "M10",
+      "human": false,
+      "contract": "Flight annex circuit: take off, pass the annex's ordered airborne gates in route order without ground contact, complete an approach inside its corridor, land, and reach the annex-defined ground hold; complete within the annex's time limit; all whole-run invariants as redefined by the flight annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "O1": {
+      "dueAt": "M11",
+      "human": false,
+      "contract": "Space annex insertion: from the pad, reach the annex's apogee band and complete one full orbit above its atmosphere floor using only authored burns and onboard propellant, with ascent plus one orbit completing within the runtime-v1 qualification bound; expelled mass accounted; all whole-run invariants as redefined by the space annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
+    },
+    "O2": {
+      "dueAt": "M11",
+      "human": false,
+      "contract": "Space annex return: from the annex's declared initial orbital state, execute an authored de-orbit burn, traverse its re-entry corridor with heat-shield ablation within rated mass, and reach the annex-defined ground hold; all whole-run invariants as redefined by the space annex apply, and the annex fixes every band as a requirement, not a tuning parameter."
     }
   },
   "rules": [
@@ -126,7 +146,9 @@
     "M7",
     "M8",
     "M8b",
-    "M9"
+    "M9",
+    "M10",
+    "M11"
   ],
   "checks": [
     {
@@ -400,7 +422,14 @@
         "ruleId": "course-contract"
       }
     ],
-    "M7": [],
+    "M7": [
+      {
+        "id": "inertial-sensor-part",
+        "how": "an ordinary catalog inertial sensor part with player-selectable material, mass and ratings adds specific-force channels; the existing sensing contract (sampled at t, consumed at t+1, status separate from readings, powered-shared-sensing invariant) applies unchanged, and the part is allocated here so the M9 legged subject and the M10 flight machines can use it -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "runtime-contract"
+      }
+    ],
     "M8": [],
     "M9": [],
     "M8b": [
@@ -433,6 +462,124 @@
         "how": "tool results carry closed-enum reason codes; player-authored strings appear only in delimited data fields",
         "check": null,
         "ruleId": "player-authority"
+      }
+    ],
+    "M10": [
+      {
+        "id": "air-environment-owned",
+        "how": "air density and wind are environment quantities with one writing owner in the environment/forces phase; the workshop default is sea-level air, drag is an authored per-part selection defaulting to none under the same authority rule as mass and ratings, and a recorded projection baseline for named existing fixtures on the base commit is reproduced unchanged after the change -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "flight-parts-player-authorable",
+        "how": "every part flight needs (rotor, inertial sensor from M7, regulator/mixer, structure, power) is a catalog entry a player picks up, connects, commands and configures exactly as in any other design, with player-selectable material, mass and ratings; the V1/V2 machines are built only from catalog parts and pass the identity-invariance check -- no demo-only part, rig-only force or blueprint-identity dispatch",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "flight-forces-from-law",
+        "how": "rotor thrust and reaction torque, and whole-body drag, are computed only by laws under simulation/physics/law from the authored geometry or stored drag selection, shaft speed, air density and relative velocity of ordinary catalog parts any player can place and connect -- no lift from part name, role, blueprint identity or a rig-only force",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "mass-budget-before-flight",
+        "how": "thrust-to-weight, total mass and centre of mass derive from authored mass and geometry and are visible to the player before a run -- a machine that cannot lift its own authored mass does not fly",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "no-engine-attitude-hold",
+        "how": "every hover, altitude or attitude hold is an authored controller or an ordinary catalog regulator/mixer part the player wires, reading declared sensors through the same commands any player program may use; the engine owns no stabilization, and the stock quad is an ordinary blueprint of catalog parts that flies on keys through such parts without a program",
+        "check": null,
+        "ruleId": "player-authority"
+      },
+      {
+        "id": "impact-is-structural-failure",
+        "how": "a crash produces break events through the M5 structural-failure model from transmitted loads; no scripted reset or damage table keyed on machine type",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "course-evaluator-flight-annex",
+        "how": "the Course v1 flight annex is added defining the liftoff, hover box, ordered airborne gate, approach corridor, landing and ground-hold predicates, the redefined fall and hold invariants, the evaluator and eligible-support bindings for airborne fixtures",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "flight-annex-frozen",
+        "how": "pad position, hover box, attitude and altitude bands, airborne gate order, approach corridor and time limit are recorded and fingerprinted in the Course v1 flight annex as requirements, not tuning parameters, BEFORE the V1/V2 attempt and not changed to accommodate the machine",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "flight-annex-falsified",
+        "how": "every flight annex predicate (liftoff, hover box, ordered airborne gates, approach corridor, landing, ground hold, redefined fall) has BOTH an accepting trace and a deliberately-wrong trace it rejects -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "course-contract"
+      }
+    ],
+    "M11": [
+      {
+        "id": "clock-decision-recorded",
+        "how": "runtime-v1 records the replay-safe time scale declared by the authored environment/scene and implemented strictly as N ticks per rendered frame, stored in save and replay so replay reproduces the recorded cadence and projection hashes are unaffected by the scale; tick size 1/120 s and one integration per tick are unchanged for every scene, P1's overload policy is extended for scaled scenes, and the record exists before any orbital fixture is admitted",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "space-parts-player-authorable",
+        "how": "every part orbital flight needs (propellant tank, propellant feed connection, thruster, reaction control, navigation/altitude sensor, heat shield, the existing release coupler for staging under an authored command) is a catalog entry or connection kind a player picks up, connects, commands and configures exactly as in any other design, with player-selectable material, mass and ratings; the O1/O2 machines are built only from catalog parts and pass the identity-invariance check -- no demo-only part, rig-only force, scripted staging sequence or blueprint-identity dispatch",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "gravity-position-dependent",
+        "how": "the planet is an environment body admitted through an explicit scene schema extension inside model/simulation, gravity is a position-dependent per-body law under simulation/physics/law with the world's constant gravity zero for planet scenes, and the energy ledger's potential term is the law's potential; the renderer reads telemetry only and no scene class carries its own physics package; scenes without a planet keep the constant workshop vector and every existing projection hash is unchanged -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "propellant-mass-owned",
+        "how": "a propellant tank or ablative layer is an ordinary catalog part whose material store is the single writer of its body's mass, inertia and centre of mass; for such bodies both the per-tick structure-failure assertion and checkpoint admission become mass = initial mass - released by store, every other body keeps the strict equal-to-initial check, the writing phase is fixed by the runtime-v1 amendment, and a phase that only asserts initial mass does not satisfy it",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "thrust-from-mass-flow",
+        "how": "thruster and reaction-control parts from the catalog produce force equal to authored mass flow times exhaust velocity while connected propellant remains, and zero after -- no thrust from part name, role, an empty tank or a rig-only force",
+        "check": null,
+        "ruleId": "identity"
+      },
+      {
+        "id": "reentry-heating-law",
+        "how": "the thermal/ablation phase computes heat flux from atmosphere density and relative speed and mass loss through laws under simulation/physics/law on a catalog heat-shield part with player-selected ablative material and rated mass, writing through the owned store; a spent shield stops absorbing flux and the protected body then heats and breaks through the M5 structural-failure model; a phase that computes nothing does not satisfy ablation within rated mass",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "large-coordinate-determinism",
+        "how": "two processes and both production clock drivers produce identical projection hashes over ascent plus one full orbit at the declared time scale, and a workshop-scale sub-fixture placed at orbital radius reproduces its workshop projection within the space annex's declared band -- owned by an executed check registered when the fixture exists",
+        "check": null,
+        "ruleId": "runtime-contract"
+      },
+      {
+        "id": "course-evaluator-space-annex",
+        "how": "the Course v1 space annex is added defining the apogee band, atmosphere floor, full-orbit, de-orbit, re-entry corridor, ablation-within-rating and ground-hold predicates, the redefined fall and hold invariants, the initial orbital state vector that supersedes ground-hold setup for O2, the evaluator and eligible-support bindings for orbital fixtures",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "space-annex-frozen",
+        "how": "planet body and orbit sized so ascent plus one full orbit complete within the runtime-v1 qualification bound (an Earth-scale planet is a free-play scene, never a qualification fixture), atmosphere floor, apogee band, de-orbit window, re-entry corridor, O2 initial orbital state and shield rating are recorded and fingerprinted in the Course v1 space annex as requirements, not tuning parameters, BEFORE the O1/O2 attempt and not changed to accommodate the machine",
+        "check": null,
+        "ruleId": "course-contract"
+      },
+      {
+        "id": "space-annex-falsified",
+        "how": "every space annex predicate (apogee band, atmosphere floor, full orbit, de-orbit, re-entry corridor, ablation within rating, ground hold, redefined fall) has BOTH an accepting trace and a deliberately-wrong trace it rejects -- owned by an executed invariant with controls registered when the parts exist",
+        "check": null,
+        "ruleId": "course-contract"
       }
     ]
   },
