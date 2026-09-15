@@ -222,8 +222,10 @@ integrations into the same destination stack rather than race: the later candida
 the earlier integration branch and verifies with the same `--base` and
 `--destination <earlier integration branch name>` (a ref, never a commit, so drift is
 reported). If the earlier integration is revised after being stacked on, re-merge its head
-and re-verify. Before landing by fast-forward, confirm `git rev-parse main` equals the
-report's `priority.destination`. When the window owner is a candidate, the wait notice
+and re-verify. Land through `npm run land -- <tip>`: it fast-forwards `main` only when a
+passing merge attempt report for exactly that tip, attested by its own candidate key,
+integrated against the current `main`, recorded the tip's bytes and nothing else, and the
+checkout is clean on `main`. When the window owner is a candidate, the wait notice
 names its tier, branch, destination and origin worktree; stack on a same-destination
 owner instead of waiting it out. Direct tiers remain available for already frozen release/CI copies and development probes.
 

@@ -5281,6 +5281,52 @@
       "qualificationBars": []
     },
     {
+      "id": "landing-integrity",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "A landing fast-forwards main only from a passing merge attempt report for exactly the landed tip, read from its own candidate's attempts at the recorded path and attested by that candidate's resume key, whose integrated commit is the current main, whose recorded index, file bytes and modes equal the tip's, with no untracked verified bytes, no drifted destination and no final, hosted-profile or measurement evidence; a newer unlandable report never hides an older landable one, and every refusal names its reason without moving main.",
+      "owners": [
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "assertLandable"
+        },
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "findLandingReports"
+        },
+        {
+          "path": "scripts/land.mjs",
+          "anchor": "land"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land fast-forwards main only for a passing merge report of exactly this tip on this main"
+          },
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land takes routine merge evidence pinned to main and skips a newer report against another destination"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "land refuses every wrong trace a person used to check by hand"
+          },
+          {
+            "path": "test/land.test.mjs",
+            "anchor": "landing report lookup returns only passing reports for the tip, newest first"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "candidate-citation-integrity",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",

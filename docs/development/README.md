@@ -152,11 +152,29 @@ earlier one fast-forwards. A branch-pair merge candidate records the supplied na
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
-confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+`npm run land` checks `priority.destination` against `main` instead) or NOT_EVALUATED (a
 bare commit was supplied). If the earlier integration is revised after being stacked on,
 re-merge its head and re-verify. A candidate that waited on another window owner retains
 that owner's declared intent (tier, branch, destination, origin worktree) under
 `windowReports[].value.contenders[].intent`.
+
+Landing: `npm run land -- <tip> [--report <attempt report.json>] [--dry-run]`
+([implementation](../../scripts/land.mjs#implementation)) fast-forwards `main` to the tip and
+refuses otherwise. It finds the tip's passing merge attempt reports under the candidate
+directories (or takes `--report`), tries them newest first, and lands on the first that
+satisfies every rule: the checkout on `main` with no modified tracked files; a report whose
+status is `passed`, `passed after failure` or `passed with reused receipts` and whose tier
+is `merge` (never `local`, `final`, a hosted profile or a measurement run); the report read
+from its own candidate's `attempts/` at the path it records and attested by that
+candidate's resume key (the same same-UID trust class as receipts — an edited or copied
+report is refused); `candidate.head` equal to the tip; the commit it integrated against
+(`priority.destination`, or `priority.base` for a routine `merge --base`) equal to the
+current `main`; `destinationStillMatches` not false; the tip's tree equal to the recorded
+`candidate.index`, every tip file's bytes and mode equal to the verified `candidate.files`
+entry, and no untracked bytes among them; and a fast-forward. It prints the attestation,
+attempt and report it verified, then the new `main`. Candidate directories live under the
+system temporary directory; once one is gone, `--report` cannot resurrect it and the tip
+needs new evidence.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
