@@ -1,5 +1,13 @@
 import { createTiming } from './verification-timing.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import {
+  waitScaleFromEnvironment,
+  scaledWait,
+  WAIT_SCALE_VARIABLE,
+  LIVE_SLICE_VARIABLE,
+  ROW_BUDGET_VARIABLE,
+} from './host-profile.mjs';
+import { recordLiveWaits } from './browser-idle.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, basename } from 'node:path';
@@ -70,6 +78,83 @@ const copy = (value) =>
     ),
   );
 
+/** Frames to sample after a failed action and the wall budget for them: a live 60 Hz page
+ * answers in ~170 ms, a 2–5 Hz hosted renderer in 2–5 s, a starved one not at all. */
+export const GEOMETRY_SAMPLE = Object.freeze({ frames: 10, budgetMs: 3000 });
+/** In-page: the target's and its ancestors' boxes on each of the next animation frames. Runs
+ * inside `locator.evaluate`, so it must stay self-contained. */
+export function sampleTargetGeometry(element, { frames: maxFrames, budgetMs }) {
+  return new Promise((resolve) => {
+    const rect = (node) => {
+      const r = node.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    };
+    const selector = (node) =>
+      node.tagName.toLowerCase() +
+      (node.id ? `#${node.id}` : '') +
+      [...node.classList].map((c) => `.${c}`).join('');
+    const ancestorsOf = (node) => {
+      const out = [];
+      for (let up = node.parentElement; up && up !== document.body; up = up.parentElement) {
+        out.push({ selector: selector(up), ...rect(up) });
+        if (up.classList.contains('workshop')) break;
+      }
+      return out;
+    };
+    const frames = [],
+      start = performance.now();
+    let done = false;
+    const finish = () => {
+      if (!done) resolve(frames);
+      done = true;
+    };
+    const step = () => {
+      frames.push({
+        t: performance.now() - start,
+        target: rect(element),
+        ancestors: ancestorsOf(element),
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      });
+      if (frames.length >= maxFrames || performance.now() - start > budgetMs) finish();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    setTimeout(finish, budgetMs + 500);
+  });
+}
+/** Where Playwright's own call log says the action stopped: before the target was stable
+ * (`waiting`), after stability while dispatching (`performing`), or after the click while
+ * waiting for navigations (`navigations`) — a stalled main thread and a moving box leave
+ * different trails. */
+export function actionStage(message) {
+  const log = String(message ?? '');
+  if (/waiting for scheduled navigations/.test(log)) return 'navigations';
+  if (/performing click action|performing [a-z]+ action/.test(log)) return 'performing';
+  if (/element is not stable/.test(log)) return 'not-stable';
+  if (/waiting for element to be/.test(log)) return 'waiting';
+  return null;
+}
+/** 'starved' when fewer than two frames arrived; 'moved' on the first frame pair whose target
+ * box differs, naming the first differing ancestor (nearest first); else 'stable'. */
+export function geometryVerdict(frames) {
+  const same = (a, b) => a && b && ['x', 'y', 'w', 'h'].every((k) => a[k] === b[k]);
+  if (!Array.isArray(frames) || frames.length < 2)
+    return { frames: frames ?? [], verdict: 'starved' };
+  for (let i = 1; i < frames.length; i++) {
+    if (same(frames[i - 1].target, frames[i].target)) continue;
+    const before = frames[i - 1].ancestors ?? [],
+      after = frames[i].ancestors ?? [];
+    const differing = before.find((row, index) => !same(row, after[index]));
+    return {
+      frames,
+      verdict: 'moved',
+      movedOn: [i - 1, i],
+      firstDifferingAncestor: differing?.selector ?? null,
+    };
+  }
+  return { frames, verdict: 'stable' };
+}
 /** Own one verifier's browser, contexts, diagnostics and failure artifacts. */
 export function attachBrowserSession(
   evidence,
@@ -92,11 +177,20 @@ export function attachBrowserSession(
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, file.endsWith('.json') ? JSON.stringify(value, null, 2) + '\n' : value);
     });
+  // The platform's patience: a hosted runner's page is `waitScale` times slower than the
+  // developer host, so every deadline a check writes is multiplied once, here, and recorded.
+  // Only the browser suite may set it (it also sets the execution policy); a shell export
+  // would silently loosen a development probe without leaving a trace.
+  const waitScale = waitScaleFromEnvironment();
+  const liveWaits = [];
+  const unrecordLiveWaits = recordLiveWaits((sample) => liveWaits.push(sample));
   const timing = createTiming({
     publish: () =>
       write('timing.json', {
         intervals: timing.snapshot(),
         scope: 'browser session; intervals may overlap',
+        waitScale,
+        liveWaits,
       }),
   });
   let browser,
@@ -105,7 +199,8 @@ export function attachBrowserSession(
     closed = false,
     captured = false,
     lastObservedFrame = null,
-    lastAction = null;
+    lastAction = null,
+    lastTarget = null;
   const expected = (record) =>
     expectedErrors.some(
       (rule) =>
@@ -147,8 +242,10 @@ export function attachBrowserSession(
         const value = Reflect.get(target, key);
         if (typeof value !== 'function') return value;
         return (...args) => {
-          if (actionMethods.has(key))
+          if (actionMethods.has(key)) {
             lastAction = { method: `${label}.${String(key)}`, args: copy(args) };
+            lastTarget = typeof target.boundingBox === 'function' ? target : null;
+          }
           const result = value.apply(target, args);
           return result && typeof result === 'object' && typeof result.then !== 'function'
             ? wrapDriver(result, `${label}.${String(key)}`)
@@ -187,6 +284,8 @@ export function attachBrowserSession(
             wrapDriver(target[key](...args), `${String(key)}(${args.map(String).join(',')})`);
         if (key === 'goto')
           return (...args) => timing.measure('navigation', () => target.goto(...args));
+        if (key === 'setDefaultTimeout' || key === 'setDefaultNavigationTimeout')
+          return (ms) => target[key](scaledWait(ms));
         if (key === 'evaluate')
           return async (...args) => {
             const result = await target.evaluate(...args);
@@ -199,6 +298,13 @@ export function attachBrowserSession(
         return typeof value === 'function' ? value.bind(target) : value;
       },
     });
+    // A page that never sets its own deadline runs on Playwright's default; scale that too, but
+    // only under a profile so a local page is untouched (a context-level default, if one ever
+    // exists, keeps precedence there).
+    if (waitScale !== 1) {
+      page.setDefaultTimeout?.(scaledWait(30000));
+      page.setDefaultNavigationTimeout?.(scaledWait(30000));
+    }
     pages.push({ raw: page, proxy });
     return proxy;
   };
@@ -254,6 +360,41 @@ export function attachBrowserSession(
       }
       pageRecords.push(row);
     }
+    // Playwright's actionability waits for the target to be *stable* (the same box on two
+    // consecutive animation frames). Two different things expire that wait: the box moves
+    // between frames (a readout beside the control reflows it — a presentation defect) or the
+    // renderer starves so that two frames never occur. Sample the last action target in-page
+    // over the next frames and say which, in the shape the presentation owner's local probe
+    // records, so a hosted row and a 60 Hz probe compare frame by frame.
+    let targetGeometry = null;
+    if (lastTarget)
+      try {
+        // Bounded twice: in-page by the sample's own budget, and here in case the page's
+        // thread never yields to run even the fallback timer.
+        const frames = await Promise.race([
+          lastTarget.evaluate(sampleTargetGeometry, GEOMETRY_SAMPLE, {
+            timeout: GEOMETRY_SAMPLE.budgetMs * 2,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(Error('geometry sampling timed out: the page never yielded')),
+              GEOMETRY_SAMPLE.budgetMs * 3,
+            ).unref?.(),
+          ),
+        ]);
+        targetGeometry = {
+          action: copy(lastAction),
+          actionStage: actionStage(error?.message),
+          ...geometryVerdict(frames),
+        };
+      } catch (e) {
+        targetGeometry = {
+          action: copy(lastAction),
+          actionStage: actionStage(error?.message),
+          verdict: 'unsampled',
+          error: e.message,
+        };
+      }
     try {
       const status = pageRecords.flatMap((record) => record.state?.status ?? []);
       if (status.length) write('failure-status.json', status);
@@ -263,10 +404,13 @@ export function attachBrowserSession(
         browser: browser?.version(),
         profile,
         configuration,
+        waitScale,
+        liveWaits: copy(liveWaits),
         error: copy(error),
         errors: copy(records),
         assertions: copy(assertions),
         lastObservedFrame,
+        targetGeometry,
         pages: pageRecords,
       });
     } catch (captureError) {
@@ -289,6 +433,7 @@ export function attachBrowserSession(
   async function close() {
     if (closed) return;
     closed = true;
+    unrecordLiveWaits();
     const failures = [];
     try {
       evidence.assertUnchanged();
@@ -316,6 +461,10 @@ export function attachBrowserSession(
 
   Object.assign(evidence, {
     errors: [],
+    waitScale,
+    /** A literal deadline a check must keep visible, scaled once for the platform and never
+     * past the row budget's share. */
+    waitBudget: (ms) => scaledWait(ms),
     measure: (name, execute) => timing.measure(name, execute),
     assert(method, args, description = {}) {
       const { frame, ...details } = description;
@@ -371,6 +520,11 @@ export function attachBrowserSession(
       const execution = process.env.SIMULACRUM_BROWSER_EXECUTION;
       if (execution && !['parallel', 'exclusive'].includes(execution))
         throw Error(`unknown browser execution policy: ${execution}`);
+      for (const key of [WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE, ROW_BUDGET_VARIABLE])
+        if (process.env[key] !== undefined && !execution)
+          throw Error(
+            `a wait scale (${key}=${process.env[key]}) is accepted from only the browser suite, which also sets the execution policy; unset it for a development probe`,
+          );
       if (execution === 'parallel' && (selected !== 'ui' || configuration.headless !== true))
         throw Error('this browser configuration requires exclusive execution');
       const launch =

@@ -258,3 +258,39 @@ test('registered profiles clamp browser workers and require recorded measurement
     validateManifest(withProfile((p) => (p.measurementRuns = ['34799855458']))),
   );
 });
+test('wait scale and live slice are registered host facts that reach checks as numbers, never locally', async () => {
+  const { checkWaitEnvironment, WAIT_SCALE_VARIABLE, LIVE_SLICE_VARIABLE } = await import(
+    '../scripts/host-profile.mjs'
+  );
+  const withProfile = (mutate) => {
+    const m = structuredClone(manifest);
+    mutate(m.hostProfiles['github-ubuntu-2cpu'], m);
+    return m;
+  };
+  // Registered on the manifest profile, validated as finite facts.
+  assert.equal(typeof profile().waitScale, 'number');
+  assert.equal(typeof profile().liveSliceMs, 'number');
+  assert.throws(() => validateManifest(withProfile((p) => delete p.waitScale)), /waitScale/);
+  assert.throws(() => validateManifest(withProfile((p) => (p.waitScale = 0.5))), /waitScale/);
+  assert.throws(() => validateManifest(withProfile((p) => (p.liveSliceMs = 500))), /liveSliceMs/);
+  // The child of a hosted run gets the numbers and never the profile id; a local child gets
+  // neither, even when the parent shell exported one.
+  const parent = {
+    PATH: '/bin',
+    SIMULACRUM_HOST_PROFILE: 'github-ubuntu-2cpu',
+    [WAIT_SCALE_VARIABLE]: '99',
+    [LIVE_SLICE_VARIABLE]: '1',
+  };
+  const hosted = checkWaitEnvironment(parent, profile());
+  assert.equal(hosted[WAIT_SCALE_VARIABLE], String(profile().waitScale));
+  assert.equal(hosted[LIVE_SLICE_VARIABLE], String(profile().liveSliceMs));
+  assert.equal(Object.hasOwn(hosted, 'SIMULACRUM_HOST_PROFILE'), false);
+  assert.equal(hosted.PATH, '/bin');
+  const local = checkWaitEnvironment(parent, null);
+  assert.deepEqual(local, { PATH: '/bin' });
+  // Completion tiers refuse an exported scale exactly as they refuse a profile.
+  assert.throws(
+    () => assertNoHostProfile({ [WAIT_SCALE_VARIABLE]: '10' }),
+    /completion tiers never run under a hosted/,
+  );
+});

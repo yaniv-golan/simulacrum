@@ -94,6 +94,10 @@ registerHooks({
       // The fixture models an un-niced launch; the refusal itself is unit-tested on the real module.
       source =
         'export function assertRuntime() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; } export function assertAwake(options = {}) { globalThis.candidateAwake = (globalThis.candidateAwake ?? 0) + 1; return { method: "fixture", pid: process.pid }; }';
+    if (url === `file://${repo}/scripts/candidate-stack.mjs` && pair === 'stack')
+      // The derivation itself is tested on a real repository; the fixture models its answer.
+      source =
+        'export function deriveStack(ref){ if(ref!=="target") throw Error("--stack "+ref+": unexpected"); return { stack: ref, destinationName: ref, destination: "sha-target", incoming: "feature", base: "HEAD~1", head: "sha-head", chain: { stack: ref, destination: "sha-target", incoming: "feature", base: "HEAD~1", head: "sha-head" }, landingOrder: ["target @ sha-tar", "this candidate @ sha-hea"] }; } export const landingOrderText = ({ landingOrder }) => "landing order: " + landingOrder.join(", then ");';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source = 'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args);';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
@@ -114,12 +118,23 @@ process.argv = [
   process.execPath,
   `${repo}/scripts/verify-candidate.mjs`,
   tier,
-  ...(tier !== 'final' ? ['--base', 'HEAD~1'] : []),
-  ...(pair ? ['--incoming', 'feature', '--destination', 'target'] : []),
+  ...(tier !== 'final' && pair !== 'stack' ? ['--base', 'HEAD~1'] : []),
+  ...(pair === 'stack'
+    ? ['--stack', 'target']
+    : pair
+      ? ['--incoming', 'feature', '--destination', 'target']
+      : []),
   '--priority-files',
   './scripts/verify-recording-browser.mjs',
   'src/application/workshop-app.mjs',
 ];
+// Lines the candidate prints (the landing order of a stack) are captured beside the report.
+const printed = [];
+const log = console.log;
+console.log = (...args) => {
+  printed.push(args.join(' '));
+  log(...args);
+};
 try {
   await import('../../scripts/verify-candidate.mjs');
   const report = JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8'));
@@ -134,7 +149,7 @@ try {
     false
   )
     throw Error('inherited history erased a newer failure');
-  console.log('TRANSPORT ' + JSON.stringify({ calls, captured, report }));
+  console.log('TRANSPORT ' + JSON.stringify({ calls, captured, report, stdout: printed }));
 } finally {
   process.chdir(repo);
   if (captured) rmSync(join(captured.destination, '..'), { recursive: true, force: true });

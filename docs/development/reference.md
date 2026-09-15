@@ -45,6 +45,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run gate:M0 | node scripts/gate.mjs M0 |
 | npm run gate:structural | node scripts/gate-structural.mjs |
 | npm run inspect:change | node scripts/inspect-change.mjs |
+| npm run land | node scripts/land.mjs |
 | npm run native:qualify | node scripts/verification-window.mjs scripts/native-qualification.mjs |
 | npm run playtest:download | node scripts/playtest/download.mjs |
 | npm run playtest:local | wrangler dev --port 8787 |
@@ -126,6 +127,7 @@ These are registered commands and checks, not evidence that they passed.
 | candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |
 | private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
 | human-evidence-verdicts | [evaluateBar](../../scripts/bars.mjs), [Records a human assessment](../../scripts/assess.mjs), [formatVerificationOutcome](../../scripts/verification-outcome.mjs) | verification-scope-configuration |
+| app-identity-fingerprint | [appFingerprint](../../scripts/app-fingerprint.mjs) | verification-scope-configuration |
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
@@ -140,6 +142,7 @@ These are registered commands and checks, not evidence that they passed.
 | bounded-controller-programs | [compileController](../../src/scripting/controller-program.mjs), [createWorkshop](../../src/core/workshop.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [controllerDecision](../../src/model/controller-decision.mjs), [createControllerHistory](../../src/application/controller-history.mjs) | invariant-controls |
 | learning-feature-identity | [admitLearningModel](../../src/model/learning-model.mjs), [admitLearningBindings](../../src/model/learning-bindings.mjs) | invariant-controls |
 | candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [reexecutionSet](../../scripts/candidate-after.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs), [reusableAcrossCandidates](../../scripts/candidate-after.mjs), [acceptRetainedEvidence](../../scripts/verification-run.mjs) | verification-scope-configuration |
+| landing-integrity | [assertLandable](../../scripts/land.mjs), [findLandingReports](../../scripts/land.mjs), [land](../../scripts/land.mjs) | verification-scope-configuration |
 | candidate-citation-integrity | [compareIdentity](../../scripts/candidate-cite.mjs), [citeRelease](../../scripts/candidate-cite.mjs), [resolveCitation](../../scripts/candidate-cite.mjs), [packageRefusal](../../scripts/candidate-cite.mjs), [parseCiteArgs](../../scripts/candidate-cite.mjs) | verification-scope-configuration |
 | ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
 | verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |

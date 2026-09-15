@@ -193,7 +193,7 @@ export function parseCompletionArgs(tier, args) {
   };
   const usage = () =>
     Error(
-      'Usage: local [--base <commit>] | merge --base <commit> [--incoming <commit> --destination <commit>] | final; all support --priority-files <paths...>',
+      'Usage: local [--base <commit>] | merge --base <commit> [--incoming <commit> --destination <commit>] | merge --stack <ref> | final; all support --priority-files <paths...>',
     );
   if (!['local', 'merge', 'final'].includes(tier)) throw usage();
   const seen = new Set();
@@ -215,16 +215,20 @@ export function parseCompletionArgs(tier, args) {
       !args[i + 1].startsWith('-')
     )
       result[arg.slice(2)] = args[++i];
+    else if (arg === '--stack' && tier === 'merge' && args[i + 1] && !args[i + 1].startsWith('-'))
+      result.stack = args[++i];
     else if (arg === '--priority-files') {
       while (args[i + 1] && !args[i + 1].startsWith('-')) result.priorityFiles.push(args[++i]);
       if (!result.priorityFiles.length) throw usage();
     } else throw usage();
   }
-  if (
-    tier === 'merge' &&
-    (!seen.has('--base') || Boolean(result.incoming) !== Boolean(result.destination))
-  )
-    throw usage();
+  if (tier === 'merge') {
+    // A stack derives base, incoming and destination; the explicit form names them all.
+    if (result.stack) {
+      if (['--base', '--incoming', '--destination'].some((flag) => seen.has(flag))) throw usage();
+    } else if (!seen.has('--base') || Boolean(result.incoming) !== Boolean(result.destination))
+      throw usage();
+  }
   result.priorityFiles = [...new Set(normalizeSelectedFiles(result.priorityFiles))];
   return result;
 }

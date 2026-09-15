@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"e6ac8ff86436c54e28888be55b7e3f40306755eae87d8b5a53b94fabfaecb8e8","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c75622a87f091b17a2e5ac9e6276ffb465588bedefb4edc3e45f1809604a4de9","disposition":"still accurate","rationale":"part-search's ESSENTIAL_PARTS is now the six essentials in build order (the catalogue's one owner of that list; PRIMARY_PARTS removed) and the load-cell journey opens Tools before New; adding a part still means catalogue, help, search vocabulary and manifest entries as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"59f23ba0ebfd5d55e8b2f07fbb0740fb2c2e62f30ca262d8bd497f67bbe2fb9b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"e2496d1c1233fefdbb38afe31f7bf1dadb910fa5408df657daa8964971742d21","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; part recipe untouched."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -90,7 +90,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"20609514cdf995994366fa35bd61038d45bce94d82321e0d69897c45aa959811","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"398327d725fbf7c6f52c425f9e5f7f0276bb158c2c178b66b703c327d98dcc06","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; no command surface change (Try it runs the existing example card launchers)."} -->
+<!-- doc-review {"version":1,"fingerprint":"baf49b706b1d064734f702f3f08a2e820ebf077fbd7006cc8183175b6429daf6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"456fc107366af1e172dafa7fa709de340909c1ca8c676ef13233c7eb138b7efc","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; the new `land` npm script is a maintainer landing command, not a workshop command."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -119,7 +119,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"dbb0e9e66d85612ce9bfee2f5b37c4a726a34473209934e8783a1f52a5629caf","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9481b8c37c4a0ba68918a339f6f324bb851ccfffbe8503c5a52ba83f0061519a","disposition":"still accurate","rationale":"part-palette.mjs was removed (its unused PRIMARY_PARTS list duplicated the essentials), journeys gained openTools steps and the harness seeds the first-run cursor; the interaction-change guidance is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2527188f14a321fdb2df2eb4431c2f80d33d1f909b45ecbc8f0caef051fe30b5","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"3725b7be3154be4da47516803d98f8dd09d4a1e70f44dfadad11aab670b4b0cb","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the listed source dependencies changed by landings already on that tip and reviewed there; this candidate's delta (land.mjs, documentation.mjs's version-field digest, run-check/process-inventory watchdog evidence, verify-runtime.mjs's esbuild timing, the 90 s row) touches none of them."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -168,7 +168,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"456f72c30b2d61dd2ff0f5a7231e17c1e57ccc9c20b8ddb8f8255961c28e9bcc","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"7c7fb4833f67739bf302592de8ac2fcf61da844704188388d5fac2328572016b","disposition":"updated","rationale":"The recipe now names readinessLine and readinessNext beside diagnoseMotion: the Build readiness line and the footer's next step derive from the same issue list and claim nothing the diagnosis did not check (null for machines holding a hinge or linear actuator); the health hint's Run-mode cadence paragraph was updated for the two faces."} -->
+<!-- doc-review {"version":1,"fingerprint":"025c8d074c1dc804f4c89304bb3705f8d4faf1ce6ef5d274a0fcc24d55d4e469","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e8b18f9b7760554aef5a1e07f29e1be06feeb107e09ef662485ac28741f5a095","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; the watchdog evidence is verifier tooling, not a workshop diagnostic surface."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"38f27741fccba324e99b88f7193d2d3ea168bea8e441b63a1749ef7d6ab053cf","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"e471b356e3634d39941d54a49b77b91e94bdf8ce5af639d12db16841ec298860","disposition":"still accurate","rationale":"Release-path tooling, tests and policy documents changed (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); the physics change recipe's steps, owners and verification commands are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56d2200a61d1562c1dcf9d917e11d6f3c4c50700f3c1d2bf9e09bd97ac8808ef","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5e8081b12121b0038f32de8200665cb95e023c80a6f2068ca4a6c6a4e181c314","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): no physics change; the listed dependencies are this candidate's tooling files and the split's test relocations, both outside physics."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -514,7 +514,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"84574a57634607a158e5c015705d66eb9ade6d7287bfc9a10be34ddb490b58c9","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1cfeb1003e885d1f323024ed21186fab45c106e279fe3003721121b36356db67","disposition":"still accurate","rationale":"scripts/assembly-ux-cases.mjs now waits for the Tools control to receive focus after the assembly browser closes (a queued close-event task) instead of reading activeElement once, and the manifest carries the re-reviewed metadata hashes; nothing this section explains changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ad6547f6b8777c88f577246d79eca76cc4f5a62355bc2cf2be0e31a023912dd3","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"91f68abebef421c234c1211196db5ece0aa9cf3f34efb4795abd5fbbc9aa487b","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the listed source dependencies changed by landings already on that tip and reviewed there; this candidate's delta (land.mjs, documentation.mjs's version-field digest, run-check/process-inventory watchdog evidence, verify-runtime.mjs's esbuild timing, the 90 s row) touches none of them."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -611,7 +611,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"97e12014ec85b338310cd0ee5cd65e56885d7e89775f45b340ed77c9293b1e24","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"be654b21cd7796fce46fc8e35746146fcaa639a2e0ed952751ab7eb0090265bb","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): Journeys gained openTools steps and the connection test's reason moved to its own reserved line; the overlay guidance (placement, lifecycle, displaced UI, journeys) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6622b9239db91414c507db778f0d0adb4e1514e23e5a824676db19d3c00198b1","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"4eda750cf54413f9f58ef8d29d7f1f38a43750ad7a4a8e0677a25462960f606b","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): the listed source dependencies changed by landings already on that tip and reviewed there; this candidate's delta (land.mjs, documentation.mjs's version-field digest, run-check/process-inventory watchdog evidence, verify-runtime.mjs's esbuild timing, the 90 s row) touches none of them."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -762,7 +762,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"48a10d46df93480169b47670e010daccd2a196cb7d8c4a653c445614ae93cd21","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"0790d873fe5018bee220b947fa83b585706e89f905c9201bb8bdbf0a31e8781b","disposition":"still accurate","rationale":"Re-recorded after the fix pass (first-run storage probe, guide button slot, two journeys' Tools-menu steps): verify-spring-browser gained the openTools step before Measurements and Choose scene; the adaptive-graphics thresholds, warmup and evidence rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a229ba90aca50f43d7117169000cf62677dda97ff78ec75c9bf44a979f21a18b","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"b8a9543211d2946751563c9a7e92865715435d261996621876d6dac48e98d15a","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; adaptive graphics untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

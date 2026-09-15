@@ -69,9 +69,24 @@ import {
   exitCodeFor,
 } from './candidate-cite.mjs';
 import { currentWindowOwner } from './verification-window.mjs';
+import { deriveStack, landingOrderText } from './candidate-stack.mjs';
 /** Spotlight indexes every fresh copy under /var/folders (three mdworker_shared workers per
  * candidate, observed tripping 30 s unit watchdogs); the marker at the candidate root, above
  * `source`, keeps the tree out of the index without entering the candidate's identity. */
+/** `--stack <ref>`: base, incoming and destination derived from the repository and recorded as
+ * the chain; the landing order is printed now and with the result. */
+const applyStack = (options) => {
+  const derived = deriveStack(options.stack);
+  Object.assign(options, {
+    base: derived.base,
+    incoming: derived.incoming,
+    destination: derived.destinationName,
+    destinationName: derived.destinationName,
+    chain: derived.chain,
+    landingOrder: derived.landingOrder,
+  });
+  console.log(landingOrderText(derived));
+};
 const excludeFromIndexing = (root) =>
   writeFileSync(join(root, '.metadata_never_index'), '', { mode: 0o600, flag: 'wx' });
 const origin = process.cwd(),
@@ -222,6 +237,7 @@ try {
   if (retry) {
     [tier] = argv;
     options = parseCompletionArgs(tier, argv.slice(1));
+    if (options.stack) applyStack(options);
     const { parent } = retry,
       reuse = retry.classification.kind === 'reuse';
     const parentDirectory = resolve(parent.directory);
@@ -250,6 +266,14 @@ try {
       }
     } else options.base = resolveCandidateBase(origin, options.base);
     if (!reuse) {
+      if (
+        options.stack &&
+        ((parentDescriptor.candidate?.base ?? null) !== options.base ||
+          (parentDescriptor.options?.destination ?? null) !== options.destination)
+      )
+        throw Error(
+          `--after --stack ${options.stack}: the stack ref moved since the parent attempt (base or destination differ); the retry chain is over — start a fresh candidate with --stack ${options.stack}`,
+        );
       if ((parentDescriptor.candidate?.base ?? null) !== options.base)
         throw Error(
           "--after must repeat the parent attempt's --base (the ref now names another commit)",
@@ -388,6 +412,7 @@ try {
   } else {
     [tier] = argv;
     options = parseCompletionArgs(tier, argv.slice(1));
+    if (options.stack) applyStack(options);
     if (tier === 'merge') {
       const scope = mergeChanges(options);
       options.base = scope.refs.base;
@@ -621,6 +646,7 @@ try {
                       incoming: options.incoming,
                       destination: options.destination,
                       destinationName: options.destinationName ?? options.destination,
+                      ...(options.stack ? { stack: options.stack } : {}),
                     }
                   : {}),
               }),
@@ -730,6 +756,8 @@ try {
     }
   }
   write();
+  if (report.priority?.landingOrder && String(report.status).startsWith('passed'))
+    console.log(landingOrderText(report.priority));
   console.log(
     JSON.stringify({
       status: report.status,

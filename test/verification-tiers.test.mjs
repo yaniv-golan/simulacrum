@@ -261,6 +261,18 @@ test('merge tier requires explicit base and paired integration provenance', asyn
   ]);
   assert.equal(args.incoming, 'def');
   assert.equal(args.destination, 'ghi');
+  // --stack derives the three; it is a merge-only flag and cannot be mixed with them.
+  assert.equal(parseCompletionArgs('merge', ['--stack', 'earlier-branch']).stack, 'earlier-branch');
+  for (const argv of [
+    ['--stack'],
+    ['--stack', 'x', '--base', 'HEAD'],
+    ['--stack', 'x', '--incoming', 'a', '--destination', 'b'],
+    ['--base', 'HEAD', '--stack', 'x'],
+    ['--stack', '--priority-files', 'a'],
+  ])
+    assert.throws(() => parseCompletionArgs('merge', argv), /Usage/, argv.join(' '));
+  assert.throws(() => parseCompletionArgs('local', ['--stack', 'x']), /Usage/);
+  assert.throws(() => parseCompletionArgs('final', ['--stack', 'x']), /Usage/);
 });
 
 test('launch admission runs before the CI phase, waits out a launch burst, and refuses as not evaluated', async () => {

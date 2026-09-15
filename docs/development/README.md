@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"c232f20c027eba025ab177ff571cefccddab016c648c750cc84a6f89e3fdc194","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"29e7e6025a62d440158a5e112abcd1cbdb255605c0a30431d5e13778462987ad","disposition":"still accurate","rationale":"AGENTS.md changed only in the experimental release policy paragraph, which now says an authorized release may cite a byte-identical passed merge candidate's workshop browser receipts as described in release operations (the release evidence-reuse change: prepare-release.mjs accepts --after <merge attempt report>, admits the parent through its attestation and signed resume descriptor, requires a byte-identical tree, installed-dependency digest and relevant environment, runs the tier with a resume ledger (caches redirected, the identity record's installed digest re-checked after the tier), copies every cited receipt's evidence into the frozen tree and names each in the envelope; package-verification.mjs assertReusedEvidence admits a 'passed with reused receipts' package only to a bypass-expensive release, refuses it for qualified, CI, rollback-of-qualified and recovery paths; release.mjs passes --after for prepare only and lists reused receipts in the exception record and deploy summary; verification-resume.mjs exports verifyLeafRow/readLeafRow used by the ledger loader; verification-environment.mjs adds the fixture knobs PARENT_ATTEMPT, PARENT_REPORT and PURGED to the test-owned exemption group; the manifest guarantee for release-verification-single-pass names the citation and registers both new tests as positive and negative controls); the guide's entry points, commands and structure are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"83936954fbebf9d17a264e5647a3d40b36b165b10d6ae57799961a5c84a8c465","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"a3f3465fb455e53d72001784b727f534e30422fda5a5a4bd84bb2c965a3cd6e8","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): AGENTS.md changed one sentence (landing via `npm run land`); the guide's entry points are unchanged; package files re-key once because implicit coverage now digests them without version fields."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"ad663a3be9c185769e06b72e026a87eb19274b5a3579ec40a4f7a8c97f1425cc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"ad6f98ba0a830d92e71ad55665ee7878a5d8523d68814c308a8168a10cea9461","disposition":"still accurate","rationale":"The manifest changed only in the release-verification-single-pass guarantee text and its two new controls (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); milestone allocation, bars and gates are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"89426a04d7c982b9257c437dc19790d921addd3a38d037474b6ab9d9483eccfb","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"9a5ef59fe4e4fcc63f2d7a6d1bfa60c0ff0da269391d00f882db81857106faa7","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the manifest carries the split's test relocations plus this candidate's landing-integrity invariant, watchdog controls and 90 s cloud-runtime budget; milestones and bars are unchanged."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"d53a85e3c39f62136abc20df1ac284ac19caa23859c5ee2007993bf8b81ffd94","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"cb2e744d414c2c5a6ede402a607a4e5ac1bfe2edbafebcbb4dafb0a2f542c530","disposition":"still accurate","rationale":"playtesting.md#release-operations gained the dry-check and launch-wait paragraph and package.json the verify:host script (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); both are development probes under the existing table; the tiers, commands, exit codes and evidence rules this section describes are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"eec6498ca4a08cbb50723eef504298c1eddc4c52ea5ea4a5c18789ccf385e695","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"9e583bdfed2256cd2176e81b8a50f3537727cbbd406bc9abf3dace9a417cfcf5","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): documents `npm run land` (attested passing merge report for the tip, integrated against the current main, bytes and modes equal, fast-forward; priority.destination ?? priority.base); candidate-after.mjs supplies verifyAttestation."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -146,23 +146,49 @@ source/build identity with the candidate being claimed. Registration of a check 
 an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Stacked integrations: when another candidate is already verifying against the same
-destination, merge that integration branch instead of `main` and pass its branch name as
-`--destination` with the same `--base`; the later candidate then lands unchanged once the
-earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
+destination, merge that integration branch instead of `main` and run `npm run
+verify:candidate -- merge --stack <that branch name>`; the later candidate then lands
+unchanged once the earlier one fast-forwards. `--stack` derives what the long form
+(`--base <commit> --incoming <commit> --destination <ref>`) makes you type: the destination
+is the named branch; the incoming commit is the branch's pre-integration tip (the last commit
+of its own first-parent history that does not contain the ref — a branch built linearly on the
+ref integrates whole, with the ref as base); the base is their unique merge-base. It refuses,
+naming the commits, when HEAD does not contain the ref (merge it first, or re-merge its moved
+head), when HEAD is the ref, when the merge-base is not unique, and for `--stack main` (that is
+a plain merge candidate). The derived values are recorded as `priority.chain`, the window
+intent says `stacked on <ref>` to contenders, and the landing order (the ref, then this
+candidate) is printed at launch and again with any passing result. A branch-pair merge candidate records the supplied name as
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
-confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+`npm run land` checks `priority.destination` against `main` instead) or NOT_EVALUATED (a
 bare commit was supplied). If the earlier integration is revised after being stacked on,
 re-merge its head and re-verify. A candidate that waited on another window owner retains
 that owner's declared intent (tier, branch, destination, origin worktree) under
 `windowReports[].value.contenders[].intent`.
 
+Landing: `npm run land -- <tip> [--report <attempt report.json>] [--dry-run]`
+([implementation](../../scripts/land.mjs#implementation)) fast-forwards `main` to the tip and
+refuses otherwise. It finds the tip's passing merge attempt reports under the candidate
+directories (or takes `--report`), tries them newest first, and lands on the first that
+satisfies every rule: the checkout on `main` with no modified tracked files; a report whose
+status is `passed`, `passed after failure` or `passed with reused receipts` and whose tier
+is `merge` (never `local`, `final`, a hosted profile or a measurement run); the report read
+from its own candidate's `attempts/` at the path it records and attested by that
+candidate's resume key (the same same-UID trust class as receipts — an edited or copied
+report is refused); `candidate.head` equal to the tip; the commit it integrated against
+(`priority.destination`, or `priority.base` for a routine `merge --base`) equal to the
+current `main`; `destinationStillMatches` not false; the tip's tree equal to the recorded
+`candidate.index`, every tip file's bytes and mode equal to the verified `candidate.files`
+entry, and no untracked bytes among them; and a fast-forward. It prints the attestation,
+attempt and report it verified, then the new `main`. Candidate directories live under the
+system temporary directory; once one is gone, `--report` cannot resurrect it and the tip
+needs new evidence.
+
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green
-report after changing source or environment. An experimental release may cite a byte-identical
-merge candidate's receipts only through the named release admission.
+report after changing source or environment.
 
 The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
 `engines.node` from package.json. CI, the milestone gate, final verification, focused
@@ -183,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f6aa8ea345ceb976a08f9c9627d16fe44c2aed355ad6ded717f667f0a79a2f33","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"995277ead727937e3d8607deedf2d4132dc15642dc82b68cf713c1eca540873a","disposition":"still accurate","rationale":"reference.md regenerated for the new verify-host module and the extended release guarantee (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); the documentation workflow, review sidecars and dispositions described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1dad1b1a2bcdc0993afe94d2c444e303bdd90f5eff200018d653a10c12bca50","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"50e0d79519c8a94c2bde0b6abb0b380ee559ac403782714b5d30d5bb81f11a85","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the coverage paragraph says the package's own version is excluded from implicit external-package coverage; documentation.mjs implements it; reference.md regenerated on the merged tree."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -260,7 +286,10 @@ only to explanation review, never build identities or verification receipts.
 Implicit external-package coverage retains package configuration and lockfile bytes,
 but excludes npm scripts when no install lifecycle hook is present: a command-only
 change does not change an imported library. Lifecycle hooks retain all scripts because
-they can invoke other package commands and alter installed dependencies.
+they can invoke other package commands and alter installed dependencies. The package's
+own `version` (and the lockfile's copy of it) is excluded too: a release bump names the
+build and changes no imported library, so it stales no explanation; a resolved or
+declared dependency version still does.
 Explicit package/command references and literal file reads still bind those scripts.
 Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
@@ -315,7 +344,7 @@ comparison, not evidence that two branches were integrated. Neither command inst
 changes. For already frozen CI copies, `npm run verify:merge -- --base <commit>` is
 the direct equivalent. Selected and omitted browser checks include reasons.
 
-Full browser coverage remains scheduled and required for releases and qualification. The scheduled hosted run executes under a registered host profile: deadlines are the profile's registered values (never shorter than the local ones), performance-tier checks and every timing-sensitive check (there is no quiet-host admission without a tier context) are reported `NOT_EVALUATED` with the platform reason rather than executed and the coverage comparison lists them apart, a profile in measurement mode labels every report `measurement` and is never evidence, and completion tiers refuse to run under any profile. Measurement mode is bounded by hand: after each hosted measurement run, record its workflow run id in `hostProfiles.<id>.measurementRuns` (the validator refuses a fourth while `measurement` is true); after three, register `hostedTimeoutMs` on every evaluated browser check from the observed p95 durations, set `measurement: false` and remove the provisional `browserTimeoutMs` rule, or the manifest is rejected. In-script page deadlines are not scaled by the profile, so a check failing there with exit 1 on the runner is expected and is not registrable away. A dispatched `release-package` job runs unprofiled and stays red on the hosted runner until a hosted release policy exists.
+Full browser coverage remains scheduled and required for releases and qualification. The scheduled hosted run executes under a registered host profile: deadlines are the profile's registered values (never shorter than the local ones), performance-tier checks and every timing-sensitive check (there is no quiet-host admission without a tier context) are reported `NOT_EVALUATED` with the platform reason rather than executed and the coverage comparison lists them apart, a profile in measurement mode labels every report `measurement` and is never evidence, and completion tiers refuse to run under any profile. Measurement mode is bounded by hand: after each hosted measurement run, record its workflow run id in `hostProfiles.<id>.measurementRuns` (the validator refuses a fourth while `measurement` is true); after three, register `hostedTimeoutMs` on every evaluated browser check from the observed p95 durations, set `measurement: false` and remove the provisional `browserTimeoutMs` rule, or the manifest is rejected. The profile also registers the platform's patience: `waitScale` multiplies every page deadline a check writes (`page.setDefaultTimeout`, the shared session's startup budget for `goto`/`reload` — the app's probe, never the interaction deadline — and literals routed through `evidence.waitBudget(ms)`; an unrouted literal is not scaled) once, in the shared browser session, never past 60 % of the row's process budget so a scaled wait cannot outlive the watchdog and lose its evidence, and `liveSliceMs` is the slice a live wait allows a renderer to go without a frame before calling it starved; both reach a check as numbers from the suite only (`SIMULACRUM_BROWSER_WAIT_SCALE`, `SIMULACRUM_BROWSER_LIVE_SLICE_MS`; a shell export is refused, and completion tiers refuse them like the profile). When a locator action expires, the failure capture samples the target's box over the next animation frames (`targetGeometry`, verdict `starved`, `moved` or `stable`) so a starved main thread and a control moved by a re-laying-out readout are told apart instead of both reading as a timeout. A dispatched `release-package` job runs unprofiled and stays red on the hosted runner until a hosted release policy exists.
 CI preserves separate unit and browser jobs: pull requests use the pinned event tips
 and actual merge checkout, while missing push history selects full coverage. Scheduled
 full runs compare last-commit merge selection only when matching complete evidence is
@@ -324,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"8f1fc52cc772545242a4dce0027bd1302ee56c2968dbc889498291a655e653b4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6229bc24e09643073660ca46f9ac1baec1f9b551b8e1e0c235a6dd70f69e601c","disposition":"updated","rationale":"Amended the launch-admission sentence: 60 s by default, a release final up to five minutes via the bounded budget variable, the budget recorded on the row and a refusal printed with its offenders (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); pool sizing, phases, selection and admission policy are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e64458c5f866338fa84b783794b7b8064ed083fef51abac9f2687cf029073d50","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"99e849d7ee6f7d38648239d64666b48288303782ae2e1f0f8ff196ecd74dc52a","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the failed-row diagnostics sentence lists Linux wait channels, paging counters with memoryAtStart, the bounded macOS stack sample and memoryMs/sampleMs; verify-cloud-runtime's timeoutMs is 90 s; the split's manifest rows are its own, reviewed on its tip."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -478,9 +507,15 @@ A failed row additionally carries `processSnapshot` from the
 same bounded process enumeration that terminates the owned tree also retains load
 averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
 Spotlight daemons regardless of rank, the check's own tree (executable names only,
-never arguments or environment), and on macOS whether the stalled executable still
+never arguments or environment; on Linux each row carries its kernel wait channel, which
+macOS does not export), paging counters at that moment (`memory`, units named per
+platform) beside the row's `memoryAtStart` for rows with at least a ten-second deadline,
+on macOS one bounded stack sample of the first owned descendant blocked in
+uninterruptible wait (`sample`, one second, killed after three, output to the runner's
+pipe: its top-of-stack section names each thread's leaf frame and so the blocking
+syscall), and on macOS whether the stalled executable still
 carried quarantine or provenance attributes; a non-zero exit retains a post-hoc snapshot
-without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost and `hintMs` the attribute lookup. macOS
+without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost, `hintMs` the attribute lookup, `memoryMs` the counter read and `sampleMs` the stack sample. macOS
 `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time` and `etime`
 accompany it. The snapshot is context for a person, never attribution, and a failure to
 take it is recorded without changing the outcome. Failed browser rows also carry
@@ -602,7 +637,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"edbc0806dc6f26780104836f712ec41a04a7696930d3398f0616f4c4d8473ddc","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"dc2ff44afbf24ffab9fde7d58d2dc46f31a38fc4af39492a95f09b2e791edd51","disposition":"updated","rationale":"Added the verify:host sentence: a read-only readiness probe evaluating one pressure sample through the launch admission's own code for both reaches plus the window owner, exit 0 only when admitted and free, never holding the window (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); window acquisition, waits and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8054cd0fdb379d89d9f4ee16e38deacf7804c8e570430dcfc74410c0997598b7","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"9395aff6ab1b5d5b2c847221d07a7b265e83ef2e0b5961f33d6371bcf7b2e86e","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen tooling-stack-flag tip 5a461978 (merge 740b3386): run-check/process-inventory gained watchdog evidence only; window ownership is unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -655,7 +690,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"29569752f0a55b4ddefbd7647eccd20a737c3c1aeb2d821b1919a9f0f678a944","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b8653168e2e8f42465c1238dcf62312fb047af430c0bc59bb7302ada90145ce5","disposition":"still accurate","rationale":"The launch wait budget, its exemption and the leaf-environment strip changed how long a launch may wait, never what a candidate captures, compares or reuses (the release-path tooling change: verification-tiers.mjs exports FINAL_PHASES (the qualification's phase ids, which verify-final builds its table from) and a launch wait budget read from SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS within 60–600 s, recorded as budgetMs on the admission row, malformed values failing the attempt by name, and prints a refused launch with its busiest foreign processes; host-profile's childEnvironment strips that budget from leaves; prepare-release sets 300 s for the release final, fails a refused launch with a named message, exposes releaseEnvelope and dryCheckRelease (release:prepare --dry-check: prerequisites and a packaging rehearsal on the tier's own phase list, creating nothing); verify-host.mjs is the read-only readiness probe (npm run verify:host) using the admission's own code and the exported describeOwner; the manifest guarantee and controls of release-verification-single-pass name the two new tests); candidate identity, capture, completion tiers and the release citation are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c8bd8ad168c2e0f4387195a5a177de139d735b1e63b5405b9677b3e459e3840","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2c1b53a94ddb335e9add1ae43d003d0d8ac50745ed81352a4c122b2f96a642b2","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): manifest invariant/controls, the package digest change and the split's relocated test files do not alter candidate capture or tiers."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -713,9 +748,7 @@ expired automatically: establish the prior process tree has stopped before recov
 
 A diagnosed retry of a failed attempt uses `npm run verify:candidate -- <tier> [tier options]
 --after <attempt-report.json> --cause <checkId>=<diagnosed cause>` for `local` and `merge`
-only; `final` refuses `--after` because qualification evidence is always a fresh full run (the
-one named admission is an experimental release's `release:prepare -- … --after`, see
-[release operations](playtesting.md#release-operations)). The
+only; `final` refuses `--after` because qualification evidence is always a fresh full run. The
 parent must be a `failed` report that completed its tier; an attempt that failed around the tier
 (window, drift, dependency change) needs `--cause candidate=<reason>` as well, and a parent with
 no tier receipts needs a fresh candidate. Every failed or unexecuted leaf of the parent needs

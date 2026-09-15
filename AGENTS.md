@@ -124,6 +124,7 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | Development probe | Focused unit/browser command; no completion claim |
 | Local completion | `npm run verify:candidate -- local` |
 | Routine merge readiness | `npm run verify:candidate -- merge --base <commit>` |
+| Merge readiness stacked on an earlier integration branch | `npm run verify:candidate -- merge --stack <ref>` |
 | Release or milestone qualification | `npm run verify:candidate -- final` |
 | Diagnosed retry of a failed local/merge candidate | `npm run verify:candidate -- <tier> --after <report> --cause <id>=<cause>` |
 | Receipt reuse from a passed local/merge candidate on identical bytes | `npm run verify:candidate -- <tier> --after <passed report>` |
@@ -221,11 +222,13 @@ candidate with `npm run verify:candidate -- local` (`merge --base <commit>` for 
 Prepare and review documentation before capture. Candidate evidence applies only to its
 recorded bytes; a changed integration destination needs new verification. Concurrent
 integrations into the same destination stack rather than race: the later candidate merges
-the earlier integration branch and verifies with the same `--base` and
-`--destination <earlier integration branch name>` (a ref, never a commit, so drift is
-reported). If the earlier integration is revised after being stacked on, re-merge its head
-and re-verify. Before landing by fast-forward, confirm `git rev-parse main` equals the
-report's `priority.destination`. When the window owner is a candidate, the wait notice
+the earlier integration branch and verifies with `merge --stack <earlier integration branch
+name>` (a ref, never a commit, so drift is reported; the base, the pre-integration tip and
+the landing order are derived from the history and recorded in `priority.chain`). If the
+earlier integration is revised after being stacked on, re-merge its head and re-verify. Land through `npm run land -- <tip>`: it fast-forwards `main` only when a
+passing merge attempt report for exactly that tip, attested by its own candidate key,
+integrated against the current `main`, recorded the tip's bytes and nothing else, and the
+checkout is clean on `main`. When the window owner is a candidate, the wait notice
 names its tier, branch, destination and origin worktree; stack on a same-destination
 owner instead of waiting it out. Direct tiers remain available for already frozen release/CI copies and development probes.
 
