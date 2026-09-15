@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"75bfbccb78a0e7447a2b7b7517c86d9f7e535ae9e7826cc60af128dd383682ce","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e2e4518ebb69f6bc42d63b6d343fa89173c008413e2237270f958ccd022ebd33","disposition":"still accurate","rationale":"Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): AGENTS.md changed by the --stack row and the stacking paragraph; layer ownership, the registry reader's role and the module map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1d04d6cd7b506fddf700328e95a69fcb63253bb71c51e045985fad6316af46a1","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"f7a0f4209f22a9531210d66f6d1bfd6b81b045f6e9342b24e54f4d5be447d73b","disposition":"still accurate","rationale":"--stack stacked on the frozen chain (tooling-stack-flag merged with q44-release-reuse 434fe72c, base 458e9b3c): re-recorded after merging the chain (release-identity's source record, item 50's refused-row marking, feedback-sync, q44's release reuse) — Stacked candidates by --stack (tooling-stack-flag on main 458e9b3c): AGENTS.md changed by the --stack row and the stacking paragraph; layer ownership, the registry reader's role and the module map are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
