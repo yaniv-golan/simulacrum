@@ -118,6 +118,7 @@ try {
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/bindings.json`);
+  await openTools(page);
   await command('new');
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');

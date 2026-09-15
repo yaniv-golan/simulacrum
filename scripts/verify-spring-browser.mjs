@@ -457,11 +457,11 @@ try {
   evidence.assert('equal', [cartInitial.springs.length, 4]);
   const measuredChassis = cartInitial.metadata.blueprint.parts.find((p) => p.type === 'chassis');
   await select(measuredChassis.id);
+  await openTools(page);
   const measurementsButton = page.getByRole('button', { name: 'Measurements', exact: true });
-  if ((await measurementsButton.getAttribute('aria-pressed')) !== 'true') {
-    await openTools(page);
+  if ((await measurementsButton.getAttribute('aria-pressed')) !== 'true')
     await measurementsButton.click();
-  }
+  else await page.keyboard.press('Escape');
   await page.locator('[data-command=run]').click();
   await page.keyboard.down('w');
   try {
@@ -509,6 +509,7 @@ try {
     (await page.locator('.selected-motion-window').textContent()).includes('origin tick'),
   ]);
   await page.screenshot({ path: `${out}/guided-cart.png` });
+  await openTools(page);
   await measurementsButton.click();
   evidence.assert('equal', [await page.locator('.motion-values').isVisible(), false]);
 

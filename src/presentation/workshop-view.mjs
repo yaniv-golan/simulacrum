@@ -816,7 +816,8 @@ export function createWorkshopView(
       next.addEventListener('focus', preview);
       next.addEventListener('pointerleave', leave);
       next.addEventListener('blur', leave);
-      guide.insertBefore(next, description);
+      // A fixed slot right after the progress line: the button must not move between steps.
+      guide.insertBefore(next, guide.children[1]);
       if (step.part) preview();
     } else {
       guide.append(
@@ -917,7 +918,9 @@ export function createWorkshopView(
   function offerFirstRun() {
     let keys = null;
     try {
-      keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i));
+      // A blocked store throws on read; enumerate only after a read has succeeded.
+      localStorage.getItem(FIRST_RUN_KEY);
+      keys = Array.from({ length: localStorage.length ?? 0 }, (_, i) => localStorage.key(i));
     } catch {
       keys = null;
     }
