@@ -40,6 +40,27 @@ test('the format gate refuses a tree with one file outside prettier layout and n
   assert.throws(() => checkFormat(root), /2 file\(s\).*src\/b\.mjs.*test\/a\.test\.mjs/);
 });
 
+test('the gate names the file under a CI environment, where prettier colours its warnings', (t) => {
+  // GitHub's runner sets CI, and prettier (picocolors) then colours `[warn]` even through a
+  // pipe: hosted runs #2–#4 (2026-09-15) fell to the generic "prettier --check failed" line
+  // because the parser matched plain `[warn] ` only. The gate must read the file name either way.
+  const root = tree(t);
+  writeFileSync(
+    join(root, 'scripts/env.mjs'),
+    "export const names = Object.freeze(['NODE_ENV', 'NODE_OPTIONS', 'POWER_BASELINE_SOURCE', 'SIMULACRUM_HOST_PROFILE']);\n",
+  );
+  const previous = { CI: process.env.CI, NO_COLOR: process.env.NO_COLOR, FORCE_COLOR: process.env.FORCE_COLOR };
+  process.env.CI = '1';
+  process.env.FORCE_COLOR = '1';
+  delete process.env.NO_COLOR;
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous))
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+  });
+  assert.throws(() => checkFormat(root), /1 file\(s\) not in prettier layout: scripts\/env\.mjs/);
+});
+
 test('the format gate runs from the registered manifest row on every commit', async () => {
   const { readFileSync } = await import('node:fs');
   const manifest = JSON.parse(readFileSync(new URL('../scripts/manifest.json', import.meta.url)));
