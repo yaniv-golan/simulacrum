@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"0d6f0057b20d59c131968452a22c4b7c224b2c292dd256cc0e980d10942f979c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b8c03445597e49391e5118bde205bcbe31c37a9f7b1b98c4ce753789659d81b9","disposition":"still accurate","rationale":"test/assessment.test.mjs was split into four files sharing test/fixtures/assessment-fixture.mjs with no check changed; no physics door, contract or physical test contract in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"56d2200a61d1562c1dcf9d917e11d6f3c4c50700f3c1d2bf9e09bd97ac8808ef","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5e8081b12121b0038f32de8200665cb95e023c80a6f2068ca4a6c6a4e181c314","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): no physics change; the listed dependencies are this candidate's tooling files and the split's test relocations, both outside physics."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

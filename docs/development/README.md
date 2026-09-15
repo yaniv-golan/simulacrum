@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"d2eab67f07f97bff8a0b18e119736567915d8df1de11d4a0aa6b38d3186440f3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"69195cd4fbc19c53e6e53ce3ceae084637eb2bc336faaa65d8c9450ba58d897c","disposition":"still accurate","rationale":"No milestone, bar or obligation changed; the manifest edit is an invariant registration and relocated unit controls under the existing gate-integrity rule."} -->
+<!-- doc-review {"version":1,"fingerprint":"89426a04d7c982b9257c437dc19790d921addd3a38d037474b6ab9d9483eccfb","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"9a5ef59fe4e4fcc63f2d7a6d1bfa60c0ff0da269391d00f882db81857106faa7","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the manifest carries the split's test relocations plus this candidate's landing-integrity invariant, watchdog controls and 90 s cloud-runtime budget; milestones and bars are unchanged."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"58c16b223b696be9e384c5276abbbfe788e0f1c2cb35437bddc31513df69246b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8401146fea9cad2c6391e0758f21470819e524da1d15cd3eab020291d68f2cfe","disposition":"still accurate","rationale":"reference.md regenerated only to add the app-identity-fingerprint row and to move the human-evidence-verdicts control paths to the split test files; the review workflow, sidecar rules and gate are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1dad1b1a2bcdc0993afe94d2c444e303bdd90f5eff200018d653a10c12bca50","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"50e0d79519c8a94c2bde0b6abb0b380ee559ac403782714b5d30d5bb81f11a85","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the coverage paragraph says the package's own version is excluded from implicit external-package coverage; documentation.mjs implements it; reference.md regenerated on the merged tree."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"3c72170fb92d8daab7c81703a89d9b8997b44507b433e8c56d93faf4503ca0ab","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d26e5bb98c39a1aeb72afdbd07ffa793f8ec55d6af5fd9acdcf5eb06a68ce3fb","disposition":"still accurate","rationale":"The manifest change registers a unit-tested guarantee and relocates unit control paths; browser selection, scope declarations and execution policy are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"e64458c5f866338fa84b783794b7b8064ed083fef51abac9f2687cf029073d50","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"99e849d7ee6f7d38648239d64666b48288303782ae2e1f0f8ff196ecd74dc52a","disposition":"updated","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): the failed-row diagnostics sentence lists Linux wait channels, paging counters with memoryAtStart, the bounded macOS stack sample and memoryMs/sampleMs; verify-cloud-runtime's timeoutMs is 90 s; the split's manifest rows are its own, reviewed on its tip."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -684,7 +684,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"3be9135a2d633c39c410bf4506c5e7ab6b5f1c6887e1e29f35f9514c71bdac03","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7af81f9c82d003ee555e33ca4e86985007254d267751a78326939ec015924059","disposition":"still accurate","rationale":"The manifest gained the app-identity-fingerprint invariant and moved unit control paths; candidate isolation, evidence binding and stacking rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c8bd8ad168c2e0f4387195a5a177de139d735b1e63b5405b9677b3e459e3840","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2c1b53a94ddb335e9add1ae43d003d0d8ac50745ed81352a4c122b2f96a642b2","disposition":"still accurate","rationale":"Tooling candidate land-script re-recorded on the frozen assessment-split tip e7bd606 (merge ea277281): manifest invariant/controls, the package digest change and the split's relocated test files do not alter candidate capture or tiers."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
