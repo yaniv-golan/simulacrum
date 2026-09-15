@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"0bc44fee90eeeb6f14c8fd331aef6447af5e4c01c2e69e004abcc9f549c61962","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"a4c6a7e0291cdb8bb05fd51ce37a596f13215392207c587bca410aa0527f9130","disposition":"still accurate","rationale":"Verification-harness change only (One read-classification predicate (scripts/read-classification.mjs: purpose in identity|fixture|runtime|source-analysis and excludedInputs naming both documentation and unit-test) is now applied by browser selection, the scope proposal and the manifest validator; a declaration selection would not trust is blocked at prepare naming the read and field, unclassified reads get a declaration skeleton next to the proposal, and selection reports `audit.unaudited[{entrypoint, reason}]` (shown by inspect:change).); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"518645745caf0adac220d9c5a356f824fec69bad18c60b0f878d26aa2dbca5b0","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"efd2d0083331fdf19e874e8dd51d420866d16f28f069645687665d0e4913ffd9","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

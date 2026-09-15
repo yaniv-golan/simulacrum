@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"105cfa032385ed7976308b89b52038fe47bd16d8b4149dfc9b0da1ccea8f64c5","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"12d74de6211d81ae773548d42661b4f7e8ccdecdf2d152f983cdff668309d1be","disposition":"still accurate","rationale":"validate-manifest.mjs now applies the shared read-classification predicate to metadata scope rows (a validator detail); no layer, owner or import rule in the overview changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"d5206f4af41133df16ac348faa7f3df6ae31d70e1f607a380c6d9084dd570434","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"a9ccb824c3e9c2b80c342e48d2e9f50ab0a51e457f8bfa7285111bffae8c5149","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

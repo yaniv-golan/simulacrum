@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"847a1fd1664b108a6885a37ca752f234595ff0466f7601bab6fb921355fd7c0c","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"4189823cfc8bd2da6cffe1c9fabb92550360a0467330a5e6504db6a5aaaeafa8","disposition":"still accurate","rationale":"scripts/manifest.json changed only in the local-browser-scope-safety invariant (guarantee, owners, controls); milestones, bars and gates are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2ea752357fc7b667b874bb74f02440f46a1f1ca97378141f799d96c7b79c4b38","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"3c9b8c94f65040c06b53e3a2bdcaec20fc9c9838cfd437b22ec4d3446940eb35","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -183,7 +183,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"47b2b954c56be4066f7f1a84fc550658ebada84e16cfd719fbcb3c7201b7b388","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"2c327b1f7be45e3d75dd18d1437a668a7d820deef3dd4ac2bf5b659e50832578","disposition":"still accurate","rationale":"reference.md regenerated for the new read-classification module; the prepare → review → check workflow this section describes is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"421e53316213107f3491c32973b62d1c6d3c0d0ddb8d508f83e900dcc07888e4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7e149ab2488e4d80afdc43701283553305d943151f332d056d74eb2324849200","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -324,7 +324,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"a0cb7cd63d2fac6485f9c6a0cb5b3944f277b21571849db1a652b1fe08249b21","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c32cedabaac9a211688e806fe800559dbddb020d075c75730f7c8c8efff33ac2","disposition":"updated","rationale":"Rewrote the declaration paragraph: One read-classification predicate (scripts/read-classification.mjs: purpose in identity|fixture|runtime|source-analysis and excludedInputs naming both documentation and unit-test) is now applied by browser selection, the scope proposal and the manifest validator; a declaration selection would not trust is blocked at prepare naming the read and field, unclassified reads get a declaration skeleton next to the proposal, and selection reports `audit.unaudited[{entrypoint, reason}]` (shown by inspect:change). The mirror-contract note says the expected list changes only when a check is declared on the mirror rows and the contract is edited before prepare. Selection, scheduling and exclusivity rules are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cfdbf848d69931c266e0c542200c9ade25376cee55bbcfd029e172b32a2a2750","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"0930de879b60aba23654127dd6efb250cceba0411d8ee1ed4db2015f0069bd74","disposition":"updated","rationale":"Extended the declaration paragraph: the skeleton carries the whole row (a declaration replaces reads whole), merge/local tiers print the unaudited reasons on their selection line, the mirror list is a deliberate hand-written contract and the second mirror assertion needs no audit line; no other rule this section describes changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -665,7 +665,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"5e6e11988d86eae580e84634fb3523de2f2b63227f1577fe9cc986fa0478d060","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"ef9bd3e5ec12ad4626559c7d1acacf90111d7fd913f3f17224e6fe1ffb999aa6","disposition":"still accurate","rationale":"One read-classification predicate (scripts/read-classification.mjs: purpose in identity|fixture|runtime|source-analysis and excludedInputs naming both documentation and unit-test) is now applied by browser selection, the scope proposal and the manifest validator; a declaration selection would not trust is blocked at prepare naming the read and field, unclassified reads get a declaration skeleton next to the proposal, and selection reports `audit.unaudited[{entrypoint, reason}]` (shown by inspect:change). verify:prepare's stale-registry line now also points at the declaration skeleton; capture, isolation, attempt ownership and what runs in each tier are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b666dcaf35a8017cc26c78b140d7f541bb3f0831ae0052a59509b901519a9f91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"63bbca305cb62f0d1be2ef4f6e1d246c6d42df4432a27d556d863e85b8223405","disposition":"still accurate","rationale":"Review-fix pass on the read-classification owner (whole-row skeletons, blocked placeholders, tiers printing unaudited reasons, validator named as owner); no other rule this section describes changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
