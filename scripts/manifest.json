@@ -4198,6 +4198,64 @@
       "qualificationBars": []
     },
     {
+      "id": "human-evidence-verdicts",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Human assessment sessions are append-only and the latest complete pass or fail governs a bar. An incomplete session, one that ended before any criterion could be judged, is recorded with its notes but supplies no verdict: it never demotes a pass or clears a fail, a bar with only incomplete sessions is pending rather than failed, and a later incomplete session stays named beside the governing verdict through the gate and the verification outcome. Every F1 record must name the designated participant, whether or not it governs.",
+      "owners": [
+        {
+          "path": "scripts/bars.mjs",
+          "anchor": "evaluateBar"
+        },
+        {
+          "path": "scripts/assess.mjs",
+          "anchor": "Records a human assessment"
+        },
+        {
+          "path": "scripts/verification-outcome.mjs",
+          "anchor": "formatVerificationOutcome"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "valid assessment passes; newer failure supersedes it"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "only incomplete sessions leave the bar pending, not failed"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "a newer incomplete session does not demote a pass and is named beside it"
+          },
+          {
+            "path": "test/verification-outcome.test.mjs",
+            "anchor": "a later incomplete session stays visible beside a passing human bar"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "a later incomplete session on the current build is named beside a stale pass"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "a newer incomplete session does not clear a fail"
+          },
+          {
+            "path": "test/assessment.test.mjs",
+            "anchor": "an F1 session from another participant is rejected even when it does not govern"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "assembly-scenario-partition",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",

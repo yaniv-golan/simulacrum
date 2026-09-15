@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27e0cf0c19691afec86103d49955cfe2849b89a50b0fd8cb615888fb755effd2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"465096f67fd27b8133d718ec46fa9f6d066acf3eea00dced4e4be58af61e9bbb","disposition":"still accurate","rationale":"The candidate changes duplication placement (grid steps beside the original), the copy/lift/hint/Connect & test presentation and their browser checks; no physics door, contract or admission path in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"776beb41e3aaea1a476d74a3828742b0532ec25434a4d18d13cdb35ad46e0d9d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8174956f5fde2f96b7f15886496dfccc5df10087cc1cdc0916b2f85a14327a3e","disposition":"still accurate","rationale":"Only the human-assessment writer/reader, the verification outcome formatter, protocols and the README verify sentence changed; no physics door, contract or test contract in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

@@ -24,7 +24,15 @@ function validate(record, id) {
     if (typeof record[field] !== 'string' || record[field].length === 0)
       return `evidence missing or empty field: ${field}`;
   if (record.bar !== id) return `evidence is for bar ${record.bar}, not ${id}`;
-  if (!['pass', 'fail'].includes(record.verdict)) return `bad verdict: ${record.verdict}`;
+  if (!['pass', 'fail', 'incomplete'].includes(record.verdict))
+    return `bad verdict: ${record.verdict}`;
+  // F1 is acceptance by the designated player. Every F1 record is checked, not
+  // only the governing one: a foreign session cannot sit in the log unnoticed.
+  if (id === 'F1') {
+    const designated = manifest.bars.F1.participant;
+    if (typeof designated !== 'string' || !designated.trim() || record.participant !== designated)
+      return "F1 requires the manifest's designated participant";
+  }
   const timestamp = Date.parse(record.recordedAt);
   if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString() !== record.recordedAt)
     return `recordedAt must be a canonical UTC timestamp: ${record.recordedAt}`;
@@ -64,7 +72,7 @@ export async function evaluateBar(id, context) {
   if (!existsSync(sessionsDir))
     return { id, state: 'RED', assessment: 'pending', why: 'no recorded assessment' };
 
-  let record;
+  let record, laterIncomplete;
   try {
     const log = readdirSync(sessionsDir)
       .filter((f) => f.endsWith('.json'))
@@ -87,47 +95,65 @@ export async function evaluateBar(id, context) {
     if (new Set(timed.map((x) => x.t)).size !== timed.length)
       return { id, state: 'RED', why: 'ambiguous recordedAt: sessions have identical timestamps' };
     timed.sort((a, b) => a.t - b.t);
-    record = timed.at(-1).r; // most recent valid session wins
-    if (id === 'F1') {
-      const designated = bar.participant;
-      if (typeof designated !== 'string' || !designated.trim() || record.participant !== designated)
-        return { id, state: 'RED', why: "F1 requires the manifest's designated participant" };
-    }
+    // An incomplete session ended before any criterion could be judged. It
+    // supplies no verdict, so the most recent COMPLETE session governs; the
+    // newest incomplete session stays visible beside it rather than silent.
+    const complete = timed.filter((x) => x.r.verdict !== 'incomplete');
+    const newest = timed.at(-1).r;
+    if (newest.verdict === 'incomplete')
+      laterIncomplete = { date: newest.date, app: newest.app, notes: newest.notes };
+    if (complete.length === 0)
+      return {
+        id,
+        state: 'RED',
+        assessment: 'pending',
+        laterIncomplete,
+        why: `no complete assessment; latest session ${newest.date}${
+          newest.app !== appFingerprint() ? ` (app ${newest.app})` : ''
+        } incomplete: ${newest.notes}`,
+      };
+    record = complete.at(-1).r; // most recent complete session wins
   } catch (error) {
     return { id, state: 'RED', why: `session log unreadable: ${error.message}` };
   }
 
+  // Every outcome below names a later incomplete session, including a stale
+  // governing record: the session on the current build must not go unmentioned.
+  const later = laterIncomplete
+    ? ` — a later session on ${laterIncomplete.date}${
+        laterIncomplete.app !== record.app ? ` (app ${laterIncomplete.app})` : ''
+      } was incomplete: ${laterIncomplete.notes}`
+    : '';
+  const red = (why) => ({ id, state: 'RED', ...(laterIncomplete && { laterIncomplete }), why });
   const app = appFingerprint();
   if (record.app !== app)
-    return { id, state: 'RED', why: `evidence is for ${record.app}, current app is ${app}` };
+    return red(`evidence is for ${record.app}, current app is ${app}${later}`);
   if (record.servedBuild !== record.app)
-    return {
-      id,
-      state: 'RED',
-      why: 'the served build the participant used does not match the evidence',
-    };
+    return red(`the served build the participant used does not match the evidence${later}`);
 
   let proto;
   try {
     proto = protocolHash(id, bar.contract);
   } catch {
-    return { id, state: 'RED', why: `no assessment protocol at assessments/protocol/${id}.md` };
+    return red(`no assessment protocol at assessments/protocol/${id}.md${later}`);
   }
   if (record.protocol !== proto)
-    return { id, state: 'RED', why: 'the bar contract changed since this assessment' };
+    return red(`the bar contract changed since this assessment${later}`);
 
   return record.verdict === 'pass'
     ? {
         id,
         state: 'GREEN',
         assessment: 'passed',
-        why: `assessed ${record.date}, participant ${record.participant}`,
+        ...(laterIncomplete && { laterIncomplete }),
+        why: `assessed ${record.date}, participant ${record.participant}${later}`,
       }
     : {
         id,
         state: 'RED',
         assessment: 'failed',
-        why: `assessed FAIL ${record.date}: ${record.notes}`,
+        ...(laterIncomplete && { laterIncomplete }),
+        why: `assessed FAIL ${record.date}: ${record.notes}${later}`,
       };
 }
 
