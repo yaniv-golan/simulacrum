@@ -23,43 +23,43 @@ export const RELEASE_NOTES = Object.freeze(
         'A GitHub icon beside Help opens the open-source repository; Help now says which release you are on.',
     },
     {
-      id: '2026-09-14-motor-connections',
-      date: '2026-09-14',
+      id: '2026-09-15-motor-connections',
+      date: '2026-09-15',
       name: 'New motors show what to connect',
       summary:
         'Selecting a motor or hinge with nothing connected opens Connect & test with its missing power, control and shaft.',
     },
     {
-      id: '2026-09-14-lift-with-shift',
-      date: '2026-09-14',
+      id: '2026-09-15-lift-with-shift',
+      date: '2026-09-15',
       name: 'Lift parts with Shift and the arrows',
       summary:
         'Shift with the up/down arrows raises and lowers the selected part; Page Up/Down still work.',
     },
     {
-      id: '2026-09-14-guided-first-build',
-      date: '2026-09-14',
+      id: '2026-09-15-guided-first-build',
+      date: '2026-09-15',
       name: 'Guided first build from the empty workshop',
       summary: 'An empty workshop offers a button that starts the rolling-machine guide.',
     },
     {
-      id: '2026-09-14-copies-beside-original',
-      date: '2026-09-14',
+      id: '2026-09-15-copies-beside-original',
+      date: '2026-09-15',
       name: 'Copies land beside the original',
       summary:
         'Copy (C) now places the copy right next to the original on the grid and keeps your view when the copy is already in sight.',
     },
     {
-      id: '2026-09-14-lamp-shadows',
-      date: '2026-09-14',
+      id: '2026-09-15-lamp-shadows',
+      date: '2026-09-15',
       name: 'Lamps cast shadows',
       summary:
         'A lit lamp now throws shadows from the parts in its beam while the view runs smoothly.',
       feature: 'poweredLamp',
     },
     {
-      id: '2026-09-14-beam-length',
-      date: '2026-09-14',
+      id: '2026-09-15-beam-length',
+      date: '2026-09-15',
       name: 'Beams with a length you choose',
       summary:
         'Set a selected beam’s length, 100 to 1000 mm, in the inspector; mass follows. Beams can lie flat on a plate or lap across each other.',
