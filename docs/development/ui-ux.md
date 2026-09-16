@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3969e6b6423f068dfe6022ae68480b430114b3e3ec4390b302ae5d4d11d4eda5","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1101c02a264f469c4d7f131e54c3d0e2cd3b91bde8c98e9e45bca64ed2ac5a7f","disposition":"updated","rationale":"Updated: this section now describes the reworked header as a stage group (+ Add part first, one Build | Run switch, Pause and Step holding their slots so the bar never reflows, and Tools) followed by a document group (Undo, Redo, Save, Learn, Help, GitHub); icon-only Undo, Redo and Pause carrying aria-label, title of name and key, disabled reasons and a 36 px target; one glyph set in src/presentation/icons.mjs; Choose scene moved under Tools; and the removed brand subtitle, with Help's About line reading 'Mechanical workshop'."} -->
+<!-- doc-review {"version":1,"fingerprint":"5245bfa902f76427f662886bbf0f2854a0897afc745bcfb99999a3aaa281bb83","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"032f4177e706ac27a8631ca5593e32387589329d2dc29deff4e71d8fa596dafc","disposition":"still accurate","rationale":"The gear browser check gained two assertions that the rendered gear poses equal the simulated bodies. No surface, owning region, visibility lifecycle, displaced UI or player-facing copy described here changed."} -->
 
 
 

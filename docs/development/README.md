@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"e37887de4dcec653427e12bf9f2b9ceff8ca047b3f689b581cfc6d199190c577","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"2f4a372b30a8396d289afce5fb7262f2a8135321e6d9295238caee680bd42c2a","disposition":"still accurate","rationale":"The manifest gains the read-classification owners and controls for this branch, and the R4 product rows landed on main (palette, feedback storage, pivot pin, top bar); no milestone, bar allocation or gate output described in this section changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"1351f0e9161228ae6db69bbfc7f4b146b05ad08f6f173ab129e486755d8a85cd","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"b1120e3579f36b9b57dea4471713aede56dadc7d3503fb84aaf5b9da34f6b3d6","disposition":"still accurate","rationale":"The manifest edit changed one invariant's guarantee sentence (connection-display-isolation) and added five control pointers; no milestone allocation, bar, check ownership or gate row moved, so the milestone status stated here is unaffected."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c29cddc92c3338c8b7e475c225ed68637fa4b0b0c2afa0f6f71ef24cc29b595e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c88d5a27329d2d8f4b192c31e6f5813c3ef3bc6612f4b0cc9a2a343887b7a09f","disposition":"updated","rationale":"This branch rewrites the declaration paragraph: purpose is one of identity, fixture, runtime or source-analysis, excludedInputs must name documentation and unit-test, read-classification is the single owner selection, the proposal and the manifest validator all apply, an untrusted declaration is blocked at prepare with a declaration skeleton written beside the proposal, and unaudited reads are reported by name. The section now matches browser-selection, validate-manifest, browser-scope-proposal, verify-local and read-classification."} -->
+<!-- doc-review {"version":1,"fingerprint":"68b8ace3c48a545a761e405f84862a7ba4b41bfa9c4fa42cf0018106ed64c5b9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f8aa0eff8a4c6cea4b458557cbdb8a936323a9f5b01894798307a4c21da77a8f","disposition":"still accurate","rationale":"Scope metadata hashes were refreshed by the reviewed scope apply after the app fingerprint moved. No browser check row, phase, host profile, selection rule or witness changed, so the execution and scope rules described here still hold."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"9f3730619baa39e2fa69737bb1faa68e87c50176206b152cb3ae3f77f71c0423","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e7046a6d16b0dfff144196bac73635a53c124687e2b2f1b9bc9ee293196d8d5","disposition":"still accurate","rationale":"The changed modules add the read classification refusal and its skeleton to preparation and selection; the candidate tiers, their evidence and the completion sequence this section describes are unchanged, and preparation still records reviews only through an explicit decision."} -->
+<!-- doc-review {"version":1,"fingerprint":"112cca3121b06d3793b65a420458d8f886e414bedadbb7f81e97ee235b3fad29","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"bd6882566850645a492ae410093e3729e738ec573bfdc4f2e9875c94a7d3ffcd","disposition":"still accurate","rationale":"No tier, candidate, stacking or landing rule changed. The manifest edit was one invariant guarantee sentence, its controls list and refreshed consumer source hashes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
