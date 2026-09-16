@@ -215,7 +215,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"45cdd6f2dad881ffda984fd203f3313e4bbe374bf1b6536c0cc7754a601a9da1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7ed4bea7aa2994fc583edfef864e111dca9659fa271275ae37c81505047b63b0","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are presentation, documentation, browser-check and manifest files from the catalogue favourite toggle; no law, simulation module or the physics door changed, so this recipe's owners, its narrow-door rule and its required checks all still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"adb7c7f21bb0c5e9b9016cc914ff5e454d7a4d4446ac28395afab6f02d0b30c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"58caa06b6a220e9d03d397347a9f2b7ae4222b885b915990c1f758202187c1fc","disposition":"still accurate","rationale":"Unchanged prose within this section (the changed lines in recipes.md fall in add-or-extend-a-part and change-a-presentation-overlay). No law, simulation module or the physics door changed in either merged branch: the gear teeth are cosmetic geometry inside the existing collider and the favourite toggle is presentation state, so this recipe's owners, its narrow-door rule and its required checks all hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -619,7 +619,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"f9433348a8ea6def023d7ccfa476df00c8b3bbb54ef596110fa64a4b9c6cec39","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a28a007d93262597688545b1a529334bc991d2724a668aa195bfccc1ffcf5055","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-rope-browser.mjs changed only where it asserts the catalogue's favourite control: the retired shared button is now asserted absent and the per-part stars counted. The overlay recipe's owner, visibility lifecycle and verification steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"03d11cc4261888e4a3471b75348035addb31a86dc2865a0c7aeced805d162399","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"18a510a66eacb0908c91180ac05ba7f770439d294ba3f35c0ca1e9c66d80cd5b","disposition":"updated","rationale":"Updated by the merged gear-appearance work: the section now states that gear meshes' cosmetic teeth are part of the body geometry and follow completed body transforms, replacing the earlier root-cylinder marks, and that the shared part builder creates each part's canonical solid envelope. The overlay's owner, visibility lifecycle and the preserved gear rendering controls are otherwise unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

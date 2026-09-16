@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"086deac968247ea646ff2228f5b162377b1eb3581f577fecc809da7fe71ebb91","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"1a4811466d2ace137a102b5dcde92904b86a6110b34b7876e155d49da4cf638e","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by two reviewed things only: eight browserReviewMetadataScopes consumerSourceHash digests, and one controls.positive anchor registering the anti-retarget unit test under the existing parts-catalog-discovery invariant. No milestone, bar, rule or check allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"66c58165136ad4d63f9d86ccb6492a2438aa532c523390840974abd0d2144ef3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"71799964aedfc652756e512ffd73f8801d666ee657c436feab0dff8af250074d","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by reviewed scope digests, the controls.positive anchor registering this candidate's anti-retarget unit test under the existing parts-catalog-discovery invariant, and the merged gear-appearance registrations that arrived reviewed on c44f92de. No milestone, bar or rule allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c10b59c57f9dad5eee4761b15218816e3d78dbb259bbdce0da267ee6e3b60fac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f0481ef2cca0bec8dd3219d7b1fa9e9530805082383f554c051a8c46564a282e","disposition":"still accurate","rationale":"Unchanged prose. The manifest delta is eight scope digests plus one positive control anchor on an invariant that already existed; this candidate registers, removes and re-scopes no browser check, so selection, phase scheduling and platform rules are untouched. The two edited check scripts keep their ids and registrations."} -->
+<!-- doc-review {"version":1,"fingerprint":"08580f0267feeb3bb77bb1a7bfee2f2bf718b1931bb5a71bd57668be0f64f943","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"21cc489db285be409c367994284a9c99397d7e192588f080a0f40869e77fd00b","disposition":"still accurate","rationale":"Unchanged prose. This candidate registers, removes and re-scopes no browser check of its own; it edits two existing check scripts and adds one positive control anchor, and the gear registrations it merges were reviewed on their own tip. Selection, phase scheduling and platform rules are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"d661f8dc056af70d1efeee62fc52a9d0ac691d37e0408284e9d27c0528430ddd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"0abcbf3e4209bdc2d81514851967cc0de70d2cad7fdc6ca2b18cb95e5e49be48","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged; the manifest moved only by reviewed scope digests and a control anchor, and neither is completion evidence nor a rule about how it is captured."} -->
+<!-- doc-review {"version":1,"fingerprint":"28fc0e28ad4598e451fe31aa1d142417bd82f864c8a3ba2bcdbd6914163bac91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d7d0da73ef6b71208305390b73747c34eca3bdab4e4455503b089f29ab572d30","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged. The manifest moved only by reviewed scope digests, a control anchor and the merged gear rows; none of those is completion evidence or a rule about how it is captured."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
