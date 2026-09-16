@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"64b9016736b86bbdbe776f27b6e2dbe2e8beb6fd62e99f96cf197e23660e894f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1b92ce4a2419de9e6cd4110cca9aa7d29bacf34fdf2d40a87e37617c48b36e37","disposition":"still accurate","rationale":"Unchanged prose. The seventeen changed dependencies are presentation, release-note, browser-check and packaging files from the top bar rework; no law, simulation module or physics door changed, so this recipe's owners, its narrow-door rule and its required checks all still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"7ebc23e7468bcdff664086490669911059aaadabfc704c464f141e1550df395a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"6ca674cef9d4ed02c5c531b6b45627e49678aabc5dbf3e2c5424755d8437b29d","disposition":"still accurate","rationale":"The changed verification scripts, their tests and the new read-classification module affect browser scope declarations and selection reporting, not the physics change recipe: its steps, owners and documentation follow-up are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
