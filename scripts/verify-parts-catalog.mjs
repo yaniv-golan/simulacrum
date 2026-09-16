@@ -14,6 +14,47 @@ try {
   await page.waitForFunction(() => window.render_game_to_text);
   page.setDefaultTimeout(5000);
   const original = await read();
+  // Summoning: + Add part and P open the overlay with the search focused; Escape puts it
+  // away and hands focus back to whatever summoned it; Run puts it away too.
+  const overlay = page.locator('.parts-browser.catalog-expanded');
+  const addPart = page.locator('[data-command=add-part]');
+  equal(await overlay.count(), 0);
+  await addPart.click();
+  await overlay.waitFor({ state: 'visible' });
+  equal(await overlay.getAttribute('role'), 'dialog');
+  equal(await overlay.getAttribute('aria-label'), 'Parts');
+  equal(
+    await page
+      .getByRole('searchbox', { name: 'Search all parts' })
+      .evaluate((node) => node === document.activeElement),
+    true,
+    'summoning focuses the search box',
+  );
+  await page.keyboard.press('p');
+  equal(await overlay.count(), 1, 'P while typing in the search box types, never toggles');
+  await page.getByRole('searchbox', { name: 'Search all parts' }).fill('');
+  await page.keyboard.press('Escape');
+  await overlay.waitFor({ state: 'detached' });
+  equal(
+    await addPart.evaluate((node) => node === document.activeElement),
+    true,
+    'focus returns to the opener',
+  );
+  await page.locator('.stage canvas').focus();
+  await page.keyboard.press('p');
+  await overlay.waitFor({ state: 'visible' });
+  const close = overlay.locator('.dialog-close');
+  equal(await close.getAttribute('aria-label'), 'Close parts');
+  equal(await close.textContent(), '×', 'the shared close control');
+  await close.click();
+  await overlay.waitFor({ state: 'detached' });
+  await addPart.click();
+  await overlay.waitFor({ state: 'visible' });
+  await page.locator('[data-command=run]').click();
+  await overlay.waitFor({ state: 'detached' });
+  equal(await addPart.isDisabled(), true, 'nothing to add while running');
+  await page.locator('[data-command=build]').click();
+  await page.waitForFunction(() => !document.querySelector('[data-command=add-part]').disabled);
   // The supported laptop viewport must expose complete tiles without expansion.
   await page.setViewportSize({ width: 1280, height: 720 });
   for (const category of ['Essentials', 'All parts']) {
@@ -114,7 +155,7 @@ try {
   await search.fill('battery');
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   await search.fill('wheel');
-  await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
+  await addPart.click();
   const dragCard = await page
     .getByRole('button', { name: 'Grip Wheel', exact: true })
     .boundingBox();
@@ -132,10 +173,10 @@ try {
   );
   await page.mouse.move(10, 40, { steps: 4 });
   await page.mouse.up();
-  equal(await page.locator('.catalog-expanded').isVisible(), true);
+  // A cancelled drag restores the browse snapshot for the next open but never re-summons.
+  equal(await page.locator('.catalog-expanded').count(), 0);
   equal(await read(), placed);
   equal(await search.inputValue(), 'wheel');
-  await page.getByRole('button', { name: 'Close parts', exact: true }).click();
   await search.fill('battery');
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   await search.fill('wheel');
@@ -182,17 +223,19 @@ try {
   equal((await read()).blueprint, placed.blueprint);
   // The drawer is bounded and choosing then cancelling returns to the same browser.
   await page.setViewportSize({ width: 600, height: 800 });
-  await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
+  await addPart.click();
   await search.fill('battery');
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   await page.keyboard.press('Escape');
-  equal(await page.locator('.catalog-expanded').isVisible(), true);
+  // Narrow: cancelling a placement leaves the catalogue away until it is summoned again,
+  // and summoning brings the snapshot back.
+  equal(await page.locator('.catalog-expanded').count(), 0);
   equal((await read()).blueprint, placed.blueprint);
   const canvas = page.locator('.stage canvas');
-  await page.getByRole('button', { name: 'Close parts', exact: true }).click();
   const bounds = await canvas.boundingBox();
   equal(bounds.width >= 570, true);
-  await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
+  await addPart.click();
+  equal(await search.inputValue(), 'battery', 'the snapshot returns with the overlay');
   await search.fill('beam');
   await page.getByRole('button', { name: 'Beam', exact: true }).click();
   const tapX = bounds.x + bounds.width * 0.7,
@@ -258,7 +301,7 @@ try {
   await evidence.reload(page);
   await page.waitForFunction(() => window.render_game_to_text);
   page.setDefaultTimeout(5000);
-  await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
+  await page.locator('[data-command=add-part]').click();
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   equal(
     await page

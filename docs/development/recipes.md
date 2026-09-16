@@ -126,7 +126,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"bf87ce96f9150e635e53b09bcc4fbba566a45f745f41362ea5c0b99f840aa3ec","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0423c2b648481251dc0d5e49685ac0957025b96414cef0e396da23f79b18ebcc","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Interaction ownership and the command path are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8892badcb2e5ce6417c508fc504e605289c67dcff4b341745e7b48a361ee725c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"8a2d047d1f37a65ebe338fa600d3e6b17459773100c41aa20ae1e3871e19800f","disposition":"still accurate","rationale":"catalog-browser-actions.mjs swapped its expand locator for [data-command=add-part]; the recipe's owners, shared helpers and test steps for an interaction change stay the same."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7a1e1d3d8840ab3afd3866de4d3c673a7aa69a817962853072104b22a14b24a3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c202146057b2060d1e5623c9670eece51ba23363f68fb5a5a089b5979fc780e","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). This recipe's owners, invariant contracts and test controls are unchanged; the two new spring-physics tests register under guided-spring-passivity as it describes."} -->
+<!-- doc-review {"version":1,"fingerprint":"6d8dc16997d938c142eaf164339ed49e2344a7569e3a6e7f4879d591e310e35c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"86563a82b3856bc6bfa01c64b12b9c77b44c605b63e07d7bfe499ef6610d1bf7","disposition":"still accurate","rationale":"The delta is feedback storage, its browser check and documentation prose; no physics, law or simulation module changed, so this recipe's owners, doors and checks hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -521,7 +521,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"99e70adb4c579d36154d70c20b0c771277876eed6ac1d839b790c2cfb8586e9f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ebab12ddb988117fb60fe5e2c88d11b1780d22229393ba6f45de024447e22ce8","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Multi-part authoring (mirror, assemblies, surface mounts) and their proposals are unchanged; the contract's joint-face sentences describe endpoints those proposals will resolve when a joint-face part exists."} -->
+<!-- doc-review {"version":1,"fingerprint":"d682a922e88fca1adb7d9a708f8cf0420a1d4057f46cf278ed133d0c7597b902","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d80180e0bc3cf2dde58cdff6d8c4d41937f4aa09873a9ae8e25b7b46872460cd","disposition":"still accurate","rationale":"Only the catalog helper's way of opening the parts changed (+ Add part locator); multi-part authoring commands, selection and assembly owners are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -618,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"628edb4788537392c905c6aeb5fe78b94ef95062bb8261df1e5af0cc4186954b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7b09eb68b6a5081d722c514441c49f6b561a7ed68d32114936ed1724b464203c","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Presentation overlays and their owners are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"315edf64102d4d1252232fcac5ec1a1ed036234bc390df50685d18bcf9610e50","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7c7c90850a918261fac00198265e843da2de125050ec0ff24d822bfa0938cbab","disposition":"still accurate","rationale":"trace-an-edit gained the summoned-overlay header wording and the catalog helper locator changed; the overlay recipe (owning region, lifecycle, displaced UI, rendered checks) still applies as written."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

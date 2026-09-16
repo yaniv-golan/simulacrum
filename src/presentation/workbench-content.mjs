@@ -37,3 +37,7 @@ export function firstRunDecision({ keys, storage, hasContent, guideActive, shape
   if (keys.some((key) => key.startsWith('simulacrum'))) return null;
   return shape === 'hint' ? null : shape;
 }
+/** P summons the parts: only in Build, never from a text field. Other guards are the view's. */
+export function paletteKeyOpens({ mode, editableTarget }) {
+  return mode === 'build' && !editableTarget;
+}

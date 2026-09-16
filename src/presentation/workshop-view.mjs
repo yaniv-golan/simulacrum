@@ -24,6 +24,7 @@ import {
   footerModel,
   modeControlState,
   movementScope,
+  paletteKeyOpens,
 } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
@@ -388,7 +389,12 @@ export function createWorkshopView(
   filebar.prepend(undo, redo);
   const chooseScene = button('Choose scene', () => sceneEditor.openBrowser()),
     editScene = button('Edit scene', () => sceneEditor.enter());
-  filebar.append(chooseScene, editScene);
+  filebar.append(chooseScene);
+  // The one way to summon the parts (P is the key); first in the filebar, so it reads as
+  // the first action. Edit scene keeps the header inside 980 px by living under Tools.
+  const addPart = button('+ Add part', () => partsBrowser.open({ opener: addPart }));
+  addPart.dataset.command = 'add-part';
+  filebar.prepend(addPart);
   header.append(brand, modebar, filebar);
   const body = element('main', 'workshop-body'),
     left = element('aside', 'parts-panel');
@@ -910,7 +916,7 @@ export function createWorkshopView(
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
-    element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Open Parts (P) and choose a part.'),
     element('p', '', 'Or let the guide walk you through one:'),
     guideInvitation,
   );
@@ -1564,7 +1570,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Drag a part to move it; attached parts move together. Use Adjust mount in the inspector to reposition an attachment. Move W and Rotate E show handles; V returns to direct dragging.',
+      'P (or + Add part) summons the parts from anywhere on the bench; Escape puts them away. Drag a part to move it; attached parts move together. Use Adjust mount in the inspector to reposition an attachment. Move W and Rotate E show handles; V returns to direct dragging.',
     ),
     element(
       'p',
@@ -1695,7 +1701,15 @@ export function createWorkshopView(
     motionReadout.setVisible(open);
   });
   measurements.setAttribute('aria-pressed', 'false');
-  toolsList.append(checkButton, measurements, savedLauncher, newButton, loadButton, failureButton);
+  toolsList.append(
+    checkButton,
+    measurements,
+    savedLauncher,
+    newButton,
+    loadButton,
+    editScene,
+    failureButton,
+  );
   const machineControlRegion = element('div', 'machine-control-region');
   machinePanels.append(machineControlRegion);
   const vehicleControls = createVehicleControls({ send, select, container: machineControlRegion });
@@ -1894,7 +1908,8 @@ export function createWorkshopView(
       cancelInteraction();
       editing.select(active ? null : selected);
       if (active) renderer.domElement.focus();
-      else editScene.focus();
+      // Edit scene lives in the Tools menu; its summary is the visible return target.
+      else (toolsMenu.open ? editScene : toolsSummary).focus();
       if (!active) {
         setTool(activeTool);
         inspectorKey = '';
@@ -4305,6 +4320,7 @@ export function createWorkshopView(
       : 'Redo previous workshop edit';
     chooseScene.disabled = editScene.disabled =
       frame.metadata.mode !== 'build' || !!sceneEditor?.pending();
+    addPart.disabled = frame.metadata.mode !== 'build' || !!sceneEditor?.active();
     sceneEditor?.refresh();
     undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
     redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
@@ -4504,12 +4520,10 @@ export function createWorkshopView(
       select(null);
       return;
     }
-    if (
+    const editableTarget =
       ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
-      document.activeElement?.isContentEditable ||
-      event.repeat
-    )
-      return;
+      !!document.activeElement?.isContentEditable;
+    if (editableTarget || event.repeat) return;
     if ((event.metaKey || event.ctrlKey) && key === 'z') {
       event.preventDefault();
       send({ type: event.shiftKey ? 'redo' : 'undo' });
@@ -4519,6 +4533,17 @@ export function createWorkshopView(
       event.preventDefault();
       if (help.open) help.close();
       else openHelp();
+      return;
+    }
+    if (
+      key === 'p' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      paletteKeyOpens({ mode: frame?.metadata.mode, editableTarget })
+    ) {
+      event.preventDefault();
+      partsBrowser.open({ opener: addPart });
       return;
     }
     if (

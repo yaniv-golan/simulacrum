@@ -3614,9 +3614,13 @@ button:not(.keyed) > .key-badge {
   gap: 6px;
   margin: 10px 0;
 }
-.catalog-head button {
-  font-size: 12px;
-  padding: 6px 9px;
+/* Compact, the head holds only the hidden ×; summoned, the × sits at the top right. */
+.catalog-head {
+  justify-content: flex-end;
+  min-height: 0;
+}
+.parts-browser:not(.catalog-expanded) > .catalog-head {
+  display: none;
 }
 .catalog-search input {
   width: 100%;
@@ -3808,11 +3812,9 @@ button:not(.keyed) > .key-badge {
   max-height: calc(100vh - 88px);
 }
 @media (max-width: 900px) {
-  .parts-browser:not(.catalog-expanded) > :not(.catalog-head) {
+  /* Narrow: the compact catalogue shows nothing; + Add part (P) in the header summons it. */
+  .parts-browser:not(.catalog-expanded) {
     display: none;
-  }
-  .catalog-head button {
-    min-height: 40px;
   }
   .catalog-expanded {
     inset: 76px 8px 8px;
@@ -3937,12 +3939,6 @@ button:not(.keyed) > .key-badge {
   }
   .parts-panel {
     position: relative;
-  }
-  .parts-browser:not(.catalog-expanded) .catalog-head {
-    position: absolute;
-    top: 16px;
-    right: 14px;
-    margin: 0;
   }
   .parts-panel > .palette-hint {
     display: none;

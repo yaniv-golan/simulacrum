@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { IDBFactory } from 'fake-indexeddb';
-import { mountFeedbackClient } from '../src/application/feedback-client.mjs';
+import { mountFeedbackClient, storageFullMessage } from '../src/application/feedback-client.mjs';
 import { openFeedbackStore } from '../src/application/feedback-store.mjs';
 import { createFeedbackCaptureGate } from '../src/application/feedback-capture-gate.mjs';
 
@@ -352,4 +352,76 @@ test('Send stays disabled while an attachment save is pending', async (t) => {
   assert.ok(item, 'the settled draft froze into a submission');
   assert.equal('image' in item.envelope, false, 'the untick reached the envelope');
   assert.equal(item.envelope.context.value.project.id, 'fixture', 'the default context was sent');
+});
+
+const storageFull = () =>
+  Object.assign(Error('Local feedback storage limit reached'), { code: 'FEEDBACK_STORAGE_FULL' });
+test('a storage-full send names the outs the player has and keeps the draft saved', async (t) => {
+  const { dom, held } = await mountAndOpen(t);
+  type(dom, 'Nearly there.');
+  await drain(held);
+  const send = node(dom, '[data-send]'),
+    error = node(dom, '[data-error]'),
+    save = node(dom, '[data-save]');
+  held.store.freeze = async () => {
+    throw storageFull();
+  };
+  await send.onclick();
+  await drain(held);
+  assert.match(error.textContent, /^This browser's feedback storage is full/);
+  assert.match(error.textContent, /Untick the workshop image or project details below/);
+  assert.doesNotMatch(error.textContent, /delete a received local copy/, 'no received item yet');
+  assert.match(error.textContent, /then send again\.$/);
+  assert.equal(save.textContent, 'Draft saved on this device.', 'the draft is still saved');
+  assert.equal(send.disabled, false, 'the player can try again');
+  assert.equal((await held.inner.draft()).text, 'Nearly there.');
+  // The browser's own quota error is the same situation.
+  held.store.freeze = async () => {
+    throw Object.assign(Error('QuotaExceededError'), { name: 'QuotaExceededError' });
+  };
+  await send.onclick();
+  await drain(held);
+  assert.match(error.textContent, /^This browser's feedback storage is full/);
+  // Any other failure keeps its own message and is not dressed up as a storage problem.
+  held.store.freeze = async () => {
+    throw Error('Feedback store closed');
+  };
+  await send.onclick();
+  await drain(held);
+  assert.equal(error.textContent, 'Feedback store closed');
+});
+test('the storage-full message names only the outs that exist', () => {
+  const received = [{ outcome: 'received' }],
+    pending = [{ outcome: 'pending' }];
+  assert.match(
+    storageFullMessage({ text: 'x', context: {} }, received),
+    /Untick the workshop image or project details below, or delete a received local copy/,
+  );
+  assert.equal(
+    storageFullMessage({ text: 'x' }, received),
+    "This browser's feedback storage is full, so the report could not be prepared. Delete a " +
+      'received local copy from your feedback history, then send again.',
+  );
+  assert.match(
+    storageFullMessage({ text: 'x', voice: {} }, pending),
+    /Shorten the report or remove its voice comment, then send again\.$/,
+  );
+  assert.doesNotMatch(storageFullMessage({ text: 'x' }, pending), /untick|delete/i);
+});
+test('a storage-full text save before sending keeps the draft honestly unsaved', async (t) => {
+  const { dom, held } = await mountAndOpen(t);
+  const send = node(dom, '[data-send]'),
+    error = node(dom, '[data-error]'),
+    save = node(dom, '[data-save]');
+  // Every text save is refused; nothing reaches the store, and Send's own pre-save fails too.
+  held.store.saveDraft = async () => {
+    throw storageFull();
+  };
+  type(dom, 'Last words over the limit.');
+  await settle();
+  await send.onclick();
+  await drain(held);
+  assert.match(error.textContent, /^This browser's feedback storage is full/);
+  assert.match(save.textContent, /^Not saved on this device/, 'the text really is unsaved');
+  assert.equal((await held.inner.draft()).text, '', 'the store never got the text');
 });

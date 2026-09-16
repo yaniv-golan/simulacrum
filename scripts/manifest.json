@@ -3661,7 +3661,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Edit scene lives under Tools.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -5921,7 +5921,7 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
       "owners": [
         {
           "path": "src/presentation/part-search.mjs",
@@ -5934,6 +5934,10 @@
         {
           "path": "src/presentation/part-placement.mjs",
           "anchor": "createPartPlacement"
+        },
+        {
+          "path": "src/presentation/workbench-content.mjs",
+          "anchor": "paletteKeyOpens"
         }
       ],
       "checks": [
@@ -5945,6 +5949,14 @@
           {
             "path": "test/part-search.test.mjs",
             "anchor": "everyday words and roles find the intended part before incidental references"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "summoning opens the overlay with the search focused and names it as a dialog"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
           }
         ],
         "negative": [
@@ -5959,6 +5971,18 @@
           {
             "path": "test/part-placement-pending.test.mjs",
             "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a cancelled placement restores the browse snapshot but never re-summons the overlay"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "Escape belongs to an active placement, not to the overlay"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "P summons the parts only in Build and never from a text field"
           }
         ]
       },
@@ -6211,7 +6235,7 @@
       "id": "independent-feedback-receipts",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification. A submission is stored once as the exact bytes behind its upload hash, with the envelope read back from them; a full local store names the player's actual outs and keeps the draft saved.",
       "owners": [
         {
           "path": "src/application/feedback-context.mjs",
@@ -6274,6 +6298,18 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "Send stays disabled while an attachment save is pending"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "frozen items persist their bytes once and read the envelope back from them"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "one stored copy leaves room the doubled copy did not"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a storage-full send names the outs the player has and keeps the draft saved"
           }
         ],
         "negative": [
@@ -6316,6 +6352,14 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "text-only stores attach nothing by default and keep the controls hidden"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "legacy rows read their bytes as truth and drop the second copy on write"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "the storage-full message names only the outs that exist"
           }
         ]
       },
@@ -7347,7 +7391,7 @@
       "id": "dialog-close-consistency",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Every custom dialog and the Teach a controller panel dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
+      "guarantee": "Every custom dialog, the Teach a controller panel and the summoned Parts overlay dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
       "owners": [
         {
           "path": "src/presentation/dialog-close.mjs",
@@ -7364,6 +7408,10 @@
         {
           "path": "src/application/remote-playtest.mjs",
           "anchor": "createDialogClose('Close recording setup'"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createDialogClose('Close parts'"
         }
       ],
       "checks": [
@@ -7392,6 +7440,10 @@
           {
             "path": "test/camera-controls.test.mjs",
             "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "the compact catalogue no longer carries its own expand toggle"
           }
         ],
         "negative": [
@@ -8381,7 +8433,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8445,7 +8497,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8614,7 +8666,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8851,7 +8903,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "01db8aed3476beb6272dd70f344136cc6e79847c20ff79203e887a19c2700516",
+      "consumerSourceHash": "4d4631a40671bf7c738504dcba8a02b61ac1805e4298b8d11f865ba48558894d",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9132,7 +9184,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "99c696b957a5fccc4e4c563b177916268183fa09e7434eb4855fde7e733a08e1",
+      "consumerSourceHash": "6a6fa928fbf14b84f34fce465ef3b10ad1a6d93db379d9b358662693f3d7054f",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9166,7 +9218,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9243,7 +9295,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9314,7 +9366,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9357,7 +9409,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9512,7 +9564,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "146eaa0ed2e6177ed569c177f0cb82ad15e85b583550f686339eebd56bfe2c36",
+      "consumerSourceHash": "fcb131d2b2e0ab1611e27b611ed8cea5524b6390535cb0159401424e99f61f2f",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9664,7 +9716,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9990,7 +10042,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10075,7 +10127,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "380d376966563cf4562d47edf63554e5f14fabcbc5513994865cec59d0749439",
+      "consumerSourceHash": "226bf244ec268d81ad90121b3653cbc6298d6aef588bf3cba51127de737bf2b6",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10178,7 +10230,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "380d376966563cf4562d47edf63554e5f14fabcbc5513994865cec59d0749439",
+      "consumerSourceHash": "226bf244ec268d81ad90121b3653cbc6298d6aef588bf3cba51127de737bf2b6",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10331,7 +10383,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10414,7 +10466,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "146eaa0ed2e6177ed569c177f0cb82ad15e85b583550f686339eebd56bfe2c36",
+      "consumerSourceHash": "fcb131d2b2e0ab1611e27b611ed8cea5524b6390535cb0159401424e99f61f2f",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10651,7 +10703,7 @@
           ]
         }
       ],
-      "sourceSha256": "3067826085df0447532da9ef28a298ea973160cb535e6f0f699871edbd9b4ccf",
+      "sourceSha256": "f06823c7bbe7dc064abd2d188d962314534d143b0f338cb1c6428a6e7fd4a70d",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",

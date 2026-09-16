@@ -6,6 +6,7 @@ import {
   modeControlState,
   firstRunDecision,
   FIRST_RUN_KEY,
+  paletteKeyOpens,
 } from '../src/presentation/workbench-content.mjs';
 
 test('scope predicts multi-part direct dragging and rotation before the gesture', () => {
@@ -86,4 +87,10 @@ test('first-run choice opens once per remembered device and never on a used benc
   assert.equal(firstRunDecision({ ...fresh, storage: false }), null, 'no storage, no modal');
   assert.equal(firstRunDecision({ ...fresh, hasContent: true }), null);
   assert.equal(firstRunDecision({ ...fresh, guideActive: true }), null);
+});
+test('P summons the parts only in Build and never from a text field', () => {
+  assert.equal(paletteKeyOpens({ mode: 'build', editableTarget: false }), true);
+  assert.equal(paletteKeyOpens({ mode: 'run', editableTarget: false }), false);
+  assert.equal(paletteKeyOpens({ mode: 'paused', editableTarget: false }), false);
+  assert.equal(paletteKeyOpens({ mode: 'build', editableTarget: true }), false);
 });

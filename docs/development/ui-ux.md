@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"c5296683a714a0a1d443be52ae707961de2811d484af0bc9a7f9d2ec1c7cfe55","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b5caef6a0098bacf221fb39d61e4c88f8f34f85deb309b1c27e86d4392bb4aaa","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The guided build now says what to do next and ticks a step from what the player built (k-th part of the step's type, k-th connection of its kind between the two types) with Do it for me as the fallback; Learn & examples remains the primary home and the first-run choice is a one-time entry, not a hint system. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7cef6bf88b9dc9c5118baff31f38133b80da3c1fcd0912033e959332beca686","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"77a34cef5987d16e92ee651aa5a65db4888d34acf629320ba3392197522ce736","disposition":"still accurate","rationale":"The summoned palette adds no teaching, example or challenge entry; workshop-view.mjs changes are header placement and the parts overlay, so the admission rules are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,18 +128,19 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2c7a4dc75a703a1bc846ad9444a54ff75f67311512f5c6f6f68efa458889a959","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"21275fd07c2ac8ebf2ee4620d7dc25f9f50a1584b2203633112790eb7fdedd23","disposition":"still accurate","rationale":"playtesting.md#release-operations gained an operator-only paragraph on the dry check and launch wait (on the merged base (land-script 9c4e08d0: hosted-check-waits' wait scale/live slice/row budget, merge --stack, the land script and the assessment split) the release-path tooling change stands: FINAL_PHASES shared between verify-final and the package tests; the bounded launch wait budget recorded as budgetMs and stripped from leaves beside the hosted wait variables; the printed refusal with offenders; prepare-release's 300 s release wait, named refusal, releaseEnvelope and dryCheckRelease (release:prepare --dry-check); verify-host.mjs (npm run verify:host) on the admission's own code with describeOwner now carrying the stacked-on branch; the manifest guarantee and two controls of release-verification-single-pass); re-recorded after merging the frozen tip, whose own changes (browser wait scaling, --stack, land script, assessment split) carry their own reviews and do not alter this section's description."} -->
+<!-- doc-review {"version":1,"fingerprint":"74ba303dc3efe21223bc7f4c98cea29e06e9b634d7e6ba5589a4ab2da976b9b0","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Adds what a player sees when feedback storage is full: Send names only the outs that exist now and the draft stays reported as saved, matching the storageFullMessage branch in feedback-client.mjs."} -->
 
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-in the header, one Build | Run switch (Pause and Step appear once the clock can run;
-Step acts only while paused), Undo, Redo, Save, Choose scene, Edit scene, Learn &
-examples and Help stay visible, and the occasional commands — Check machine,
-Measurements, Assemblies, New, Load — live under one Tools ⋯ menu that closes on pick,
-Escape or leaving it, each keeping its name and `data-command`; parts in the left
-catalogue; separate edit and view groups at the workbench edge; selected properties and
-operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
+in the header, **+ Add part** first (the one way to summon the parts; P is its key), one
+Build | Run switch (Pause and Step appear once the clock can run; Step acts only while
+paused), Undo, Redo, Save, Choose scene, Learn & examples and Help stay visible, and the
+occasional commands — Check machine, Measurements, Assemblies, New, Load, Edit scene —
+live under one Tools ⋯ menu that closes on pick, Escape or leaving it, each keeping its
+name and `data-command`; the compact parts catalogue in the left column (the summoned
+overlay is its expanded state, see below); separate edit and view groups at the workbench
+edge; selected properties and operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 The selected part's header carries one summary line from
 [inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
@@ -163,12 +164,19 @@ with optional coordinates under Precise position. Confirmation sends one ordinar
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
 Escape first cancels an active pickup, including when search has focus, and restores
-the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
+the originating query, category, focus and scroll even after browsing changes, without
+re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
 header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
-At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
-full width while Assemblies (in the Tools menu) and recording remain retrievable.
-Recent records accepted catalog placements. Expanded and compact catalogs are requested
-surfaces; picking closes them and cancellation restores the origin. The existing About
+The parts are **summoned**: + Add part or P opens the catalogue's expanded state as a
+non-modal overlay at every width (`role=dialog`, named "Parts", search focused; the
+compact sidebar keeps its landmark name), and it goes away on a pick, a drag onto the
+bench, Escape (focus returns to whatever summoned it), the shared × or entering Run; it
+reopens where it was left (search, category, scroll). Cancelling a placement restores
+that browse snapshot for the next open but never re-summons the overlay — the player
+decides when the parts come back. At narrow widths the compact catalogue shows nothing
+and the overlay is the only catalogue, leaving the canvas full width while Assemblies
+(in the Tools menu) and recording remain retrievable. Recent records accepted catalog
+placements. The existing About
 window retains Overview and How to connect, with diagram links that reveal catalog
 parts without placing them. Feedback and recording controls share the existing workshop footer.
 The canvas, catalog and inspector retain their own pointer regions without per-control
@@ -239,8 +247,8 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose Choose scene and Edit scene in place of the old
-Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+The document controls expose Choose scene in the header and Edit scene under Tools in
+place of the old Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
 replaces catalogue and inspector content while Editing scene is active; Done restores
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
@@ -462,7 +470,7 @@ exclude one another before asynchronous reading or reset; rejected actions retai
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.
 
-Give feedback shares the existing workshop footer before, during and after recording. The view supplies this utility host to the application, so ordinary offline feedback adds no second workbench row and does not float over the canvas or inspector. The feedback button places its badge inline with reserved width and line height even when empty, keeping ordinary delivery updates from shifting controls. The footer retains its compact minimum height, wraps on narrow screens and permits longer recording errors to remain readable. During narrow-screen assembly placement, feedback and recording controls remain available while ordinary footer labels and shortcuts leave with the surrounding authoring chrome. When recording is unavailable, the row retains Give feedback and its draft/upload status while hiding unavailable recording controls. Active recording, delivery problems and received status remain visible when relevant; the compatible invitation opens dismissible recording setup, which Start recording can reopen. Capture requires its explicit Start action. Its task is to let the player explain an experience and know whether that contribution arrived. The dialog contains one optional voice clip; on a fresh draft the workshop image and the project snapshot are attached by default, captured at open, shown ticked inside an open disclosure with their previews, and the disclosure sentence and labels say what is sent unless unticked. An untick is kept while the draft has text or voice; a draft holding only default captures is discarded on close so a report never carries stale captures. Text-only browsers attach nothing. The scrollable body and visible actions fit narrow viewports. The top-right ×, Escape and Keep draft preserve recoverable work while composing; Back to building remains only as the primary return after sending or while reviewing history; Finish stops capture before resolving the unsent draft. Delivery confirmation uses a durable receipt and says “Sent to Yaniv for review,” without promising a response or fix. Draft and upload problems remain visible in the toolbar, with detailed history behind an explicit disclosure. Submitted voice, image and context remain inspectable in the receipt and local history. Context and images identify their actual capture time. The context attachment contains the saved authored project and current workshop UI state, not a replay checkpoint or native physics snapshot. Reduced-motion preference removes feedback-button transitions. A rejected submission can become a corrected draft with a new identity; the original stays immutable, and another unfinished draft is preserved. View changes move keyboard focus to the new content without moving it during background delivery updates. The composer displaces the old recording-only feedback form and adds no permanent canvas panel. Learning-content disposition: **no entry**; the existing Help and examples remain sufficient because submitting feedback is a utility journey, not a new mechanical concept. Automated flow and layout checks do not establish delight, satisfaction or human acceptance.
+Give feedback shares the existing workshop footer before, during and after recording. The view supplies this utility host to the application, so ordinary offline feedback adds no second workbench row and does not float over the canvas or inspector. The feedback button places its badge inline with reserved width and line height even when empty, keeping ordinary delivery updates from shifting controls. The footer retains its compact minimum height, wraps on narrow screens and permits longer recording errors to remain readable. During narrow-screen assembly placement, feedback and recording controls remain available while ordinary footer labels and shortcuts leave with the surrounding authoring chrome. When recording is unavailable, the row retains Give feedback and its draft/upload status while hiding unavailable recording controls. Active recording, delivery problems and received status remain visible when relevant; the compatible invitation opens dismissible recording setup, which Start recording can reopen. Capture requires its explicit Start action. Its task is to let the player explain an experience and know whether that contribution arrived. The dialog contains one optional voice clip; on a fresh draft the workshop image and the project snapshot are attached by default, captured at open, shown ticked inside an open disclosure with their previews, and the disclosure sentence and labels say what is sent unless unticked. An untick is kept while the draft has text or voice; a draft holding only default captures is discarded on close so a report never carries stale captures. Text-only browsers attach nothing. The scrollable body and visible actions fit narrow viewports. The top-right ×, Escape and Keep draft preserve recoverable work while composing; Back to building remains only as the primary return after sending or while reviewing history; Finish stops capture before resolving the unsent draft. Delivery confirmation uses a durable receipt and says “Sent to Yaniv for review,” without promising a response or fix. Draft and upload problems remain visible in the toolbar, with detailed history behind an explicit disclosure. When this browser's feedback storage is full, Send says so and names only the outs that exist right now — untick an attachment, delete a received local copy, or shorten the report — and the draft stays saved rather than being reported as unsaved. Submitted voice, image and context remain inspectable in the receipt and local history. Context and images identify their actual capture time. The context attachment contains the saved authored project and current workshop UI state, not a replay checkpoint or native physics snapshot. Reduced-motion preference removes feedback-button transitions. A rejected submission can become a corrected draft with a new identity; the original stays immutable, and another unfinished draft is preserved. View changes move keyboard focus to the new content without moving it during background delivery updates. The composer displaces the old recording-only feedback form and adds no permanent canvas panel. Learning-content disposition: **no entry**; the existing Help and examples remain sufficient because submitting feedback is a utility journey, not a new mechanical concept. Automated flow and layout checks do not establish delight, satisfaction or human acceptance.
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
@@ -569,7 +577,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"905f742af78fd84d17a22d4680f3ac4b81858ee021e8ec2dee99e14b7f7c2258","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"9d226fc27cb90d4ea42684e0d5ab78cb4703182f48d4cf8de19ae77a07dae2e8","disposition":"still accurate","rationale":"Hosted-ready check waits (claude/hosted-check-waits on 458e9b3c, stacked on q44-release-reuse): verify-authorable-scenes routes three literal 2 s waits through `evidence.waitBudget`; the section's rules for verifying journeys and rendered layout and for reporting automation separately from player evidence are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"caee991f7fe1e63a96648a90b7dba9e9403d0982028ddc2922ba4c8751973354","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"2fddfe958873957e3e03dc2235ecb192ea9a429ca65ecb54144478142365aba8","disposition":"still accurate","rationale":"Its dependency playtesting.md#remote-setup gained the stored-once clause; the verification and review policy this section states is unchanged by that clause or by the storage fix."} -->
 
 
 
