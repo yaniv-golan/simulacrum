@@ -14,6 +14,7 @@ export const connectionKindText = {
   spring: 'Guided slide',
   power: 'Power wire',
   shaft: 'Rotating attachment',
+  pivot: 'Pinned joint',
 };
 export function examplePartName(example, id) {
   const type = example.nodes[id],

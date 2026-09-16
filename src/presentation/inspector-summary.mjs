@@ -6,11 +6,12 @@ export const CONNECTION_LABELS = Object.freeze({
   shaft: 'Shaft',
   gear: 'Gear mesh',
   fixed: 'Mount',
+  pivot: 'Pin',
   signal: 'Signal',
   rope: 'Rope',
 });
 // The connection that says most about what a part does, before how it is held.
-const PRIORITY = ['shaft', 'gear', 'power', 'signal', 'spring', 'rope', 'fixed'];
+const PRIORITY = ['shaft', 'gear', 'power', 'signal', 'spring', 'rope', 'pivot', 'fixed'];
 /**
  * One line under the selected part's name: its type, the primary compiled connection and the
  * count of compiled connections. A connection the compiler rejected is not wired.

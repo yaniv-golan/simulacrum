@@ -37,7 +37,7 @@ export function sensorInspector({ part, blueprint, right, editable, send }) {
     const none = element('option', 'Unbound');
     none.value = '';
     select.append(none);
-    for (const edge of blueprint.connections.filter((c) => c.kind === 'shaft')) {
+    for (const edge of blueprint.connections.filter((c) => ['shaft', 'pivot'].includes(c.kind))) {
       const o = element(
         'option',
         [edge.a.part, edge.b.part]

@@ -45,7 +45,7 @@ import { createAssemblyMirror } from './assembly-mirror.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { createMotionReadout } from './motion-readout.mjs';
 import { createVehicleControls } from './vehicle-controls.mjs';
-import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { findPlacementOverlap, surfaceConnectionKind } from '../model/surfaces.mjs';
 import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
 import { contactProperties } from '../model/contact-properties.mjs';
@@ -2614,7 +2614,7 @@ export function createWorkshopView(
           element(
             'p',
             'trace-description',
-            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : 'Holds these parts together.'}`,
+            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : edge.kind === 'pivot' ? 'Pins these parts: the link swings about the pin.' : 'Holds these parts together.'}`,
           ),
         );
       }
@@ -2738,7 +2738,8 @@ export function createWorkshopView(
       const mounting = element('section', 'mount-status');
       mounting.setAttribute('aria-label', 'Mounting');
       const edges = frame.metadata.blueprint.connections.filter(
-        (c) => c.kind === 'fixed' && (c.a.part === part.id || c.b.part === part.id),
+        (c) =>
+          ['fixed', 'pivot'].includes(c.kind) && (c.a.part === part.id || c.b.part === part.id),
       );
       const axleEdges = frame.metadata.blueprint.connections.filter(
         (c) =>
@@ -2769,6 +2770,10 @@ export function createWorkshopView(
         relationship.dataset.attachmentState = edge.id;
         relationship.dataset.peerLabel = `${peer.name} · ${endpointName(peer, other)}`;
         row.append(relationship);
+        if (edge.kind === 'pivot')
+          row.append(
+            element('p', 'parameter-help', 'Pinned: swings about the pin; does not slide.'),
+          );
         if (editable && edge.b.part === part.id && own.surface && other.surface)
           row.append(
             button('Adjust mount', () => beginSurface(part.id, { replaceConnection: edge.id })),
@@ -2777,7 +2782,11 @@ export function createWorkshopView(
           row.append(button('Detach', () => send({ type: 'disconnect', id: edge.id }), 'quiet'));
         mounting.append(row);
       }
-      if (editable && !edges.length && !surface.active()) {
+      // A part with a free mounting face can take another mount; on a part already in a
+      // mechanism that is how a linkage closes (the mate must already coincide).
+      const usedFaces = edges.map((e) => (e.a.part === part.id ? e.a : e.b).surface.region);
+      const freeFace = surfaceRegions(part).some((r) => !usedFaces.includes(r.id));
+      if (editable && freeFace && !surface.active()) {
         const snap = button('Snap to surface', () => beginSurface(part.id));
         snap.dataset.command = 'snap-surface';
         mounting.append(snap);
@@ -3722,7 +3731,7 @@ export function createWorkshopView(
       const edge = frame.metadata.blueprint.connections.find(
         (c) => c.id === label.dataset.attachmentState,
       );
-      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : edge?.kind === 'pivot' ? 'Pinned to' : 'Bolted to'} ${label.dataset.peerLabel}`;
       if (label.textContent !== text) label.textContent = text;
     }
     updateSensorInspector(frame, right);
@@ -4073,12 +4082,14 @@ export function createWorkshopView(
       b = bp.parts.find((p) => p.id === edge.b.part);
     const kind =
       edge.kind ??
-      (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
+      (edge.a.surface
+        ? surfaceConnectionKind(bp, edge.a, edge.b, 'fixed')
+        : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
     if (completed && releasedAttachment(edge))
       return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)
-      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
-    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
+      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'pivot' ? 'Will pin these parts: the link swings about the pin axis.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
+    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'pivot' ? 'Pinned: swings about the pin; does not slide.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;

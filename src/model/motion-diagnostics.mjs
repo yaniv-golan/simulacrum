@@ -38,7 +38,9 @@ export function diagnoseMotion(frame) {
     )
       issues.push({ code, partId: part.id, port, title, action, evidence });
   };
-  for (const edge of bp.connections.filter((c) => c.kind === 'fixed' && rejected.has(c.id))) {
+  for (const edge of bp.connections.filter(
+    (c) => ['fixed', 'pivot'].includes(c.kind) && rejected.has(c.id),
+  )) {
     const part = bp.parts.find((p) => p.id === edge.a.part),
       other = bp.parts.find((p) => p.id === edge.b.part);
     add(

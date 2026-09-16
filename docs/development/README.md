@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"ef5385a979be83224b78df31adcf08860de8da4e76788cb1f3f266e02a73abbc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"0ec1b1ed235e67f60dd9c8c833cf78e72e3a55e71904a9c56d63d38373d3b0a3","disposition":"still accurate","rationale":"Only consumerSourceHash rows and one check-script sourceSha256 changed in scripts/manifest.json for the feedback storage candidate; no milestone, bar, rule or check allocation changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"4d83143e176020630906e337cbf622071df1daa739b62f6e25c143e585902a8b","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"70a1821b1d26b2d4c5e1c0aa14d5d44285ea33b6f4be41bf82820fb50f3769cb","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching scripts/manifest.json and its siblings; the mechanism this section explains is unaffected."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"cf0fcfc78895ebc935592863ab65fb623c41a20294ad994628b47ac2bb749b29","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"75c881d8c392fb5abd0f0b7b01ec0d90aeb294572515742a36a3c5d423d7a0cf","disposition":"still accurate","rationale":"reference.md was regenerated for the palette's source changes (parts-browser, workshop-view, workbench-content); the documentation workflow, commands and gates described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ca50e57353bc90f6aff9309da00bae68e11d67cc1904e95d3a48da1db8eb7469","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"92c988d3ac7d47029eb8c02e663fc478879ab5ea3b52875c30b0bd4164d08265","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching docs/development/reference.md and its siblings; the mechanism this section explains is unaffected."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"06118825ecf4c9b7a1c5dcc07d945faa256441f256c9d83c0f45cb71d99d3fbe","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"de982b34067caf2f4d37b4481096588d483aded9251d14134c370321b493351a","disposition":"still accurate","rationale":"The manifest change is a consumerSourceHash refresh plus verify-feedback-recovery's own sourceSha256; no browser check was added or removed and selection, scheduling and platform rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7e2db6caa9db7942d4b100118781697eef6d565a0cf9eb5c016f0bbde7c3d79e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2accc16782c13dbb9ab37420e12b587bc9b144d28ddae5fcea1864d065c5f8cc","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching scripts/manifest.json and its siblings; the mechanism this section explains is unaffected."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -690,7 +690,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"4cc3f08e9691d6c120baf26262f540eb25202a0a16d360927894c8e23c850377","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"86a0654b578fa293a32d9d2824cfdf2f8ffe58ca7c84bb0c93379d3b11b2b9f7","disposition":"still accurate","rationale":"The manifest refresh carries no new check or evidence rule; candidate capture, tiers, receipts and reuse behave exactly as described here."} -->
+<!-- doc-review {"version":1,"fingerprint":"24478fda74a2cc6add0e6d93ca9e1012b25006edfc026d4e6bb1287c37d59194","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"3419066b697385f4cf1fcf61a42f62c46fd0ac53f66b44a7c1cededd3db3e250","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching scripts/manifest.json and its siblings; the mechanism this section explains is unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

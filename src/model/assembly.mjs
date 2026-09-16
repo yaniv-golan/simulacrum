@@ -11,6 +11,7 @@ import {
   placementEnvelopes,
   solidsOverlap,
   validatePlacementGeometry,
+  assertMountFootprint,
 } from './surfaces.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
 import { validateBlueprint } from './blueprint.mjs';
@@ -399,9 +400,11 @@ export function compileAssembly(
           : {}),
       });
     } else if (
-      connection.kind === 'shaft' &&
+      ['shaft', 'pivot'].includes(connection.kind) &&
       (A.port.joint === 'revolute' || B.port.joint === 'revolute')
     ) {
+      // Shaft frames coincide; surface frames oppose, so a pivot's B axis is the mated
+      // normal (minus B's outward normal), exactly as rotationB is mated for fixed pairs.
       joints.push({
         kind: 'revolute',
         a: A.index,
@@ -409,7 +412,7 @@ export function compileAssembly(
         anchorA: [...A.port.position],
         anchorB: [...B.port.position],
         axisA: rotate(A.port.rotation, [1, 0, 0]),
-        axisB: rotate(B.port.rotation, [1, 0, 0]),
+        axisB: rotate(normalize(multiply(B.port.rotation, matingRotation(B.port))), [1, 0, 0]),
       });
     } else {
       for (const endpoint of [A, B])
@@ -535,7 +538,9 @@ export function compileAssembly(
   }
   for (const sensor of power.sensors.filter((s) => s.kind === 'jointAngle')) {
     const binding = blueprint.parts[sensor.node].jointBinding;
-    const edge = blueprint.connections.find((c) => c.id === binding && c.kind === 'shaft');
+    const edge = blueprint.connections.find(
+      (c) => c.id === binding && ['shaft', 'pivot'].includes(c.kind),
+    );
     if (edge) {
       const a = blueprint.parts.findIndex((p) => p.id === edge.a.part),
         b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
@@ -624,7 +629,7 @@ function surfaceMountCandidate(
     const connection = next.connections.find((c) => c.id === replaceConnection);
     if (
       !connection ||
-      connection.kind !== 'fixed' ||
+      !['fixed', 'pivot'].includes(connection.kind) ||
       ![connection.a.part, connection.b.part].includes(part)
     )
       reject('INVALID_ENDPOINT', 'replaceConnection');
@@ -644,7 +649,14 @@ function surfaceMountCandidate(
   const moving = new Set(
     group ? group.ids.flatMap((id) => mechanicalGroup(next, id)) : originalMoving,
   );
-  if (moving.has(targetPart)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION', 'targetPart');
+  // A receiver reachable only through the editor group is held; one reachable through the
+  // mechanical group is a loop, which closes below only if the mate already coincides.
+  if (moving.has(targetPart) && !originalMoving.has(targetPart))
+    reject('MOUNT_HELD_BY_ANOTHER_CONNECTION', 'targetPart');
+  const kind =
+    targetFace.joint === 'revolute' || sourceFace.joint === 'revolute' ? 'pivot' : 'fixed';
+  if (kind === 'fixed' && (targetFace.joint || sourceFace.joint))
+    reject('INVALID_ENDPOINT', 'region');
   const a = { part: targetPart, surface: { region: targetRegion, u, v, twist } },
     b = { part, surface: { region: sourceRegion, u: 0, v: 0, twist: 0 } };
   // Compute the same rigid transform even beyond the finite receiving face. Admission
@@ -653,6 +665,7 @@ function surfaceMountCandidate(
     kind: 'fixed',
     position: add(targetFace.position, rotateVector(targetFace.rotation, [0, u, v])),
     rotation: multiply(targetFace.rotation, [Math.sin(twist / 2), 0, 0, Math.cos(twist / 2)]),
+    ...(targetFace.joint ? { joint: targetFace.joint } : {}),
   };
   next = snapFrames(
     next,
@@ -660,24 +673,23 @@ function surfaceMountCandidate(
     { part: source, port: resolveSurfaceEndpoint(source, b) },
   );
   if (group) {
-    const after = next.parts.find((p) => p.id === part);
-    for (const member of next.parts)
-      if (moving.has(member.id) && !originalMoving.has(member.id))
-        Object.assign(member, transformPoseBetweenFrames(member, source, after));
+    const after = next.parts.find((p) => p.id === part),
+      moved =
+        after.position.some((x, i) => x !== source.position[i]) ||
+        after.rotation.some((x, i) => x !== source.rotation[i]);
+    // A closed loop moved nothing, so the editor group stays byte-identical too.
+    if (moved)
+      for (const member of next.parts)
+        if (moving.has(member.id) && !originalMoving.has(member.id))
+          Object.assign(member, transformPoseBetweenFrames(member, source, after));
   }
   const proposal = { blueprint: next, movingPartIds: [...moving] };
   observe(proposal);
-  const width =
-    Math.abs(Math.cos(twist)) * sourceFace.padHalfSize[0] +
-    Math.abs(Math.sin(twist)) * sourceFace.padHalfSize[1];
-  const height =
-    Math.abs(Math.sin(twist)) * sourceFace.padHalfSize[0] +
-    Math.abs(Math.cos(twist)) * sourceFace.padHalfSize[1];
-  if (
-    Math.abs(u) + width > targetFace.halfSize[0] + 1e-9 ||
-    Math.abs(v) + height > targetFace.halfSize[1] + 1e-9
-  )
+  try {
+    assertMountFootprint(target, targetRegion, source, sourceRegion, u, v, twist);
+  } catch {
     reject('SURFACE_OUT_OF_BOUNDS', 'surface');
+  }
   for (const moved of next.parts.filter((p) => moving.has(p.id)))
     for (const fixed of next.parts.filter((p) => !moving.has(p.id)))
       if (
@@ -690,7 +702,7 @@ function surfaceMountCandidate(
           path: fixed.id,
           obstructingPartId: fixed.id,
         });
-  if (attach) next.connections.push({ id, kind: 'fixed', a, b });
+  if (attach) next.connections.push({ id, kind, a, b });
   validate(next);
   return proposal;
 }

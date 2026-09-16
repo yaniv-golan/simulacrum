@@ -21,6 +21,14 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-pivot-pin',
+      date: '2026-09-16',
+      name: 'Pivot pin: a hinge anywhere',
+      summary:
+        'Snap a Pivot pin to any face and a link onto its top: the link swings freely from the start angle you set. No motor needed.',
+      feature: 'pivotPin',
+    },
+    {
       id: '2026-09-16-feedback-storage-full',
       date: '2026-09-16',
       name: 'Full feedback storage says what to do',
