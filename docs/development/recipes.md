@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"76dd6580ba744d04d84ae2beceedff529f3757fcb197f6bd1d6f3850cd224919","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b18f6d9aaf105b825e0e155d4e0715e31f2d768ea79b67fffbf7db6d78332f5e","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"64b9016736b86bbdbe776f27b6e2dbe2e8beb6fd62e99f96cf197e23660e894f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1b92ce4a2419de9e6cd4110cca9aa7d29bacf34fdf2d40a87e37617c48b36e37","disposition":"still accurate","rationale":"Unchanged prose. The seventeen changed dependencies are presentation, release-note, browser-check and packaging files from the top bar rework; no law, simulation module or physics door changed, so this recipe's owners, its narrow-door rule and its required checks all still hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -618,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"b392f782626a51dc29d58b8144a9f5eaa4b137b0880a55f3235136c12b50f5ce","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"d93a4c48462ae59a5d8108b8596ce8908b15a6f0ed46c33edad655914c8a530a","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b331ee188cc074d21ae55fbb0b7b9b71817a438ae9799b0f3b7c910d48eed79","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a654852766b2773b1b79bc31b7280a668ece3d3bb44bc7d673819d5b9657caf9","disposition":"still accurate","rationale":"Unchanged prose. Its dependency architecture.md#trace-an-edit gained one Tools-menu name, and verify-spring-browser.mjs changed only where it drives the reworked header. The overlay recipe's owner, visibility lifecycle and verification steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -769,7 +769,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"a229ba90aca50f43d7117169000cf62677dda97ff78ec75c9bf44a979f21a18b","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"b8a9543211d2946751563c9a7e92865715435d261996621876d6dac48e98d15a","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; adaptive graphics untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"bdfff47728b51868b8381fec3fbcad56f9575e9e9241035042d7876eb850c539","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"07dabbee06a8c59af9db207125992a977652e450a16121f9c0486eac6367a260","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-spring-browser.mjs changed only in the steps that drive the reworked header controls; the adaptive graphics tiers, their quality transitions and the registered check that measures them are untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

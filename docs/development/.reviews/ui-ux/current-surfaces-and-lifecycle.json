@@ -1,8 +1,9 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "c7cfd491942dd7eebd3cd709db602c4096317a4db8ef1dfc22bbad6268f30c38",
-    "src/presentation/workshop.css": "ca39462b1dd64e0ba3f02329b8bac681568284d1edb71a91017d3044c22ffecb",
+    "src/presentation/workshop-view.mjs": "8e0a90856f30c2fde1b20acd2cdb3aa7f159f2202915a067d6cf7e0a18537d4c",
+    "src/presentation/icons.mjs": "c14abe91940b50e92860e3c5fa14f9d936f98df962132a4b2cfec9fc7612e4e4",
+    "src/presentation/workshop.css": "acb438e59d4d531189e26aae6e92bedb1c9c0d74122e238dd69f76dba82b7428",
     "src/presentation/inspector-summary.mjs": "4a17c94a2b2025ef725de44af687d5c5825bed6db7a63372a2a10b2346dd1266",
     "src/presentation/parts-browser.mjs": "7f54b20e80e7e455e990d1858af73d2f6eab8405583940e09b186e0ba66ec200",
     "src/model/boundaries.d.ts": "0074c018defa839816105d7a81d84040ec7f5b265bc0350c22ddb01b7fd6b9da",
@@ -21,7 +22,7 @@
     "src/presentation/camera-controls.mjs": "a3586639b0bad5008661df9012e20c8066b7463465947a9560e0e4d93b94dce4",
     "src/presentation/scene-editor.mjs": "a48ca8ffd1f329aa14065410db9a0538551770558079134000824e0f51741ddb",
     "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
-    "src/presentation/workbench-content.mjs": "0f7174dea2c0e409a874127859b96e7d77935956b919f538ed9ebd63ea77a117",
+    "src/presentation/workbench-content.mjs": "d0868d7e74defb8414e649d2eed69e855c4a4cb7253847976f42775f199bc2fa",
     "src/presentation/dialog-close.mjs": "a18dceaa4774e3e0e56eea5a57f0b00432aad05c0b4fb51e870ba363ef23d814",
     "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
     "scripts/catalog-browser-actions.mjs": "8082f78183107a56bd60445e175a75c35068640d465c848752c745f20436c73c",

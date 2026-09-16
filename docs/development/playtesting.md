@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"3086dcf673c10d1acbdf3c2616a77c48d89666864acd96c8d0525baab06eb008","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"20a2c0cf61db10cb37696ac1f59a96688e9ea34ba15b288f37cb07427224887e","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/presentation/workshop-view.mjs and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"4619f91acc53e09ee76a9354b0b4d5b41da3bc4704e8d65c078c23c4b84b8881","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"c68146624b0d4787bbffe6a7e2d476723c2ecd04c75e5c8579f094c8f2db85a3","disposition":"still accurate","rationale":"Unchanged prose. src/presentation/workshop-view.mjs changed for the top bar rework (stage and document groups, icon-only Undo, Redo and Pause), which alters no recording trigger, playtest capture, session artifact or upload path that this section describes."} -->
 
 Use `npm run build` followed by `npm run preview` for a frozen local playtest. Record the page’s build identifier and follow the versioned [assessment protocols](../../assessments/protocol/F1.md). Automated and AI reviews are not human acceptance.
 
@@ -102,7 +102,7 @@ the operator notes; the data directory's `README.md` (rewritten each run) states
 
 ## Release operations
 
-<!-- doc-review {"version":1,"fingerprint":"25a4471d1639c680961ca61189d88d2162650c5df9fb85c0a0233ef87da04869","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"e30f4c339aff7eae13b427ef7459bcfbd6994e6359dbec12c3560a286b97ab8c","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). Release preparation, the final tier, citation and exception policy are unchanged; the refusal record on phase rows and the window/run-check exports do not alter what a release records or requires."} -->
+<!-- doc-review {"version":1,"fingerprint":"2415c5630ccab737565cc2a56eba348c17f3165fc3350ad2e2333a09007b2538","dependencies":"docs/development/.reviews/playtesting/release-operations.json","dependencyDigest":"b58fef4a6c9074e94680935a4504d73e582d7c5f970f9d048cdf4be67e3fda2d","disposition":"still accurate","rationale":"Unchanged prose. package.json's version moved 0.3.0 to 0.4.0, which is exactly the bump this section's runbook prescribes for a release; performing the prescribed step does not change the preparation sequence, the deferred-check exception policy or the tagging rule."} -->
 
 The app names its release from package.json's `version`, read at build time into the served
 `app-version` meta; the last candidate of a release carries the version bump (a minor bump for

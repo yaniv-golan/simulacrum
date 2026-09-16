@@ -3,7 +3,7 @@
   "dependencies": {
     "scripts/playtest/release-policy.json": "d88a3074e0095b3fb3646064d55f3b8e260d1c88680f55d8f72fea0c048b9275",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
-    "package.json": "db51a8ba631dd50d6c8ee33020ec08d63491ca42bd04ec4b1e000db0b6e46526",
+    "package.json": "7f146bffaa172af703b994f31f5b5a5cfcd921af02812c1e080579fb0c406dab",
     "scripts/candidate-after.mjs": "954a519feec57a607e7a45b83a4c8a8c7d053bf7de8b76e720e98a440bf94aec",
     "scripts/candidate-attempt.mjs": "21096751ddc0e774ff78e0489978be26367a438a992bb1d1ecca3bac1f553e70",
     "scripts/candidate-resume.mjs": "e536334f74a1942293ee48566dd85a9b69052e9697a83424230b01c992dcc79a",

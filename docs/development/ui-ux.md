@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"dfc4c3e5470a3dc40d89e22a38b58d04fe3cc190f27712a1db027e7eac4f97e6","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"166f75aad06acc60c9802da44ad1ddba48b5d3fb7e5bb4f040bfe7ae17ebdbe2","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/presentation/workshop-view.mjs and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"da0e28c77369654614556f6db34322862538af69fdd133803dea2aaa3c9c8aa5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f2f68ba906b223d0dc08cccdb2ec1529b7c7e84990c4444aa8c8e07383260c2d","disposition":"still accurate","rationale":"Unchanged prose. workshop-view.mjs changed for the header rework; this candidate adds, extends and replaces no teaching, example, experiment or challenge entry, so the admission rules and the no entry / extend / replace / add record they require are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"7fc4a2c505e81e98f1236d73a2589861ddfc5cc184122555bba25855a6d46da8","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"d809f7bbf4ed130bce79bbed930498dc93fce879d5e3094a2d3026746e79c426","disposition":"updated","rationale":"Updated: this section now describes the pin surfaces — the \"Pivot · Top\" face entry, the pin preview line, the Mounting section showing the pinned partner rather than \"Unattached\", and \"Start angle\" for twist."} -->
+<!-- doc-review {"version":1,"fingerprint":"3969e6b6423f068dfe6022ae68480b430114b3e3ec4390b302ae5d4d11d4eda5","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1101c02a264f469c4d7f131e54c3d0e2cd3b91bde8c98e9e45bca64ed2ac5a7f","disposition":"updated","rationale":"Updated: this section now describes the reworked header as a stage group (+ Add part first, one Build | Run switch, Pause and Step holding their slots so the bar never reflows, and Tools) followed by a document group (Undo, Redo, Save, Learn, Help, GitHub); icon-only Undo, Redo and Pause carrying aria-label, title of name and key, disabled reasons and a 36 px target; one glyph set in src/presentation/icons.mjs; Choose scene moved under Tools; and the removed brand subtitle, with Help's About line reading 'Mechanical workshop'."} -->
 
 
 
@@ -586,7 +586,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"caee991f7fe1e63a96648a90b7dba9e9403d0982028ddc2922ba4c8751973354","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"2fddfe958873957e3e03dc2235ecb192ea9a429ca65ecb54144478142365aba8","disposition":"still accurate","rationale":"Its dependency playtesting.md#remote-setup gained the stored-once clause; the verification and review policy this section states is unchanged by that clause or by the storage fix."} -->
+<!-- doc-review {"version":1,"fingerprint":"475a40b192c3176724e08afe95c558ef7150dfc289862c7935bdd8e426994562","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3cc8cea836b8a687014281e65f7e66c2b4ee01aff3e2d93314b849c61d335a9f","disposition":"still accurate","rationale":"Unchanged prose. Its dependencies moved because verify-workbench-content.mjs and its unit test gained coverage of the reworked header and verify-authorable-scenes.mjs follows Choose scene into Tools; what this section requires a player-facing change to verify and record is unchanged."} -->
 
 
 

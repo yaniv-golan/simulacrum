@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/manifest.json": "5fab51a50f2c3df08eb8ecb8590d7e5305ae470c27d69f85ce2a72c9a58cd2e3",
+    "scripts/manifest.json": "3b57313f389f592c7d20e6a7f3b93a401d635a29af4eeea28271c30e84ba8fee",
     "AGENTS.md": "26dda7f938c55297850548c25b6618cc1bb48638e341a28155dc8db9353b07db",
     "docs/contracts/runtime-v1.md": "41f880fbd131be240840bf6f6f4591ce79754e5ed7b72071741fea9b9cbce62a",
     "docs/contracts/course-v1.md": "45b49ae854ecdfdc2851ddfbaa98628bdefa988fafaf8c77fee917e3c2d5a234",

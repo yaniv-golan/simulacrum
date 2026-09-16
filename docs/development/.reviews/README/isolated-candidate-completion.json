@@ -3,7 +3,7 @@
   "dependencies": {
     "scripts/candidate.mjs": "cdb64d0e2d1567d9cee5bef53bd84f8f1ae9a1dc2f88e08d8779ca0d791c964b",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
-    "package.json": "e099bb3c460aafdef9d8167e3320bd69ddc2c4886cfd0b6d0415e13409dcf311",
+    "package.json": "b35a9973ba7871abb8d77f34524e7c2c6efb6e8cd309d512aa73bf18d1d6cc27",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/browser-history.mjs": "2f18f7e4ddc21d26efd10533c98210136a9d493d9178341fd6434a91bdfe3a0a",
     "scripts/browser-registry.mjs": "a14c4664fd1575c76321fb1becf9fa79e8d4e72b7c10c90b1d9ac76c30fbf62c",
@@ -23,7 +23,7 @@
     "scripts/host-pressure.mjs": "151fd3b44edc39b54f2c57136755cff4571b9dcaa2f8623fe73db1d710cdfd9e",
     "scripts/host-profile.mjs": "ca01a1ce6ff5f5186df3dd003d551c900bac313e68ae79a040f96075f0a2c200",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "5fab51a50f2c3df08eb8ecb8590d7e5305ae470c27d69f85ce2a72c9a58cd2e3",
+    "scripts/manifest.json": "3b57313f389f592c7d20e6a7f3b93a401d635a29af4eeea28271c30e84ba8fee",
     "scripts/merge-selection.mjs": "9c92b1d891265cb8f8df22c0242b53092a9da877994bdfb12b30d2727e2f53aa",
     "scripts/merge-shadow.mjs": "0a0cc14b0a9b3456923b6abab94abf9c8d0a1901b167147a5cc60641162f96a5",
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
