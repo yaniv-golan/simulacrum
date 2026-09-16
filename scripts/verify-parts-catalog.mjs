@@ -7,7 +7,9 @@ import { browseAllParts } from './catalog-browser-actions.mjs';
 const evidence = createBrowserEvidence();
 const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: true });
-const equal = (a, b) => evidence.assert('deepEqual', [a, b]);
+// The message reaches assert.deepEqual, so two failures of the same shape stay distinguishable.
+const equal = (a, b, message) =>
+  evidence.assert('deepEqual', message === undefined ? [a, b] : [a, b, message]);
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()).metadata);
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
@@ -74,6 +76,34 @@ try {
       equal(await purpose.textContent(), PART_HELP[ESSENTIAL_PARTS[0]].purpose);
     }
   }
+  // Both corner controls must be reachable on the tightest card — the compact sidebar's 88 px
+  // tile, not only the roomier summoned overlay.
+  const cornersReachable = async (scope, label) => {
+    const entry = page.locator(`${scope} .catalog-entry:not([hidden])`).first();
+    const star = entry.locator('.catalog-favorite'),
+      info = entry.locator('.part-about');
+    equal(await star.isVisible(), true, `${label}: the star is on the card`);
+    equal(await info.isVisible(), true, `${label}: the (i) button is still on the card`);
+    const starBox = await star.boundingBox(),
+      infoBox = await info.boundingBox();
+    equal(starBox.width >= 28 && starBox.height >= 28, true, `${label}: 28 px target`);
+    equal(starBox.x + starBox.width <= infoBox.x, true, `${label}: the corners do not overlap`);
+    equal(
+      await star.evaluate((node) => {
+        const box = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return node === hit || node.contains(hit);
+      }),
+      true,
+      `${label}: a press at its centre reaches the star`,
+    );
+  };
+  await cornersReachable('.parts-browser:not(.catalog-expanded)', 'compact sidebar');
+  await addPart.click();
+  await overlay.waitFor({ state: 'visible' });
+  await cornersReachable('.parts-browser.catalog-expanded', 'summoned overlay');
+  await page.keyboard.press('Escape');
+  await overlay.waitFor({ state: 'detached' });
   await page.screenshot({ path: '/tmp/catalog-fixed-1280.png' });
   await page.setViewportSize({ width: 1440, height: 900 });
   await browseAllParts(page);
@@ -130,7 +160,24 @@ try {
       .getAttribute('data-part-type'),
     'powerCell',
   );
-  await page.getByRole('button', { name: 'Save to favorites', exact: true }).click();
+  // The star belongs to the tile it sits on. Focus Power Cell, graze another tile on the way
+  // to the control, and the click still saves Power Cell; the retired shared summary button
+  // followed whichever tile the pointer or Tab touched last.
+  await page.getByRole('button', { name: 'All parts', exact: true }).click();
+  const cellStar = page
+    .locator('.catalog-entry:has([data-part-type="powerCell"]) .catalog-favorite')
+    .first();
+  equal(await cellStar.getAttribute('aria-label'), 'Save Power Cell to favorites');
+  equal(await cellStar.getAttribute('aria-pressed'), 'false');
+  await page.locator('[data-part-type="powerCell"]').focus();
+  await page.locator('[data-part-type="gripWheel"]').hover();
+  await cellStar.click();
+  equal(await cellStar.getAttribute('aria-pressed'), 'true');
+  equal(
+    await cellStar.getAttribute('aria-label'),
+    'Remove Power Cell from favorites',
+    'a pressed star offers the removal rather than another save',
+  );
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   const placed = await read();
   await page.getByRole('button', { name: 'About Power Cell', exact: true }).click();

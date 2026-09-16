@@ -28,6 +28,13 @@ export const RELEASE_NOTES = Object.freeze(
         'Every example is one row with its own button, and the instructions open inside the row. Project status now says what works today.',
     },
     {
+      id: '2026-09-16-favorite-from-the-tile',
+      date: '2026-09-16',
+      name: 'Save a favorite from the part itself',
+      summary:
+        'Every part tile has a star in its corner: press it to keep that part in Favorites, press it again to remove it.',
+    },
+    {
       id: '2026-09-16-gear-teeth',
       date: '2026-09-16',
       name: 'Gears now have teeth',
