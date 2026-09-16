@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"f815a3b61cac914bbee26a3b59717e51a7aaf22b0bad90e4a6dab90f305c9cf0","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"0dcca24ba9d5236ebef44e7d0fe6da858781ff4f47318b4052982642226ca3b6","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). The part recipe's catalog, admission and test contract steps are unchanged; the joint-face and slide fields the contract now names are declared for future parts, none of which this candidate adds."} -->
+<!-- doc-review {"version":1,"fingerprint":"30cc633e5b825bac31492d88f09a3da9dd9b51e82d2c4da36335dd34a155345f","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"d8b844802216c567e12144abc0d85ea5a62d33b0a9eb1c21b3da099a5ae3c682","disposition":"updated","rationale":"Updated: this section now states that a part may declare one joint face and that a surface pair with exactly one revolute joint face compiles as a pivot connection, which is what the pivot pin adds."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -97,7 +97,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"e3beaae470d81cdd92888f89d0aa550a9bb4070bb840e1ef3d5a0daf5715bcf6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"db167d5620caa2a777072d8f5a7c6e487f02267efb09d3fc41b8e6daf5d58bcf","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No command surface, admission path or ownership named here changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"038f1d4dd431bba80ec25605483a0e69e70cd80de5fd5632c81a47bea4acca2a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"de3cac119a00f9bad9b1c5f3557152e06506cd6abd80605de82e1ec64b45e6bf","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/core/workshop.mjs and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -126,7 +126,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"8892badcb2e5ce6417c508fc504e605289c67dcff4b341745e7b48a361ee725c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"8a2d047d1f37a65ebe338fa600d3e6b17459773100c41aa20ae1e3871e19800f","disposition":"still accurate","rationale":"catalog-browser-actions.mjs swapped its expand locator for [data-command=add-part]; the recipe's owners, shared helpers and test steps for an interaction change stay the same."} -->
+<!-- doc-review {"version":1,"fingerprint":"158f259a8b48378ade63e4547ba67f4c96523eaaefa85d80bb5499e9ff1a8233","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1663e05e6e58e90077994c12aacfbba889d2d5bc48deac61f99e8d705fba9c7a","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/assembly.mjs and its siblings; the mechanism this section explains is unaffected."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -175,7 +175,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"2a61eaf56fec27e236f0735b04c34806162b58d79cd1f901ccf8ac037e995488","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9f4df72076eb08f04525a222233561ee1ee387fbd9443e4b901be179a8201770","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Diagnostics read the same completed snapshots; no diagnostic owner or read model changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"60d5ad6cf47249857ed9dff68612ad95e4e90885d14cdd287cf9ad97c2fe00ac","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"be836002ca45c6e5a5c8ecbdd81a688242aa7caa840fd833be4d7c9ba0373bfa","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"6d8dc16997d938c142eaf164339ed49e2344a7569e3a6e7f4879d591e310e35c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"86563a82b3856bc6bfa01c64b12b9c77b44c605b63e07d7bfe499ef6610d1bf7","disposition":"still accurate","rationale":"The delta is feedback storage, its browser check and documentation prose; no physics, law or simulation module changed, so this recipe's owners, doors and checks hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"76dd6580ba744d04d84ae2beceedff529f3757fcb197f6bd1d6f3850cd224919","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b18f6d9aaf105b825e0e155d4e0715e31f2d768ea79b67fffbf7db6d78332f5e","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -521,7 +521,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"d682a922e88fca1adb7d9a708f8cf0420a1d4057f46cf278ed133d0c7597b902","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d80180e0bc3cf2dde58cdff6d8c4d41937f4aa09873a9ae8e25b7b46872460cd","disposition":"still accurate","rationale":"Only the catalog helper's way of opening the parts changed (+ Add part locator); multi-part authoring commands, selection and assembly owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1c77b7b5409b3b6a1392de6b32542486d914e544ca2f41ac9baaad4e3ebe8d89","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d4b53f027c94fbdcd0ee9ecdec73d45a47169665f8977d20729769819798f03f","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -618,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"315edf64102d4d1252232fcac5ec1a1ed036234bc390df50685d18bcf9610e50","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7c7c90850a918261fac00198265e843da2de125050ec0ff24d822bfa0938cbab","disposition":"still accurate","rationale":"trace-an-edit gained the summoned-overlay header wording and the catalog helper locator changed; the overlay recipe (owning region, lifecycle, displaced UI, rendered checks) still applies as written."} -->
+<!-- doc-review {"version":1,"fingerprint":"b392f782626a51dc29d58b8144a9f5eaa4b137b0880a55f3235136c12b50f5ce","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"d93a4c48462ae59a5d8108b8596ce8908b15a6f0ed46c33edad655914c8a530a","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

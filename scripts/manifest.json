@@ -7566,6 +7566,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7715,6 +7716,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7810,6 +7812,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7912,6 +7915,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8433,7 +8437,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8497,7 +8501,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
+      "consumerSourceHash": "0f076aea42422229ed39f704f46b68c3e05e70f332a486bfdc721aa846e72893",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8546,6 +8550,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -8622,6 +8627,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8666,7 +8672,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
+      "consumerSourceHash": "0f076aea42422229ed39f704f46b68c3e05e70f332a486bfdc721aa846e72893",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8736,6 +8742,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -8835,6 +8842,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8903,7 +8911,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "4d4631a40671bf7c738504dcba8a02b61ac1805e4298b8d11f865ba48558894d",
+      "consumerSourceHash": "6b6f70860b53c5b3e858c48d1ccb724dcd94397ffbc36de28335a67b05a74c79",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8992,6 +9000,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -9105,6 +9114,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -9184,7 +9194,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "6a6fa928fbf14b84f34fce465ef3b10ad1a6d93db379d9b358662693f3d7054f",
+      "consumerSourceHash": "783afabcb72f97d1e047abfa2bb37a15789e84a30807d6e49e8a156fd0d567dc",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9218,7 +9228,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9295,7 +9305,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9366,7 +9376,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9409,7 +9419,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9564,7 +9574,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "fcb131d2b2e0ab1611e27b611ed8cea5524b6390535cb0159401424e99f61f2f",
+      "consumerSourceHash": "4e16521721a5729382813615c5abe630649c8e1ba6791c60ee890a9aa9e8abae",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9641,6 +9651,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -9716,7 +9727,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "8ba339b0ee157402315b91c46cdfe2477cace0bcc0ff5b714416bba7155e7c45",
+      "consumerSourceHash": "0f076aea42422229ed39f704f46b68c3e05e70f332a486bfdc721aa846e72893",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9811,6 +9822,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -9934,6 +9946,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10042,7 +10055,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10127,7 +10140,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "226bf244ec268d81ad90121b3653cbc6298d6aef588bf3cba51127de737bf2b6",
+      "consumerSourceHash": "4649a0a8c77969301b297c1a76eb3246c7aad9a6ee3969884adf2eb7c86edff7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10171,6 +10184,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10230,7 +10244,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "226bf244ec268d81ad90121b3653cbc6298d6aef588bf3cba51127de737bf2b6",
+      "consumerSourceHash": "4649a0a8c77969301b297c1a76eb3246c7aad9a6ee3969884adf2eb7c86edff7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10274,6 +10288,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10383,7 +10398,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "e60e3538765b9aae0ee4e0e9c2091f3556b47c96eae07202f30cebf114a2b64c",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10466,7 +10481,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "fcb131d2b2e0ab1611e27b611ed8cea5524b6390535cb0159401424e99f61f2f",
+      "consumerSourceHash": "4e16521721a5729382813615c5abe630649c8e1ba6791c60ee890a9aa9e8abae",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10510,6 +10525,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",

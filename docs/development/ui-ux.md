@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"f7cef6bf88b9dc9c5118baff31f38133b80da3c1fcd0912033e959332beca686","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"77a34cef5987d16e92ee651aa5a65db4888d34acf629320ba3392197522ce736","disposition":"still accurate","rationale":"The summoned palette adds no teaching, example or challenge entry; workshop-view.mjs changes are header placement and the parts overlay, so the admission rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"dfc4c3e5470a3dc40d89e22a38b58d04fe3cc190f27712a1db027e7eac4f97e6","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"166f75aad06acc60c9802da44ad1ddba48b5d3fb7e5bb4f040bfe7ae17ebdbe2","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/presentation/workshop-view.mjs and its siblings; the mechanism this section explains is unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"74ba303dc3efe21223bc7f4c98cea29e06e9b634d7e6ba5589a4ab2da976b9b0","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Adds what a player sees when feedback storage is full: Send names only the outs that exist now and the draft stays reported as saved, matching the storageFullMessage branch in feedback-client.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"7fc4a2c505e81e98f1236d73a2589861ddfc5cc184122555bba25855a6d46da8","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"d809f7bbf4ed130bce79bbed930498dc93fce879d5e3094a2d3026746e79c426","disposition":"updated","rationale":"Updated: this section now describes the pin surfaces — the \"Pivot · Top\" face entry, the pin preview line, the Mounting section showing the pinned partner rather than \"Unattached\", and \"Start angle\" for twist."} -->
 
 
 
