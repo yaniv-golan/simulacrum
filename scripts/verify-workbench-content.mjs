@@ -166,6 +166,23 @@ try {
     false,
     'the row that is open can be closed again',
   ]);
+  // Requested content arrives as a picker: a row opened last visit does not come back open.
+  const openRows = () =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('.examples-browser .example-toggle')].filter(
+          (toggle) => toggle.getAttribute('aria-expanded') === 'true',
+        ).length,
+    );
+  await expandExample(page, 'spring-launcher');
+  evidence.assert('equal', [await openRows(), 1, 'the row opened before closing was open']);
+  await page.getByRole('button', { name: 'Close examples', exact: true }).click();
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+  evidence.assert('equal', [
+    await openRows(),
+    0,
+    'reopening Learn & examples arrives with every row closed',
+  ]);
   // The header × must stay reachable when requested content is taller than the viewport: the
   // bounded browser scrolls its row list, so the header row cannot scroll out of the dialog.
   await page.setViewportSize({ width: 640, height: 360 });
@@ -178,11 +195,15 @@ try {
     pane.scrollTop = 0;
     const before = inset();
     pane.scrollTop = pane.scrollHeight;
+    const taller = pane.scrollHeight > pane.clientHeight,
+      scrolled = pane.scrollTop > 0;
+    // Ask the dialog itself to scroll: a bounded browser must have nowhere to go.
+    dialog.scrollTop = dialog.scrollHeight;
     const close = dialog.querySelector('.dialog-close').getBoundingClientRect(),
       box = dialog.getBoundingClientRect();
     return {
-      taller: pane.scrollHeight > pane.clientHeight,
-      scrolled: pane.scrollTop > 0,
+      taller,
+      scrolled,
       dialogScrolled: dialog.scrollTop,
       inside: close.top >= box.top && close.bottom <= box.bottom,
       before,
@@ -199,7 +220,7 @@ try {
   evidence.assert('equal', [
     scrolledClose.dialogScrolled,
     0,
-    'the dialog itself never scrolls, so its header cannot leave',
+    'the dialog refuses to scroll when asked, so its header cannot leave',
   ]);
   evidence.assert('equal', [
     scrolledClose.inside,

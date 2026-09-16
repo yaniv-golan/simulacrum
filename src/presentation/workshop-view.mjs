@@ -520,6 +520,9 @@ export function createWorkshopView(
   const guide = element('section', 'starter-guide');
   let pendingExample = null,
     renderedGuideActive;
+  // The rendered rows are rebuilt on guide changes; the dialog's close reaches the current
+  // ones through this, so collapsing them stays the job of whoever rendered them.
+  let collapseExampleRows = () => {};
   const replacement = element('div', 'example-replacement');
   replacement.hidden = true;
   const cancelReplacement = button('Cancel replacement', () => {
@@ -560,6 +563,8 @@ export function createWorkshopView(
     if (examples.open) return;
     replacement.hidden = true;
     pendingExample = null;
+    // Requested content arrives as a picker every time: a row opened last visit is closed.
+    collapseExampleRows();
   });
   async function openExample(entry) {
     if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
@@ -623,6 +628,8 @@ export function createWorkshopView(
     renderedGuideActive = guideActive;
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
+    // The previous render's rows are gone; a guide has none until the browser rebuilds.
+    collapseExampleRows = () => {};
     if (!guideActive) {
       examples.append(guide);
       // One row per entry. The collapsed row carries the name, its summary and its own
@@ -638,6 +645,12 @@ export function createWorkshopView(
           const open = rowId === id;
           row.detail.hidden = !open;
           row.toggle.setAttribute('aria-expanded', String(open));
+        }
+      };
+      collapseExampleRows = () => {
+        for (const row of rows.values()) {
+          row.detail.hidden = true;
+          row.toggle.setAttribute('aria-expanded', 'false');
         }
       };
       const addRow = (id, name) => {

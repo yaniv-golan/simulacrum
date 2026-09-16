@@ -2876,7 +2876,6 @@ button:not(.keyed) > .key-badge {
   border-top: 1px solid #526873;
   padding: 12px 0;
 }
-.example-card h3,
 .example-card p {
   margin: 0 0 10px;
 }
@@ -2887,7 +2886,7 @@ button:not(.keyed) > .key-badge {
   overflow: auto;
   margin-top: 0;
 }
-/* Instruction prose inside a row keeps the body size; only the picker line is smaller. */
+/* Instruction prose inside a row reads above the 12 px guide step; the summary line stays small. */
 .examples-browser .starter-guide p {
   font-size: 14px;
   line-height: 1.55;
