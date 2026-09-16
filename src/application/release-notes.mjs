@@ -7,14 +7,83 @@
  * setting, a sound, a fix the player could have noticed. Tooling, verification,
  * documentation and refactors never do.
  *
- * Fields: `id` (landing date + slug, unique, ordering key), `date` (the landing date,
- * never the writing date), `name`, `summary` (≤ 140 characters, no URL), optional
+ * Fields: `id` (the day the entry was committed + slug, unique, ordering key), `date` (that
+ * same day, never the landing day: the check refuses a date later than max(HEAD commit date,
+ * today), and an id is never changed once committed because it is the what's-new seen cursor.
+ * Place a new entry by date, and always above the last served release's newest entry: a
+ * returning player is shown only what sits above their stored id, and same-date ties are
+ * allowed, so an entry below that head would never be seen), `name`, `summary` (≤ 140
+ * characters, no URL), optional
  * `feature` (a UI_FEATURES key or catalog part type that must exist in this build) and
  * optional `example` (an existing Learn & examples card command, validated by the
  * browser check). `scripts/check-release-notes.mjs` enforces the shape.
  */
 export const RELEASE_NOTES = Object.freeze(
   [
+    {
+      id: '2026-09-16-pivot-pin',
+      date: '2026-09-16',
+      name: 'Pivot pin: a hinge anywhere',
+      summary:
+        'Snap a Pivot pin to any face and a link onto its top: the link swings freely from the start angle you set. No motor needed.',
+      feature: 'pivotPin',
+    },
+    {
+      id: '2026-09-16-feedback-storage-full',
+      date: '2026-09-16',
+      name: 'Full feedback storage says what to do',
+      summary:
+        'If feedback storage is full, Send says how to make room: untick an attachment, delete a received copy or shorten the report.',
+    },
+    {
+      id: '2026-09-15-top-bar-breathes',
+      date: '2026-09-15',
+      name: 'The top bar breathes',
+      summary:
+        'Undo, Redo and Pause are icons that explain themselves on hover; + Add part leads the bar; Choose scene lives under Tools.',
+    },
+    {
+      id: '2026-09-15-summon-the-parts',
+      date: '2026-09-15',
+      name: 'Summon the parts from anywhere',
+      summary:
+        'Press P or + Add part to open the parts over the bench, search ready; Escape puts them away. Cancelling a placement leaves them away.',
+    },
+    {
+      id: '2026-09-15-ready-to-run',
+      date: '2026-09-15',
+      name: 'Ready to run?',
+      summary:
+        'While you build, a line by the machine says whether it can run and what is still missing; clicking it opens Check machine.',
+    },
+    {
+      id: '2026-09-15-first-visit-choice',
+      date: '2026-09-15',
+      name: 'A first visit asks how to start',
+      summary:
+        'A new browser is asked once: guided build, drive an example, or the empty bench (Escape). The empty bench keeps a guide button.',
+    },
+    {
+      id: '2026-09-15-guide-follows-you',
+      date: '2026-09-15',
+      name: 'The guide follows your own moves',
+      summary:
+        'The guided build says what to do next and ticks a step when you do it yourself; Do it for me is the fallback.',
+    },
+    {
+      id: '2026-09-15-bench-header',
+      date: '2026-09-15',
+      name: 'One Build | Run switch and a Tools menu',
+      summary:
+        'Pause and Step show once running; the occasional tools (Check machine, Measurements, Assemblies, New, Load, Edit scene) live under Tools.',
+    },
+    {
+      id: '2026-09-15-six-essentials',
+      date: '2026-09-15',
+      name: 'Six essentials first',
+      summary:
+        'Parts opens on cell, motor, wheel, beam, hinge and plate, each with a one-line purpose; a selected part shows what it is connected to.',
+    },
     {
       id: '2026-09-15-source-on-github',
       date: '2026-09-15',

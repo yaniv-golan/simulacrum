@@ -37,3 +37,20 @@ export function firstRunDecision({ keys, storage, hasContent, guideActive, shape
   if (keys.some((key) => key.startsWith('simulacrum'))) return null;
   return shape === 'hint' ? null : shape;
 }
+/** P summons the parts: only in Build, never from a text field. Other guards are the view's. */
+export function paletteKeyOpens({ mode, editableTarget }) {
+  return mode === 'build' && !editableTarget;
+}
+/**
+ * An icon-only control's hover text: its name and key, or — when it is off — the reason,
+ * which is the one thing a player hovering a dimmed control wants to know.
+ */
+export function controlTitle({ name, key = '', reason = '' }) {
+  if (reason) return reason;
+  return key ? `${name} · ${key}` : name;
+}
+/** Undo/Redo chords as the platform writes them; ⌘ only where a Command key exists. */
+export function historyChord(platform = '') {
+  const apple = /^(mac|iphone|ipad|ipod)/i.test(String(platform));
+  return apple ? { undo: '⌘Z', redo: '⇧⌘Z' } : { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' };
+}

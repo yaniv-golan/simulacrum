@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IDBFactory } from 'fake-indexeddb';
-import { openFeedbackStore } from '../src/application/feedback-store.mjs';
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
+import { openFeedbackStore, FEEDBACK_DB } from '../src/application/feedback-store.mjs';
 const ack = (row) => ({
   protocolVersion: 1,
   submissionId: row.id,
@@ -84,7 +84,9 @@ test('queued caller mutation cannot rewrite a draft and semantically equal recei
   store.close();
 });
 test('storage exhaustion leaves draft editable and oversized audio remains bounded and unsendable', async () => {
-  const store = await openFeedbackStore({ indexedDB: new IDBFactory(), storageBytes: 400 });
+  // 300 bytes hold the draft but not its frozen row; a frozen row no longer carries a second
+  // copy of the envelope, so the 400-byte budget this test once used now fits it.
+  const store = await openFeedbackStore({ indexedDB: new IDBFactory(), storageBytes: 300 });
   let draft = await store.createDraft({ text: 'kept' });
   await assert.rejects(store.saveDraft({ ...draft, text: 'x'.repeat(700) }), /storage limit/);
   assert.equal((await store.draft()).text, 'kept');
@@ -123,5 +125,130 @@ test('corrected draft preserves blocked bytes and never replaces another contrib
   await store.discardDraft(corrected);
   await store.acknowledge(item.id, ack(item));
   await assert.rejects(store.correctDraft(item.id), /blocked/i);
+  store.close();
+});
+const rawState = (indexedDB) =>
+  new Promise((resolve, reject) => {
+    const open = indexedDB.open(FEEDBACK_DB, 1);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result,
+        request = db.transaction('state').objectStore('state').get('current');
+      request.onsuccess = () => {
+        db.close();
+        resolve(request.result);
+      };
+      request.onerror = () => reject(request.error);
+    };
+  });
+test('frozen items persist their bytes once and read the envelope back from them', async () => {
+  const indexedDB = new IDBFactory(),
+    store = await openFeedbackStore({ indexedDB });
+  const context = { value: { a: 1 }, capturedAt: new Date().toISOString() };
+  const draft = await store.createDraft({ text: 'once', context });
+  const row = await store.freeze(draft);
+  assert.deepEqual(row.envelope, JSON.parse(row.bodyText), 'freeze returns the derived envelope');
+  const persisted = (await rawState(indexedDB)).items[0];
+  assert.equal('envelope' in persisted, false, 'only the hashed bytes are stored');
+  assert.equal(persisted.bodyText, row.bodyText);
+  const [item] = await store.items();
+  assert.deepEqual(item.envelope, JSON.parse(row.bodyText));
+  assert.equal(item.envelope.context.value.a, 1);
+  const parses = [];
+  const parse = JSON.parse;
+  JSON.parse = (...args) => {
+    parses.push(args[0]);
+    return parse(...args);
+  };
+  try {
+    await store.items();
+    await store.items();
+  } finally {
+    JSON.parse = parse;
+  }
+  assert.equal(parses.length, 0, 'a store parses each item once, not per read');
+  await store.discard(row.id);
+  assert.equal((await store.items())[0].envelope, null, 'discarded rows read exactly null');
+  store.close();
+});
+test('legacy rows read their bytes as truth and drop the second copy on write', async () => {
+  const indexedDB = new IDBFactory(),
+    store = await openFeedbackStore({ indexedDB });
+  const draft = await store.createDraft({ text: 'truth' });
+  const row = await store.freeze(draft);
+  store.close();
+  await new Promise((resolve, reject) => {
+    const open = indexedDB.open(FEEDBACK_DB, 1);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result,
+        tx = db.transaction('state', 'readwrite'),
+        state = tx.objectStore('state');
+      const read = state.get('current');
+      read.onsuccess = () => {
+        const current = read.result;
+        current.items[0].envelope = { ...JSON.parse(row.bodyText), text: 'stale copy' };
+        current.items.push({
+          ...current.items[0],
+          id: 'corrupt',
+          uploadHash: 'c'.repeat(64),
+          bodyText: '{not json',
+        });
+        state.put(current, 'current');
+      };
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+  const reopened = await openFeedbackStore({ indexedDB });
+  const items = await reopened.items();
+  assert.equal(items[0].envelope.text, 'truth', 'the stored copy is ignored');
+  assert.equal(items[1].envelope, null, 'unreadable bytes read null without failing the list');
+  await reopened.retry(row.id);
+  const persisted = await rawState(indexedDB);
+  assert.equal('envelope' in persisted.items[0], false, 'the next write drops the legacy copy');
+  reopened.close();
+});
+test('one stored copy leaves room the doubled copy did not', async () => {
+  const context = { value: { pad: 'x'.repeat(40 * 1024) }, capturedAt: new Date().toISOString() };
+  const probe = await openFeedbackStore({ indexedDB: new IDBFactory() });
+  const sample = await probe.createDraft({ text: 'sized', context });
+  const size = new TextEncoder().encode(JSON.stringify({ draft: sample, items: [] })).length;
+  probe.close();
+  // Budget: the draft and one frozen copy fit; a second copy of the context would not.
+  const store = await openFeedbackStore({
+    indexedDB: new IDBFactory(),
+    storageBytes: size + 2048,
+  });
+  const draft = await store.createDraft({ text: 'sized', context });
+  const row = await store.freeze(draft);
+  assert.equal(row.envelope.context.value.pad.length, 40 * 1024);
+  assert.equal((await store.items()).length, 1);
+  store.close();
+});
+test('the browser’s own quota error reaches the caller by name', async () => {
+  const indexedDB = new IDBFactory(),
+    store = await openFeedbackStore({ indexedDB });
+  const draft = await store.createDraft({ text: 'quota' });
+  // A put that fails on quota fires the request's error event before the abort sets the
+  // transaction's error; the store must keep that DOMException, not its generic failure.
+  const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function () {
+    return this.transaction._execRequestAsync({
+      operation: () => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      },
+      source: this,
+    });
+  };
+  try {
+    await assert.rejects(store.freeze(draft), (error) => error.name === 'QuotaExceededError');
+  } finally {
+    IDBObjectStore.prototype.put = put;
+  }
+  assert.equal((await store.draft()).id, draft.id, 'the draft survives the refused write');
   store.close();
 });

@@ -1084,6 +1084,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-pivot-pin-browser",
+      "script": "scripts/verify-pivot-pin-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "measure-gears",
       "script": "scripts/measure-gears.mjs",
       "execution": "exclusive",
@@ -1358,6 +1369,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "a length change keeps long-face mounts that still fit and rejects the rest atomically"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a coincident pin-head closure admits through the surface-mount path without moving a part"
           }
         ],
         "negative": [
@@ -1704,6 +1719,75 @@
       ]
     },
     {
+      "id": "passive-pin-linkage",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A pivot connection compiles to a passive revolute about the mated face normal that transmits no torque about its axis, keeps the pinned pair contact-free through its 10 mm body, and admits a surface-mount loop only when the proposed mate already coincides.",
+      "owners": [
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "surfaceMountCandidate"
+        },
+        {
+          "path": "src/model/surfaces.mjs",
+          "anchor": "resolveSurfaceEndpoint"
+        },
+        {
+          "path": "src/model/blueprint.mjs",
+          "anchor": "validateBlueprint"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-pivot-pin-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "compile: a pinned pair is one fixed joint and one passive revolute about the mated normal"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a pinned link swings as a compound pendulum; a fixed joint does not; the pin transmits no torque"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a coincident pin-head closure admits through the surface-mount path without moving a part"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "links on a pin swing over each other with 10 mm clearance and never touch"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a driven parallelogram keeps the rocker parallel to the crank with millimetre joint drift and no link contact"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a joint angle sensor bound to a pivot edge reads the swing, and unbinds when the pin goes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "admission: pivot needs exactly one revolute joint face, kind-matched, exclusive and centred"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "a pin head admits its partner at any start angle; the pad-projection rule stays for ordinary faces"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
       "id": "identity-material-admission",
       "ruleId": "identity",
       "dueAt": "M3b",
@@ -1730,6 +1814,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "a committed save without length loads unchanged and compiles to the same configuration"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "pivot pin is an ordinary catalog part with a declared revolute joint face"
           }
         ],
         "negative": [
@@ -1740,6 +1828,10 @@
           {
             "path": "test/beam-length.test.mjs",
             "anchor": "renaming and rig placement never change a beam whose length and material are fixed"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "renaming and rig placement never change a pinned pair; material changes mass only"
           }
         ]
       },
@@ -1851,6 +1943,10 @@
           {
             "path": "test/duplication.test.mjs",
             "anchor": "a copy lands one extent plus clearance from the original, snapped outward to the grid"
+          },
+          {
+            "path": "test/pivot-pin.test.mjs",
+            "anchor": "mirroring and reusable-assembly instantiation keep the pivot kind and its endpoints"
           }
         ],
         "negative": [
@@ -3565,7 +3661,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -5857,7 +5953,7 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
       "owners": [
         {
           "path": "src/presentation/part-search.mjs",
@@ -5870,6 +5966,10 @@
         {
           "path": "src/presentation/part-placement.mjs",
           "anchor": "createPartPlacement"
+        },
+        {
+          "path": "src/presentation/workbench-content.mjs",
+          "anchor": "paletteKeyOpens"
         }
       ],
       "checks": [
@@ -5881,6 +5981,14 @@
           {
             "path": "test/part-search.test.mjs",
             "anchor": "everyday words and roles find the intended part before incidental references"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "summoning opens the overlay with the search focused and names it as a dialog"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
           }
         ],
         "negative": [
@@ -5895,6 +6003,18 @@
           {
             "path": "test/part-placement-pending.test.mjs",
             "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a cancelled placement restores the browse snapshot but never re-summons the overlay"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "Escape belongs to an active placement, not to the overlay"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "P summons the parts only in Build and never from a text field"
           }
         ]
       },
@@ -6147,7 +6267,7 @@
       "id": "independent-feedback-receipts",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification. A submission is stored once as the exact bytes behind its upload hash, with the envelope read back from them; a full local store names the player's actual outs and keeps the draft saved.",
       "owners": [
         {
           "path": "src/application/feedback-context.mjs",
@@ -6210,6 +6330,18 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "Send stays disabled while an attachment save is pending"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "frozen items persist their bytes once and read the envelope back from them"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "one stored copy leaves room the doubled copy did not"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a storage-full send names the outs the player has and keeps the draft saved"
           }
         ],
         "negative": [
@@ -6252,6 +6384,14 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "text-only stores attach nothing by default and keep the controls hidden"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "legacy rows read their bytes as truth and drop the second copy on write"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "the storage-full message names only the outs that exist"
           }
         ]
       },
@@ -7283,7 +7423,7 @@
       "id": "dialog-close-consistency",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Every custom dialog and the Teach a controller panel dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
+      "guarantee": "Every custom dialog, the Teach a controller panel and the summoned Parts overlay dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
       "owners": [
         {
           "path": "src/presentation/dialog-close.mjs",
@@ -7300,6 +7440,10 @@
         {
           "path": "src/application/remote-playtest.mjs",
           "anchor": "createDialogClose('Close recording setup'"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createDialogClose('Close parts'"
         }
       ],
       "checks": [
@@ -7328,6 +7472,10 @@
           {
             "path": "test/camera-controls.test.mjs",
             "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "the compact catalogue no longer carries its own expand toggle"
           }
         ],
         "negative": [
@@ -7450,6 +7598,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7599,6 +7748,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7694,6 +7844,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -7796,6 +7947,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8317,7 +8469,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8381,7 +8533,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "ccab69cf6c8895616a628ad1fa965cd4d9dedabae5219661eb34ae858b60654e",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8430,6 +8582,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -8506,6 +8659,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8550,7 +8704,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "ccab69cf6c8895616a628ad1fa965cd4d9dedabae5219661eb34ae858b60654e",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8620,6 +8774,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -8719,6 +8874,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -8787,7 +8943,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "01db8aed3476beb6272dd70f344136cc6e79847c20ff79203e887a19c2700516",
+      "consumerSourceHash": "e635ddc76dd339027f1603193445fb80e0c1adadcbcaa608e7057f7b2f941c32",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8876,6 +9032,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -8989,6 +9146,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -9068,7 +9226,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "99c696b957a5fccc4e4c563b177916268183fa09e7434eb4855fde7e733a08e1",
+      "consumerSourceHash": "783afabcb72f97d1e047abfa2bb37a15789e84a30807d6e49e8a156fd0d567dc",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9102,7 +9260,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9179,7 +9337,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9250,7 +9408,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9293,7 +9451,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9448,7 +9606,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "146eaa0ed2e6177ed569c177f0cb82ad15e85b583550f686339eebd56bfe2c36",
+      "consumerSourceHash": "c2464172bf445a371034e60244eade4e07ca105d7c70c8db9aa733515da5cfcc",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9525,6 +9683,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -9600,7 +9759,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "e744223fb28d23fc74550e13f2f1bdbfae714e8a38178b1614891f0de117a66c",
+      "consumerSourceHash": "ccab69cf6c8895616a628ad1fa965cd4d9dedabae5219661eb34ae858b60654e",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -9695,6 +9854,7 @@
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
         "scripts/verify-parts-catalog.mjs",
+        "scripts/verify-pivot-pin-browser.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -9818,6 +9978,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -9926,7 +10087,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10011,7 +10172,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "380d376966563cf4562d47edf63554e5f14fabcbc5513994865cec59d0749439",
+      "consumerSourceHash": "8dad3c6a0f26ef0ac1f4077097da655c22ca4efb2ce8f0d7554e6a181ffacc8e",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10055,6 +10216,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10114,7 +10276,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "380d376966563cf4562d47edf63554e5f14fabcbc5513994865cec59d0749439",
+      "consumerSourceHash": "8dad3c6a0f26ef0ac1f4077097da655c22ca4efb2ce8f0d7554e6a181ffacc8e",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10158,6 +10320,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10184,7 +10347,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "ac97f9dcbbe880d5e4e4b25ddbfc2c89f3efc2cb7e3ea45dc41e46bffcf9f19c",
+      "sourceSha256": "6063f5ca43584f64db8accbbb94dd0275f5529a3651ca8a210c3ac404732a06a",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -10267,7 +10430,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "6b936000cc974b5c76058a20cde40ba0058c5429fe2b405c6867c7d20f71f122",
+      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10350,7 +10513,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "146eaa0ed2e6177ed569c177f0cb82ad15e85b583550f686339eebd56bfe2c36",
+      "consumerSourceHash": "c2464172bf445a371034e60244eade4e07ca105d7c70c8db9aa733515da5cfcc",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10394,6 +10557,7 @@
         "verify-part-help-inspectors",
         "verify-part-help-window",
         "verify-parts-catalog",
+        "verify-pivot-pin-browser",
         "verify-port-explanations",
         "verify-property-focus",
         "verify-recording-browser",
@@ -10587,7 +10751,7 @@
           ]
         }
       ],
-      "sourceSha256": "3067826085df0447532da9ef28a298ea973160cb535e6f0f699871edbd9b4ccf",
+      "sourceSha256": "f06823c7bbe7dc064abd2d188d962314534d143b0f338cb1c6428a6e7fd4a70d",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "reachingChecks": [
         "measure-cameras",

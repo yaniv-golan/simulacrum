@@ -39,7 +39,7 @@ function endpoints(bp, ids) {
       ...surfaceRegions(part).map((region) => ({
         endpoint: { part: part.id, surface: { region: region.id, u: 0, v: 0, twist: 0 } },
         kind: 'fixed',
-        label: `${part.name} · ${region.label} (mount)`,
+        label: `${part.name} · ${region.label} (${region.joint ? 'pin' : 'mount'})`,
       })),
     ]);
 }
@@ -361,7 +361,11 @@ export function createAssemblyLibraryPanel({
       const endpoint = alias.endpoint,
         part = bp().parts.find((p) => p.id === endpoint.part),
         port = endpoint.surface
-          ? { kind: 'fixed' }
+          ? {
+              kind: surfaceRegions(part).find((r) => r.id === endpoint.surface.region)?.joint
+                ? 'pivot'
+                : 'fixed',
+            }
           : CATALOG[part.type].ports.find((p) => p.id === endpoint.port);
       row.append(node('small', `${part.name} · ${endpoint.port ?? endpoint.surface.region}`));
       const links = bp().connections.filter((e) =>

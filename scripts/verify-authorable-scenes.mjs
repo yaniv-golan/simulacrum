@@ -1,4 +1,4 @@
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { placeCatalogPart, openTools } from './catalog-browser-actions.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
@@ -13,7 +13,11 @@ const browser = await evidence.launch({ profile: 'ui' }),
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
-const click = (name) => page.getByRole('button', { name, exact: true }).click();
+const click = async (name) => {
+  // Choose scene and Edit scene live in the Tools menu.
+  if (name === 'Edit scene' || name === 'Choose scene') await openTools(page);
+  await page.getByRole('button', { name, exact: true }).click();
+};
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
@@ -214,10 +218,12 @@ try {
   }, driveStart);
   await page.keyboard.up('w');
   await page.locator('[data-command=pause]').click();
+  await openTools(page);
   assert.equal(
     await page.getByRole('button', { name: 'Edit scene', exact: true }).isDisabled(),
     true,
   );
+  await page.keyboard.press('Escape');
   await page.screenshot({ path: `${out}/paused-1280.png` });
   await page.locator('[data-command=build]').click();
   assert.deepEqual((await read()).metadata.blueprint, placed);
@@ -400,9 +406,10 @@ try {
   });
   await page.locator('canvas').first().focus();
   await page.keyboard.press('Escape');
+  // Edit scene sits in the Tools menu; leaving the editor hands focus to that control.
   assert.equal(
     await page
-      .getByRole('button', { name: 'Edit scene', exact: true })
+      .locator('details.tools-menu > summary')
       .evaluate((el) => el === document.activeElement),
     true,
   );

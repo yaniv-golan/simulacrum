@@ -229,6 +229,9 @@ test('adjust moves shaft-connected wheel and retains wire; loops refuse', async 
     a: { part: 'base', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
     b: { part: 'wheel', surface: { region: 'right', u: 0, v: 0, twist: 0 } },
   });
+  // A receiver still reachable through another mechanical path is a loop: an adjustment
+  // that would move the group is refused as a non-coincident closure, and the original
+  // coincident mount is admitted again without moving anything.
   assert.throws(
     () =>
       proposeSurfaceMount(mounted, {
@@ -236,12 +239,25 @@ test('adjust moves shaft-connected wheel and retains wire; loops refuse', async 
         sourceRegion: 'bottom',
         targetPart: 'base',
         targetRegion: 'top',
-        u: 0.05,
+        u: 0.06,
         id: 'mount',
         replaceConnection: 'mount',
       }),
-    /MOUNT_HELD_BY_ANOTHER_CONNECTION/,
+    /INCOMPATIBLE_CONNECTION_LOOP/,
   );
+  const same = mounted.connections.find((c) => c.id === 'mount').a.surface;
+  const closed = proposeSurfaceMount(mounted, {
+    part: 'motor',
+    sourceRegion: 'bottom',
+    targetPart: 'base',
+    targetRegion: 'top',
+    u: same.u,
+    v: same.v,
+    twist: same.twist,
+    id: 'mount',
+    replaceConnection: 'mount',
+  });
+  assert.deepEqual(closed.blueprint.parts, mounted.parts, 'a coincident closure moves nothing');
 });
 test('saved geometry refuses intersecting obstacles even without attachments', () => {
   const mounted = proposeSurfaceMount(fixture(), {

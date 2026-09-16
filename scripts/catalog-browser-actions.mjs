@@ -1,8 +1,8 @@
 /** Follow the public catalog journey, including its nonmutating preview. */
 export async function browseAllParts(page) {
   const search = page.getByRole('searchbox', { name: 'Search all parts' });
-  if (!(await search.isVisible()))
-    await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
+  // + Add part summons the parts overlay from anywhere on the bench (P does the same).
+  if (!(await search.isVisible())) await page.locator('[data-command=add-part]').click();
   await page.getByRole('button', { name: 'All parts', exact: true }).click();
 }
 export async function placeCatalogPart(page, type, place = (target) => target.click()) {

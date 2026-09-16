@@ -23,6 +23,7 @@ export const UI_FEATURES = Object.freeze({
     entrypoint: 'src/presentation/camera-controls.mjs',
   }),
   spurGears: Object.freeze({ milestone: 'M3b', entrypoint: 'src/presentation/workshop-view.mjs' }),
+  pivotPin: Object.freeze({ milestone: 'M3b', entrypoint: 'src/presentation/workshop-view.mjs' }),
   controllerPrograms: Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/controller-editor.mjs',

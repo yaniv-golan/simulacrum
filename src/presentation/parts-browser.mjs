@@ -1,6 +1,7 @@
 import { CATALOG } from '../model/catalog.mjs';
 import { PART_HELP } from './part-help-content.mjs';
 import { PART_SEARCH, ESSENTIAL_PARTS, searchParts } from './part-search.mjs';
+import { createDialogClose } from './dialog-close.mjs';
 
 const el = (tag, text = '', cls = '') => {
   const node = document.createElement(tag);
@@ -22,10 +23,14 @@ export function createPartsBrowser({
   panel.dataset.partHelpInput = '';
   panel.setAttribute('aria-label', 'Part catalog');
   const head = el('div', '', 'catalog-head');
-  const expand = el('button', 'Expand parts');
-  const close = el('button', 'Close parts');
+  // Summoned by + Add part or P; put away by the shared ×, Escape, a pick, a drag or Run.
+  let opener = null;
+  const close = createDialogClose('Close parts', () => {
+    conceal();
+    opener?.focus();
+  });
   close.hidden = true;
-  head.append(expand, close);
+  head.append(close);
   const search = el('input');
   search.type = 'search';
   search.placeholder = 'Find a part or what it does…';
@@ -129,7 +134,7 @@ export function createPartsBrowser({
       'click',
       () => {
         const saved = snapshot();
-        info.catalogRestore = () => restore(saved);
+        info.catalogRestore = () => restoreSnapshot(saved);
       },
       true,
     );
@@ -145,7 +150,7 @@ export function createPartsBrowser({
       pick(type);
       // Replacing an earlier pickup may restore its origin. Keep this pickup's
       // independently captured browse state and dismiss it after that cancellation.
-      restore(saved);
+      restoreSnapshot(saved);
       origin = saved;
       conceal();
     };
@@ -239,14 +244,14 @@ export function createPartsBrowser({
       savedScroll: new Map(savedScroll),
     };
   }
-  function restore(saved) {
+  // The browse snapshot (search, category, scroll) comes back; whether the overlay shows is
+  // the caller's decision, never the snapshot's.
+  function restoreSnapshot(saved) {
     category = saved.category;
     search.value = saved.query;
     selected = saved.selected;
     savedScroll = new Map(saved.savedScroll);
     refresh();
-    if (saved.expanded) show();
-    else conceal();
     grid.scrollTop = saved.scroll;
   }
   function reveal(type) {
@@ -259,20 +264,25 @@ export function createPartsBrowser({
   function show() {
     expanded = true;
     panel.classList.add('catalog-expanded');
+    // Summoned, the same node is a non-modal dialog; compact, it is the catalogue landmark.
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'false');
+    panel.setAttribute('aria-label', 'Parts');
     close.hidden = false;
-    expand.textContent = 'Return to workbench';
   }
   function conceal() {
     expanded = false;
     panel.classList.remove('catalog-expanded');
+    panel.removeAttribute('role');
+    panel.removeAttribute('aria-modal');
+    panel.setAttribute('aria-label', 'Part catalog');
     close.hidden = true;
-    expand.textContent = 'Expand parts';
   }
-  expand.onclick = () => (expanded ? conceal() : show());
-  close.onclick = () => {
-    conceal();
-    expand.focus();
-  };
+  function open({ opener: from = null } = {}) {
+    opener = from;
+    show();
+    search.focus();
+  }
   search.oninput = () => {
     if (!searching) savedScroll.set(category, grid.scrollTop);
     grid.scrollTop = 0;
@@ -304,7 +314,7 @@ export function createPartsBrowser({
     event.stopPropagation();
     if (expanded) {
       conceal();
-      expand.focus();
+      opener?.focus();
     } else if (search.value) {
       search.value = '';
       refresh();
@@ -316,6 +326,7 @@ export function createPartsBrowser({
     panel,
     reveal,
     show,
+    open,
     dragStarted(type) {
       origin = snapshot();
       const session = { type };
@@ -333,12 +344,17 @@ export function createPartsBrowser({
     },
     cancelled(type) {
       dragSession = null;
-      if (origin) restore(origin);
+      // The snapshot returns for the next open; the overlay itself stays away.
+      if (origin) restoreSnapshot(origin);
+      // The tile when it is rendered (summoned or in the compact sidebar), else the opener.
       const tile = cards.get(type)?.tile;
-      (tile && !tile.disabled ? tile : expand).focus({ preventScroll: true });
+      if (tile && !tile.disabled && (expanded || tile.getClientRects?.().length))
+        tile.focus({ preventScroll: true });
+      else opener?.focus({ preventScroll: true });
     },
     update(mode, busy = false) {
       const next = mode === 'build' && !busy;
+      if (mode !== 'build' && expanded) conceal();
       const message = busy
         ? 'Finish or cancel the assembly operation to add parts.'
         : next

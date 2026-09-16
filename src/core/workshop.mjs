@@ -6,7 +6,7 @@ import {
   transformAssembly,
   connectAssembly,
 } from '../model/reusable-assemblies.mjs';
-import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
+import { resolveSurfaceEndpoint, surfaceConnectionKind } from '../model/surfaces.mjs';
 import { transformGroup, resizeMovesMount } from '../model/editing.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { CATALOG } from '../model/catalog.mjs';
@@ -270,7 +270,12 @@ export async function createWorkshop(
               ? proposal.target
               : proposal.endpoint;
           const b = a === proposal.endpoint ? proposal.target : proposal.endpoint;
-          next.connections.push({ id: command.connectionId, kind: port.kind, a, b });
+          next.connections.push({
+            id: command.connectionId,
+            kind: surfaceConnectionKind(next, a, b, port.kind),
+            a,
+            b,
+          });
           break;
         }
         case 'ungroup-assembly':
@@ -333,7 +338,11 @@ export async function createWorkshop(
           if (!sensor) reject('UNKNOWN_PART');
           if (command.connection === null) delete sensor.jointBinding;
           else {
-            if (!next.connections.some((c) => c.id === command.connection && c.kind === 'shaft'))
+            if (
+              !next.connections.some(
+                (c) => c.id === command.connection && ['shaft', 'pivot'].includes(c.kind),
+              )
+            )
               reject('INVALID_COMMAND');
             sensor.jointBinding = command.connection;
           }
@@ -513,7 +522,12 @@ export async function createWorkshop(
           if (!port) return result(false, 'INVALID_ENDPOINT', 'a');
           if (['fixed', 'shaft', 'spring'].includes(port.kind))
             next = snapConnection(next, command.a, command.b);
-          next.connections.push({ id: command.id, kind: port.kind, a: command.a, b: command.b });
+          next.connections.push({
+            id: command.id,
+            kind: surfaceConnectionKind(next, command.a, command.b, port.kind),
+            a: command.a,
+            b: command.b,
+          });
           break;
         }
         case 'disconnect':

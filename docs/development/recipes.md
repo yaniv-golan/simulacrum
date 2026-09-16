@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"f815a3b61cac914bbee26a3b59717e51a7aaf22b0bad90e4a6dab90f305c9cf0","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"0dcca24ba9d5236ebef44e7d0fe6da858781ff4f47318b4052982642226ca3b6","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). The part recipe's catalog, admission and test contract steps are unchanged; the joint-face and slide fields the contract now names are declared for future parts, none of which this candidate adds."} -->
+<!-- doc-review {"version":1,"fingerprint":"30cc633e5b825bac31492d88f09a3da9dd9b51e82d2c4da36335dd34a155345f","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"d8b844802216c567e12144abc0d85ea5a62d33b0a9eb1c21b3da099a5ae3c682","disposition":"updated","rationale":"Updated: this section now states that a part may declare one joint face and that a surface pair with exactly one revolute joint face compiles as a pivot connection, which is what the pivot pin adds."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -31,6 +31,13 @@ scales the box along local X, faces and pads follow, and a dimension edit is ref
 [resizeMovesMount](../../src/model/editing.mjs#symbol=resizeMovesMount) when any surface
 attachment of the edited part would move; the optional parameter's default must equal
 the canonical primitive ([assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)).
+A part may declare one joint face (`jointFace: { region, joint }`); a surface pair with exactly
+one revolute joint face is a `pivot` connection that [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly)
+turns into a passive revolute about the mated normal, admitted by
+[validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint) with the joint-face
+rules and by the one footprint rule in
+[mountFootprintLimits](../../src/model/surfaces.mjs#symbol=mountFootprintLimits), which exempts
+joint-face pairs. A surface-mount loop closes only when the mate already coincides.
 Trace `partPrimitives`, then read [wheel diameter tests](../../test/wheel-diameter.test.mjs)
 and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, material/mass,
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated
@@ -90,7 +97,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"e3beaae470d81cdd92888f89d0aa550a9bb4070bb840e1ef3d5a0daf5715bcf6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"db167d5620caa2a777072d8f5a7c6e487f02267efb09d3fc41b8e6daf5d58bcf","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No command surface, admission path or ownership named here changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"038f1d4dd431bba80ec25605483a0e69e70cd80de5fd5632c81a47bea4acca2a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"de3cac119a00f9bad9b1c5f3557152e06506cd6abd80605de82e1ec64b45e6bf","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/core/workshop.mjs and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -119,7 +126,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"bf87ce96f9150e635e53b09bcc4fbba566a45f745f41362ea5c0b99f840aa3ec","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0423c2b648481251dc0d5e49685ac0957025b96414cef0e396da23f79b18ebcc","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Interaction ownership and the command path are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"158f259a8b48378ade63e4547ba67f4c96523eaaefa85d80bb5499e9ff1a8233","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1663e05e6e58e90077994c12aacfbba889d2d5bc48deac61f99e8d705fba9c7a","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/assembly.mjs and its siblings; the mechanism this section explains is unaffected."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -168,7 +175,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"2a61eaf56fec27e236f0735b04c34806162b58d79cd1f901ccf8ac037e995488","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9f4df72076eb08f04525a222233561ee1ee387fbd9443e4b901be179a8201770","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Diagnostics read the same completed snapshots; no diagnostic owner or read model changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"60d5ad6cf47249857ed9dff68612ad95e4e90885d14cdd287cf9ad97c2fe00ac","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"be836002ca45c6e5a5c8ecbdd81a688242aa7caa840fd833be4d7c9ba0373bfa","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -207,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7a1e1d3d8840ab3afd3866de4d3c673a7aa69a817962853072104b22a14b24a3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c202146057b2060d1e5623c9670eece51ba23363f68fb5a5a089b5979fc780e","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). This recipe's owners, invariant contracts and test controls are unchanged; the two new spring-physics tests register under guided-spring-passivity as it describes."} -->
+<!-- doc-review {"version":1,"fingerprint":"64b9016736b86bbdbe776f27b6e2dbe2e8beb6fd62e99f96cf197e23660e894f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1b92ce4a2419de9e6cd4110cca9aa7d29bacf34fdf2d40a87e37617c48b36e37","disposition":"still accurate","rationale":"Unchanged prose. The seventeen changed dependencies are presentation, release-note, browser-check and packaging files from the top bar rework; no law, simulation module or physics door changed, so this recipe's owners, its narrow-door rule and its required checks all still hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -514,7 +521,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"99e70adb4c579d36154d70c20b0c771277876eed6ac1d839b790c2cfb8586e9f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ebab12ddb988117fb60fe5e2c88d11b1780d22229393ba6f45de024447e22ce8","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Multi-part authoring (mirror, assemblies, surface mounts) and their proposals are unchanged; the contract's joint-face sentences describe endpoints those proposals will resolve when a joint-face part exists."} -->
+<!-- doc-review {"version":1,"fingerprint":"1c77b7b5409b3b6a1392de6b32542486d914e544ca2f41ac9baaad4e3ebe8d89","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d4b53f027c94fbdcd0ee9ecdec73d45a47169665f8977d20729769819798f03f","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -611,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"628edb4788537392c905c6aeb5fe78b94ef95062bb8261df1e5af0cc4186954b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7b09eb68b6a5081d722c514441c49f6b561a7ed68d32114936ed1724b464203c","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Presentation overlays and their owners are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b331ee188cc074d21ae55fbb0b7b9b71817a438ae9799b0f3b7c910d48eed79","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a654852766b2773b1b79bc31b7280a668ece3d3bb44bc7d673819d5b9657caf9","disposition":"still accurate","rationale":"Unchanged prose. Its dependency architecture.md#trace-an-edit gained one Tools-menu name, and verify-spring-browser.mjs changed only where it drives the reworked header. The overlay recipe's owner, visibility lifecycle and verification steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -762,7 +769,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"a229ba90aca50f43d7117169000cf62677dda97ff78ec75c9bf44a979f21a18b","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"b8a9543211d2946751563c9a7e92865715435d261996621876d6dac48e98d15a","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; adaptive graphics untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"bdfff47728b51868b8381fec3fbcad56f9575e9e9241035042d7876eb850c539","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"07dabbee06a8c59af9db207125992a977652e450a16121f9c0486eac6367a260","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-spring-browser.mjs changed only in the steps that drive the reworked header controls; the adaptive graphics tiers, their quality transitions and the registered check that measures them are untouched."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

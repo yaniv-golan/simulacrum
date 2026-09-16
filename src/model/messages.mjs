@@ -8,6 +8,8 @@ const messages = {
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
   RELEASE_LATCH_CONFLICT:
     'Two latch faces cannot own one attachment. Mount one coupler by a different face.',
+  JOINT_FACE_CONFLICT:
+    'A pin cannot sit on a latch or a load-cell face; those faces need a rigid mount. Choose another face.',
   SURFACE_OUT_OF_BOUNDS:
     'The mounting base extends beyond this surface. Slide it inward or choose a larger surface.',
   SURFACE_OVERLAP: 'This placement overlaps another part. Slide or rotate it until clear.',

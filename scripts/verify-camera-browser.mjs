@@ -113,7 +113,7 @@ try {
   await select('Camera');
   await page.getByRole('button', { name: 'View through camera', exact: true }).click();
   const orbit = (await state()).camera;
-  await page.getByRole('button', { name: '▶ Run', exact: true }).click();
+  await page.locator('[data-command=run]').click();
   await page.waitForFunction(
     () => window.workshopProbe.readInteractionState().cameraPhoto.render?.tick > 12,
   );
@@ -139,7 +139,7 @@ try {
   await page.keyboard.up('w');
   await page.getByRole('button', { name: 'Return to workshop view', exact: true }).click();
   assert.deepEqual((await state()).camera.position, orbit.position);
-  await page.getByRole('button', { name: '↶ Build', exact: true }).click();
+  await page.locator('[data-command=build]').click();
   await select('Camera');
   await page.getByRole('button', { name: 'Adjust mount', exact: true }).click();
   await page.getByRole('combobox', { name: 'Mounting face', exact: true }).selectOption('bottom');
@@ -156,7 +156,7 @@ try {
   await page.getByRole('spinbutton', { name: 'Turn (degrees)', exact: true }).press('Tab');
   await page.locator('[data-command=apply-surface]').click();
   await page.getByRole('button', { name: 'View through camera', exact: true }).click();
-  await page.getByRole('button', { name: '▶ Run', exact: true }).click();
+  await page.locator('[data-command=run]').click();
   await page.waitForFunction(
     () => window.workshopProbe.readInteractionState().cameraPhoto.render?.tick > 12,
   );
@@ -293,7 +293,7 @@ try {
     true,
   );
   await page.getByRole('button', { name: 'Return to workshop view', exact: true }).click();
-  await page.getByRole('button', { name: '↶ Build', exact: true }).click();
+  await page.locator('[data-command=build]').click();
   assert.equal((await state()).cameraPhoto.gallery.photos.length, 1);
   await page.setViewportSize({ width: 1280, height: 720 });
   await placeCatalogPart(page, 'commandReceiver');
@@ -322,7 +322,7 @@ try {
   });
   await page.getByRole('button', { name: 'View through camera', exact: true }).click();
   await select('Command Receiver');
-  await page.getByRole('button', { name: '▶ Run', exact: true }).click();
+  await page.locator('[data-command=run]').click();
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.mode === 'run',
   );
@@ -365,7 +365,7 @@ try {
   await page.getByRole('button', { name: 'Close photos', exact: true }).click();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Return to workshop view', exact: true }).click();
-  await page.getByRole('button', { name: '↶ Build', exact: true }).click();
+  await page.locator('[data-command=build]').click();
   await select('Camera');
   await page.getByRole('button', { name: 'View through camera', exact: true }).click();
   await page.getByRole('button', { name: 'Delete part', exact: true }).click();

@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
-    "src/model/generated/blueprint-types.d.ts": "25b36ea7aec5e1fa650f4d0a0066b56f8ee17d6a98bcf01cdd23eeea016b3674",
+    "src/model/boundaries.d.ts": "0074c018defa839816105d7a81d84040ec7f5b265bc0350c22ddb01b7fd6b9da",
+    "src/model/generated/blueprint-types.d.ts": "0190bf745986aa64ff7b4b14df211718d99500b9e9544fe0285ba4785cfecd58",
     "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",
     "src/model/sensors.mjs": "e873492e9e9e78d20f0bc6efcf3ab0c734e6eef9b01119b307d2052eed96ab71",
     "src/simulation/sensors.mjs": "8e3c60c7a37a5467668d3c8688cd2cbc0328eca554d00b831611e966e4e051a7",
@@ -16,7 +16,7 @@
     "src/simulation/physics/law/motor.mjs": "c44a0335c4f25eb694e70c1f37c18b470564e05238ad21feb2c6b086c117c432",
     "src/simulation/power.mjs": "81fb254c21eae6bb9f28266f9a185a56a4a7e3ef9efea3cc4ef08233690da461",
     "src/simulation/receiver-arbiter.mjs": "5e0b173f7f938987cf41ce7cb63488536caa4b4fa704d868e8cc60757db000e7",
-    "src/presentation/sensor-controls.mjs": "68b67108f4e37a3dd99fad618372f6c3014ceadce7d52c87aa2e62a55bc76cf3",
+    "src/presentation/sensor-controls.mjs": "c1cf74696968f324b650a3682fb4fed2ba9677ef95ebca967129147e700054a8",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
     "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
     "src/presentation/sensor-view.mjs": "c89c45d95306a35cb4f92d262375e3b385bb23f023a0a30d830b9516833f7612",
@@ -28,20 +28,20 @@
     "src/presentation/controller-history.mjs": "c84bceabcdcf4889349bf09d67fcee3323869a920e81e92a32702046df9acf0e",
     "src/presentation/port-wording.mjs": "e74f60bf873a20b4d9bddedf8d0a6405a7d543c1335040bd291db4ade13d10ff",
     "src/application/learning-workspace.mjs": "63904d44838e9829714c69ae5e83e636969cda40885dcd5a41e7f40b72abc098",
-    "src/model/assembly.mjs": "bc19854627eb237e40baf3b3abfadde6d156cd47b463f54c888f14be61be38ad",
-    "src/model/blueprint.mjs": "3628ea60289dfa9861b827738fc6573517d377a248d3ab230b9f98ad87f9a883",
-    "src/model/catalog.mjs": "6b055c352755b20e5ca9fb71db6bd81f1e2d3b63cf20bb919548158726a283be",
+    "src/model/assembly.mjs": "6835a72019485d061b2e445c3b9b78d42be094f4daa162c4fff416212862980d",
+    "src/model/blueprint.mjs": "a4b3d54f170d07974ff5858ee8a0821451d5269625426220e7cc91ba712ce4ed",
+    "src/model/catalog.mjs": "15f3395b3ee4e8ed2b9c72f214a6647c590bc6621ac142661c0e966271c4edd1",
     "src/model/compile-body.mjs": "890a315066c545be2f61c270c85d467f1b6c3463b212e716b8ae442174a07967",
-    "src/model/connection-graph.mjs": "a50d7d1c555bf42fa0bfe57a6030ba51c1d44cea7154c58a56453d06e3c291f6",
+    "src/model/connection-graph.mjs": "80e02e31cd2e3cbc7e6557ec40a7e6d97a2b028c701aa3e3c53ebb62bd1d61e8",
     "src/model/contact-properties.mjs": "19592491209b074cb7238822a733d81ae1daeb7b0989201c19085e68c7aff8e1",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
     "src/model/gear-mesh.mjs": "f7b7d69d3dd75cfd0d3f645a7a086b348d5e3a245e4a52b7f3c5b2d7920590df",
-    "src/model/generated/blueprint-validator.mjs": "92dd884d72f722258c0a2b6cee3b06c9ac1956baf028e5d392a4212cb2cc88d2",
+    "src/model/generated/blueprint-validator.mjs": "bc75f9fd6078949189e4297b5d7fca48c40387fbfe98b598f5272436f2b2bfa8",
     "src/model/geometry.mjs": "513e6ec4d7178d097d4899677842cc36f536813207edb7d3484ab1c29294de32",
     "src/model/learning-analysis.mjs": "6f562996b5abfd7b6c07bc0fd16e8542ba8e74e219a3dcd38544c0ff6539b6ce",
     "src/model/learning-evaluators.mjs": "9b48e571a03fe6a85a3d66f86c9f2b508f990854cfcf5790de6d9cb6c4f44521",
     "src/model/rope.mjs": "1d67607e3649112959167a0559e32f302be2e8b043903f7eca78b98065dd7e84",
-    "src/model/surfaces.mjs": "886da321a58eeda9e8da961623d6d6860015258482e50c24c80bdc3d77336cea"
+    "src/model/surfaces.mjs": "97bad14869f8cdff7c43a473aa97fb88fae64b07f59fbe9dcc7a4e7e593bf262"
   }
 }

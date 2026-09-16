@@ -75,8 +75,38 @@ button.primary:hover:not(:disabled) {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  gap: 20px;
+  gap: 16px;
   background: #17232b;
+}
+/* One 36 px rhythm for every header control; 4 px inside a group, 16 px between groups. */
+.workshop-header button:not(.tools-list *),
+.workshop-header .tools-menu > summary,
+.workshop-header .github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 7px;
+}
+.workshop-header button.icon-only {
+  width: 36px;
+  padding: 0;
+}
+.workshop-header .icon {
+  flex: none;
+}
+.workshop-header .key-badge {
+  margin-left: 0;
+}
+.header-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .brand {
   display: flex;
@@ -101,28 +131,11 @@ button.primary:hover:not(:disabled) {
   font-size: 14px;
   font-weight: 800;
 }
-.brand-subtitle {
-  font-size: 12px;
-  color: #8fa5b0;
-  border-left: 1px solid #42535d;
-  padding-left: 12px;
-}
 .modebar,
 .filebar {
   display: flex;
-  gap: 7px;
-}
-.modebar {
-  padding: 5px;
-  background: #111c23;
-  border-radius: 10px;
-}
-.modebar button {
-  min-width: 79px;
-}
-.modebar button.active {
-  border-color: #f2b46a;
-  color: #f2b46a;
+  align-items: center;
+  gap: 16px;
 }
 /* One Build | Run switch: the pressed segment reads as the current mode, not as a disabled button. */
 .mode-switch {
@@ -130,9 +143,10 @@ button.primary:hover:not(:disabled) {
   border-radius: 8px;
   overflow: hidden;
 }
-.mode-switch button {
+.workshop-header .mode-switch button {
   border-radius: 0;
   margin: 0;
+  font-weight: 700;
 }
 .mode-switch button[aria-pressed='true'] {
   background: #f2b46a;
@@ -141,8 +155,9 @@ button.primary:hover:not(:disabled) {
   font-weight: 700;
   opacity: 1;
 }
-.modebar button[hidden] {
-  display: none;
+/* Pause and Step hold their slots in Build: invisible, unfocusable, never removed. */
+.modebar button.reserved {
+  visibility: hidden;
 }
 /* Occasional tools under one summary; the list opens below and closes on pick, Escape or blur. */
 .tools-menu {
@@ -151,15 +166,18 @@ button.primary:hover:not(:disabled) {
 .tools-menu > summary {
   list-style: none;
   cursor: pointer;
-  min-width: 79px;
-  padding: 8px 12px;
-  border: 1px solid #3b4d56;
-  border-radius: 8px;
-  background: #17232b;
-  color: #d5e3ea;
-  font-size: 12px;
+  border: 1px solid #3a4d58;
+  background: #24343f;
+  color: inherit;
   text-align: center;
   user-select: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.tools-menu > summary:hover {
+  background: #344953;
+  border-color: #9db1b9;
 }
 .tools-menu > summary::-webkit-details-marker {
   display: none;
@@ -191,10 +209,8 @@ button.primary:hover:not(:disabled) {
   display: none;
 }
 .filebar button {
-  font-size: 12px;
   background: transparent;
   border-color: transparent;
-  padding: 8px;
 }
 .workshop-body {
   flex: 1;
@@ -590,7 +606,7 @@ h3 {
   opacity: 0.75;
 }
 button:not(.keyed) > .key-badge {
-  display: none;
+  visibility: hidden;
 }
 .build-id {
   position: absolute;
@@ -603,9 +619,6 @@ button:not(.keyed) > .key-badge {
 @media (max-width: 1100px) {
   .workshop-body {
     grid-template-columns: 215px minmax(240px, 1fr) 245px;
-  }
-  .brand-subtitle {
-    display: none;
   }
   .workshop-header {
     padding: 0 16px;
@@ -637,9 +650,7 @@ button:not(.keyed) > .key-badge {
     order: 3;
     width: 100%;
     justify-content: center;
-  }
-  .modebar button {
-    padding: 6px 18px;
+    gap: 8px;
   }
   .workshop-body {
     grid-template-columns: 165px minmax(180px, 1fr);
@@ -699,11 +710,7 @@ button:not(.keyed) > .key-badge {
     font-size: 10px;
   }
   .filebar {
-    gap: 0;
-  }
-  .filebar button {
-    padding: 6px;
-    font-size: 11px;
+    gap: 8px;
   }
 }
 /* Selection and its details share one panel. The left rail only adds parts. */
@@ -3614,9 +3621,13 @@ button:not(.keyed) > .key-badge {
   gap: 6px;
   margin: 10px 0;
 }
-.catalog-head button {
-  font-size: 12px;
-  padding: 6px 9px;
+/* Compact, the head holds only the hidden ×; summoned, the × sits at the top right. */
+.catalog-head {
+  justify-content: flex-end;
+  min-height: 0;
+}
+.parts-browser:not(.catalog-expanded) > .catalog-head {
+  display: none;
 }
 .catalog-search input {
   width: 100%;
@@ -3808,11 +3819,9 @@ button:not(.keyed) > .key-badge {
   max-height: calc(100vh - 88px);
 }
 @media (max-width: 900px) {
-  .parts-browser:not(.catalog-expanded) > :not(.catalog-head) {
+  /* Narrow: the compact catalogue shows nothing; + Add part (P) in the header summons it. */
+  .parts-browser:not(.catalog-expanded) {
     display: none;
-  }
-  .catalog-head button {
-    min-height: 40px;
   }
   .catalog-expanded {
     inset: 76px 8px 8px;
@@ -3937,12 +3946,6 @@ button:not(.keyed) > .key-badge {
   }
   .parts-panel {
     position: relative;
-  }
-  .parts-browser:not(.catalog-expanded) .catalog-head {
-    position: absolute;
-    top: 16px;
-    right: 14px;
-    margin: 0;
   }
   .parts-panel > .palette-hint {
     display: none;
@@ -4305,11 +4308,9 @@ button.dialog-close:focus-visible {
 }
 /* Source on GitHub: an always-visible icon link beside Help, sized like a filebar button. */
 .filebar .github-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px;
+  width: 36px;
+  padding: 0;
   color: inherit;
-  border-radius: 6px;
 }
 .filebar .github-link:hover {
   background: #344953;

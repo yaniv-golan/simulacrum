@@ -20,11 +20,15 @@ import {
 } from './graphics-quality.mjs';
 import {
   FIRST_RUN_KEY,
+  controlTitle,
   firstRunDecision,
   footerModel,
+  historyChord,
   modeControlState,
   movementScope,
+  paletteKeyOpens,
 } from './workbench-content.mjs';
+import { icon } from './icons.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
@@ -41,7 +45,7 @@ import { createAssemblyMirror } from './assembly-mirror.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { createMotionReadout } from './motion-readout.mjs';
 import { createVehicleControls } from './vehicle-controls.mjs';
-import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { findPlacementOverlap, surfaceConnectionKind } from '../model/surfaces.mjs';
 import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
 import { contactProperties } from '../model/contact-properties.mjs';
@@ -296,37 +300,49 @@ export function createWorkshopView(
   const header = element('header', 'workshop-header'),
     brand = element('div', 'brand');
   brand.append(element('span', 'brand-mark', 'S'), element('div', 'brand-name', 'SIMULACRUM'));
-  const subtitle = element('span', 'brand-subtitle', 'Mechanical workshop');
-  brand.append(subtitle);
+  // The stage group: the one way to summon parts, the mode switch, the clock controls and the
+  // occasional tools. Words stay where a glyph is not universal; the chips show driving keys.
   const modebar = element('div', 'modebar');
-  const run = button('▶ Run', () => send({ type: 'run' }), 'primary'),
-    pause = button('Pause', () => send({ type: 'pause' })),
-    build = button('↶ Build', () => send({ type: 'build' }));
+  const run = button('Run', () => send({ type: 'run' })),
+    pause = button('', () => send({ type: 'pause' })),
+    build = button('Build', () => send({ type: 'build' }));
   run.dataset.command = 'run';
   pause.dataset.command = 'pause';
   build.dataset.command = 'build';
-  const stepButton = button('Step', () => send({ type: 'step' }));
+  pause.append(icon('pause'));
+  pause.classList.add('reserved');
+  const stepButton = button('', () => send({ type: 'step' }));
   stepButton.dataset.command = 'step';
-  // Visible key badges on the control the key currently triggers; names stay the plain verb.
-  const keyBadge = (control, key) => {
-    control.setAttribute('aria-label', control.textContent);
-    control.title = `${control.textContent} · ${key}`;
+  stepButton.append(icon('move-to-end'), 'Step');
+  stepButton.classList.add('reserved');
+  // Visible key badges on the control the key currently triggers; the name is the plain verb
+  // and the key lives in the chip and the tooltip. Chips keep their width while not keyed, so
+  // a mode change never moves the bar.
+  const keyBadge = (control, key, name = control.textContent, title = name) => {
+    control.setAttribute('aria-label', name);
+    control.title = controlTitle({ name: title, key });
     control.append(element('kbd', 'key-badge', key));
   };
   keyBadge(run, 'Space');
-  keyBadge(pause, 'Space');
-  keyBadge(stepButton, '.');
-  // One Build | Run switch; Pause and Step appear only once the clock can run.
+  keyBadge(pause, 'Space', 'Pause');
+  keyBadge(stepButton, '.', 'Step one tick', 'Advance one tick');
+  // One Build | Run switch; Pause and Step hold their slots and appear once the clock can run.
   const modeSwitch = element('div', 'mode-switch');
   modeSwitch.setAttribute('role', 'group');
   modeSwitch.setAttribute('aria-label', 'Mode');
   build.title = 'Return to Build restores the editable starting machine';
   modeSwitch.append(build, run);
-  modebar.append(modeSwitch, pause, stepButton);
+  const summon = element('div', 'header-group'),
+    clock = element('div', 'header-group');
+  clock.append(modeSwitch, pause, stepButton);
+  modebar.append(summon, clock);
   // Occasional tools live under one menu; each keeps its name and data-command.
   const toolsMenu = element('details', 'tools-menu'),
-    toolsSummary = element('summary', '', 'Tools ⋯'),
+    toolsSummary = element('summary', '', 'Tools'),
     toolsList = element('div', 'tools-list');
+  toolsSummary.append(icon('chevron-down'));
+  toolsSummary.title =
+    'Check machine, Measurements, Assemblies, New, Load, Choose scene, Edit scene';
   toolsSummary.setAttribute('aria-label', 'Tools');
   toolsMenu.append(toolsSummary, toolsList);
   toolsList.addEventListener('click', (event) => {
@@ -342,8 +358,13 @@ export function createWorkshopView(
   toolsMenu.addEventListener('focusout', (event) => {
     if (!toolsMenu.contains(event.relatedTarget)) toolsMenu.open = false;
   });
-  modebar.append(toolsMenu);
-  const filebar = element('div', 'filebar');
+  const toolsGroup = element('div', 'header-group');
+  toolsGroup.append(toolsMenu);
+  modebar.append(toolsGroup);
+  const filebar = element('div', 'filebar'),
+    history = element('div', 'header-group'),
+    documentGroup = element('div', 'header-group');
+  filebar.append(history, documentGroup);
   const failureButton = button('Failure record', () => onFailure?.());
   failureButton.dataset.command = 'failure-record';
   failureButton.hidden = true;
@@ -371,24 +392,52 @@ export function createWorkshopView(
   );
   newButton.dataset.command = 'new';
   const loadButton = button('Load', () => loadInput.click());
-  filebar.append(
-    button('Save', async () => {
-      try {
-        await onSave();
-      } catch {
-        setMessage('The machine could not be saved. Try again.');
-      }
-    }),
-    loadInput,
-  );
-  const undo = button('Undo', () => send({ type: 'undo' })),
-    redo = button('Redo', () => send({ type: 'redo' }));
+  const saveButton = button('', async () => {
+    try {
+      await onSave();
+    } catch {
+      setMessage('The machine could not be saved. Try again.');
+    }
+  });
+  saveButton.append(icon('download'), 'Save');
+  saveButton.title = 'Save the machine as a file';
+  documentGroup.append(saveButton, loadInput);
+  // Undo and Redo are the two universal glyphs; the tooltip names the chord, or why they are off.
+  const chords = historyChord(navigator.userAgentData?.platform ?? navigator.platform);
+  const undo = button('', () => send({ type: 'undo' }), 'icon-only'),
+    redo = button('', () => send({ type: 'redo' }), 'icon-only');
   undo.dataset.command = 'undo';
   redo.dataset.command = 'redo';
-  filebar.prepend(undo, redo);
+  undo.append(icon('undo'));
+  redo.append(icon('redo'));
+  undo.setAttribute('aria-label', 'Undo');
+  redo.setAttribute('aria-label', 'Redo');
+  const refreshHistoryTitles = () => {
+    const editing = frame?.metadata.editing ?? {},
+      running = !!frame && frame.metadata.mode !== 'build';
+    undo.title = controlTitle({
+      name: editing.undoLabel ? 'Undo scene edit' : 'Undo',
+      key: chords.undo,
+      reason: running ? 'Undo returns in Build' : editing.undoCount ? '' : 'Nothing to undo',
+    });
+    redo.title = controlTitle({
+      name: editing.redoLabel ? 'Redo scene edit' : 'Redo',
+      key: chords.redo,
+      reason: running ? 'Redo returns in Build' : editing.redoCount ? '' : 'Nothing to redo',
+    });
+  };
+  refreshHistoryTitles();
+  history.append(undo, redo);
+  // Choose scene and Edit scene are once-a-session; both live under Tools, one home for the pair.
   const chooseScene = button('Choose scene', () => sceneEditor.openBrowser()),
     editScene = button('Edit scene', () => sceneEditor.enter());
-  filebar.append(chooseScene, editScene);
+  // The one way to summon the parts (P is the key): first in the stage group and the bar's
+  // one primary control, since it is the ten-times-a-session action.
+  const addPart = button('', () => partsBrowser.open({ opener: addPart }), 'primary');
+  addPart.dataset.command = 'add-part';
+  addPart.append(icon('plus'), 'Add part');
+  keyBadge(addPart, 'P', 'Add part', 'Add a part');
+  summon.append(addPart);
   header.append(brand, modebar, filebar);
   const body = element('main', 'workshop-body'),
     left = element('aside', 'parts-panel');
@@ -456,12 +505,16 @@ export function createWorkshopView(
   );
   examples.append(examplesHeader, exampleMessage);
   root.append(examples);
-  const learnButton = button('Learn & examples', () => {
+  // The short label reads "Learn"; the accessible name and tooltip keep the full name.
+  const learnButton = button('', () => {
     exampleMessage.textContent = '';
     if (guideActive) guide.scrollIntoView({ block: 'nearest' });
     else examples.showModal();
   });
-  filebar.append(learnButton);
+  learnButton.append(icon('mortar-board'), 'Learn');
+  learnButton.setAttribute('aria-label', 'Learn & examples');
+  learnButton.title = 'Learn & examples';
+  documentGroup.append(learnButton);
   const guide = element('section', 'starter-guide');
   let pendingExample = null,
     renderedGuideActive;
@@ -910,7 +963,7 @@ export function createWorkshopView(
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
-    element('p', '', 'Open Parts and choose a part.'),
+    element('p', '', 'Open Parts (P) and choose a part.'),
     element('p', '', 'Or let the guide walk you through one:'),
     guideInvitation,
   );
@@ -1564,12 +1617,12 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Drag a part to move it; attached parts move together. Use Adjust mount in the inspector to reposition an attachment. Move W and Rotate E show handles; V returns to direct dragging.',
+      'P (or + Add part) summons the parts from anywhere on the bench; Escape puts them away. Drag a part to move it; attached parts move together. Use Adjust mount in the inspector to reposition an attachment. Move W and Rotate E show handles; V returns to direct dragging.',
     ),
     element(
       'p',
       '',
-      'Arrows move 2.5 cm on the floor; Shift+↑↓ or Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
+      'Arrows move 2.5 cm on the floor; Shift+↑↓ or Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. ⌘Z or Ctrl+Z undoes and ⇧⌘Z or Ctrl+Shift+Z redoes; the header icons say the same on hover.',
     ),
     element('h3', '', 'View'),
     element(
@@ -1581,7 +1634,7 @@ export function createWorkshopView(
     element(
       'p',
       '',
-      'Machine controls shows the keys configured on this machine. Space runs or pauses. Return to Build restores the editable starting machine.',
+      'Machine controls shows the keys configured on this machine. Space runs or pauses; . steps one tick while paused. ? opens this help. Return to Build restores the editable starting machine.',
     ),
     hint,
   );
@@ -1619,6 +1672,7 @@ export function createWorkshopView(
     return link;
   };
   about.append(
+    'Mechanical workshop · ',
     appVersion
       ? `Simulacrum ${appVersion}`
       : `Simulacrum · build ${buildId.textContent || 'unidentified'}`,
@@ -1633,28 +1687,15 @@ export function createWorkshopView(
     help.showModal();
   }
   const helpButton = button('Help', openHelp);
+  helpButton.title = 'Help · ?';
   const sourceLink = element('a', 'github-link');
   sourceLink.href = REPOSITORY_URL;
   sourceLink.target = '_blank';
   sourceLink.rel = 'noopener noreferrer';
   sourceLink.setAttribute('aria-label', 'Source on GitHub');
   sourceLink.title = 'Source on GitHub';
-  // GitHub mark from Primer Octicons, Copyright (c) GitHub Inc., MIT licence.
-  const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  mark.setAttribute('viewBox', '0 0 16 16');
-  mark.setAttribute('width', '16');
-  mark.setAttribute('height', '16');
-  mark.setAttribute('aria-hidden', 'true');
-  mark.setAttribute('focusable', 'false');
-  const markPath = document.createElementNS(mark.namespaceURI, 'path');
-  markPath.setAttribute('fill', 'currentColor');
-  markPath.setAttribute(
-    'd',
-    'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z',
-  );
-  mark.append(markPath);
-  sourceLink.append(mark);
-  filebar.append(helpButton, sourceLink);
+  sourceLink.append(icon('mark-github'));
+  documentGroup.append(helpButton, sourceLink);
   const whatsNew = createWhatsNew({
     root,
     helpButton,
@@ -1695,7 +1736,16 @@ export function createWorkshopView(
     motionReadout.setVisible(open);
   });
   measurements.setAttribute('aria-pressed', 'false');
-  toolsList.append(checkButton, measurements, savedLauncher, newButton, loadButton, failureButton);
+  toolsList.append(
+    checkButton,
+    measurements,
+    savedLauncher,
+    newButton,
+    loadButton,
+    chooseScene,
+    editScene,
+    failureButton,
+  );
   const machineControlRegion = element('div', 'machine-control-region');
   machinePanels.append(machineControlRegion);
   const vehicleControls = createVehicleControls({ send, select, container: machineControlRegion });
@@ -1880,12 +1930,7 @@ export function createWorkshopView(
     invalidate: invalidateScene,
     onBusy: (busy) => {
       filebar.inert = modebar.inert = busy;
-      undo.title = frame.metadata.editing.undoLabel
-        ? 'Undo scene edit'
-        : 'Undo previous workshop edit';
-      redo.title = frame.metadata.editing.redoLabel
-        ? 'Redo scene edit'
-        : 'Redo previous workshop edit';
+      refreshHistoryTitles();
       chooseScene.disabled = editScene.disabled = busy || frame?.metadata.mode !== 'build';
     },
     onContext: (active) => {
@@ -1894,7 +1939,8 @@ export function createWorkshopView(
       cancelInteraction();
       editing.select(active ? null : selected);
       if (active) renderer.domElement.focus();
-      else editScene.focus();
+      // Edit scene lives in the Tools menu; its summary is the visible return target.
+      else (toolsMenu.open ? editScene : toolsSummary).focus();
       if (!active) {
         setTool(activeTool);
         inspectorKey = '';
@@ -1902,6 +1948,10 @@ export function createWorkshopView(
       }
       empty.hidden = active || !!frame?.metadata.blueprint.parts.length;
     },
+  });
+  // The scene chooser closes over a closed Tools menu, so focus would fall to the body.
+  sceneEditor.dialog.addEventListener('close', () => {
+    if (!document.activeElement || document.activeElement === document.body) toolsSummary.focus();
   });
   root.append(sceneEditor.dialog);
   const raycaster = new THREE.Raycaster(),
@@ -2564,7 +2614,7 @@ export function createWorkshopView(
           element(
             'p',
             'trace-description',
-            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : 'Holds these parts together.'}`,
+            `${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind === 'power' ? 'Carries electrical power; does not hold parts together.' : edge.kind === 'signal' ? 'Carries commands; does not hold parts together.' : edge.kind === 'shaft' ? 'Joins the shaft to the axle and transmits rotation.' : edge.kind === 'pivot' ? 'Pins these parts: the link swings about the pin.' : 'Holds these parts together.'}`,
           ),
         );
       }
@@ -2688,7 +2738,8 @@ export function createWorkshopView(
       const mounting = element('section', 'mount-status');
       mounting.setAttribute('aria-label', 'Mounting');
       const edges = frame.metadata.blueprint.connections.filter(
-        (c) => c.kind === 'fixed' && (c.a.part === part.id || c.b.part === part.id),
+        (c) =>
+          ['fixed', 'pivot'].includes(c.kind) && (c.a.part === part.id || c.b.part === part.id),
       );
       const axleEdges = frame.metadata.blueprint.connections.filter(
         (c) =>
@@ -2719,6 +2770,10 @@ export function createWorkshopView(
         relationship.dataset.attachmentState = edge.id;
         relationship.dataset.peerLabel = `${peer.name} · ${endpointName(peer, other)}`;
         row.append(relationship);
+        if (edge.kind === 'pivot')
+          row.append(
+            element('p', 'parameter-help', 'Pinned: swings about the pin; does not slide.'),
+          );
         if (editable && edge.b.part === part.id && own.surface && other.surface)
           row.append(
             button('Adjust mount', () => beginSurface(part.id, { replaceConnection: edge.id })),
@@ -2727,7 +2782,11 @@ export function createWorkshopView(
           row.append(button('Detach', () => send({ type: 'disconnect', id: edge.id }), 'quiet'));
         mounting.append(row);
       }
-      if (editable && !edges.length && !surface.active()) {
+      // A part with a free mounting face can take another mount; on a part already in a
+      // mechanism that is how a linkage closes (the mate must already coincide).
+      const usedFaces = edges.map((e) => (e.a.part === part.id ? e.a : e.b).surface.region);
+      const freeFace = surfaceRegions(part).some((r) => !usedFaces.includes(r.id));
+      if (editable && freeFace && !surface.active()) {
         const snap = button('Snap to surface', () => beginSurface(part.id));
         snap.dataset.command = 'snap-surface';
         mounting.append(snap);
@@ -3672,7 +3731,7 @@ export function createWorkshopView(
       const edge = frame.metadata.blueprint.connections.find(
         (c) => c.id === label.dataset.attachmentState,
       );
-      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : edge?.kind === 'pivot' ? 'Pinned to' : 'Bolted to'} ${label.dataset.peerLabel}`;
       if (label.textContent !== text) label.textContent = text;
     }
     updateSensorInspector(frame, right);
@@ -4023,12 +4082,14 @@ export function createWorkshopView(
       b = bp.parts.find((p) => p.id === edge.b.part);
     const kind =
       edge.kind ??
-      (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
+      (edge.a.surface
+        ? surfaceConnectionKind(bp, edge.a, edge.b, 'fixed')
+        : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
     if (completed && releasedAttachment(edge))
       return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)
-      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
-    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
+      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'pivot' ? 'Will pin these parts: the link swings about the pin axis.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
+    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'pivot' ? 'Pinned: swings about the pin; does not slide.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;
@@ -4286,14 +4347,11 @@ export function createWorkshopView(
     explodeButton.disabled = frame.metadata.mode === 'run' || blueprint.parts.length < 2;
     refreshSelectionVisuals();
     editing.select(selected);
-    undo.title = frame.metadata.editing.undoLabel
-      ? 'Undo scene edit'
-      : 'Undo previous workshop edit';
-    redo.title = frame.metadata.editing.redoLabel
-      ? 'Redo scene edit'
-      : 'Redo previous workshop edit';
+    refreshHistoryTitles();
     chooseScene.disabled = editScene.disabled =
       frame.metadata.mode !== 'build' || !!sceneEditor?.pending();
+    addPart.disabled = frame.metadata.mode !== 'build' || !!sceneEditor?.active();
+    addPart.classList.toggle('keyed', !addPart.disabled);
     sceneEditor?.refresh();
     undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
     redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
@@ -4315,10 +4373,11 @@ export function createWorkshopView(
     run.disabled = frame.metadata.mode === 'run';
     run.setAttribute('aria-pressed', String(modeState.run));
     build.setAttribute('aria-pressed', String(modeState.build));
-    pause.hidden = stepButton.hidden = !modeState.stepping;
+    // Reserved slots: invisible in Build, never removed, so the bar keeps its shape.
+    pause.classList.toggle('reserved', !modeState.stepping);
+    stepButton.classList.toggle('reserved', !modeState.stepping);
     pause.disabled = frame.metadata.mode !== 'run';
     stepButton.disabled = !modeState.stepEnabled;
-    build.classList.toggle('active', modeState.build);
     for (const tool of (editToolNodes ??= tools.querySelectorAll('[data-edit-tool], .edit-hint')))
       tool.hidden = frame.metadata.mode !== 'build';
     surfaceSnapLabel.hidden = frame.metadata.mode !== 'build';
@@ -4493,12 +4552,10 @@ export function createWorkshopView(
       select(null);
       return;
     }
-    if (
+    const editableTarget =
       ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
-      document.activeElement?.isContentEditable ||
-      event.repeat
-    )
-      return;
+      !!document.activeElement?.isContentEditable;
+    if (editableTarget || event.repeat) return;
     if ((event.metaKey || event.ctrlKey) && key === 'z') {
       event.preventDefault();
       send({ type: event.shiftKey ? 'redo' : 'undo' });
@@ -4508,6 +4565,17 @@ export function createWorkshopView(
       event.preventDefault();
       if (help.open) help.close();
       else openHelp();
+      return;
+    }
+    if (
+      key === 'p' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      paletteKeyOpens({ mode: frame?.metadata.mode, editableTarget })
+    ) {
+      event.preventDefault();
+      partsBrowser.open({ opener: addPart });
       return;
     }
     if (

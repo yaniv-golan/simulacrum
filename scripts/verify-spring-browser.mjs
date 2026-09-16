@@ -112,9 +112,12 @@ try {
   environmentFixture.parts.push(createPart('beam', 'environment-beam', [0, 2, 0]));
   writeFileSync(`${out}/environment.json`, JSON.stringify(environmentFixture));
   await evidence.loadAndWait(page, `${out}/environment.json`);
-  const environment = page.getByRole('button', { name: 'Choose scene', exact: true });
+  // Choose scene lives in the Tools menu; the summary is the header control that must stay reachable.
+  const environment = page.locator('details.tools-menu > summary'),
+    chooseSceneButton = page.locator('.tools-list button', { hasText: 'Choose scene' });
   const chooseEnvironment = async (name) => {
-    await environment.click();
+    await openTools(page);
+    await page.getByRole('button', { name: 'Choose scene', exact: true }).click();
     await page
       .getByRole('button', { name: name === 'flat' ? 'Flat floor' : 'Bump test', exact: true })
       .click();
@@ -157,9 +160,9 @@ try {
   await evidence.loadAndWait(page, `${out}/environment-saved.json`);
   evidence.assert('equal', [(await read()).metadata.blueprint.environment.objects.length, 1]);
   await page.locator('[data-command=run]').click();
-  evidence.assert('equal', [await environment.isDisabled(), true]);
+  evidence.assert('equal', [await chooseSceneButton.isDisabled(), true]);
   await page.locator('[data-command=pause]').click();
-  evidence.assert('equal', [await environment.isDisabled(), true]);
+  evidence.assert('equal', [await chooseSceneButton.isDisabled(), true]);
   await page.locator('[data-command=build]').click();
   environmentFixture.environment = 'rounded-bump';
   environmentFixture.parts[0].position = [0.14, 0, -0.6];

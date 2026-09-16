@@ -17,6 +17,20 @@ const messageFor = (code) =>
               ? 'This feedback format is not supported by the server. Keep its saved copy.'
               : 'Saved on this device—waiting to send. We will retry automatically.';
 const blockedCodes = [400, 401, 403, 404, 409, 410, 413, 415];
+const storageFull = (error) =>
+  error?.code === 'FEEDBACK_STORAGE_FULL' || error?.name === 'QuotaExceededError';
+/** A full local store names the outs the player actually has right now; nothing is promised. */
+export function storageFullMessage(draft, items) {
+  const outs = [];
+  if (draft?.image || draft?.context)
+    outs.push('untick the workshop image or project details below');
+  if (items.some((item) => item.outcome === 'received'))
+    outs.push('delete a received local copy from your feedback history');
+  if (!outs.length) outs.push('shorten the report or remove its voice comment');
+  const ways = outs.length > 1 ? `${outs[0]}, or ${outs.slice(1).join(', or ')}` : outs[0];
+  const sentence = `${ways[0].toUpperCase()}${ways.slice(1)}, then send again.`;
+  return `This browser's feedback storage is full, so the report could not be prepared. ${sentence}`;
+}
 const token = (draft) => ({ id: draft.id, revision: draft.revision });
 // Default captures are attached on every fresh draft; only text or voice makes it the player's
 // own report, so attachments alone never count as content to keep, discard or finish.
@@ -646,8 +660,10 @@ export async function mountFeedbackClient({
     busy = true;
     error = '';
     render();
+    let textSaved = false;
     try {
       await persistText();
+      textSaved = true;
       await enqueue(async () => {
         await store.freeze(token(draft));
         draft = null;
@@ -665,7 +681,12 @@ export async function mountFeedbackClient({
       q('#feedback-title').focus();
       void pump();
     } catch (e) {
-      error = e.message;
+      // The draft survives a failed freeze, so a full store must not also read as "not saved";
+      // a full store that refused the last text save is still unsaved and keeps saying so.
+      if (storageFull(e)) {
+        if (textSaved) saveError = '';
+        error = storageFullMessage(draft, items);
+      } else error = e.message;
     } finally {
       busy = false;
       render();

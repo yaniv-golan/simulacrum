@@ -32,6 +32,7 @@ export function surfaceRegions(partOrType) {
     ['back', [0, 0, -z], [0, s, 0, s], [y, x]],
   ];
   const allowed = faces.filter((f) => definition.mountingFaces?.includes(f[0]));
+  const jointFace = definition.jointFace;
   return allowed.map(([id, position, rotation, halfSize]) => ({
     id,
     label:
@@ -41,11 +42,14 @@ export function surfaceRegions(partOrType) {
           : 'B — measured'
         : definition.releaseFace === id
           ? 'Latch · Right'
-          : id[0].toUpperCase() + id.slice(1),
+          : jointFace?.region === id
+            ? `Pivot · ${id[0].toUpperCase() + id.slice(1)}`
+            : id[0].toUpperCase() + id.slice(1),
     position,
     rotation,
     halfSize,
     padHalfSize: definition.mountingPads?.[id] ?? halfSize,
+    ...(jointFace?.region === id ? { joint: jointFace.joint } : {}),
   }));
 }
 export function resolveSurfaceEndpoint(part, binding) {
@@ -56,7 +60,9 @@ export function resolveSurfaceEndpoint(part, binding) {
   if (
     ![u, v, twist].every(Number.isFinite) ||
     Math.abs(u) > region.halfSize[0] + 1e-9 ||
-    Math.abs(v) > region.halfSize[1] + 1e-9
+    Math.abs(v) > region.halfSize[1] + 1e-9 ||
+    // A joint face mates at its centre: the axis passes through the pin.
+    (region.joint && (u !== 0 || v !== 0))
   )
     reject('SURFACE_OUT_OF_BOUNDS');
   const offset = rotateVector(region.rotation, [0, u, v]);
@@ -65,8 +71,29 @@ export function resolveSurfaceEndpoint(part, binding) {
     kind: 'fixed',
     position: region.position.map((x, i) => x + offset[i]),
     rotation: multiplyQuaternion(region.rotation, [Math.sin(twist / 2), 0, 0, Math.cos(twist / 2)]),
-    multiplicity: CATALOG[part.type].releaseFace === region.id ? 'one' : 'many',
+    multiplicity: CATALOG[part.type].releaseFace === region.id || region.joint ? 'one' : 'many',
+    ...(region.joint ? { joint: region.joint } : {}),
   };
+}
+/** Room a centred pad has to slide on its receiver at this twist. A joint face mates at a
+ * point and an axis: as the receiver it takes only its centre (no room), as the pad it has no
+ * footprint to keep inside the face (null: no rule applies). */
+export function mountFootprintLimits(target, targetRegion, source, sourceRegion, twist) {
+  const receiver = surfaceRegions(target).find((r) => r.id === targetRegion),
+    pad = surfaceRegions(source).find((r) => r.id === sourceRegion);
+  if (!receiver || !pad) reject('UNKNOWN_SURFACE');
+  if (receiver.joint) return { u: 0, v: 0 };
+  if (pad.joint) return null;
+  const [width, height] = projectedPadHalfSize(pad.padHalfSize, twist);
+  // Negative room means the pad overhangs at every offset, so any mount there refuses.
+  return { u: receiver.halfSize[0] - width, v: receiver.halfSize[1] - height };
+}
+/** The one footprint rule every admission path shares: a fixed pad must lie inside its
+ * receiver; a joint-face pair needs only its centred anchor, which resolution checks. */
+export function assertMountFootprint(target, targetRegion, source, sourceRegion, u, v, twist) {
+  const limits = mountFootprintLimits(target, targetRegion, source, sourceRegion, twist);
+  if (limits && (Math.abs(u) > limits.u + 1e-9 || Math.abs(v) > limits.v + 1e-9))
+    reject('SURFACE_OUT_OF_BOUNDS');
 }
 /** Shared mounting footprint geometry. Callers own admission versus display tolerances. */
 export function projectedPadHalfSize([u, v], twist) {
@@ -80,15 +107,8 @@ export function validateSurfacePair(target, a, source, b) {
   resolveSurfaceEndpoint(source, b);
   if (b.surface.u !== 0 || b.surface.v !== 0 || b.surface.twist !== 0)
     reject('SURFACE_OUT_OF_BOUNDS');
-  const receiver = surfaceRegions(target).find((r) => r.id === a.surface.region),
-    pad = surfaceRegions(source).find((r) => r.id === b.surface.region),
-    { u, v, twist } = a.surface;
-  const [width, height] = projectedPadHalfSize(pad.padHalfSize, twist);
-  if (
-    Math.abs(u) + width > receiver.halfSize[0] + 1e-9 ||
-    Math.abs(v) + height > receiver.halfSize[1] + 1e-9
-  )
-    reject('SURFACE_OUT_OF_BOUNDS');
+  const { u, v, twist } = a.surface;
+  assertMountFootprint(target, a.surface.region, source, b.surface.region, u, v, twist);
 }
 
 // Exact point distance to the canonical solid, in its authored local frame.
@@ -309,4 +329,13 @@ export function validatePlacementGeometry(blueprint) {
       reasonCode: 'SURFACE_OVERLAP',
       path: `/parts/${blueprint.parts.indexOf(overlap[0])}/overlaps/${blueprint.parts.indexOf(overlap[1])}`,
     });
+}
+/** A surface pair with exactly one revolute joint face is a pivot; otherwise the port's kind. */
+export function surfaceConnectionKind(blueprint, a, b, portKind) {
+  if (!a?.surface || !b?.surface) return portKind;
+  const joint = (endpoint) => {
+    const part = blueprint.parts.find((p) => p.id === endpoint.part);
+    return part ? resolveSurfaceEndpoint(part, endpoint).joint : undefined;
+  };
+  return joint(a) === 'revolute' || joint(b) === 'revolute' ? 'pivot' : portKind;
 }

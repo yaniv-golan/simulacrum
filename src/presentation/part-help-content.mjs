@@ -292,9 +292,19 @@ export const PART_HELP = {
     ],
     ['drive', 'free', 'steer'],
   ),
+  pivotPin: help(
+    'A swivel between two links',
+    'A 10 mm washer whose top face is a pivot: mount its foot on one link and the other link on its head, and they swing about the pin axis. Set the start angle when you place the second link.',
+    'Mount the foot on a face, then mount the swinging link on the pin head.',
+    [
+      'Mount the pin foot on the first link at the point you want the swivel.',
+      'Mount the second link on the pin head; choose its start angle.',
+      'To close a loop, place the last link so the pin head already meets it; a mount that does not fit is refused.',
+    ],
+  ),
   passiveBearing: help(
     'Supports a freely spinning wheel',
-    'Allows rotation relative to its fixed housing. Use it for an unpowered wheel or axle support.',
+    'Allows rotation relative to its fixed housing. Use it for an unpowered wheel or axle support. For a flat linkage between two beams, use the Pivot pin.',
     'Mount the housing and connect its Axle. It supplies neither electrical power nor propulsion.',
     ['Mount the bearing housing to a support.', 'Connect bearing Axle to wheel Wheel axle.'],
     ['free'],

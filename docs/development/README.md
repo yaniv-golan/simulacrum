@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"6fc1379adbb7e9fa3592d32ced6b54237fb5bec15370ad073f8ef42986775479","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"3bfae347346c1fe8b49113a2c20d55a3c00f1ded05dcb1dfdb807b81b5f0308b","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). No milestone, bar or obligation changed; the amendments state contract rules for M10/M11 parts allocated already."} -->
+<!-- doc-review {"version":1,"fingerprint":"484ac241d4980be69e4ff9260ca11bc02eb717716c2960fa05abdf85fce31fbc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"53c8c3b65f461a27f0ab00f0dcff88d0052d549a9da22ba9369da56164875226","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved only by this candidate's reviewed scope metadata: nine browserReviewMetadataScopes digests, eight consumerSourceHash and one sourceSha256 for verify-workbench-content.mjs. No milestone, bar, rule or check allocation changed, so the M3b statement and the rule that the manifest owns allocation both still hold."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"a9cba3a0b10b393520a2ac070ab23128602ed3f08423b26899dbcb4ee4be0fe9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"62c215c33c098986fdf320f7752830c64783395e3183e68f795b6bf155f1bbd5","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). candidate-after.mjs gained the @refusal expansion only; the tiers, commands, exit codes and evidence rules here are unchanged, and the retry norm the section points to is documented in isolated-candidate-completion."} -->
+<!-- doc-review {"version":1,"fingerprint":"11f9457f088e086e5ae773cac96678f3e5851ad69602ce1a182620c944537900","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"deb9e1cf2d3d8f284c2cc46c40008eee7749040eb49d5e54add3d10f4fbe3f69","disposition":"still accurate","rationale":"Unchanged prose. package.json moved only in its version field, 0.3.0 to 0.4.0 for the R4 release. The tiers, scope arguments and candidate commands this section describes (local, merge and final; --base, --incoming, --destination and --stack) are untouched by a version bump."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"ffd69114262317a23157a68fc9ec7dff877016ae65c653ec90e87141c68b9b7f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ea6d00b366487bdf1cab62fc7a4692fc7d427a2bb1bc18eb76590218b37ab25f","disposition":"still accurate","rationale":"reference.md regenerated for the new verify-host module and the extended release guarantee (on the merged base (land-script 9c4e08d0: hosted-check-waits' wait scale/live slice/row budget, merge --stack, the land script and the assessment split) the release-path tooling change stands: FINAL_PHASES shared between verify-final and the package tests; the bounded launch wait budget recorded as budgetMs and stripped from leaves beside the hosted wait variables; the printed refusal with offenders; prepare-release's 300 s release wait, named refusal, releaseEnvelope and dryCheckRelease (release:prepare --dry-check); verify-host.mjs (npm run verify:host) on the admission's own code with describeOwner now carrying the stacked-on branch; the manifest guarantee and two controls of release-verification-single-pass); re-recorded after merging the frozen tip, whose own changes (browser wait scaling, --stack, land script, assessment split) carry their own reviews and do not alter this section's description."} -->
+<!-- doc-review {"version":1,"fingerprint":"ca50e57353bc90f6aff9309da00bae68e11d67cc1904e95d3a48da1db8eb7469","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"92c988d3ac7d47029eb8c02e663fc478879ab5ea3b52875c30b0bd4164d08265","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching docs/development/reference.md and its siblings; the mechanism this section explains is unaffected."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"a3c562f87740fd70b2ff73d250e707c04781b14fb450993e86cafbd62641ac39","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"419ba03fe48dca7ea2041bec44ac69acbd8177f154aa1cf545af3c3882da7779","disposition":"still accurate","rationale":"The manifest changes are the guided-spring-passivity control registration and nine consumerSourceHash refreshes accepted in the scope review (world.mjs is inside the served closure); browser selection rules, scope declarations and execution policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e2ceda1935ced47cec5ace1759e05ab6eeb12cac8c8e69b1b6d13275a358ac1c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6eea875ee6d407354ee90a2d322d7551a64436f588b23518300fcba84532c208","disposition":"still accurate","rationale":"Unchanged prose. package.json changed only in its version field and manifest.json only in nine scope digests. This candidate registers, removes and re-scopes no browser check, so selection, phase scheduling and platform rules are unchanged; the pivot pin's verify-pivot-pin-browser registration arrived already reviewed on main."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -653,7 +653,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"dff6674e1f332fc6427ee8eaafff367b8c717d8f0a29464b6e098b2b48a46b28","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fbd85e9646a94f45c4c41dbf8add6e79ffdbc5a58689f6711978917ee88eba19","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). windowState() is a read-only classification (free/owned/abandoned) of the same owner file; SLEEP_GAP_MS is the existing sleep gap exported. Lease, wait notice, abandonment and recovery semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7c35c29369f6651d2e0371356d09a24d8ee10ff2fb2ce8cdf9daa8ca4ecbd9a3","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"8523031f194be14a359cefe6b6a6aef3fdb357dc02b9a283c278edc19503102c","disposition":"still accurate","rationale":"Unchanged prose. Only package.json's version field moved. The lease, wait notice, abandonment and recovery semantics, and the --when-quiet pre-capture poll this section documents, are all independent of the package version."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"add2d7e23e4c64cc69a538494b7172deb7a3a6432caa79657b53200e839551e4","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e9b00425b068bc9f941731d59d3b555c3e362987b33a794577b8398d946c68ea","disposition":"still accurate","rationale":"The manifest edit registers two spring-physics controls and refreshes reviewed scope hashes; candidate isolation, evidence binding and stacking rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f7044a59fee4fd464bf2ee86eaf6e7a58c30094aae1688dceaee57b5b2fd858","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af87729088ae14d0435f22bb5a49056708d72fefc3d9604525fd64817ec7b1bc","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged; package.json moved by the version bump and manifest.json by nine reviewed scope digests, and neither is completion evidence nor a rule about it."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
