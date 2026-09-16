@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"7d6d90c82e4ce05db4418d04d0e1b593c6b432e02db8fe8b69768e8e7bbeed00","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"b2304db96f057e2e3ff235b16deab2bd7dc76cf608c88105f492b017fadac405","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md gained the `--satisfied-by` table row and the rule paragraph that a release's final on byte-identical code is merge evidence when cited and that nothing targets main while it is pending; the guide's entry points, layer pointers and working loop are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f7900b610245b25b21e1e571b2480d2f45d413b4770ee9c85b536980f157dfa","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"8526d9c11de53cdd67e7d8dce0b623df3620df7fe48397fc723022b1253acf32","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). AGENTS.md changed only by one verification-table row naming the flag; the entry points, guides and recipes this section lists are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"16b4007f7d8023bed89f5f2abc56419b1182ec410016c6a2b646744fe77fefde","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"282b9b808ddb287e26291dbb8077d5332435cdf93e1eeba1d2e46ba70184a36f","disposition":"still accurate","rationale":"Release final as merge evidence stacked on the README rewrite (tooling-final-as-merge-evidence on main cd8109aa, destination readme-for-people): the manifest gained the candidate-citation-integrity invariant (tooling, no milestone or bar allocation changed) and AGENTS.md the citation row and rule; the milestone status this section states — the current construction loop and gate — is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef5385a979be83224b78df31adcf08860de8da4e76788cb1f3f266e02a73abbc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"0ec1b1ed235e67f60dd9c8c833cf78e72e3a55e71904a9c56d63d38373d3b0a3","disposition":"still accurate","rationale":"Only consumerSourceHash rows and one check-script sourceSha256 changed in scripts/manifest.json for the feedback storage candidate; no milestone, bar, rule or check allocation changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"3456b163f9e6e3b254b08cd1044c9a7cb449aa66ceedc10f194b595de0cf27e0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a090ccca1d431b83cd30eb0e6a72532cea8dac88bb1a603c7927891982dad8f","disposition":"updated","rationale":"Added the launch-boundary paragraph: every harness context is marked a returning device so the workshop's one-time first-run choice never opens inside an unrelated journey, and a first-visit check passes firstRun: true; tiers, commands and evidence requirements are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"60304c455d1e7f4adb5da9cc5e319ab85255a71bf14e729ba9d7529f84d50ef7","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a6813cd1d2184adf1883a3b383baa8abd9a02157e885d0657522b1c5a2c54e0","disposition":"still accurate","rationale":"playtesting.md#remote-setup gained one clause about a submission being stored once behind its upload hash; the tiers, scope arguments and candidate commands this section describes are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -146,17 +146,44 @@ source/build identity with the candidate being claimed. Registration of a check 
 an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Stacked integrations: when another candidate is already verifying against the same
-destination, merge that integration branch instead of `main` and pass its branch name as
-`--destination` with the same `--base`; the later candidate then lands unchanged once the
-earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
+destination, merge that integration branch instead of `main` and run `npm run
+verify:candidate -- merge --stack <that branch name>`; the later candidate then lands
+unchanged once the earlier one fast-forwards. `--stack` derives what the long form
+(`--base <commit> --incoming <commit> --destination <ref>`) makes you type: the destination
+is the named branch; the incoming commit is the branch's pre-integration tip (the last commit
+of its own first-parent history that does not contain the ref — a branch built linearly on the
+ref integrates whole, with the ref as base); the base is their unique merge-base. It refuses,
+naming the commits, when HEAD does not contain the ref (merge it first, or re-merge its moved
+head), when HEAD is the ref, when the merge-base is not unique, and for `--stack main` (that is
+a plain merge candidate). The derived values are recorded as `priority.chain`, the window
+intent says `stacked on <ref>` to contenders, and the landing order (the ref, then this
+candidate) is printed at launch and again with any passing result. A branch-pair merge candidate records the supplied name as
 `priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
 destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
 name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
-confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+`npm run land` checks `priority.destination` against `main` instead) or NOT_EVALUATED (a
 bare commit was supplied). If the earlier integration is revised after being stacked on,
 re-merge its head and re-verify. A candidate that waited on another window owner retains
 that owner's declared intent (tier, branch, destination, origin worktree) under
 `windowReports[].value.contenders[].intent`.
+
+Landing: `npm run land -- <tip> [--report <attempt report.json>] [--dry-run]`
+([implementation](../../scripts/land.mjs#implementation)) fast-forwards `main` to the tip and
+refuses otherwise. It finds the tip's passing merge attempt reports under the candidate
+directories (or takes `--report`), tries them newest first, and lands on the first that
+satisfies every rule: the checkout on `main` with no modified tracked files; a report whose
+status is `passed`, `passed after failure` or `passed with reused receipts` and whose tier
+is `merge` (never `local`, `final`, a hosted profile or a measurement run); the report read
+from its own candidate's `attempts/` at the path it records and attested by that
+candidate's resume key (the same same-UID trust class as receipts — an edited or copied
+report is refused); `candidate.head` equal to the tip; the commit it integrated against
+(`priority.destination`, or `priority.base` for a routine `merge --base`) equal to the
+current `main`; `destinationStillMatches` not false; the tip's tree equal to the recorded
+`candidate.index`, every tip file's bytes and mode equal to the verified `candidate.files`
+entry, and no untracked bytes among them; and a fast-forward. It prints the attestation,
+attempt and report it verified, then the new `main`. Candidate directories live under the
+system temporary directory; once one is gone, `--report` cannot resurrect it and the tip
+needs new evidence.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
@@ -182,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"207e6d00676fc6a7079e6c6107f2ba268043c5fbb9f0638e1bf1557911d0ef35","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"e1ed6a0209454a049ea03af8118e79b53e48ef085bde38b202949612d1ca2e07","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): reference.md was regenerated for the new candidate-citation-integrity invariant row; the documentation workflow (prepare, review, check, sidecars, batch decisions) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cf0fcfc78895ebc935592863ab65fb623c41a20294ad994628b47ac2bb749b29","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"75c881d8c392fb5abd0f0b7b01ec0d90aeb294572515742a36a3c5d423d7a0cf","disposition":"still accurate","rationale":"reference.md was regenerated for the palette's source changes (parts-browser, workshop-view, workbench-content); the documentation workflow, commands and gates described here are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -259,7 +286,10 @@ only to explanation review, never build identities or verification receipts.
 Implicit external-package coverage retains package configuration and lockfile bytes,
 but excludes npm scripts when no install lifecycle hook is present: a command-only
 change does not change an imported library. Lifecycle hooks retain all scripts because
-they can invoke other package commands and alter installed dependencies.
+they can invoke other package commands and alter installed dependencies. The package's
+own `version` (and the lockfile's copy of it) is excluded too: a release bump names the
+build and changes no imported library, so it stales no explanation; a resolved or
+declared dependency version still does.
 Explicit package/command references and literal file reads still bind those scripts.
 Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
@@ -314,7 +344,7 @@ comparison, not evidence that two branches were integrated. Neither command inst
 changes. For already frozen CI copies, `npm run verify:merge -- --base <commit>` is
 the direct equivalent. Selected and omitted browser checks include reasons.
 
-Full browser coverage remains scheduled and required for releases and qualification. The scheduled hosted run executes under a registered host profile: deadlines are the profile's registered values (never shorter than the local ones), performance-tier checks and every timing-sensitive check (there is no quiet-host admission without a tier context) are reported `NOT_EVALUATED` with the platform reason rather than executed and the coverage comparison lists them apart, a profile in measurement mode labels every report `measurement` and is never evidence, and completion tiers refuse to run under any profile. Measurement mode is bounded by hand: after each hosted measurement run, record its workflow run id in `hostProfiles.<id>.measurementRuns` (the validator refuses a fourth while `measurement` is true); after three, register `hostedTimeoutMs` on every evaluated browser check from the observed p95 durations, set `measurement: false` and remove the provisional `browserTimeoutMs` rule, or the manifest is rejected. In-script page deadlines are not scaled by the profile, so a check failing there with exit 1 on the runner is expected and is not registrable away. A dispatched `release-package` job runs unprofiled and stays red on the hosted runner until a hosted release policy exists.
+Full browser coverage remains scheduled and required for releases and qualification. The scheduled hosted run executes under a registered host profile: deadlines are the profile's registered values (never shorter than the local ones), performance-tier checks and every timing-sensitive check (there is no quiet-host admission without a tier context) are reported `NOT_EVALUATED` with the platform reason rather than executed and the coverage comparison lists them apart, a profile in measurement mode labels every report `measurement` and is never evidence, and completion tiers refuse to run under any profile. Measurement mode is bounded by hand: after each hosted measurement run, record its workflow run id in `hostProfiles.<id>.measurementRuns` (the validator refuses a fourth while `measurement` is true); after three, register `hostedTimeoutMs` on every evaluated browser check from the observed p95 durations, set `measurement: false` and remove the provisional `browserTimeoutMs` rule, or the manifest is rejected. The profile also registers the platform's patience: `waitScale` multiplies every page deadline a check writes (`page.setDefaultTimeout`, the shared session's startup budget for `goto`/`reload` — the app's probe, never the interaction deadline — and literals routed through `evidence.waitBudget(ms)`; an unrouted literal is not scaled) once, in the shared browser session, never past 60 % of the row's process budget so a scaled wait cannot outlive the watchdog and lose its evidence, and `liveSliceMs` is the slice a live wait allows a renderer to go without a frame before calling it starved; both reach a check as numbers from the suite only (`SIMULACRUM_BROWSER_WAIT_SCALE`, `SIMULACRUM_BROWSER_LIVE_SLICE_MS`; a shell export is refused, and completion tiers refuse them like the profile). When a locator action expires, the failure capture samples the target's box over the next animation frames (`targetGeometry`, verdict `starved`, `moved` or `stable`) so a starved main thread and a control moved by a re-laying-out readout are told apart instead of both reading as a timeout. A dispatched `release-package` job runs unprofiled and stays red on the hosted runner until a hosted release policy exists.
 CI preserves separate unit and browser jobs: pull requests use the pinned event tips
 and actual merge checkout, while missing push history selects full coverage. Scheduled
 full runs compare last-commit merge selection only when matching complete evidence is
@@ -323,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"caa084b0cbfa8ad28bdf8ca8cd9e05f1effa499ebb4f25f12a4781bf460c1f44","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c2d843a6245b4c67a47ecf473d62ded59850e5a71d434d9453bc27a7fc4c0dad","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): verification-window.mjs gained the read-only `currentWindowOwner` (a pending citation records the owner it was captured beside) and the manifest a citation invariant plus regenerated consumer lists; browser scheduling, selection, admissions and the window protocol described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"06118825ecf4c9b7a1c5dcc07d945faa256441f256c9d83c0f45cb71d99d3fbe","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"de982b34067caf2f4d37b4481096588d483aded9251d14134c370321b493351a","disposition":"still accurate","rationale":"The manifest change is a consumerSourceHash refresh plus verify-feedback-recovery's own sourceSha256; no browser check was added or removed and selection, scheduling and platform rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -431,7 +461,9 @@ resting desktop's own records; `SIMULACRUM_TIMING_PRESSURE=observe` records with
 refusing) — then the
 remaining timing rows are recorded `not evaluated`
 and the run fails; nothing is retried. Every tier also runs that admission once at launch,
-inside the window and before the CI phase (60 s bound), because the structural gates hold 5 s
+inside the window and before the CI phase (60 s by default; a release final waits up to five
+minutes, `SIMULACRUM_LAUNCH_ADMISSION_WAIT_MS` within 60–600 s, the budget recorded on the row and a
+refusal printed with its busiest foreign processes), because the structural gates hold 5 s
 deadlines that an updater burst at t = 0 fails before anything was measured; a refused launch
 is a failed attempt whose only row is `launch-admission`, not evaluated. The launch applies the
 foreign-process bound only to a tier whose resolved selection reaches a timing row (`reach:
@@ -475,9 +507,15 @@ A failed row additionally carries `processSnapshot` from the
 same bounded process enumeration that terminates the owned tree also retains load
 averages at that moment, the top eight processes by CPU and by RSS, Gatekeeper and
 Spotlight daemons regardless of rank, the check's own tree (executable names only,
-never arguments or environment), and on macOS whether the stalled executable still
+never arguments or environment; on Linux each row carries its kernel wait channel, which
+macOS does not export), paging counters at that moment (`memory`, units named per
+platform) beside the row's `memoryAtStart` for rows with at least a ten-second deadline,
+on macOS one bounded stack sample of the first owned descendant blocked in
+uninterruptible wait (`sample`, one second, killed after three, output to the runner's
+pipe: its top-of-stack section names each thread's leaf frame and so the blocking
+syscall), and on macOS whether the stalled executable still
 carried quarantine or provenance attributes; a non-zero exit retains a post-hoc snapshot
-without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost and `hintMs` the attribute lookup. macOS
+without a tree. `enumerationMs` is the `ps` cost, `snapshotMs` the ranking cost, `hintMs` the attribute lookup, `memoryMs` the counter read and `sampleMs` the stack sample. macOS
 `%cpu` is a recent estimate and Linux `%cpu` a lifetime average, so `time` and `etime`
 accompany it. The snapshot is context for a person, never attribution, and a failure to
 take it is recorded without changing the outcome. Failed browser rows also carry
@@ -599,7 +637,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"b45ad40e045f48efe99b359e3bba6c2768ff737c833f8743fcfa2a7de6a04ad3","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"b6e3d2561f60ed9722e6c42f328fdc87d7f128646648d8916e5a4eaf020c622d","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): `currentWindowOwner` reads owner.json and liveness without entering the window; ownership, wait notices, intent publication and stacking are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"dff6674e1f332fc6427ee8eaafff367b8c717d8f0a29464b6e098b2b48a46b28","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fbd85e9646a94f45c4c41dbf8add6e79ffdbc5a58689f6711978917ee88eba19","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). windowState() is a read-only classification (free/owned/abandoned) of the same owner file; SLEEP_GAP_MS is the existing sleep gap exported. Lease, wait notice, abandonment and recovery semantics are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -607,7 +645,11 @@ on this host. Nested commands inherit the owning window. Completion/browser admi
 canonical report non-green before runtime checks or lock waiting; failed admission
 replaces an older pass even when no child starts. Local, merge, final and native-qualification completion
 CLI runs wait up to thirty minutes. Focused unit/browser probes, builds and standalone
-CI wait up to five minutes; they retain the same serialization. The CLI prints the
+CI wait up to five minutes; they retain the same serialization. `npm run verify:host` is the
+read-only readiness probe: one pressure sample evaluated through the launch admission's own
+code for both reaches, plus the window owner, exit 0 only when a launch of the requested reach
+(`--reach`, default `timing`) would be admitted now and the window is free; it never holds the
+window and is advisory, the tier's own admission decides. The CLI prints the
 owner PID, its declared intent (script or completion tier, integration destination and
 origin worktree when a candidate declared them) and elapsed/maximum wait on contention
 and every thirty seconds thereafter. A candidate that waited on an owner retains that
@@ -648,7 +690,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"0644933249158914628033b19879df6334d3fc4f8dbe0c15fae80bf614335bcd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2d09e7093b9b04d7472fac89fdc02ac3d5c97bc357e37aeea9784b589799d616","disposition":"updated","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): a new paragraph documents the citation — `--satisfied-by <release directory>` reading the release's record before capture, the compared fields (head, path bytes and mode, installed digest; not the index or process identity), passed only with a terminal green final and a bound package, `pending final` (exit 3, pendingOn final|package) only with `--pending`, `cite-final <attempt report>` recording `landed`, and that a citation carries no receipts and is neither resumed nor retried. Verified against candidate-cite.mjs (compareIdentity, citeRelease, resolveCitation, packageRefusal), verify-candidate.mjs (the pre-capture gate, cite path and cite-final), package-verification.mjs and verification-outcome.mjs."} -->
+<!-- doc-review {"version":1,"fingerprint":"4cc3f08e9691d6c120baf26262f540eb25202a0a16d360927894c8e23c850377","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"86a0654b578fa293a32d9d2824cfdf2f8ffe58ca7c84bb0c93379d3b11b2b9f7","disposition":"still accurate","rationale":"The manifest refresh carries no new check or evidence rule; candidate capture, tiers, receipts and reuse behave exactly as described here."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -763,6 +805,27 @@ carries the causes, the chain (recorded before capture, three attempts at most),
 origins with their attempt and depth, the covered and skipped checks, the required and
 re-executed leaves, the controls they pulled in and the always-fresh leaves. This is the
 diagnosed retry the norm above requires, not a retry-to-green.
+
+Two conveniences keep that honest on a busy desk. `--cause browser=@refusal` cites the admission
+refusal the parent's browser phase recorded — the suite attaches the refusal (its reason, the
+refused rows and the suite report) to the phase failure, the phase row keeps it inside the
+attested attempt report, and the retry expands the shorthand into that recorded reason (recorded
+under `after.causeSources`); a parent that recorded no refusal, a refusal naming other rows than
+the phase left not evaluated, or any id other than the phase id `browser` refuses the shorthand,
+because a cause is a diagnosis, never a template. `--when-quiet <maxWaitMs>` (any candidate
+tier, also with `--after` and `resume`; never with a citation) polls outside the verification
+window — the same launch admission the tier will apply, at the reach the tier's own selection
+policy gives the origin (a local delta's affected checks; a merge delta through the merge policy,
+which widens a risky path and omits a timing row its measured scope does not reach; final always
+measures), plus a free window — every 5 s until one sample would admit or the budget expires,
+taking no lease and capturing nothing meanwhile; the wait is recorded under `report.whenQuiet`
+(count, first and last sample, transitions between sample classes — a refusal's live numbers are
+not a class, and at most 64 are kept with the rest counted — window owners seen, host sleep named
+and not counted), the run then proceeds
+exactly as without the flag (the launch admission still runs and may still refuse), and an
+expired wait publishes the failed report, unattested, before any capture. An abandoned window (a
+dead owner) fails the poll at once: recovery is explicit. The flag is scheduling only; it never
+enters the descriptor, the priority record or receipt identity.
 
 The same `--after <attempt-report.json>` with a **passed** parent (status `passed` or
 `passed with reused receipts`; no `--cause`) is receipt reuse across candidates: an author's

@@ -20,7 +20,7 @@ const evidence = createFixtureEvidence({
 // Lower the real local-storage budget after seeding one accepted submission.
 // This exercises exhaustion with real IndexedDB without creating 32 MiB fixtures.
 const storeSource = readFileSync(files[1], 'utf8');
-if (!storeSource.includes('storageBytes = 32 * 1024 ** 2'))
+if (!storeSource.includes('if (bytes > storageBytes)'))
   throw Error('Storage budget fixture requires review');
 const server = createServer((req, res) => {
   if (req.url === '/api/playtest/feedback/v1/submission') {
@@ -32,9 +32,10 @@ const server = createServer((req, res) => {
   res.setHeader('Content-Type', file ? 'text/javascript' : 'text/html');
   res.end(
     file === files[1]
-      ? storeSource.replace(
-          'storageBytes = 32 * 1024 ** 2',
-          'storageBytes = globalThis.feedbackBudget ?? 32 * 1024 ** 2',
+      ? // The budget is read at every bound so a scenario can move it mid-journey.
+        storeSource.replace(
+          'if (bytes > storageBytes)',
+          'if (bytes > (globalThis.feedbackBudget ?? storageBytes))',
         )
       : file
         ? readFileSync(file)
@@ -60,7 +61,11 @@ try {
       async ({ freezeOnly, unsavedOnly }) => {
         const { openFeedbackStore } = await import('../src/application/feedback-store.mjs');
         const store = await openFeedbackStore();
-        const draft = await store.createDraft({ text: 'Received note retained on this browser' });
+        // Long enough that deleting this received copy frees room for the next draft and its
+        // default context; the capacity scenario proves that recovery.
+        const draft = await store.createDraft({
+          text: 'Received note retained on this browser'.padEnd(600, '.'),
+        });
         const item = await store.freeze(draft);
         await store.acknowledge(item.id, {
           protocolVersion: 1,
@@ -69,7 +74,8 @@ try {
           receivedAt: new Date().toISOString(),
           status: 'received',
         });
-        const items = await store.items();
+        // Measure the persisted shape: the envelope items() carries is derived, not stored.
+        const items = (await store.items()).map(({ envelope, ...row }) => row);
         const kept = unsavedOnly ? await store.createDraft({ text: 'original saved' }) : null;
         window.feedbackBudget = freezeOnly
           ? 1024 * 1024
@@ -79,7 +85,8 @@ try {
         window.client = await mountFeedbackClient({
           trigger: document.querySelector('#trigger'),
           gate: { enter: async () => {}, leave: () => {} },
-          snapshot: () => ({ project: {}, workshop: {} }),
+          // Padded so unticking the context frees more than a frozen row's extra fields cost.
+          snapshot: () => ({ project: { pad: 'x'.repeat(200) }, workshop: {} }),
           screenshot: () => null,
         });
       },
@@ -160,10 +167,44 @@ try {
       await page.waitForFunction(
         () => document.querySelector('[data-save]').textContent === 'Draft saved on this device.',
       );
+      await page.evaluate(() =>
+        window.client.configure({ feedback: { enabled: true, protocolVersion: 1 } }),
+      );
       if (scenario === 'capacity') {
-        // The budget here is the freed space and one byte: the default context attachment fits
-        // the draft but not its frozen copy. The player's way out is to untick it; what this
-        // step proves is the server rejection, not a second storage-limit message.
+        // Budget = the saved state and one byte: the draft fits, its frozen copy (the same
+        // bytes plus the submission fields) does not. A full store must say so and name the
+        // player's outs, keeping the draft; unticking the context is the proven way out.
+        await page.evaluate(async () => {
+          const { openFeedbackStore } = await import('../src/application/feedback-store.mjs');
+          const store = await openFeedbackStore();
+          const state = { draft: await store.draft(), items: await store.items() };
+          for (const item of state.items) delete item.envelope;
+          store.close();
+          window.feedbackBudget = new TextEncoder().encode(JSON.stringify(state)).length + 1;
+        });
+        await page.getByRole('button', { name: 'Send feedback', exact: true }).click();
+        await page.waitForFunction(() =>
+          document.querySelector('[data-error]').textContent.startsWith('This browser'),
+        );
+        const full = await page.locator('[data-error]').textContent();
+        evidence.assert('match', [
+          full,
+          /storage is full.*Untick the workshop image or project details below, then send again\.$/,
+        ]);
+        evidence.assert('doesNotMatch', [
+          full,
+          /delete a received local copy/,
+          'the received copy was deleted above, so that out is not offered',
+        ]);
+        evidence.assert('equal', [
+          await page.locator('[data-save]').textContent(),
+          'Draft saved on this device.',
+          'a full store does not also claim the draft is unsaved',
+        ]);
+        evidence.assert('equal', [
+          await page.getByRole('textbox', { name: 'Your feedback', exact: true }).inputValue(),
+          'After cleanup',
+        ]);
         await page.locator('[data-attachments]').evaluate((details) => {
           details.open = true;
         });
@@ -174,7 +215,6 @@ try {
         await page.waitForFunction(() => document.querySelector('[data-context-preview]').hidden);
       }
       await page.evaluate(() => {
-        window.client.configure({ feedback: { enabled: true, protocolVersion: 1 } });
         const digest = crypto.subtle.digest.bind(crypto.subtle);
         crypto.subtle.digest = async (...args) => {
           const result = await digest(...args);
@@ -239,7 +279,7 @@ try {
     .getByText('Feedback is open in another workshop tab. Close it there, then try again.', {
       exact: true,
     })
-    .waitFor({ state: 'visible', timeout: 1500 });
+    .waitFor({ state: 'visible', timeout: evidence.waitBudget(1500) });
   evidence.assert('equal', [await second.locator('.feedback-dialog').isVisible(), false]);
   evidence.assert('equal', [await second.locator('[data-stop]').isVisible(), false]);
   evidence.assert('doesNotMatch', [
@@ -349,7 +389,7 @@ try {
   );
   await mediaPage
     .locator('[data-submitted-media] audio')
-    .waitFor({ state: 'visible', timeout: 1500 });
+    .waitFor({ state: 'visible', timeout: evidence.waitBudget(1500) });
   const receiptURL = await mediaPage.locator('[data-submitted-media] audio').getAttribute('src');
   await mediaPage.waitForFunction(
     () => document.querySelector('[data-submitted-media] audio').readyState >= 2,

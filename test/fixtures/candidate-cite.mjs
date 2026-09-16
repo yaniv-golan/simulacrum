@@ -61,17 +61,18 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=(...args)=>globalThis.candidateTransport.drift(...args); export const resolveCandidateBase=(root,base)=>base; export const currentBranch=()=>"fixture-branch";';
+        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=(...args)=>globalThis.candidateTransport.drift(...args); export const resolveCandidateBase=(root,base)=>base; export const currentBranch=()=>"fixture-branch"; export const candidateSelection=()=>["src.mjs"];';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/merge-selection.mjs`)
       source =
-        'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; }';
+        'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; } export function mergeSelection() { throw Error("fixture: no merge selection is scripted"); }';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       source =
         'export function assertRuntime() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; } export function assertAwake() { return { method: "fixture", pid: process.pid }; }';
     if (url === `file://${repo}/scripts/run-check.mjs`)
-      source = 'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args);';
+      source =
+        'export const runProcess=(...args)=>globalThis.candidateTransport.run(...args); export const SLEEP_GAP_MS=60000;';
     return source ? { format: 'module', source, shortCircuit: true } : next(url, context);
   },
 });

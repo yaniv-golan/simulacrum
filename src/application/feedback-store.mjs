@@ -54,6 +54,29 @@ export async function openFeedbackStore({
   storageBytes = 32 * 1024 ** 2,
 } = {}) {
   const mode = durable ? 'durable' : 'memory';
+  // Frozen items persist only bodyText — the exact bytes behind uploadHash. The envelope the
+  // client reads is derived from those bytes at every exit, once per uploadHash per store.
+  const envelopes = new Map();
+  function envelopeFor(row) {
+    if (row.bodyText == null) return null;
+    if (!envelopes.has(row.uploadHash)) {
+      let envelope = null;
+      try {
+        envelope = JSON.parse(row.bodyText);
+      } catch {
+        envelope = null;
+      }
+      envelopes.set(row.uploadHash, envelope);
+    }
+    return envelopes.get(row.uploadHash);
+  }
+  const withEnvelope = (row) => (row ? { ...row, envelope: envelopeFor(row) } : row);
+  // Rows written before this shape carried a second copy; every write puts the whole state.
+  const stripLegacy = (state) => {
+    for (const row of state.items) delete row.envelope;
+    const live = new Set(state.items.map((row) => row.uploadHash));
+    for (const hash of envelopes.keys()) if (!live.has(hash)) envelopes.delete(hash);
+  };
   let db,
     memory = { draft: null, items: [] },
     closed = false;
@@ -83,6 +106,7 @@ export async function openFeedbackStore({
         const state = clone(memory),
           result = fn(state);
         if (write) {
+          stripLegacy(state);
           bounded(state);
           memory = state;
         }
@@ -101,6 +125,7 @@ export async function openFeedbackStore({
           const state = request.result || { draft: null, items: [] };
           result = fn(state);
           if (write) {
+            stripLegacy(state);
             bounded(state);
             store.put(state, 'current');
           }
@@ -110,8 +135,15 @@ export async function openFeedbackStore({
         }
       };
       tx.oncomplete = () => resolve(clone(result));
-      tx.onabort = tx.onerror = () =>
+      // A failed put (the browser's quota) reports on the request before abort sets tx.error;
+      // keep that DOMException so callers can recognise QuotaExceededError.
+      const fail = () =>
         reject(failure || tx.error || Error('Feedback storage transaction failed'));
+      tx.onerror = (event) => {
+        failure ??= event.target?.error ?? undefined;
+        fail();
+      };
+      tx.onabort = fail;
     });
   }
   function current(state, token) {
@@ -136,7 +168,7 @@ export async function openFeedbackStore({
       db?.close();
     },
     draft: () => transaction((state) => state.draft, false),
-    items: () => transaction((state) => state.items, false),
+    items: () => transaction((state) => state.items.map(withEnvelope), false),
     createDraft(initial = {}) {
       initial = clone(initial);
       return transaction((state) => {
@@ -175,8 +207,10 @@ export async function openFeedbackStore({
           createdAt: new Date().toISOString(),
           text: '',
         };
+        const envelope = envelopeFor(item);
+        if (!envelope) throw Error('Saved feedback bytes are unreadable');
         for (const field of draftFields)
-          if (item.envelope[field] !== undefined) draft[field] = clone(item.envelope[field]);
+          if (envelope[field] !== undefined) draft[field] = clone(envelope[field]);
         validateDraft(draft, mode);
         state.draft = draft;
         return draft;
@@ -205,7 +239,7 @@ export async function openFeedbackStore({
       const snapshot = await transaction((state) => {
         const prior = state.items.find((item) => item.id === token.id);
         if (prior && prior.sourceRevision === token.revision && prior.outcome !== 'discarded')
-          return { prior };
+          return { prior: withEnvelope(prior) };
         return { draft: current(state, token) };
       }, false);
       if (snapshot.prior) return snapshot.prior;
@@ -216,11 +250,10 @@ export async function openFeedbackStore({
       return transaction((state) => {
         const prior = state.items.find((item) => item.id === token.id);
         if (prior && prior.sourceRevision === token.revision && prior.outcome !== 'discarded')
-          return prior;
+          return withEnvelope(prior);
         current(state, token);
         const item = {
           id: envelope.id,
-          envelope,
           ...encoded,
           sourceRevision: token.revision,
           outcome: 'pending',
@@ -229,7 +262,7 @@ export async function openFeedbackStore({
         };
         state.items.push(item);
         state.draft = null;
-        return item;
+        return withEnvelope(item);
       });
     },
     acknowledge(id, receipt) {
@@ -248,7 +281,7 @@ export async function openFeedbackStore({
         row.outcome = 'received';
         row.retryAt = 0;
         delete row.error;
-        return row;
+        return withEnvelope(row);
       });
     },
     failure(id, { code, retryAt = 0, permanent = false } = {}) {
@@ -260,7 +293,7 @@ export async function openFeedbackStore({
         row.error = code ?? 'network';
         row.retryAt = retryAt;
         row.outcome = permanent ? 'blocked' : 'pending';
-        return row;
+        return withEnvelope(row);
       });
     },
     retry(id) {
@@ -270,7 +303,7 @@ export async function openFeedbackStore({
         row.outcome = 'pending';
         row.retryAt = 0;
         delete row.error;
-        return row;
+        return withEnvelope(row);
       });
     },
     discard(id) {
@@ -279,7 +312,6 @@ export async function openFeedbackStore({
         if (!row) return false;
         row.outcome = 'discarded';
         row.bodyText = null;
-        row.envelope = null;
         row.retryAt = 0;
         delete row.receipt;
         delete row.error;

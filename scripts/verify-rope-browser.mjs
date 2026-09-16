@@ -3,6 +3,7 @@ import { browseAllParts, placeCatalogPartByName, openTools } from './catalog-bro
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { liveWait } from './browser-idle.mjs';
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/rope-browser');
 mkdirSync(out, { recursive: true });
@@ -91,28 +92,54 @@ try {
   assert.equal(await page.locator('.rope-editor [role=status]').first().innerText(), '');
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.screenshot({ path: `${out}/compact.png` });
-  // A second ordinary authored rig starts with near-limit tensile preload.
+  // A second ordinary authored rig starts with near-limit tensile preload. It is supported
+  // like the first (beam and block each on a cell stack) so the repair assertion measures the
+  // rope, not a free-falling rig hitting the floor at tick ~54.
   await openTools(page);
   await page.getByRole('button', { name: 'New', exact: true }).click();
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
-  await place('Beam', [0, 1, 0]);
-  await place('Spacer block', [0.4725, 0.985, 0]);
+  for (const x of [0, 0.4725])
+    for (const y of [0.05, 0.15, 0.25]) await place('Power Cell', [x, y, 0]);
+  await place('Beam', [0, 0.32, 0]);
+  await place('Spacer block', [0.4725, 0.315, 0]);
   await requestRope();
+  // End A defaults to the selected block; end B defaults to the first other part, here a
+  // cell whose faces do not include 'right', so name the beam explicitly.
+  await page
+    .getByRole('combobox', { name: 'Rope end B', exact: true })
+    .selectOption({ label: 'Beam' });
   await page.getByRole('combobox', { name: 'End A surface', exact: true }).selectOption('top');
   await page.getByRole('combobox', { name: 'End B surface', exact: true }).selectOption('right');
   await page.getByRole('spinbutton', { name: 'Rope length (m)', exact: true }).fill('.25');
   await page.getByRole('button', { name: 'Attach rope', exact: true }).click();
   await page.locator('[data-command=run]').click();
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).status === 'failed');
+  await liveWait(
+    page,
+    () => JSON.parse(window.render_game_to_text()).status === 'failed',
+    undefined,
+    {
+      label: 'near-limit 0.25 m rope fails',
+    },
+  );
   assert.equal((await read()).failure.reasonCode, 'ROPE_MOTION_LIMIT');
   await page.screenshot({ path: `${out}/failure.png` });
   await page.getByRole('button', { name: 'Return to Build', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Rope length (m)', exact: true }).first().fill('.30');
   await page.getByRole('button', { name: 'Apply rope changes', exact: true }).click();
   await page.locator('[data-command=run]').click();
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick >= 20);
-  await page.locator('[data-command=pause]').click();
-  assert.notEqual((await read()).status, 'failed');
+  // The repaired rope must hold for the same horizon the first rig ran, driven by the
+  // deterministic clock rather than a pause click racing the simulation.
+  await page.evaluate(() => window.advanceTime(2000));
+  await liveWait(page, () => JSON.parse(window.render_game_to_text()).tick >= 240, undefined, {
+    label: 'repaired rope reaches tick 240',
+  });
+  const repaired = await read();
+  assert.ok(repaired.tick >= 240, `repaired rig paused at tick ${repaired.tick}`);
+  assert.notEqual(repaired.status, 'failed');
+  assert.ok(
+    repaired.ropes.some((r) => r.appliedTension > 0),
+    'repaired rope carries load',
+  );
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(

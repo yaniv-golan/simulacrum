@@ -16,6 +16,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-feedback-storage-full',
+      date: '2026-09-16',
+      name: 'Full feedback storage says what to do',
+      summary:
+        'If feedback storage is full, Send says how to make room: untick an attachment, delete a received copy or shorten the report.',
+    },
+    {
       id: '2026-09-15-top-bar-breathes',
       date: '2026-09-15',
       name: 'The top bar breathes',

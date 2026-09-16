@@ -48,20 +48,20 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.mode === 'run',
     null,
-    { timeout: 2000 },
+    { timeout: evidence.waitBudget(2000) },
   );
   await page.keyboard.press('Space');
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.mode === 'paused',
     null,
-    { timeout: 2000 },
+    { timeout: evidence.waitBudget(2000) },
   );
   const beforeStep = (await read()).tick;
   await page.keyboard.press('.');
   await page.waitForFunction(
     (tick) => JSON.parse(window.render_game_to_text()).tick === tick + 1,
     beforeStep,
-    { timeout: 2000 },
+    { timeout: evidence.waitBudget(2000) },
   );
   await page.locator('[data-command=build]').click();
   assert.deepEqual((await read()).metadata.blueprint, original);

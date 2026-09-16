@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
-import { DatabaseSync } from 'node:sqlite';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { request as httpRequest } from 'node:http';
 import { createPlaytestServer } from '../scripts/playtest-server.mjs';
-import { CaptureStore } from '../scripts/playtest/cloud-store.mjs';
+import { memoryCaptureStore } from './fixtures/capture-store-memory.mjs';
 import worker from '../scripts/playtest/worker.mjs';
 const endpoint = '/api/playtest/feedback/v1/submission';
 const adminToken = 'feedback-admin-token-with-at-least-32-characters';
@@ -20,97 +19,8 @@ const envelope = (extra = {}) => ({
   ...extra,
 });
 const hash = (value) => createHash('sha256').update(value).digest('hex');
-function state() {
-  const db = new DatabaseSync(':memory:');
-  return {
-    db,
-    storage: {
-      sql: {
-        exec(query, ...args) {
-          return { toArray: () => db.prepare(query).all(...args) };
-        },
-      },
-      transactionSync(fn) {
-        db.exec('BEGIN');
-        try {
-          const v = fn();
-          db.exec('COMMIT');
-          return v;
-        } catch (e) {
-          db.exec('ROLLBACK');
-          throw e;
-        }
-      },
-      async getAlarm() {
-        return null;
-      },
-      async setAlarm() {},
-    },
-  };
-}
-function bucket() {
-  const values = new Map();
-  return {
-    values,
-    async put(key, body, options = {}) {
-      if (options.onlyIf && values.has(key)) return null;
-      values.set(key, {
-        bytes: new Uint8Array(body),
-        customMetadata: options.customMetadata || {},
-      });
-      return this.get(key);
-    },
-    async get(key) {
-      const v = values.get(key);
-      return (
-        v && {
-          size: v.bytes.length,
-          customMetadata: v.customMetadata,
-          arrayBuffer: async () => v.bytes.slice().buffer,
-        }
-      );
-    },
-  };
-}
 async function fixture(t, adapter, limits = {}) {
-  if (adapter === 'cloud') {
-    const st = state(),
-      r2 = bucket(),
-      env = {
-        RECORDINGS: r2,
-        INVITATION_GENERATION: '1',
-        FEEDBACK_STORAGE_BYTES: String(limits.feedbackStorageBytes ?? 128 * 1024 ** 2),
-      };
-    let store = new CaptureStore(st, env);
-    t.after(() => st.db.close());
-    return {
-      st,
-      r2,
-      env,
-      get store() {
-        return store;
-      },
-      restart() {
-        store = new CaptureStore(st, env);
-      },
-      async request(path, { method = 'GET', body, headers = {} } = {}) {
-        return store.fetch(
-          new Request('https://test.invalid' + path, {
-            method,
-            headers: {
-              'x-invitation-generation': '1',
-              'content-type': 'application/json',
-              ...headers,
-            },
-            ...(body === undefined
-              ? {}
-              : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
-          }),
-        );
-      },
-      cleanup: () => store.alarm(),
-    };
-  }
+  if (adapter === 'cloud') return memoryCaptureStore(t, limits);
   const root = await mkdtemp(join(tmpdir(), 'feedback-backend-')),
     publicDir = join(root, 'public'),
     dataDir = join(root, 'private');

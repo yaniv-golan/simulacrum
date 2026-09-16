@@ -32,6 +32,12 @@ const write = () => {
 write();
 try {
   const options = parseCompletionArgs('merge', process.argv.slice(2));
+  // Only the candidate command derives a stack (it records the chain and prints the landing
+  // order); a direct tier with --stack would otherwise scope an empty explicit-base delta.
+  if (options.stack)
+    throw Error(
+      '--stack is derived by verify:candidate; a direct merge tier names --base/--incoming/--destination',
+    );
   const context = createVerificationContext();
   // The integration scope is always the real git scope; a diagnosed retry's byte delta arrives
   // through the attempt ledger only and yields a second, narrower scope for coverage reasoning.

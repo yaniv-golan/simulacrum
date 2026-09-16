@@ -8,6 +8,30 @@ const canonical = (v) =>
       : x,
   );
 import { CHAIN_DEPTH_LIMIT } from './candidate-after.mjs';
+/** True when `row` ({payload, signature}) was written under `key`; the ledger and any reader
+ * outside it (a release citing a parent's leaf) share this one check. */
+export function verifyLeafRow(row, key) {
+  if (!row || typeof row !== 'object' || typeof row.signature !== 'string') return false;
+  const a = Buffer.from(row.signature, 'hex'),
+    b = createHmac('sha256', key).update(canonical(row.payload)).digest();
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+/** Reads a leaf row with the ledger's own rules: a regular file of at most 5 MiB whose signature
+ * verifies under `key`; null when absent; throws on an invalid or tampered artifact. */
+export function readLeafRow(path, key) {
+  let text;
+  try {
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.size > 5 * 1024 * 1024) throw Error('invalid leaf artifact');
+    text = readFileSync(path, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+  const row = JSON.parse(text);
+  if (!verifyLeafRow(row, key)) throw Error('resume receipt integrity failure');
+  return row;
+}
 /** Local key is held outside source. This detects modified receipts, not a hostile same-UID key owner.
  * `eligible` gates loads; `saveEligible` (a predicate, a list, or null for every leaf) gates saves
  * so a diagnosed retry can reuse leaves a plain resume never reads. `origin` names the attempt that produced fresh leaves.
@@ -37,20 +61,8 @@ export function createLeafLedger({
     path,
     load(id, configuration) {
       if (!allowed.has(id)) return null;
-      let text;
-      try {
-        const stat = lstatSync(path(id));
-        if (!stat.isFile() || stat.size > 5 * 1024 * 1024) throw Error('invalid leaf artifact');
-        text = readFileSync(path(id), 'utf8');
-      } catch (e) {
-        if (e.code === 'ENOENT') return null;
-        throw e;
-      }
-      const row = JSON.parse(text),
-        actual = Buffer.from(row.signature ?? '', 'hex');
-      const expected = signature(row.payload);
-      if (actual.length !== expected.length || !timingSafeEqual(actual, expected))
-        throw Error('resume receipt integrity failure');
+      const row = readLeafRow(path(id), key);
+      if (!row) return null;
       const p = row.payload;
       if (p.id !== id || p.identity !== identityKey || p.configuration !== canonical(configuration))
         return null;

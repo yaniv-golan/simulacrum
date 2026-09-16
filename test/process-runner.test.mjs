@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import {
+  selectSampleTargets,
+  readMemoryCounters,
+  sampleProcess,
+} from '../scripts/process-inventory.mjs';
 import { runProcess } from '../scripts/run-check.mjs';
 test('process runner captures output and kills descendants on timeout', async () => {
   const root = mkdtempSync(join(tmpdir(), 'process-runner-')),
@@ -178,7 +183,17 @@ test('process diagnostics distinguish exit, close and watchdog signal outcomes',
   );
 });
 
-const SNAPSHOT_ROW_KEYS = ['comm', 'etime', 'pcpu', 'pid', 'ppid', 'rssKb', 'stat', 'time'];
+const SNAPSHOT_ROW_KEYS = [
+  'comm',
+  'etime',
+  'pcpu',
+  'pid',
+  'ppid',
+  'rssKb',
+  'stat',
+  'time',
+  'wchan',
+];
 test('watchdog records a bounded process snapshot with the child in its tree', async (t) => {
   const error = await runProcess(process.execPath, ['-e', 'setInterval(() => {}, 10)'], {
     timeoutMs: 300,
@@ -213,6 +228,21 @@ test('watchdog records a bounded process snapshot with the child in its tree', a
   for (const row of [...snapshot.topCpu, ...snapshot.topRss, ...snapshot.tree, ...snapshot.watch])
     assert.deepEqual(Object.keys(row).sort(), SNAPSHOT_ROW_KEYS);
   assert.ok(Array.isArray(snapshot.watch));
+  // Blocked-syscall evidence: memory counters at start and at the watchdog, and a bounded
+  // stack sample of every descendant in uninterruptible wait (none for a sleeping child).
+  // A 300 ms row is too short to stall, so it records no start counters; the snapshot
+  // always reads them so a real stall's page-in is a delta against memoryAtStart.
+  assert.equal(error.processDiagnostics.memoryAtStart.unsupported, 'short row');
+  const memory = snapshot.memory;
+  if (['darwin', 'linux'].includes(process.platform)) {
+    assert.equal(memory.unsupported, undefined, `memory counters read (${memory.unsupported})`);
+    for (const key of ['pageins', 'pageouts', 'free'])
+      assert.ok(Number.isInteger(memory[key]) && memory[key] >= 0, `${key} ${memory[key]}`);
+    assert.ok(['pages', 'kB'].includes(memory.unit));
+  }
+  assert.ok(snapshot.memoryMs >= 0 && snapshot.memoryMs < 1000, 'counter cost is measured');
+  assert.deepEqual(snapshot.samples, [], 'a sleeping child is never sampled');
+  assert.ok(snapshot.sampleMs >= 0 && snapshot.sampleMs < 1000, 'sampling cost is measured');
   assert.ok(
     events.findIndex((e) => e.type === 'snapshot') <
       events.findIndex((e) => e.type === 'settlement'),
@@ -332,4 +362,55 @@ test('a host sleep during a check is named as such, not reported as a timeout or
       return true;
     },
   );
+});
+
+test('sample targets are the owned descendants blocked in uninterruptible wait, bounded to one', () => {
+  const rows = [
+    { pid: 1, ppid: 0, stat: 'Ss', comm: 'node' },
+    { pid: 2, ppid: 1, stat: 'S+', comm: 'workerd' },
+    { pid: 3, ppid: 1, stat: 'U', comm: 'esbuild' },
+    { pid: 4, ppid: 1, stat: 'D+', comm: 'child' },
+    { pid: 9, ppid: 0, stat: 'U', comm: 'ls' },
+  ];
+  assert.deepEqual(
+    selectSampleTargets(rows, 1).map((row) => row.pid),
+    [3],
+    'only the tree, only an uninterruptible state, never a foreign process, one target',
+  );
+  assert.deepEqual(
+    selectSampleTargets(
+      rows.filter((row) => row.pid !== 3),
+      1,
+    ).map((row) => row.pid),
+    [4],
+    'Linux spells the state D',
+  );
+  assert.deepEqual(selectSampleTargets(rows, 2), []);
+  const memory = readMemoryCounters();
+  if (['darwin', 'linux'].includes(process.platform)) {
+    assert.equal(memory.unsupported, undefined, String(memory.unsupported));
+    assert.ok(memory.pageins >= 0 && memory.pageouts >= 0 && memory.free >= 0);
+  } else assert.equal(typeof memory.unsupported, 'string');
+});
+
+test('a stack sample names the sampled process by its leaf frames and records a dead pid as an error', (t) => {
+  if (process.platform !== 'darwin') {
+    assert.equal(sampleProcess(process.pid).unsupported, process.platform);
+    return;
+  }
+  const started = performance.now();
+  const own = sampleProcess(process.pid, { durationSeconds: 1 });
+  const elapsed = performance.now() - started;
+  t.diagnostic(`sample of own pid took ${elapsed.toFixed(0)} ms`);
+  assert.equal(own.pid, process.pid);
+  assert.equal(own.error, undefined, String(own.error));
+  assert.ok(own.topOfStack.length >= 1 && own.topOfStack.length <= 16, 'bounded leaf frames');
+  assert.ok(own.callGraph.length <= 8);
+  assert.ok(
+    own.topOfStack.some((line) => /\(in libsystem_kernel\.dylib\)|\(in /.test(line)),
+    own.topOfStack.join('\n'),
+  );
+  assert.ok(elapsed < 3500, 'sampling is bounded');
+  const dead = sampleProcess(2 ** 22 - 7);
+  assert.ok(typeof dead.error === 'string' && dead.error.length, 'a missing pid is an error');
 });

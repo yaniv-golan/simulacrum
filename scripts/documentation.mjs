@@ -341,6 +341,8 @@ export function inspectDocumentation(root = process.cwd(), { files, observedRead
       for (const file of ['package.json', 'package-lock.json'])
         if (existsSync(resolve(root, file))) {
           let value = read(file);
+          // The package's own release version names the build, never a dependency:
+          // a version bump must not stale every explanation that imports a package.
           if (file === 'package.json') {
             try {
               const configuration = JSON.parse(value);
@@ -356,7 +358,15 @@ export function inspectDocumentation(root = process.cwd(), { files, observedRead
                 ].some((name) => Object.hasOwn(configuration.scripts ?? {}, name))
               )
                 delete configuration.scripts;
+              delete configuration.version;
               value = JSON.stringify(configuration);
+            } catch {}
+          } else {
+            try {
+              const lock = JSON.parse(value);
+              delete lock.version;
+              if (lock.packages?.['']) delete lock.packages[''].version;
+              value = JSON.stringify(lock);
             } catch {}
           }
           add(file, value);
