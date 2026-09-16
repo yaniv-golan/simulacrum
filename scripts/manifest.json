@@ -1980,7 +1980,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves canonical solids, material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves each part's canonical solid envelope — bounding box, collider and mass unchanged — with gear discs drawn toothed within that envelope and picking unchanged across it, and preserves material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -2049,6 +2049,10 @@
           {
             "path": "test/thumbnail-queue.test.mjs",
             "anchor": "scheduled thumbnail failures are reported and release the batch without an uncaught callback error"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear teeth are cut one per catalog tooth count, tipped at the canonical root radius"
           }
         ],
         "negative": [
@@ -2091,6 +2095,22 @@
           {
             "path": "test/part-visuals-mechanical.test.mjs",
             "anchor": "mechanical surface finishes stay inside authored envelopes and never intercept picking"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear teeth never leave the canonical root radius at any scale"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "only gears are given teeth: other cylinders keep their three rotation marks"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "a click in a tooth valley still picks the gear"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear help copy calls the teeth cosmetic and explains the gap where the physics touches"
           },
           {
             "path": "test/part-visuals-electronics.test.mjs",

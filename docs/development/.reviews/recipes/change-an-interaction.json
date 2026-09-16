@@ -79,7 +79,7 @@
     "src/model/connection-test-paths.mjs": "2972779a306573d29175afbda2ad480b5e09d6f456b9bbc0dc0ff7f465c7e75c",
     "src/presentation/part-help-input.mjs": "6380d1c3b9772c3c7522ef5a833a42a81a9c0935253e09ce026cadc0eb0491ec",
     "src/presentation/vehicle-controls.mjs": "3bfeaac8ab5e2f7360673827a78a44a7619187bd3fd6c0570d0cbd6d423dde72",
-    "src/presentation/part-help-content.mjs": "ed64480f964925301dd1f797b0f2968d4924f15b84edd0c90c57bf6ad9e4ac8e",
+    "src/presentation/part-help-content.mjs": "118dff2c9274f8c60727212fc85e6b744e49e8c6e7e5912ad2a4c087c5be3e1c",
     "src/presentation/part-search.mjs": "9f9ebd8e6f300442d799409d7121a77fa7a1f270806ca63ad1e80a300cec0930",
     "scripts/part-help-cases.mjs": "3396f60e2bb5c81a8b30731054331a269de3ede3625817242e84ba8a0b54b039",
     "scripts/verify-part-help-browser.mjs": "7ba98fdea3555811bd86c22aae4f541192f9b5e241c6b1065d30b5c3637c2b53",

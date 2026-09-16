@@ -16,6 +16,9 @@ export function disposePart(mesh) {
     object.geometry?.dispose();
     object.material?.map?.dispose();
     object.material?.dispose();
+    // The gear picking proxy sits outside the scene graph and shares the body's
+    // material, so only its own geometry is left to release.
+    object.userData.pickProxy?.geometry.dispose();
   });
 }
 function finishPart(mesh, part, definition) {
@@ -151,19 +154,78 @@ function finishPart(mesh, part, definition) {
     object.userData.partId = part.id;
   });
 }
+// Cosmetic gear teeth, cut inward from the collider radius (pitchRadius - module, the
+// canonical primitive's radius) -- not the gear-geometry root radius, which would be
+// pitchRadius - 1.25 * module. Nothing is drawn outside the cylinder that owns collision
+// and mass, so a tooth can never imply contact the simulation does not resolve. A tip
+// vertex sits on each axis, which keeps the bounding box the canonical solid's.
+//
+// Depth is the standard full depth of 2.25 modules referenced to the tip circle
+// (pitchRadius + module) and applied as a fraction of the drawn radius, so it holds at
+// any authored scale: 16.1 mm on the 12T and 19.0 mm on the 24T. Referencing the collider
+// radius instead would cancel the fraction into an absolute 2.25 * module, 22.5 mm on
+// both, which is 45% of the 12T's radius and draws it as a saw rather than a cog
+// (decision of 2026-09-16, from rendered comparisons of both).
+export function gearRimProfile(radius, gear) {
+  const valley = radius - (radius * 2.25 * gear.module) / (gear.pitchRadius + gear.module);
+  const pitch = (2 * Math.PI) / gear.teeth,
+    points = [];
+  for (let tooth = 0; tooth < gear.teeth; tooth++)
+    for (const [fraction, distance] of [
+      [-0.16, radius],
+      [0, radius],
+      [0.16, radius],
+      [0.34, valley],
+      [0.66, valley],
+    ]) {
+      const angle = (tooth + fraction) * pitch;
+      points.push(new THREE.Vector2(Math.cos(angle) * distance, Math.sin(angle) * distance));
+    }
+  return points;
+}
+function gearDiscGeometry(gear, radius, halfLength) {
+  // ExtrudeGeometry's default UVs are world coordinates, which would sample the shared
+  // roughness grain (0..1 wrapped four times) over a few hundredths of a tile and leave
+  // the gear alone with a flat sheen. Map into the same 0..1 range as every other solid.
+  const span = 2 * radius,
+    depth = 2 * halfLength;
+  const uv = (x, y) => new THREE.Vector2(x, y);
+  const geometry = new THREE.ExtrudeGeometry(new THREE.Shape(gearRimProfile(radius, gear)), {
+    depth,
+    bevelEnabled: false,
+    UVGenerator: {
+      generateTopUV: (_geometry, vertices, a, b, c) =>
+        [a, b, c].map((i) => uv(vertices[i * 3] / span + 0.5, vertices[i * 3 + 1] / span + 0.5)),
+      generateSideWallUV: (_geometry, vertices, a, b, c, d) =>
+        [a, b, c, d].map((i) =>
+          uv(
+            Math.atan2(vertices[i * 3 + 1], vertices[i * 3]) / (2 * Math.PI) + 0.5,
+            vertices[i * 3 + 2] / depth,
+          ),
+        ),
+    },
+  });
+  // Extrusion runs on Z; move it onto the body's local X like every other cylinder.
+  geometry.translate(0, 0, -halfLength);
+  geometry.rotateY(Math.PI / 2);
+  return geometry;
+}
 export function createPartMesh(part) {
   const definition = partPrimitives(part)[0],
     material = part.authoredMaterial[definition.id] ?? definition.materialKey;
   const [halfLength, radius] = definition.halfExtents;
+  const gear = definition.kind === 'cylinder' ? CATALOG[part.type].gear : undefined;
   // CylinderGeometry starts on Y. Rotate the geometry, leaving the mesh frame
   // equal to the actual body frame with its cylinder along local X.
   const geometry =
     definition.kind === 'sphere'
       ? new THREE.SphereGeometry(radius, 32, 24)
       : definition.kind === 'cylinder'
-        ? new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
-            -Math.PI / 2,
-          )
+        ? gear
+          ? gearDiscGeometry(gear, radius, halfLength)
+          : new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
+              -Math.PI / 2,
+            )
         : new THREE.BoxGeometry(...definition.halfExtents.map((value) => value * 2));
   const mesh = new THREE.Mesh(
     geometry,
@@ -194,19 +256,16 @@ export function createPartMesh(part) {
     mesh.add(mark, band);
     mesh.userData.rotationMark = mark;
   }
-  if (definition.kind === 'cylinder') {
+  if (definition.kind === 'cylinder' && !gear) {
     // Painted radial marks reveal real rotation. They inherit the body's full
-    // transform; there is no separate animation or simulated wheel angle.
+    // transform; there is no separate animation or simulated wheel angle. A gear
+    // needs no marks: its own tooth silhouette shows the same rotation.
     for (const side of [-1, 1])
-      for (let spoke = 0; spoke < (CATALOG[part.type].gear?.teeth ?? 3); spoke++) {
-        const angle = (spoke * 2 * Math.PI) / (CATALOG[part.type].gear?.teeth ?? 3),
+      for (let spoke = 0; spoke < 3; spoke++) {
+        const angle = (spoke * 2 * Math.PI) / 3,
           x = side * (halfLength + 0.0002);
         const points = [
-          new THREE.Vector3(
-            x,
-            Math.cos(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
-            Math.sin(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
-          ),
+          new THREE.Vector3(x, 0, 0),
           new THREE.Vector3(x, Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82),
         ];
         const line = new THREE.Line(
@@ -216,6 +275,25 @@ export function createPartMesh(part) {
         line.userData.partId = part.id;
         mesh.add(line);
       }
+  }
+  if (gear) {
+    // The teeth are cosmetic, so picking stays what it was when the disc was smooth:
+    // a click in a valley still selects the gear. The proxy carries the collider's own
+    // full radius, is never added to the scene and is never drawn, so it admits no
+    // material of its own and cannot change what the player selects as a surface.
+    const proxy = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
+        -Math.PI / 2,
+      ),
+      mesh.material,
+    );
+    mesh.userData.pickProxy = proxy;
+    mesh.raycast = (raycaster, intersects) => {
+      proxy.matrixWorld.copy(mesh.matrixWorld);
+      const hits = [];
+      proxy.raycast(raycaster, hits);
+      for (const hit of hits) intersects.push({ ...hit, object: mesh });
+    };
   }
   if (part.type === 'poweredLamp') {
     const lamp = createLampView();

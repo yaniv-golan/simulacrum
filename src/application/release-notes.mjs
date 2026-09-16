@@ -28,6 +28,14 @@ export const RELEASE_NOTES = Object.freeze(
         'Every part tile has a star in its corner: press it to keep that part in Favorites, press it again to remove it.',
     },
     {
+      id: '2026-09-16-gear-teeth',
+      date: '2026-09-16',
+      name: 'Gears now have teeth',
+      summary:
+        'Spur gears are drawn as toothed discs instead of wheels with painted marks. The teeth are cosmetic and stay inside the collision shape.',
+      feature: 'gear12',
+    },
+    {
       id: '2026-09-16-pivot-pin',
       date: '2026-09-16',
       name: 'Pivot pin: a hinge anywhere',
