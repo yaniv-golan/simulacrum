@@ -21,6 +21,14 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-gear-teeth',
+      date: '2026-09-16',
+      name: 'Gears now have teeth',
+      summary:
+        'Spur gears are drawn as toothed discs instead of wheels with painted marks. The teeth are cosmetic and stay inside the collision shape.',
+      feature: 'gear12',
+    },
+    {
       id: '2026-09-16-pivot-pin',
       date: '2026-09-16',
       name: 'Pivot pin: a hinge anywhere',

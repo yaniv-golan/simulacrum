@@ -9,7 +9,7 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
 const gearHelp = (teeth, pitchRadius) =>
   help(
     'Trades rotation speed for available torque',
-    `A ${teeth}-tooth spur gear with a ${pitchRadius} mm pitch radius. A 12T gear driving a 24T gear gives roughly half the speed in the opposite direction and greater available torque. Tooth marks show actual body rotation. The smaller solid root cylinder supplies collision and mass; the explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
+    `A ${teeth}-tooth spur gear with a ${pitchRadius} mm pitch radius. A 12T gear driving a 24T gear gives roughly half the speed in the opposite direction and greater available torque. The teeth you see are cosmetic and are cut inside the collision cylinder that supplies collision and mass, so two meshed gears show a small gap where the physics actually touches. The explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
     'A motor or bearing for each shaft, fixed to the same rigid support. Gear centres must be 120 mm apart for 12T/12T, 180 mm for 12T/24T, or 240 mm for 24T/24T, with aligned axes and gear faces.',
     [
       'Attach each gear to its own supported shaft using either axle port. The other axle port can carry an output arm or wheel.',

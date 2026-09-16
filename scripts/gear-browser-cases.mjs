@@ -186,6 +186,19 @@ async function verifyGearConstruction({ page, evidence, out }) {
     Math.abs(speeds[0]) > 0.1 && speeds[0] * speeds[1] < 0,
     'ordinary electrically powered gear construction turns both shafts in opposite directions',
   ]);
+  const rendered = await page.evaluate(() => window.workshopProbe.readRenderedTransforms());
+  for (const [index, gear] of [
+    [ia, small],
+    [ib, large],
+  ])
+    evidence.assert('ok', [
+      rendered
+        .find((pose) => pose.id === gear.id)
+        .position.every(
+          (value, axis) => Math.abs(value - frame.physics[index].position[axis]) < 1e-6,
+        ),
+      'drawn gear teeth follow the simulated body and are never animated on their own',
+    ]);
   await page.locator('[data-command=build]').click();
   await select(base);
   if (!(await page.locator('.placement-settings').evaluate((el) => el.open)))
