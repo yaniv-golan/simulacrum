@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"1203afa462d5539010ecbdc710e87756179f1193e4af06ad8afb270c9595105e","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"424bcb026fb702b2132acc099dba128af42032e40768c1071878136dd310037f","disposition":"updated","rationale":"Updated: the spur-gear paragraph now states that the disc is drawn with cosmetic teeth cut inward from the collider radius and that two meshed gears therefore show a small visible gap, replacing the claim that painted radial marks depict body rotation without pretending to collide as teeth."} -->
+<!-- doc-review {"version":1,"fingerprint":"97ef90b0bfaec19e622cb9ccc9250bd3998dc397d9bf834177b8b844cf7c383b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a7391037f0c9400ee4103f81868ade850e16c04471085c1236367be9722c8928","disposition":"updated","rationale":"Updated: the spur-gear paragraph now says the teeth are involute, that the hub, recessed web and bore are equally cosmetic over a solid collider so nothing can be placed through the bore, and that the drawing takes resolved gear facts built at one catalog read site."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,8 +58,11 @@ canonicalizes empty contact records without changing explicit zero or mutating t
 
 The 12T and 24T spur gears use solid root cylinders for collision, inertia and
 material selection, with separate fixed pitch radii for transmission. The disc is drawn
-with cosmetic teeth cut inward from that collider radius, so it reads as a gear without
-pretending to collide as teeth; two meshed gears therefore show a small visible gap. The
+with cosmetic involute teeth cut inward from that collider radius, so it reads as a gear without
+pretending to collide as teeth; two meshed gears therefore show a small visible gap. Its hub,
+recessed web and bore are drawn inward too and are equally cosmetic: the collider stays a solid
+cylinder, so nothing can be placed through the bore. The drawing takes resolved gear facts (tooth count, module, pitch and collider radius,
+face width, shaft radius) built at one catalog read site, not the catalog itself. The
 [gear compiler](../../src/model/gear-mesh.mjs) admits explicit meshes only between
 independently revolute-supported rotors on one rigid carrier: a forest of at most
 eight edges. Limited bearings and extra non-revolute rotor supports reject. A mesh
@@ -127,7 +130,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"215542870314e13773d10aadfd78e57028ef5f416210c5af35d75d5e7d3cf6fc","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d68c6942ecc6402acba897f88aebad7f7b3ffb7834b9b2affc5962da3826c3a3","disposition":"still accurate","rationale":"Only gear help copy changed. No interaction, control, command, admission path or history behaviour described in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5eebb71f7330ecd94883ed5861dd5fd9f18c9885bc7ff34acb40a4999052b08b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"81507af2f513ebc6547149636509065c8bb47f70b1ba9ffa08951cfb9d1684c9","disposition":"still accurate","rationale":"Only one gear help sentence changed, extending 'the teeth are cosmetic' to the bore; no interaction, control, command, admission path or history behaviour described in this recipe changed."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -215,7 +218,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"adb7c7f21bb0c5e9b9016cc914ff5e454d7a4d4446ac28395afab6f02d0b30c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"58caa06b6a220e9d03d397347a9f2b7ae4222b885b915990c1f758202187c1fc","disposition":"still accurate","rationale":"Unchanged prose within this section (the changed lines in recipes.md fall in add-or-extend-a-part and change-a-presentation-overlay). No law, simulation module or the physics door changed in either merged branch: the gear teeth are cosmetic geometry inside the existing collider and the favourite toggle is presentation state, so this recipe's owners, its narrow-door rule and its required checks all hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"e9ddf508fa058c9095360ddcad143e76842027c5805334b1ea89ec1a18ab3e7c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ceb4bb979e78cc12e1261aec77ab844b47b81b407ec9910bb84a7ddaa0016d08","disposition":"still accurate","rationale":"No physics changed: the gear body is cosmetic, nothing new crosses the physics door and the mesh remains the compliant pitch-point constraint. Its changed dependencies are the gear appearance prose in two docs, gear controls, the release note and presentation code."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -619,7 +622,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"03d11cc4261888e4a3471b75348035addb31a86dc2865a0c7aeced805d162399","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"18a510a66eacb0908c91180ac05ba7f770439d294ba3f35c0ca1e9c66d80cd5b","disposition":"updated","rationale":"Updated by the merged gear-appearance work: the section now states that gear meshes' cosmetic teeth are part of the body geometry and follow completed body transforms, replacing the earlier root-cylinder marks, and that the shared part builder creates each part's canonical solid envelope. The overlay's owner, visibility lifecycle and the preserved gear rendering controls are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"0be328ca24ad04aabff6da24e760af4b928f1cd13cc90fdb18e7fe30e292d8ab","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1421d04703baa6268508df45667d87ba31317cc346819f7e6587ab9f6ab7e9c8","disposition":"updated","rationale":"Updated: the shared part builder paragraph now records that a body drawn inward of its canonical solid is declared by its builder and may fall short of, but never exceed, the solid's bounding box, and that a builder-supplied selection silhouette must match the drawn body."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -634,7 +637,9 @@ the body geometry and follow completed body transforms. Preserve the [gear rende
 
 The shared [part builder](../../src/presentation/part-mesh.mjs#symbol=createPartMesh)
 creates each part's canonical solid envelope and owns their disposable finishes for the workbench, catalogue,
-help images, editing/placement and assembly previews. Family builders receive authored
+help images, editing/placement and assembly previews. A body drawn inward of that solid, as a gear's
+is, is declared by its builder and may fall short of the solid's bounding box but never exceed it;
+a builder may also supply a simpler selection silhouette, which must match the drawn body. Family builders receive authored
 dimensions and relevant parameters or ports; they never receive a controller or session.
 [Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
 distinguish measurement identities with static graphics and large top identification

@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"66c58165136ad4d63f9d86ccb6492a2438aa532c523390840974abd0d2144ef3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"71799964aedfc652756e512ffd73f8801d666ee657c436feab0dff8af250074d","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by reviewed scope digests, the controls.positive anchor registering this candidate's anti-retarget unit test under the existing parts-catalog-discovery invariant, and the merged gear-appearance registrations that arrived reviewed on c44f92de. No milestone, bar or rule allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"6895a31f5c92008c65ce6a949c0c5549a6f54056554598329ff62b2ab7384bd1","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"d65e3af729d943c2e8e8860ba4e65966cda60e6870c950bf87b642ff6b2fdd1b","disposition":"still accurate","rationale":"The manifest changes are gear controls in connection-display-isolation, that invariant's guarantee wording and refreshed scope consumer hashes; no milestone allocation, bar, gate row or check ownership moved."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"08580f0267feeb3bb77bb1a7bfee2f2bf718b1931bb5a71bd57668be0f64f943","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"21cc489db285be409c367994284a9c99397d7e192588f080a0f40869e77fd00b","disposition":"still accurate","rationale":"Unchanged prose. This candidate registers, removes and re-scopes no browser check of its own; it edits two existing check scripts and adds one positive control anchor, and the gear registrations it merges were reviewed on their own tip. Selection, phase scheduling and platform rules are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"2ee1a03c2eeb83b7e4383e64c6e9df07ac9d9a8732e93e44ae7670090feb7309","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6e9aafdd9aa0a1806051b138fe007898802f8b88f2fbb39708fc1c3ec214716f","disposition":"still accurate","rationale":"Scope metadata hashes were refreshed by the reviewed scope apply after the app fingerprint moved; no browser check row, phase, host profile, selection rule or witness changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"28fc0e28ad4598e451fe31aa1d142417bd82f864c8a3ba2bcdbd6914163bac91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d7d0da73ef6b71208305390b73747c34eca3bdab4e4455503b089f29ab572d30","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged. The manifest moved only by reviewed scope digests, a control anchor and the merged gear rows; none of those is completion evidence or a rule about how it is captured."} -->
+<!-- doc-review {"version":1,"fingerprint":"82a4bfd67ae251a9b4f5840857cb55648f98844a679995095b8d00b9927d0e04","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"00c9fcf4b3160b41565eb3bd766c25ed367e2aa9dfdfa5a9cb299ddc89bc7eb0","disposition":"still accurate","rationale":"No tier, candidate, stacking or landing rule changed; the manifest edits are gear controls, one invariant's guarantee wording and refreshed consumer hashes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

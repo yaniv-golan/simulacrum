@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"62362280bfd0bbcd94771d788b8b001c070665668747ebf610e5fe8af080986b","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d1427bc623da7ab6431e28cede6ea369a85bd96c538768df216348c6a50652ad","disposition":"still accurate","rationale":"Unchanged prose in this file (zero non-marker changed lines against main). The receipt is re-recorded because merging gear-appearance produced an auto-merged dependency sidecar matching neither parent, so both parents' digests were stale. The favourite toggle persists presentation state through the existing storage path and adds no command or cursor, and the gear work changes meshes only, so the edit path this section traces is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac8bcb4e7c578881d993996be4432584df4088a239ca7c791686b3fb8a38242d","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"75e82fb2b64c3aa39de743b5a9d6e6d9b0adab3eddce3db26c565c4ce3a66172","disposition":"still accurate","rationale":"The traced edit path is unchanged: the gear body is presentation-only, built in createPartMesh from resolved facts read at one catalog site, with no model, simulation, save or projection change; part-help-content changed one sentence of player copy."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -170,7 +170,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"637075f93fd4868495f4cdc656161a8b52bf01e0ba239fcc35d79c5e6cb7aa35","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1c6085f84b9a3efd09c2629d1725051bca7b85668390747a7e0dc3038d52dff0","disposition":"still accurate","rationale":"Only the gear help wording changed. The canonical-decision reuse rules, their owners and the catalog-keyed structure of the help content are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"a84adb7bba06afb932b0474827b22a2c61033924cfec30dbf4ee6c8aad714470","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1455146032f0761459e462c11a60c66d9f1015be6df0a180929cf0cbb534297c","disposition":"updated","rationale":"Updated: the render-only decoration rule now reads 'may illustrate a hub or a bore; it must not replace the collision geometry, and a visible hole admits nothing through it', replacing 'must not imply an authorable hole', because gears now draw a see-through bore over an unchanged solid collider."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -202,8 +202,8 @@ of opened joints and completed rope work.
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.
 These links explain policy responsibilities, not a second inventory of module edges.
-Render-only decoration may illustrate a hub; it must not imply an authorable hole or
-replace the collision geometry. Preserve independent physical test calculations when
+Render-only decoration may illustrate a hub or a bore; it must not replace the collision
+geometry, and a visible hole admits nothing through it. Preserve independent physical test calculations when
 sharing production policy: an oracle that calls the implementation proves little.
 
 Powered linear guides compile to the same five constrained sliding degrees of freedom
