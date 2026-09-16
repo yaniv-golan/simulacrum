@@ -21,6 +21,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-placement-strip',
+      date: '2026-09-16',
+      name: 'Placing a part: one tidy row',
+      summary:
+        'Picking a part now shows one row over the bench: the part, its state, exact coordinates, Place part and Cancel.',
+    },
+    {
       id: '2026-09-16-gear-teeth',
       date: '2026-09-16',
       name: 'Gears now have teeth',

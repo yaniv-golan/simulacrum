@@ -25,6 +25,11 @@ To report an interaction problem, open **Record an issue** in the left sidebar a
 
 ## Place, attach and resize
 
+Picking a part from the catalog opens one row over the bench: the part, its state,
+**Precise position** for exact X, Y and Z, **Place part** and **Cancel**. Click the
+bench to place it there, or press Enter in a coordinate field; Escape cancels. Moving
+over a mounting face hands the part to the surface panel, which owns faces and turning.
+
 **Snap to surface** positions and attaches a selected part to a top, side or underside
 face. Click a receiving face, or drag the preview along it, then release to attach.
 A translucent preview and a nearby message distinguish pending placement from a

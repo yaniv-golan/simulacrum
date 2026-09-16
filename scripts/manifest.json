@@ -5973,8 +5973,12 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue. The placement strip over the bench is one row — the part, its state word, the coordinates chip and the two actions — and every control it relabels keeps its own accessible name; Enter belongs to the focused control except in a coordinate field. The strip and the surface panel read their state word, their instruction and the name of their confirming control from one placement vocabulary, so the strip claims neither a face nor a rotation.",
       "owners": [
+        {
+          "path": "src/presentation/placement-lifecycle.mjs",
+          "anchor": "placementPresentation"
+        },
         {
           "path": "src/presentation/part-search.mjs",
           "anchor": "searchParts"
@@ -6009,6 +6013,14 @@
           {
             "path": "test/parts-browser.test.mjs",
             "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "the placement strip keeps every accessible name and leaves Enter to the focused control"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "one vocabulary names both homes of the same placement act"
           }
         ],
         "negative": [
@@ -8553,7 +8565,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8724,7 +8736,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8963,7 +8975,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "c54be6fbf553955c1515c2a88a7145f71cd8838d17440b958f211a4bc3c2c96d",
+      "consumerSourceHash": "a0a2eef087b2f885c9bf30616024ee5919c6ae14ad2b5e7e1acd103867f8d8d5",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9626,7 +9638,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "a34db517aca76640314587034ab7d7281bf6e0ab4ddc81847424b6815de116f7",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9779,7 +9791,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10192,7 +10204,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "2e81967d81840b108c7d142e7e837a066bf2239e018a6a9961238d5e85a9e1ba",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10296,7 +10308,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "2e81967d81840b108c7d142e7e837a066bf2239e018a6a9961238d5e85a9e1ba",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10533,7 +10545,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "a34db517aca76640314587034ab7d7281bf6e0ab4ddc81847424b6815de116f7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",

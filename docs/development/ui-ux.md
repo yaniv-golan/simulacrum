@@ -172,6 +172,21 @@ provides mounting faces, precision and attachment; empty-space placement uses th
 with optional coordinates under Precise position. Confirmation sends one ordinary
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
+Empty-space placement shows one row over the bench — the part, its state word, the
+Precise position chip and the two actions, with the confirming action carrying the
+primary weight — and it grows only when a longer state sentence needs the room; the
+coordinates open above the row rather than displacing it. Both homes of the act read
+their state word, their instruction and the name of their confirming control from
+[one placement vocabulary](../../src/presentation/placement-lifecycle.mjs#source), so
+the strip and the surface panel cannot disagree while the player crosses a mounting
+face: the strip names neither a face nor a rotation, and the surface owner keeps both.
+The two Precise position disclosures keep the same words and say in their hover help
+which numbers they hold — exact coordinates over the bench, sliding and turning on a
+face. Every control the strip relabels keeps its own accessible name, and Enter belongs
+to the control that has focus except in a coordinate field, where it confirms. The
+choice of what a placement produces stays with the surface owner; a later control that
+offers it over empty space earns the strip a second band and a re-laid-out row, not a
+sixth item squeezed into this one.
 Escape first cancels an active pickup, including when search has focus, and restores
 the originating query, category, focus and scroll even after browsing changes, without
 re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact

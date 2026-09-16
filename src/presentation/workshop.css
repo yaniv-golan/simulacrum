@@ -3774,30 +3774,83 @@ button:not(.keyed) > .key-badge {
   grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   max-height: calc(100vh - 365px);
 }
+/* One row over the bench while a part is being placed: the part, its state word, the
+   coordinates chip and the two actions. It hugs its content and only wraps when a longer
+   state sentence needs the room. */
 .part-placement {
   position: absolute;
   z-index: 12;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(460px, calc(100% - 24px));
-  padding: 16px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+  padding: 9px 12px;
   border: 1px solid #7ba69e;
   border-radius: 12px;
   background: #192e35f5;
   box-shadow: 0 12px 30px #0006;
 }
-.part-placement p {
+.part-placement .placement-part {
   font-size: 13px;
-  margin: 8px 0;
+}
+.part-placement p {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  margin: 0;
+  color: #b9d4cd;
 }
 .part-placement button {
-  margin-right: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  white-space: nowrap;
 }
+.part-placement .placement-precise {
+  position: static;
+}
+.part-placement summary {
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 6px 11px;
+  border: 1px solid #4d6b73;
+  border-radius: 999px;
+  color: #cfe9e3;
+}
+.part-placement summary::-webkit-details-marker {
+  display: none;
+}
+.part-placement summary:hover,
+.part-placement details[open] summary {
+  background: #27454e;
+  border-color: #9db1b9;
+}
+/* The coordinates rise above the strip so the row keeps its single line either way. */
 .placement-coordinates {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  min-width: 320px;
   display: flex;
   gap: 8px;
-  margin: 10px 0;
+  margin: 0;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #7ba69e;
+  border-radius: 12px;
+  background: #192e35fa;
+  box-shadow: 0 12px 30px #0006;
+}
+.part-placement details:not([open]) .placement-coordinates {
+  display: none;
 }
 .placement-coordinates label {
   flex: 1;

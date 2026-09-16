@@ -46,10 +46,25 @@ export function createPlacementLifecycle() {
 }
 
 /** One interpretation for inspector text, preview cues and commit availability.
+ * Both homes of the same act read their state word, their instruction and the name of
+ * their confirming control here: the placement strip over the bench (`free`, no face and
+ * no rotation) and the surface panel (faces, sliding and turning). Neither writes its own
+ * vocabulary, so the two cannot contradict each other while the player crosses a face.
  * @param {Readonly<PlacementState<unknown>>} state */
-export function placementPresentation(state, { attach = true, adjusting = false } = {}) {
-  const action = adjusting ? 'apply' : attach ? 'attach' : 'place';
+export function placementPresentation(
+  state,
+  { attach = true, adjusting = false, free = false } = {},
+) {
+  const action = adjusting ? 'apply' : attach && !free ? 'attach' : 'place';
+  const control = adjusting
+    ? 'Apply mount'
+    : free
+      ? 'Place part'
+      : attach
+        ? 'Attach'
+        : 'Place only';
   return {
+    control,
     canCommit: state.kind === 'preview',
     blocked: state.kind === 'blocked',
     instruction:
@@ -57,24 +72,24 @@ export function placementPresentation(state, { attach = true, adjusting = false 
         ? 'Applying placement'
         : state.pointerHeld
           ? `Release mouse button to ${action}`
-          : adjusting
-            ? 'Click Apply mount'
-            : attach
-              ? 'Click Attach'
-              : 'Click Place only',
+          : `Click ${control}`,
     label:
       state.kind === 'idle'
         ? ''
         : state.kind === 'choosing'
-          ? 'Choose a surface'
+          ? free
+            ? 'Preview · not placed'
+            : 'Choose a surface'
           : state.kind === 'blocked'
             ? 'Blocked · not placed'
             : state.kind === 'committing'
               ? 'Applying placement'
               : adjusting
                 ? 'Preview · mount adjustment'
-                : attach
-                  ? 'Preview · not attached'
-                  : 'Preview · position only',
+                : free
+                  ? 'Preview · not placed'
+                  : attach
+                    ? 'Preview · not attached'
+                    : 'Preview · position only',
   };
 }

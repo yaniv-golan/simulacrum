@@ -113,6 +113,31 @@ try {
   await search.fill('battery');
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   equal(await read(), original);
+  // The placement strip is one row while the preview is valid: the part, its state word
+  // from the shared placement vocabulary, the coordinates chip and the two actions all
+  // share one vertical band, and each keeps the name this check clicks it by.
+  const strip = page.getByRole('region', { name: 'Place part', exact: true });
+  equal(await strip.locator('p[role=status]').textContent(), 'Preview · not placed');
+  equal(await strip.locator('summary').textContent(), 'Precise position');
+  equal(
+    await strip.getByRole('button', { name: 'Cancel placement', exact: true }).textContent(),
+    'Cancel',
+  );
+  const row = await strip.evaluate((panel) => {
+    const shown = [...panel.children].filter((child) => !child.hidden),
+      middle = (node) => {
+        const box = node.getBoundingClientRect();
+        return box.top + box.height / 2;
+      };
+    return {
+      controls: shown.length,
+      offRow: shown.filter((child) => Math.abs(middle(child) - middle(panel)) > 2).length,
+      height: Math.round(panel.getBoundingClientRect().height),
+      tallest: Math.round(Math.max(...shown.map((c) => c.getBoundingClientRect().height))),
+    };
+  });
+  equal([row.controls, row.offRow], [5, 0]);
+  equal(row.height <= row.tallest + 20, true);
   await page.getByRole('button', { name: 'Cancel placement', exact: true }).click();
   equal(await read(), original);
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
