@@ -21,6 +21,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-placement-feedback',
+      date: '2026-09-16',
+      name: 'See where a part will land',
+      summary:
+        'While you place a part, a line drops to the floor beneath it and a small read-out names what it will land on and the gap left.',
+    },
+    {
       id: '2026-09-16-favorite-from-the-tile',
       date: '2026-09-16',
       name: 'Save a favorite from the part itself',

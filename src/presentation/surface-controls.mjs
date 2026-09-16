@@ -11,6 +11,7 @@ import { explainFailure } from '../model/messages.mjs';
 import { surfaceRegions, mountFootprintLimits } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
 import { mechanicalGroup } from '../model/connection-graph.mjs';
+import { BUILD_ENVIRONMENT } from '../model/environment.mjs';
 
 const node = (tag, text) => {
   const e = document.createElement(tag);
@@ -19,6 +20,48 @@ const node = (tag, text) => {
 };
 const vec = (a) => new THREE.Vector3(...a),
   quat = (a) => new THREE.Quaternion(...a);
+/** Top of the workshop floor, derived rather than assumed: the ground box is centred below
+ * zero and reaches up to it. The drop-line lands here even when shadows are off. */
+const GROUND_TOP = BUILD_ENVIRONMENT.ground.position[1] + BUILD_ENVIRONMENT.ground.halfExtents[1];
+/** A 2×2 stipple used only by the ghost's shadow pass. three's depth material ignores
+ * `opacity`, so a uniformly transparent ghost would cast either a full-strength shadow or
+ * none at all; discarding half the fragments makes the shadow read lighter than a placed
+ * part. Never applied to the visible material — an alphaTest above its 0.42 opacity would
+ * discard the ghost itself. */
+const ghostStipple = (() => {
+  // three's alphaMap chunk samples the GREEN channel (`texture2D(alphaMap, uv).g`), so a
+  // red-format texture leaves alpha at zero and alphaTest discards every depth fragment —
+  // the ghost would cast no shadow at all. Default RGBA, chequered in green.
+  const texture = new THREE.DataTexture(
+    // prettier-ignore
+    new Uint8Array([
+      255, 255, 255, 255, 0, 0, 0, 0,
+      0, 0, 0, 0, 255, 255, 255, 255,
+    ]),
+    2,
+    2,
+  );
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(48, 48);
+  texture.needsUpdate = true;
+  return texture;
+})();
+const ghostDepthMaterial = () =>
+  new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking,
+    alphaMap: ghostStipple,
+    alphaTest: 0.5,
+  });
+/** The landing probe starts just outside the pad so a flush mount reports zero rather than a
+ * sign flip from an origin exactly on the receiving surface. */
+const LANDING_BACKOFF = 0.01;
+const partIdOf = (object) => {
+  for (let node = object; node; node = node.parent)
+    if (node.userData?.partId) return node.userData.partId;
+  return null;
+};
 /** Surface authoring previews are isolated from the completed physical read model. */
 export function createSurfaceControls({
   scene,
@@ -152,6 +195,12 @@ export function createSurfaceControls({
   const cue = node('div');
   cue.className = 'surface-cue';
   overlay.append(cue);
+  // Transient placement feedback at the point the pad is aimed at — not permanent chrome over
+  // the machine, and never a pointer target (the stylesheet keeps pointer-events off it).
+  const landingChip = node('div');
+  landingChip.className = 'surface-landing';
+  landingChip.hidden = true;
+  overlay.append(landingChip);
   const anchors = [
     [0, 0],
     [-1, 0],
@@ -162,11 +211,18 @@ export function createSurfaceControls({
     const control = node('button', index ? '◇' : '⊙');
     control.type = 'button';
     control.className = 'surface-anchor';
+    // Named from the sign it writes, along the face's own axes (gold arrow: Along, blue:
+    // Across), so the label says which way the footprint moves instead of numbering a marker
+    // whose screen position is spread away from the edge it means.
+    const axis = a ? 'along' : 'across',
+      end = (a || b) < 0 ? 'near' : 'far';
     control.setAttribute(
       'aria-label',
-      index ? `Align to surface edge ${index}` : 'Center on surface',
+      index ? `Align to the ${end} edge ${axis} this face` : 'Center on surface',
     );
-    control.title = index ? 'Align mounting footprint with this edge' : 'Center on this surface';
+    control.title = index
+      ? `Move the mounting footprint to the ${end} edge ${axis} this face`
+      : 'Center on this surface';
     control.addEventListener('click', () => {
       const limits = alignmentLimits();
       if (!limits) return;
@@ -282,6 +338,23 @@ export function createSurfaceControls({
         ? below
         : Math.min(point.y, ...markerYs) - cue.offsetHeight - 24;
     cue.style.top = `${Math.max(80, Math.min(top, canvasRect.height - cue.offsetHeight - 12))}px`;
+    const landing = state.landing;
+    landingChip.hidden = !landing;
+    if (landing) {
+      const projected = vec(landing.point).project(camera);
+      landingChip.hidden = !(projected.z >= -1 && projected.z <= 1);
+      if (!landingChip.hidden) {
+        // A hit the blueprint does not name means the ray reached something we cannot talk
+        // about: say nothing rather than show a raw id. Tenths of a millimetre, so a 0.4 mm
+        // gap cannot print as "0 mm" and claim contact.
+        const name = bp().parts.find((q) => q.id === landing.part)?.name;
+        landingChip.hidden = !name;
+        if (name)
+          landingChip.textContent = `${name} · ${(Math.round(landing.gap * 10000) / 10).toFixed(1)} mm`;
+        landingChip.style.left = `${canvasRect.left - parentRect.left + ((projected.x + 1) * canvasRect.width) / 2}px`;
+        landingChip.style.top = `${canvasRect.top - parentRect.top + ((1 - projected.y) * canvasRect.height) / 2}px`;
+      }
+    }
     const cueBox = cue.getBoundingClientRect();
     for (const { control, leader } of anchors) {
       if (control.hidden) continue;
@@ -327,6 +400,9 @@ export function createSurfaceControls({
         if (!mesh.isArrowHelper) o.geometry?.dispose();
         // A preview lamp's light owns a shadow depth target while it casts.
         if (o.isLight) o.dispose();
+        // The ghost's shadow material is not in o.material, so it is released by name. Its
+        // stipple is shared and module-owned, and outlives any one preview.
+        o.customDepthMaterial?.dispose();
         const materials = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of materials) {
           m?.map?.dispose();
@@ -496,6 +572,10 @@ export function createSurfaceControls({
     placement.assess(null, !!state.target);
     stateLabel.textContent = 'Preview · not attached';
     state.previewParts = [];
+    // Cleared every pass: a throw below must not leave a stale gap reading or drop-line on
+    // screen or in read().
+    state.landing = null;
+    state.dropLine = null;
     clearPreview();
     apply.disabled = true;
     if (!state.target) {
@@ -529,7 +609,11 @@ export function createSurfaceControls({
                 material.opacity = 0.42;
                 material.depthWrite = false;
               }
-              o.castShadow = false;
+              // The ghost casts the key light's shadow: the scene's one contact cue used to be
+              // switched off for exactly the object being moved. The stippled depth material
+              // keeps it lighter than a placed part.
+              o.castShadow = true;
+              o.customDepthMaterial = ghostDepthMaterial();
               o.userData.partId = null;
               o.userData.surfacePreview = true;
             }
@@ -556,6 +640,57 @@ export function createSurfaceControls({
           outline.material.depthTest = false;
           preview.add(outline);
         }
+      // The ghost's own contact cue: a line from its lowest point straight down to the floor
+      // with a small landing ellipse. Taken from the preview's bounding box, so it needs no
+      // raycast, and drawn whatever the quality level does with shadows.
+      const ghostBounds = new THREE.Box3();
+      let ghostDrawn = false;
+      preview.traverse((o) => {
+        if (o.isMesh && o.userData.surfacePreview) {
+          ghostBounds.expandByObject(o);
+          ghostDrawn = true;
+        }
+      });
+      if (ghostDrawn) {
+        const ghostCentre = ghostBounds.getCenter(new THREE.Vector3());
+        const drop = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(ghostCentre.x, ghostBounds.min.y, ghostCentre.z),
+            new THREE.Vector3(ghostCentre.x, GROUND_TOP, ghostCentre.z),
+          ]),
+          new THREE.LineDashedMaterial({
+            color: 0x8cf5cf,
+            dashSize: 0.012,
+            gapSize: 0.008,
+            depthTest: false,
+          }),
+        );
+        drop.computeLineDistances();
+        drop.renderOrder = 29;
+        drop.userData.dropLine = true;
+        preview.add(drop);
+        // Surfaced for the probe: the drawn geometry is what a check should assert, not a
+        // recomputation of it that could agree while the drawing is wrong.
+        state.dropLine = {
+          top: [ghostCentre.x, ghostBounds.min.y, ghostCentre.z],
+          floor: [ghostCentre.x, GROUND_TOP, ghostCentre.z],
+        };
+        const landingRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.012, 0.019, 24),
+          new THREE.MeshBasicMaterial({
+            color: 0x8cf5cf,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8,
+            depthTest: false,
+          }),
+        );
+        landingRing.position.set(ghostCentre.x, GROUND_TOP, ghostCentre.z);
+        landingRing.rotation.x = -Math.PI / 2;
+        landingRing.renderOrder = 29;
+        landingRing.userData.dropLanding = true;
+        preview.add(landingRing);
+      }
       const targetPart = bp().parts.find((p) => p.id === state.target.part),
         region = surfaceRegions(targetPart).find((r) => r.id === state.target.region);
       const endpoint = {
@@ -646,6 +781,43 @@ export function createSurfaceControls({
       footprint.computeLineDistances();
       footprint.renderOrder = 30;
       preview.add(footprint);
+      // What the pad is aimed at, and how far away it is. The ray must skip the part being
+      // moved: its real meshes are only hidden, and three's raycaster still intersects
+      // invisible objects, so an unfiltered ray reports a nonsense zero gap against itself.
+      const faceNormal = vec([1, 0, 0]).applyQuaternion(targetRotation);
+      const landingHit = new THREE.Raycaster(
+        center.clone().addScaledVector(faceNormal, LANDING_BACKOFF),
+        faceNormal.clone().negate(),
+      )
+        .intersectObjects([...getMeshes()].filter(([id]) => targetable(id)).map(([, m]) => m))
+        .find((h) => h.object.isMesh);
+      state.landing = landingHit
+        ? {
+            part: partIdOf(landingHit.object),
+            gap: Math.max(0, landingHit.distance - LANDING_BACKOFF),
+            point: landingHit.point.toArray(),
+          }
+        : null;
+      if (state.landing) {
+        // Dashed while the snap is free, solid once an inference is held: that held state was
+        // already computed on every pointer move and never shown.
+        const heldSnap = state.inferenceU !== undefined && state.inferenceV !== undefined;
+        const beam = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([center.clone(), vec(state.landing.point)]),
+          heldSnap
+            ? new THREE.LineBasicMaterial({ color: 0x8cf5cf, depthTest: false })
+            : new THREE.LineDashedMaterial({
+                color: 0x8cf5cf,
+                dashSize: 0.008,
+                gapSize: 0.006,
+                depthTest: false,
+              }),
+        );
+        if (!heldSnap) beam.computeLineDistances();
+        beam.renderOrder = 30;
+        beam.userData.landingBeam = true;
+        preview.add(beam);
+      }
       const label = `${state.insertPart?.name ?? bp().parts.find((p) => p.id === state.part)?.name} → ${targetPart.name} · ${region.label}`;
       status.textContent = assessment.valid
         ? `${label}. ${placementInstruction()}.`
@@ -1017,6 +1189,11 @@ export function createSurfaceControls({
             position: p.position,
             rotation: p.rotation,
           })),
+          // The held centre/edge snap, and what the pad is aimed at: both were computed
+          // already and neither was observable, so no check could assert them.
+          inference: { u: state.inferenceU ?? null, v: state.inferenceV ?? null },
+          dropLine: state.dropLine ?? null,
+          landing: state.landing ? { part: state.landing.part, gap: state.landing.gap } : null,
           locked: state.locked,
           attach: placementMode.value === 'attach',
         }

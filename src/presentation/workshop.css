@@ -2007,6 +2007,22 @@ button:not(.keyed) > .key-badge {
   border-color: #ff9b87;
   color: #ffb6a5;
 }
+/* Transient placement feedback beside the aimed point. Never a pointer target and never
+   permanent chrome over the machine: it exists only while a placement is live. */
+.surface-landing {
+  position: absolute;
+  transform: translate(12px, -50%);
+  max-width: 220px;
+  padding: 3px 7px;
+  border-left: 3px solid #8cf5cf;
+  border-radius: 3px;
+  background: #152b32ed;
+  color: #cdf6e8;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
 
 .placement-result select {
   background: #182b34;

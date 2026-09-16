@@ -119,8 +119,12 @@ try {
         'alignment markers must not intercept one another',
       ]);
     }
-  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
-  await page.getByRole('button', { name: 'Align to surface edge 2', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Align to the near edge along this face', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Align to the far edge along this face', exact: true })
+    .click();
   await page.screenshot({ path: `${out}/separated-markers.png` });
   await page.getByLabel('Mounting face', { exact: true }).selectOption({ label: 'Bottom' });
   await page

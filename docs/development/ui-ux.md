@@ -183,6 +183,12 @@ provides mounting faces, precision and attachment; empty-space placement uses th
 with optional coordinates under Precise position. Confirmation sends one ordinary
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
+While a placement is live the ghost casts the key light's shadow and drops a dashed line from
+its lowest point to the floor, ending in a landing ring directly beneath it, and a transient
+chip at the aimed point names the part the mounting pad will land on and the gap left, in
+tenths of a millimetre so a fraction of a millimetre cannot read as contact. The chip never
+takes the pointer and leaves with the placement; the drop-line is drawn whether or not the
+quality level allows shadows, so contact stays readable without orbiting the camera.
 Escape first cancels an active pickup, including when search has focus, and restores
 the originating query, category, focus and scroll even after browsing changes, without
 re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
