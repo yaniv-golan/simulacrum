@@ -2,6 +2,7 @@ import { CATALOG } from '../model/catalog.mjs';
 import { PART_HELP } from './part-help-content.mjs';
 import { PART_SEARCH, ESSENTIAL_PARTS, searchParts } from './part-search.mjs';
 import { createDialogClose } from './dialog-close.mjs';
+import { icon as glyph } from './icons.mjs';
 
 const el = (tag, text = '', cls = '') => {
   const node = document.createElement(tag);
@@ -45,9 +46,8 @@ export function createPartsBrowser({
   const grid = el('div', '', 'catalog-grid');
   const summary = el('div', '', 'catalog-summary');
   const name = el('strong'),
-    purpose = el('p'),
-    favorite = el('button', 'Save to favorites');
-  summary.append(name, purpose, favorite);
+    purpose = el('p');
+  summary.append(name, purpose);
   const assemblies = el('button', 'Spring strut · Assemblies');
   assemblies.onclick = () => {
     conceal();
@@ -102,19 +102,18 @@ export function createPartsBrowser({
   let dragSession = null,
     dragFrame = null;
   const cards = new Map();
+  // The summary describes whatever the pointer or focus last reached. It owns no action, so
+  // grazing a neighbour on the way to a control can no longer change what that control does.
   function describeRope() {
     summary.hidden = false;
     name.textContent = 'Rope';
     purpose.textContent =
       'Attach two parts with a flexible rope. Choose its length in the selected inspector.';
-    favorite.hidden = true;
   }
   function describe(type, reason = '') {
-    favorite.hidden = false;
     selected = type;
     name.textContent = CATALOG[type].name;
     purpose.textContent = reason || PART_HELP[type].purpose;
-    favorite.textContent = favorites.includes(type) ? 'Remove favorite' : 'Save to favorites';
   }
   const order = [
     ...ESSENTIAL_PARTS,
@@ -154,10 +153,37 @@ export function createPartsBrowser({
       origin = saved;
       conceal();
     };
+    // A sibling of the tile, never inside it: the tile is itself a button, so the card's
+    // top-left corner leaves the drag/pick target. Tab order within a card is tile, star, (i).
+    const star = el('button', '', 'catalog-favorite');
+    star.type = 'button';
+    // Both glyphs are built once and one is shown by aria-pressed, so a saved part reads as a
+    // filled star rather than as a colour a player may not be able to tell apart.
+    const outlineStar = glyph('star'),
+      filledStar = glyph('star-fill');
+    outlineStar.setAttribute('class', 'icon star-outline');
+    filledStar.setAttribute('class', 'icon star-filled');
+    star.append(outlineStar, filledStar);
+    star.setAttribute('aria-label', `Save ${CATALOG[type].name} to favorites`);
+    star.setAttribute('title', `Save ${CATALOG[type].name} to favorites`);
+    star.onclick = () => {
+      favorites = favorites.includes(type)
+        ? favorites.filter((t) => t !== type)
+        : [...favorites, type];
+      persist();
+      refresh();
+      // Un-starring inside Favorites takes this card off the grid, so focus must not leave
+      // with it: the first card still shown, else the open category, else the search box.
+      if (cards.get(type).wrapper.hidden) {
+        const next = [...cards.values()].find((card) => !card.wrapper.hidden)?.star;
+        (next ?? tabs.get(category) ?? search).focus({ preventScroll: true });
+      }
+    };
+    wrapper.insertBefore(star, info);
     drag(tile, type);
     wrapper.append(reason);
     grid.append(wrapper);
-    cards.set(type, { wrapper, tile, reason, info });
+    cards.set(type, { wrapper, tile, reason, info, star });
   }
   const tabs = new Map();
   for (const label of [
@@ -207,6 +233,9 @@ export function createPartsBrowser({
       card.tile.disabled = !editable;
       card.tile.draggable = editable;
       card.reason.textContent = result?.reason ?? '';
+      // Every card restates its own saved state: a reload, a search or a category change
+      // must never leave a star claiming the opposite of what is stored.
+      card.star.setAttribute('aria-pressed', String(favorites.includes(type)));
     }
     // Reorder only on explicit browse/search actions, never on simulation frames.
     for (const { type } of rows) grid.append(cards.get(type).wrapper);
@@ -219,7 +248,7 @@ export function createPartsBrowser({
         ? 'No matching parts. Try battery, wheel, or sensor.'
         : category === 'Recent'
           ? 'Parts appear here after placement.'
-          : 'Save parts using the favorite action.';
+          : 'Star a part on its tile to save it here.';
     assemblies.hidden = !/spring|suspension/i.test(query) || !openAssemblies;
     rope.hidden =
       !attachRope ||
@@ -294,13 +323,6 @@ export function createPartsBrowser({
     refresh();
     grid.scrollTop = savedScroll.get(category) ?? 0;
     search.focus();
-  };
-  favorite.onclick = () => {
-    favorites = favorites.includes(selected)
-      ? favorites.filter((t) => t !== selected)
-      : [...favorites, selected];
-    persist();
-    refresh();
   };
   panel.addEventListener('keydown', (event) => {
     // Active placement owns Escape, including while browsing with search focus.

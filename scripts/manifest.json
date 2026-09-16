@@ -5989,6 +5989,10 @@
           {
             "path": "test/parts-browser.test.mjs",
             "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a tile star saves its own part, whatever the pointer, Rope or search touched last"
           }
         ],
         "negative": [

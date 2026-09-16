@@ -79,12 +79,14 @@ class Element extends EventTarget {
   }
 }
 let focused = [];
-function mount(t, { placementActive = () => false, matches = false } = {}) {
+function mount(t, { placementActive = () => false, matches = false, storage = null } = {}) {
   focused = [];
   const previous = {};
   const globals = {
     document: Object.assign(new EventTarget(), {
       createElement: (tag) => new Element(tag),
+      // The favourite toggle's star comes from icons.mjs, which builds SVG in its namespace.
+      createElementNS: (_namespace, tag) => new Element(tag),
       createTextNode: (text) => Object.assign(new Element('#text'), { textContent: text }),
       activeElement: null,
     }),
@@ -123,7 +125,7 @@ function mount(t, { placementActive = () => false, matches = false } = {}) {
     drag: () => {},
     openAssemblies: () => {},
     attachRope: () => {},
-    storage: null,
+    storage,
     placementActive,
   });
   return { browser, picked, panel: browser.panel };
@@ -211,4 +213,143 @@ test('the compact catalogue no longer carries its own expand toggle', (t) => {
   const close = panel.querySelector('.dialog-close');
   assert.equal(close.getAttribute('aria-label'), 'Close parts');
   assert.equal(close.hidden, true, 'hidden while compact');
+});
+
+/** This mock's dispatchEvent never reaches an `on*` property, so hover, focus and typing are
+ * driven by calling the handlers the component assigns; dispatching would pass vacuously.
+ * Part types are derived from the catalogue rather than spelled out, so a renamed part fails
+ * these tests honestly instead of throwing on an undefined tile. */
+const wrapperOf = (panel, type) => {
+  const walk = (node) => {
+    for (const child of node.children) {
+      if (child.dataset?.partType === type) return child.parent;
+      const found = walk(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  return walk(panel);
+};
+const starOf = (panel, type) =>
+  wrapperOf(panel, type)?.children.find((c) => c.classList.contains('catalog-favorite')) ?? null;
+const tileOf = (panel, type) => wrapperOf(panel, type)?.children.find((c) => c.dataset?.partType);
+const byClass = (panel, cls) => {
+  const walk = (node) => {
+    for (const child of node.children) {
+      if (child.classList.contains(cls)) return child;
+      const found = walk(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  return walk(panel);
+};
+const buttons = (node, out = []) => {
+  for (const child of node.children) {
+    if (child.tagName === 'button') out.push(child);
+    buttons(child, out);
+  }
+  return out;
+};
+const othersThan = (...exclude) => Object.keys(CATALOG).filter((t) => !exclude.includes(t));
+const alive = (node) => {
+  for (let n = node; n; n = n.parent) if (n.hidden) return false;
+  return true;
+};
+function fakeStorage(initial = null) {
+  let value = initial === null ? null : JSON.stringify(initial);
+  return {
+    getItem: () => value,
+    setItem: (_key, next) => {
+      value = next;
+    },
+    read: () => (value === null ? null : JSON.parse(value)),
+  };
+}
+
+test('a tile star saves its own part, whatever the pointer, Rope or search touched last', (t) => {
+  const storage = fakeStorage();
+  const { panel } = mount(t, { storage });
+  const cellStar = starOf(panel, 'powerCell');
+  assert.ok(cellStar, 'every catalogue tile carries its own favourite toggle');
+  // Every path that used to re-target the one shared button.
+  const [grazed, tabbed] = othersThan('powerCell');
+  tileOf(panel, grazed).onpointerenter();
+  tileOf(panel, tabbed).onfocus();
+  byClass(panel, 'catalog-connection').onfocus();
+  const box = search(panel);
+  box.value = 'wheel';
+  box.oninput();
+  box.value = '';
+  box.oninput();
+  // The graze has to be the LAST act before the press. Clearing the search re-runs refresh(),
+  // which reseats the summary's `selected` to rows[0] — Power Cell — so a graze placed only
+  // earlier lets a wrong implementation save the right part by luck. Proven by mutation: with
+  // the star reading `selected` instead of its own `type`, this test passed until this line
+  // was added, and the mutant was caught by the aria-pressed test instead of by this one.
+  tileOf(panel, grazed).onpointerenter();
+  cellStar.onclick();
+  assert.deepEqual(
+    storage.read().favorites,
+    ['powerCell'],
+    'the star saves the part whose tile it sits on, not the last part grazed',
+  );
+});
+
+test('a star restates aria-pressed after refresh and after a reload', (t) => {
+  const storage = fakeStorage({ favorites: ['powerCell'], category: 'Essentials' });
+  const { panel } = mount(t, { storage });
+  const other = othersThan('powerCell', 'gripWheel')[0];
+  assert.ok(
+    starOf(panel, 'powerCell') && starOf(panel, 'gripWheel') && starOf(panel, other),
+    'every catalogue tile carries its own favourite toggle',
+  );
+  assert.equal(starOf(panel, 'powerCell').getAttribute('aria-pressed'), 'true');
+  assert.equal(starOf(panel, 'gripWheel').getAttribute('aria-pressed'), 'false');
+  starOf(panel, 'gripWheel').onclick();
+  assert.equal(starOf(panel, 'gripWheel').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(storage.read().favorites, ['powerCell', 'gripWheel']);
+  // A category change re-runs refresh(): every card must restate its own state.
+  buttons(panel)
+    .find((b) => b.textContent === 'All parts')
+    .onclick();
+  assert.equal(starOf(panel, 'powerCell').getAttribute('aria-pressed'), 'true');
+  assert.equal(starOf(panel, other).getAttribute('aria-pressed'), 'false');
+  const reloaded = mount(t, { storage });
+  assert.equal(
+    starOf(reloaded.panel, 'powerCell').getAttribute('aria-pressed'),
+    'true',
+    'saved favourites come back pressed without a machine save',
+  );
+});
+
+test('un-starring inside Favorites leaves focus on a live control', (t) => {
+  const storage = fakeStorage({ favorites: ['powerCell', 'gripWheel'], category: 'Favorites' });
+  const { panel } = mount(t, { storage });
+  const cellStar = starOf(panel, 'powerCell');
+  // alive(null) is vacuously true, so the toggle's existence is asserted before it is used.
+  assert.ok(cellStar, 'every catalogue tile carries its own favourite toggle');
+  assert.equal(alive(cellStar), true, 'the starred card is on screen in Favorites');
+  cellStar.onclick();
+  assert.equal(alive(cellStar), false, 'un-starring drops its own card out of Favorites');
+  const landed = focused.at(-1);
+  assert.ok(landed, 'focus is placed explicitly, never left on the removed control');
+  assert.notEqual(landed, cellStar, 'focus does not stay on the control that just left');
+  assert.equal(alive(landed), true, 'focus lands on something still rendered');
+});
+
+test('un-starring the last favourite lands focus on the Favorites tab', (t) => {
+  const storage = fakeStorage({ favorites: ['powerCell'], category: 'Favorites' });
+  const { panel } = mount(t, { storage });
+  const cellStar = starOf(panel, 'powerCell');
+  assert.ok(cellStar, 'every catalogue tile carries its own favourite toggle');
+  cellStar.onclick();
+  const landed = focused.at(-1);
+  assert.ok(landed, 'focus is placed explicitly even when no card is left to take it');
+  assert.equal(
+    landed.textContent,
+    'Favorites',
+    'with the grid empty, focus falls back to the open category rather than the removed star',
+  );
+  assert.equal(alive(landed), true, 'the category tab is still rendered');
 });

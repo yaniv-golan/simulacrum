@@ -143,7 +143,8 @@ scene — live under Tools, which closes on pick, Escape or leaving it, each com
 keeping its name and `data-command`. Undo, Redo and Pause are icon-only; every
 icon-only control carries `aria-label` = its name, `title` = name · key (Undo and Redo
 say instead why they are off: "Nothing to undo", "Undo returns in Build"), and a 36 px
-target; the single driving keys stay as visible chips (Space, ., P) and chords live in
+target — except the two controls carried inside a catalogue card, where the corner star and
+(i) are 28 px and 24 px so that both still clear the 88 px compact tile; the single driving keys stay as visible chips (Space, ., P) and chords live in
 the tooltips (⌘Z or Ctrl+Z by platform); Help › Controls lists the same keys for touch.
 Header glyphs come from one set ([icons](../../src/presentation/icons.mjs#source),
 Primer Octicons plus a pause drawn on its grid); parts keep their mesh thumbnails. The brand subtitle is gone — the
@@ -158,7 +159,16 @@ mount) with its peer's name, and the count of compiled connections — a rejecte
 is not wired. It absorbs the former type line and never collapses a section.
 
 The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
-Recent and locally saved Favorites. Essentials are the six parts a first machine needs
+Recent and locally saved Favorites. Each tile carries its own favorite toggle: a star in the
+card's top-left corner, a sibling of the tile button so the tile's own drag and pick target
+is unchanged, labelled and titled with the part ("Save Power Cell to favorites"), carrying its saved
+state in `aria-pressed` — which every card restates whenever the grid refreshes — and showing
+that state as a filled star rather than by colour alone. Tab order
+within a card is tile, star, (i). Un-starring inside Favorites drops that card from the grid,
+so focus moves to the first card still shown, else the open category tab, rather than dying
+with the control. The star stays live outside Build: saving a part is a browsing action, and
+the parts-catalog-discovery guarantee keeps favorites a presentation concern, so it works
+while the tiles themselves are disabled. Essentials are the six parts a first machine needs
 (cell, motor, wheel, beam, hinge, plate), in build order, and only those tiles show the
 part's one-line purpose from the help content; every other category shows the name. Search covers the whole available catalog and
 ranks names, aliases, actions and related roles in that order, preferring complete
