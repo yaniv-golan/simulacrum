@@ -2,10 +2,10 @@
   "version": 1,
   "dependencies": {
     "src/presentation/workshop-view.mjs": "8e0a90856f30c2fde1b20acd2cdb3aa7f159f2202915a067d6cf7e0a18537d4c",
-    "src/presentation/icons.mjs": "c14abe91940b50e92860e3c5fa14f9d936f98df962132a4b2cfec9fc7612e4e4",
-    "src/presentation/workshop.css": "acb438e59d4d531189e26aae6e92bedb1c9c0d74122e238dd69f76dba82b7428",
+    "src/presentation/icons.mjs": "5f257bc0240a5e75872769d2fd517df3520c2dc9af04034c196acfe7ce98eab2",
+    "src/presentation/workshop.css": "87e895e2e17ba3d874557de597124b49d9e9ceef3aabbd41a5c2c383bd3bc76c",
     "src/presentation/inspector-summary.mjs": "4a17c94a2b2025ef725de44af687d5c5825bed6db7a63372a2a10b2346dd1266",
-    "src/presentation/parts-browser.mjs": "7f54b20e80e7e455e990d1858af73d2f6eab8405583940e09b186e0ba66ec200",
+    "src/presentation/parts-browser.mjs": "cba19ae13b5025e21357534f2caa967d04c9159275369ba4edd280d3331a3c45",
     "src/model/boundaries.d.ts": "0074c018defa839816105d7a81d84040ec7f5b265bc0350c22ddb01b7fd6b9da",
     "src/model/catalog.mjs": "15f3395b3ee4e8ed2b9c72f214a6647c590bc6621ac142661c0e966271c4edd1",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",

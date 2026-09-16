@@ -214,7 +214,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7ebc23e7468bcdff664086490669911059aaadabfc704c464f141e1550df395a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"6ca674cef9d4ed02c5c531b6b45627e49678aabc5dbf3e2c5424755d8437b29d","disposition":"still accurate","rationale":"The changed verification scripts, their tests and the new read-classification module affect browser scope declarations and selection reporting, not the physics change recipe: its steps, owners and documentation follow-up are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"45cdd6f2dad881ffda984fd203f3313e4bbe374bf1b6536c0cc7754a601a9da1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7ed4bea7aa2994fc583edfef864e111dca9659fa271275ae37c81505047b63b0","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are presentation, documentation, browser-check and manifest files from the catalogue favourite toggle; no law, simulation module or the physics door changed, so this recipe's owners, its narrow-door rule and its required checks all still hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -618,7 +618,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6b331ee188cc074d21ae55fbb0b7b9b71817a438ae9799b0f3b7c910d48eed79","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a654852766b2773b1b79bc31b7280a668ece3d3bb44bc7d673819d5b9657caf9","disposition":"still accurate","rationale":"Unchanged prose. Its dependency architecture.md#trace-an-edit gained one Tools-menu name, and verify-spring-browser.mjs changed only where it drives the reworked header. The overlay recipe's owner, visibility lifecycle and verification steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f9433348a8ea6def023d7ccfa476df00c8b3bbb54ef596110fa64a4b9c6cec39","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a28a007d93262597688545b1a529334bc991d2724a668aa195bfccc1ffcf5055","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-rope-browser.mjs changed only where it asserts the catalogue's favourite control: the retired shared button is now asserted absent and the per-part stars counted. The overlay recipe's owner, visibility lifecycle and verification steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
