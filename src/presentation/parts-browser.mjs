@@ -115,6 +115,12 @@ export function createPartsBrowser({
     name.textContent = CATALOG[type].name;
     purpose.textContent = reason || PART_HELP[type].purpose;
   }
+  // The toggle names the action its press will perform, so a saved part stops offering to save
+  // what is already saved. `aria-pressed` carries the state; this carries the next action.
+  const favoriteLabel = (type, saved) =>
+    saved
+      ? `Remove ${CATALOG[type].name} from favorites`
+      : `Save ${CATALOG[type].name} to favorites`;
   const order = [
     ...ESSENTIAL_PARTS,
     ...Object.keys(CATALOG).filter((t) => !ESSENTIAL_PARTS.includes(t)),
@@ -164,8 +170,9 @@ export function createPartsBrowser({
     outlineStar.setAttribute('class', 'icon star-outline');
     filledStar.setAttribute('class', 'icon star-filled');
     star.append(outlineStar, filledStar);
-    star.setAttribute('aria-label', `Save ${CATALOG[type].name} to favorites`);
-    star.setAttribute('title', `Save ${CATALOG[type].name} to favorites`);
+    const initialLabel = favoriteLabel(type, favorites.includes(type));
+    star.setAttribute('aria-label', initialLabel);
+    star.setAttribute('title', initialLabel);
     star.onclick = () => {
       favorites = favorites.includes(type)
         ? favorites.filter((t) => t !== type)
@@ -234,8 +241,13 @@ export function createPartsBrowser({
       card.tile.draggable = editable;
       card.reason.textContent = result?.reason ?? '';
       // Every card restates its own saved state: a reload, a search or a category change
-      // must never leave a star claiming the opposite of what is stored.
-      card.star.setAttribute('aria-pressed', String(favorites.includes(type)));
+      // must never leave a star claiming the opposite of what is stored, nor offering to save
+      // a part it would in fact remove.
+      const saved = favorites.includes(type);
+      card.star.setAttribute('aria-pressed', String(saved));
+      const label = favoriteLabel(type, saved);
+      card.star.setAttribute('aria-label', label);
+      card.star.setAttribute('title', label);
     }
     // Reorder only on explicit browse/search actions, never on simulation frames.
     for (const { type } of rows) grid.append(cards.get(type).wrapper);

@@ -161,7 +161,8 @@ is not wired. It absorbs the former type line and never collapses a section.
 The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
 Recent and locally saved Favorites. Each tile carries its own favorite toggle: a star in the
 card's top-left corner, a sibling of the tile button so the tile's own drag and pick target
-is unchanged, labelled and titled with the part ("Save Power Cell to favorites"), carrying its saved
+is unchanged, labelled and titled with the action its press performs ("Save Power Cell to favorites",
+"Remove Power Cell from favorites" once saved), carrying its saved
 state in `aria-pressed` — which every card restates whenever the grid refreshes — and showing
 that state as a filled star rather than by colour alone. Tab order
 within a card is tile, star, (i). Un-starring inside Favorites drops that card from the grid,

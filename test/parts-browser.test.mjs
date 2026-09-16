@@ -306,8 +306,27 @@ test('a star restates aria-pressed after refresh and after a reload', (t) => {
   );
   assert.equal(starOf(panel, 'powerCell').getAttribute('aria-pressed'), 'true');
   assert.equal(starOf(panel, 'gripWheel').getAttribute('aria-pressed'), 'false');
+  assert.equal(
+    starOf(panel, 'powerCell').getAttribute('aria-label'),
+    `Remove ${CATALOG.powerCell.name} from favorites`,
+    'a pressed star names the action its press performs, not the one already taken',
+  );
+  assert.equal(
+    starOf(panel, 'powerCell').getAttribute('title'),
+    `Remove ${CATALOG.powerCell.name} from favorites`,
+  );
+  assert.equal(
+    starOf(panel, 'gripWheel').getAttribute('aria-label'),
+    `Save ${CATALOG.gripWheel.name} to favorites`,
+    'an unsaved star offers the save',
+  );
   starOf(panel, 'gripWheel').onclick();
   assert.equal(starOf(panel, 'gripWheel').getAttribute('aria-pressed'), 'true');
+  assert.equal(
+    starOf(panel, 'gripWheel').getAttribute('aria-label'),
+    `Remove ${CATALOG.gripWheel.name} from favorites`,
+    'the label follows the toggle, not only the first render',
+  );
   assert.deepEqual(storage.read().favorites, ['powerCell', 'gripWheel']);
   // A category change re-runs refresh(): every card must restate its own state.
   buttons(panel)

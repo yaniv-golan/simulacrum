@@ -7,7 +7,9 @@ import { browseAllParts } from './catalog-browser-actions.mjs';
 const evidence = createBrowserEvidence();
 const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: true });
-const equal = (a, b) => evidence.assert('deepEqual', [a, b]);
+// The message reaches assert.deepEqual, so two failures of the same shape stay distinguishable.
+const equal = (a, b, message) =>
+  evidence.assert('deepEqual', message === undefined ? [a, b] : [a, b, message]);
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()).metadata);
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
@@ -171,6 +173,11 @@ try {
   await page.locator('[data-part-type="gripWheel"]').hover();
   await cellStar.click();
   equal(await cellStar.getAttribute('aria-pressed'), 'true');
+  equal(
+    await cellStar.getAttribute('aria-label'),
+    'Remove Power Cell from favorites',
+    'a pressed star offers the removal rather than another save',
+  );
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   const placed = await read();
   await page.getByRole('button', { name: 'About Power Cell', exact: true }).click();
