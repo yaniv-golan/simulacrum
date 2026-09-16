@@ -1980,7 +1980,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves each part's canonical solid envelope — bounding box, collider and mass unchanged — with gear discs drawn toothed within that envelope and picking unchanged across it, and preserves material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves each part's canonical solid envelope — collider and mass unchanged, and a drawn bounding box that fills the solid or, for a part the builder declares drawn inward such as a gear, never exceeds it — with gear discs drawn toothed within that envelope and picking unchanged across it; a selection silhouette a builder supplies matches the drawn body; and it preserves material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -2052,7 +2052,27 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "gear teeth are cut one per catalog tooth count, tipped at the canonical root radius"
+            "anchor": "gear teeth are cut one per tooth count, tipped at the collider radius"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear flanks are involute curves with rounded tips, not straight trapezoids"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear bodies have a keyed bore that clears the axle, a hub, a proportionally recessed web and chamfered tooth ends"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "a gear web deepens with its size instead of flipping at one tooth count"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "curved gear walls shade as one surface while faces and chamfers keep their own normal"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "a selected gear is outlined by its tooth silhouette on both faces, not every crease of its body"
           }
         ],
         "negative": [
@@ -2098,7 +2118,7 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "gear teeth never leave the canonical root radius at any scale"
+            "anchor": "gear teeth never leave the collider radius at any scale"
           },
           {
             "path": "test/gear-appearance.test.mjs",
@@ -2106,7 +2126,7 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "a click in a tooth valley still picks the gear"
+            "anchor": "a click in a tooth valley, the bore or the recessed web still picks the gear"
           },
           {
             "path": "test/gear-appearance.test.mjs",

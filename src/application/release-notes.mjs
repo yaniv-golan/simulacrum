@@ -21,6 +21,14 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-gear-machined',
+      date: '2026-09-16',
+      name: 'Gears look machined',
+      summary:
+        'Gears now look machined: curved, chamfered teeth, a bore an axle fits through, and a recessed web on big gears. They turn the same.',
+      feature: 'gear24',
+    },
+    {
       id: '2026-09-16-gear-teeth',
       date: '2026-09-16',
       name: 'Gears now have teeth',
