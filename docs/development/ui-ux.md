@@ -341,8 +341,14 @@ actions such as Send feedback, Keep or Discard draft, Retry uploads, Save photo,
 photos and Stop tab recording remain text buttons, never collapsed into the ×. Backdrop
 dismissal remains a per-dialog choice. The nonmodal Part help window keeps its own
 titlebar pair (expand and close) as an adjacent, separately owned surface.
-Learn & examples opens a bounded browser. The top-right close control, Escape, or a
-click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
+Learn & examples opens a bounded browser whose row list scrolls beneath the fixed header.
+The top-right close control, Escape, or a click outside dismisses it; clicks within its
+content keep it open. Every entry is one row, grouped by readiness: the collapsed row keeps
+its name, its own launcher and a summary naming what the player will do and the readiness it
+needs, while the format line, the whole instruction and any extra actions open inside that
+row. Nothing is expanded on arrival, at most one row is open, a closed row keeps its actions
+in the page, and a pending replacement keeps the row holding its trigger open so cancelling
+returns focus to it. Starting a lesson moves its current step
 into the parts area; leaving removes it. The guided build says what to do next ("Next:
 Place Motor") and ticks a step from what the player built, not from who placed it: the
 k-th part of the step's type, or the k-th connection of its kind between the two types,
@@ -599,8 +605,8 @@ explanations. Unknown changes stay conservative. Registration is not execution.
 [Scope controls](../../test/workbench-content.test.mjs) cover meaningful and wrong
 states; the [browser journey](../../scripts/verify-workbench-content.mjs#source)
 checks requested learning/results, scope against changed parts, preserved operations,
-non-mutating help and the header × staying inside the dialog while examples overflow
-a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
+non-mutating help, the collapsed example rows with their launchers and instructions, and the
+header × staying inside the dialog while its example rows scroll in a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
 checks the independent motor edit, Run and Undo, and a zero-damping comparison that
 preserves other spring tuning. It also checks cancellation of example replacement
 and the gear extension: construction from an empty workshop, palette insertion,

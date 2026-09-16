@@ -202,7 +202,12 @@ export async function mountRemotePlaytest({
     uploadReceipts = new Map();
   let recoveredIds = null,
     recoveredCount = 0;
-  const projectStatus = `<p><strong>We are improving the basic builder.</strong> Parts, wiring, movement, undo and save/load work today. The controls still need to feel right.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Try building, and tell us when something feels confusing.</p><details><summary>Where the project goes next</summary><ol><li><strong>Now:</strong> improve building and editing until the designated player's feedback accepts this stage. Automated checks must also pass.</li><li><strong>Next:</strong> safe programmable controllers, then physical experiments for standing, shifting weight, lifting feet, stepping and stopping. Each must work before progressing.</li><li><strong>Then:</strong> terrain, better failure explanations and a rover that completes the ramp course with verified performance.</li><li><strong>Later:</strong> walkers, deeper editing and an in-game agent helper, with movement and real-player checks.</li><li><strong>Final goal:</strong> a walker goes down the ramp, takes five more steps, loops around, climbs back up and settles at its starting position. It must pass fixed variation, replay, safety, performance and human checks.</li></ol></details>`;
+  // The two facts a player needs, shared with recording setup so consent reads as it always has.
+  const statusFacts = `<p><strong>We are improving the basic builder.</strong> Parts, wiring, movement, undo and save/load work today. The controls still need to feel right.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Try building, and tell us when something feels confusing.</p>`;
+  // The maintainer plan is consent-time context for one designated player, not player content:
+  // the project dialog states the two facts instead and keeps the plan out of the workshop.
+  const statusPlan = `<details><summary>Where the project goes next</summary><ol><li><strong>Now:</strong> improve building and editing until the designated player's feedback accepts this stage. Automated checks must also pass.</li><li><strong>Next:</strong> safe programmable controllers, then physical experiments for standing, shifting weight, lifting feet, stepping and stopping. Each must work before progressing.</li><li><strong>Then:</strong> terrain, better failure explanations and a rover that completes the ramp course with verified performance.</li><li><strong>Later:</strong> walkers, deeper editing and an in-game agent helper, with movement and real-player checks.</li><li><strong>Final goal:</strong> a walker goes down the ramp, takes five more steps, loops around, climbs back up and settles at its starting position. It must pass fixed variation, replay, safety, performance and human checks.</li></ol></details>`;
+  const projectStatus = statusFacts + statusPlan;
   const projectHeading = () => {
     const heading = document.createElement('h2');
     heading.textContent = 'Build something that moves';
@@ -234,8 +239,9 @@ export async function mountRemotePlaytest({
   );
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
-  projectDialog.className = 'playtest-dialog';
-  projectDialog.innerHTML = projectStatus;
+  projectDialog.className = 'playtest-dialog playtest-status';
+  projectDialog.innerHTML =
+    '<p class="status-label">Works today</p><ul><li>Parts</li><li>Wiring</li><li>Movement</li><li>Undo</li><li>Save and load</li></ul><p>Still rough: how the controls feel.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Tell us when something feels confusing.</p>';
   projectDialog.setAttribute('aria-label', 'Project status');
   projectDialog.prepend(
     createDialogHeader(

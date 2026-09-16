@@ -915,7 +915,8 @@ button:not(.keyed) > .key-badge {
   line-height: 1.5;
   color: #b4ccc4;
 }
-.starter-guide button {
+/* The active guide is a column of full-width steps; the examples list is rows of actions. */
+.active-guide button {
   width: 100%;
   margin-top: 7px;
 }
@@ -1148,6 +1149,28 @@ button:not(.keyed) > .key-badge {
 }
 .playtest-dialog button {
   margin: 4px;
+}
+/* Project status states what works today; the maintainer plan stays out of the player's way. */
+.playtest-status .status-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3d3da;
+}
+.playtest-status ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.playtest-status li {
+  padding: 4px 12px;
+  border: 1px solid #58717e;
+  border-radius: 999px;
 }
 
 .manipulation-scope {
@@ -2857,6 +2880,93 @@ button:not(.keyed) > .key-badge {
 .example-card p {
   margin: 0 0 10px;
 }
+/* Learn & examples is a picker: one row per entry, its action always beside its name. */
+.examples-browser .starter-guide {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 0;
+}
+/* Instruction prose inside a row keeps the body size; only the picker line is smaller. */
+.examples-browser .starter-guide p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #e5eff2;
+}
+.example-group {
+  margin: 18px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3d3da;
+}
+.example-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+/* Narrow: the same list-then-action stacking the assembly browser already uses. */
+@media (max-width: 700px) {
+  .example-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .example-head > button[data-command] {
+    justify-self: start;
+  }
+}
+.example-title {
+  min-width: 0;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.example-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.example-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.example-summary {
+  flex: 1;
+  min-width: 12ch;
+  font-size: 12px;
+  color: #c3d3da;
+}
+.example-toggle svg {
+  margin-left: auto;
+}
+.example-detail {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 8px 0 0;
+}
+.example-detail[hidden] {
+  display: none;
+}
+.example-detail p {
+  margin: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .example-toggle svg {
+    transition: transform 150ms ease;
+  }
+}
+.example-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
 .build-info input {
   width: 100%;
   min-width: 0;
@@ -2869,8 +2979,9 @@ button:not(.keyed) > .key-badge {
   max-width: 32ch;
 }
 
-/* Saved browsing is requested content; instance editing stays with selection. */
-.assembly-browser {
+/* Requested browsers share one bounded shell: the header stays put, the content scrolls. */
+.assembly-browser,
+.examples-browser {
   width: min(860px, calc(100vw - 32px));
   height: min(640px, calc(100dvh - 32px));
   max-width: none;
@@ -2883,12 +2994,14 @@ button:not(.keyed) > .key-badge {
   border-radius: 12px;
   overflow: hidden;
 }
-.assembly-browser[open] {
+.assembly-browser[open],
+.examples-browser[open] {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.assembly-browser::backdrop {
+.assembly-browser::backdrop,
+.examples-browser::backdrop {
   background: #071018a8;
 }
 .assembly-filters {
@@ -2896,7 +3009,8 @@ button:not(.keyed) > .key-badge {
   gap: 12px;
   align-items: center;
 }
-.assembly-browser h2 {
+.assembly-browser h2,
+.examples-browser h2 {
   font-size: 22px;
 }
 .assembly-filters input {

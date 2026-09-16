@@ -25,3 +25,21 @@ export async function openTools(page) {
   const menu = page.locator('details.tools-menu');
   if (!(await menu.evaluate((node) => node.open))) await menu.locator('summary').click();
 }
+
+/**
+ * Open one Learn & examples row so its instruction and the extra actions inside it are
+ * reachable. A row's own launcher stays beside its name while the row is closed, so only
+ * content inside the row needs this. Idempotent.
+ */
+export async function expandExample(page, id) {
+  const toggle = page.locator(`.example-card[data-example="${id}"] .example-toggle`);
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await page.locator(`#example-detail-${id}`).waitFor({ state: 'visible' });
+}
+
+/** Open the optional sensor-variant disclosure that lives inside an expanded row. */
+export async function expandExampleVariants(page, id) {
+  await expandExample(page, id);
+  const variants = page.locator(`#example-detail-${id} .example-variants`);
+  if (!(await variants.evaluate((node) => node.open))) await variants.locator('summary').click();
+}

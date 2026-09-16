@@ -21,6 +21,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-16-lighter-dialogs',
+      date: '2026-09-16',
+      name: 'Learn & examples is a list you can scan',
+      summary:
+        'Every example is one row with its own button, and the instructions open inside the row. Project status now says what works today.',
+    },
+    {
       id: '2026-09-16-gear-teeth',
       date: '2026-09-16',
       name: 'Gears now have teeth',

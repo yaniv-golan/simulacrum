@@ -3681,7 +3681,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode. Learn & examples is a picker: one row per entry, grouped by readiness from its own copy table, nothing expanded on arrival and at most one row open. Each row keeps its launcher beside its name, its summary names what the player will do and the readiness its format line requires, and its format line, instruction paragraph and extra actions stay verbatim inside the row while remaining in the DOM when it is closed; a pending replacement keeps the row holding its trigger open so cancelling returns focus to the launcher that asked. The bounded browser scrolls its row list instead of the dialog that carries the header. Project status states what works today and what is still rough; the maintainer plan stays in recording setup's consent text and Give feedback keeps its single home in the footer.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -3761,6 +3761,14 @@
           {
             "path": "test/remote-playtest.test.mjs",
             "anchor": "setupClosed settles only once recording setup is dismissed"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "each Learn row keeps a short summary, its readiness clause and an honest claim"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "project status states the two facts while recording setup keeps its consent text"
           }
         ],
         "negative": [
@@ -3791,6 +3799,10 @@
           {
             "path": "test/workbench-content.test.mjs",
             "anchor": "first-run choice opens once per remembered device and never on a used bench"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "an unlisted Learn row is a rendering mistake rather than a blank line"
           }
         ]
       },
@@ -8489,7 +8501,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8553,7 +8565,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8724,7 +8736,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8963,7 +8975,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "c54be6fbf553955c1515c2a88a7145f71cd8838d17440b958f211a4bc3c2c96d",
+      "consumerSourceHash": "c4bac53eb73b1181b48f1bfd611bc46f48584181bbb152d92d02a2d0d2b7e991",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9246,7 +9258,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "783afabcb72f97d1e047abfa2bb37a15789e84a30807d6e49e8a156fd0d567dc",
+      "consumerSourceHash": "1595556b613ebff0efd5c38416464b257b13f77ad1b91ea4ec40eeb0edd4dbb2",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9280,7 +9292,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9357,7 +9369,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9428,7 +9440,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9471,7 +9483,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9626,7 +9638,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "619c5fc25120b7aaa001b62abfdd9f25b953b3aa602ef26c1bf8b1a712634691",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9779,7 +9791,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10107,7 +10119,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10192,7 +10204,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "d44ed9c07462b76c4909fa7fac16eb0e84b16543d1529a1f69fca5cc01ba3ddb",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10296,7 +10308,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "d44ed9c07462b76c4909fa7fac16eb0e84b16543d1529a1f69fca5cc01ba3ddb",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10367,7 +10379,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "6063f5ca43584f64db8accbbb94dd0275f5529a3651ca8a210c3ac404732a06a",
+      "sourceSha256": "2260515eb4ee8f7faa82b7caebae76ea2c040e11bbad1adf83dc9ad3e02c594a",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -10450,7 +10462,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10533,7 +10545,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "619c5fc25120b7aaa001b62abfdd9f25b953b3aa602ef26c1bf8b1a712634691",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
