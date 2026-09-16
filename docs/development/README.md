@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"484ac241d4980be69e4ff9260ca11bc02eb717716c2960fa05abdf85fce31fbc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"53c8c3b65f461a27f0ab00f0dcff88d0052d549a9da22ba9369da56164875226","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved only by this candidate's reviewed scope metadata: nine browserReviewMetadataScopes digests, eight consumerSourceHash and one sourceSha256 for verify-workbench-content.mjs. No milestone, bar, rule or check allocation changed, so the M3b statement and the rule that the manifest owns allocation both still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"e37887de4dcec653427e12bf9f2b9ceff8ca047b3f689b581cfc6d199190c577","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"2f4a372b30a8396d289afce5fb7262f2a8135321e6d9295238caee680bd42c2a","disposition":"still accurate","rationale":"The manifest gains the read-classification owners and controls for this branch, and the R4 product rows landed on main (palette, feedback storage, pivot pin, top bar); no milestone, bar allocation or gate output described in this section changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"ca50e57353bc90f6aff9309da00bae68e11d67cc1904e95d3a48da1db8eb7469","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"92c988d3ac7d47029eb8c02e663fc478879ab5ea3b52875c30b0bd4164d08265","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching docs/development/reference.md and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7575f3e8398022ef843d94d5fbae9aa0f71b1356062a455d8ab3aeec23c3f2a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d5b815b7cb86fa2bb14f0ce70326efa880d547e224255ed6b62ff8949f809f34","disposition":"still accurate","rationale":"reference.md regenerated only the registry rows that now list classifyRead and the read-classification module beside the existing owners; the documentation workflow this section describes (prepare, review, check and their ownership rules) is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"e2ceda1935ced47cec5ace1759e05ab6eeb12cac8c8e69b1b6d13275a358ac1c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6eea875ee6d407354ee90a2d322d7551a64436f588b23518300fcba84532c208","disposition":"still accurate","rationale":"Unchanged prose. package.json changed only in its version field and manifest.json only in nine scope digests. This candidate registers, removes and re-scopes no browser check, so selection, phase scheduling and platform rules are unchanged; the pivot pin's verify-pivot-pin-browser registration arrived already reviewed on main."} -->
+<!-- doc-review {"version":1,"fingerprint":"c29cddc92c3338c8b7e475c225ed68637fa4b0b0c2afa0f6f71ef24cc29b595e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c88d5a27329d2d8f4b192c31e6f5813c3ef3bc6612f4b0cc9a2a343887b7a09f","disposition":"updated","rationale":"This branch rewrites the declaration paragraph: purpose is one of identity, fixture, runtime or source-analysis, excludedInputs must name documentation and unit-test, read-classification is the single owner selection, the proposal and the manifest validator all apply, an untrusted declaration is blocked at prepare with a declaration skeleton written beside the proposal, and unaudited reads are reported by name. The section now matches browser-selection, validate-manifest, browser-scope-proposal, verify-local and read-classification."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -400,8 +400,24 @@ Review hashes alongside the source; a hash cannot explain the old implementation
 New opaque reads remain blocked until explicitly classified. Optional
 `--declarations artifacts/scope-declarations.json` accepts an array of
 `{kind: "metadata", entrypoint, reads, checks}` (or `kind: "local"` without reads).
-Each read supplies `expression`, `purpose` and `excludedInputs`; computed hashes are
-not accepted as declarations. Existing classifications carry forward visibly.
+Each read supplies `expression`, a `purpose` (`identity`, `fixture`, `runtime` or
+`source-analysis`) and `excludedInputs` naming both `documentation` and `unit-test`; that
+is the one classification selection trusts, and the proposal, the manifest validator and
+selection all apply it from [read-classification](../../scripts/read-classification.mjs#implementation).
+A declaration that selection would not trust is blocked at prepare naming the read and
+the missing field, rather than surfacing later as a widened selection inside the witness
+battery; when reads are unclassified, prepare writes a declaration skeleton next to the
+proposal (`<proposal>.declarations.json`) with the purpose left to choose. Computed
+hashes are not accepted as declarations. Existing classifications carry forward visibly.
+Selection reports why a row is not audited (`audit.unaudited`, shown by `inspect:change`
+as "Unaudited opaque reads"), and the live registry contract asserts it before its mirror
+list, so a widened selection names its cause (the merge and local tiers print the same
+reasons on their selection line). That mirror list is a deliberate hand-written contract —
+a human re-affirms the union of the mirror rows' declared checks — and it changes only when
+a browser check is declared on those rows; edit the contract before `browser:scopes prepare`
+in the same candidate. The skeleton carries every read of the row, because a declaration
+replaces the row's reads whole; the second mirror assertion in `browser-registry.test.mjs`
+tolerates a widened selection by design and needs no audit line.
 Optional `--base <commit>` (also on `verify:prepare`) names the candidate delta; the
 proposal, its summary and the apply report then carry `affectedNotWitnessed` — the
 checks that delta would select which no witness of this proposal executes. It is
@@ -690,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"4f7044a59fee4fd464bf2ee86eaf6e7a58c30094aae1688dceaee57b5b2fd858","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af87729088ae14d0435f22bb5a49056708d72fefc3d9604525fd64817ec7b1bc","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged; package.json moved by the version bump and manifest.json by nine reviewed scope digests, and neither is completion evidence nor a rule about it."} -->
+<!-- doc-review {"version":1,"fingerprint":"9f3730619baa39e2fa69737bb1faa68e87c50176206b152cb3ae3f77f71c0423","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8e7046a6d16b0dfff144196bac73635a53c124687e2b2f1b9bc9ee293196d8d5","disposition":"still accurate","rationale":"The changed modules add the read classification refusal and its skeleton to preparation and selection; the candidate tiers, their evidence and the completion sequence this section describes are unchanged, and preparation still records reviews only through an explicit decision."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

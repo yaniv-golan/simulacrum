@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"4cb89aafaf387bf98c7dccffdcb83aa11b8dc7cc13c489b6bda63f62a048ff49","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8792efca53b080ab3fa137e1bf0d3efafe570e3ab3ab95b41372ec4fcdff254c","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching docs/contracts/runtime-v1.md and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"c4e66bf061d4a42becbfea6c229c2771565ea8bad811f732d0f7da59e570d674","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"4a2d56fe37b69e8aa65a66898aa79477da8c85bab598b3b0b5ab0235c4328c05","disposition":"still accurate","rationale":"validate-manifest now also rejects a manifest declaration that selection would not trust; the layer map, import rules and ownership boundaries this section describes are untouched."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

@@ -69,7 +69,13 @@ function manifestFixture(graph, list = checks()) {
     browserReviewMetadataScopes: [
       row('scripts/helper.mjs', {
         checks: ['controls'],
-        reads: [{ expression: 'path', purpose: 'identity', excludedInputs: ['documentation'] }],
+        reads: [
+          {
+            expression: 'path',
+            purpose: 'identity',
+            excludedInputs: ['documentation', 'unit-test'],
+          },
+        ],
         sourceSha256: '',
         consumerSourceHash: '',
       }),

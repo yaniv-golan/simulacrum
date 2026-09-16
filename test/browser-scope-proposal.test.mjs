@@ -25,7 +25,13 @@ function fixture() {
       {
         entrypoint: 'scripts/read.mjs',
         checks: ['controls'],
-        reads: [{ expression: 'path', purpose: 'identity', excludedInputs: ['documentation'] }],
+        reads: [
+          {
+            expression: 'path',
+            purpose: 'identity',
+            excludedInputs: ['documentation', 'unit-test'],
+          },
+        ],
       },
     ],
   };
@@ -95,8 +101,12 @@ test('unknown reads cannot be accepted through hashes or prose; authored classif
     kind: 'metadata',
     entrypoint: 'scripts/read.mjs',
     reads: [
-      { expression: 'path', purpose: 'identity', excludedInputs: [] },
-      { expression: 'otherPath', purpose: 'runtime', excludedInputs: [] },
+      { expression: 'path', purpose: 'identity', excludedInputs: ['documentation', 'unit-test'] },
+      {
+        expression: 'otherPath',
+        purpose: 'runtime',
+        excludedInputs: ['documentation', 'unit-test'],
+      },
     ],
   };
   const good = deriveScopeProposal(input, [d]);
@@ -116,7 +126,9 @@ test('consumer edges, exclusions and changed witness sets are visible and retain
       kind: 'metadata',
       entrypoint: 'scripts/read.mjs',
       checks: ['extra'],
-      reads: [{ expression: 'path', purpose: 'runtime', excludedInputs: [] }],
+      reads: [
+        { expression: 'path', purpose: 'runtime', excludedInputs: ['documentation', 'unit-test'] },
+      ],
     },
   ]);
   const row = p.changes.find((c) => c.kind === 'metadata');
@@ -223,7 +235,9 @@ test('new occurrences of identical read text require explicit classification', (
     {
       kind: 'metadata',
       entrypoint: 'scripts/read.mjs',
-      reads: [{ expression: 'path', purpose: 'fixture', excludedInputs: [] }],
+      reads: [
+        { expression: 'path', purpose: 'fixture', excludedInputs: ['documentation', 'unit-test'] },
+      ],
     },
   ]);
   assert.equal(approved.blocked.length, 0);
@@ -323,4 +337,78 @@ test('an empty candidate delta enumerates no skipped checks', () => {
   const { input } = fixture();
   const p = deriveScopeProposal({ ...input, delta: { base: 'main', files: [] } });
   assert.deepEqual(p.affectedNotWitnessed, { basis: { base: 'main', files: [] }, checks: [] });
+});
+
+test('a declaration selection would not trust is blocked at prepare naming the read and the field; an unclassified read gets a skeleton', () => {
+  const { input, graph } = fixture();
+  graph.nodes.get('scripts/read.mjs').opaqueReads.push('execFileSync(esbuild)');
+  // The 2026-09-15 case: purpose given, exclusions empty. Prepare used to accept this and the
+  // apply's witness battery then failed on a conservative selection with nothing naming the read.
+  const partial = deriveScopeProposal(input, [
+    {
+      kind: 'metadata',
+      entrypoint: 'scripts/read.mjs',
+      reads: [
+        { expression: 'path', purpose: 'identity', excludedInputs: ['documentation', 'unit-test'] },
+        { expression: 'execFileSync(esbuild)', purpose: 'runtime', excludedInputs: [] },
+      ],
+    },
+  ]);
+  assert.equal(partial.blocked.length, 1, partial.blocked.join('\n'));
+  assert.match(partial.blocked[0], /metadata:scripts\/read\.mjs/);
+  assert.match(partial.blocked[0], /execFileSync\(esbuild\)/);
+  assert.match(partial.blocked[0], /must exclude documentation and unit-test/);
+  assert.equal(partial.declarationSkeletons, undefined, 'a classified read needs no skeleton');
+  // No declaration at all: blocked as before, and the proposal carries the skeleton to author.
+  const none = deriveScopeProposal(input);
+  assert.match(none.blocked.join(), /unclassified/);
+  assert.deepEqual(none.declarationSkeletons, [
+    {
+      kind: 'metadata',
+      entrypoint: 'scripts/read.mjs',
+      reads: [
+        {
+          expression: 'execFileSync(esbuild)',
+          purpose: '<one of identity|fixture|runtime|source-analysis>',
+          excludedInputs: ['documentation', 'unit-test'],
+        },
+        // The row's existing classification rides along: a declaration replaces reads whole.
+        { expression: 'path', purpose: 'identity', excludedInputs: ['documentation', 'unit-test'] },
+      ],
+      checks: ['controls'],
+    },
+  ]);
+  // A skeleton handed back with a placeholder purpose left in is blocked by name, not thrown.
+  const placeholder = deriveScopeProposal(input, none.declarationSkeletons);
+  assert.equal(placeholder.blocked.length, 1, placeholder.blocked.join('\n'));
+  assert.match(
+    placeholder.blocked[0],
+    /metadata:scripts\/read\.mjs: choose a purpose for `execFileSync\(esbuild\)`/,
+  );
+  // A carried-forward row that predates the predicate blocks every proposal until re-declared.
+  const legacy = fixture();
+  const stale = JSON.parse(legacy.input.manifestText);
+  stale.browserReviewMetadataScopes[0].reads[0].excludedInputs = ['documentation'];
+  const carried = deriveScopeProposal({ ...legacy.input, manifestText: JSON.stringify(stale) });
+  assert.equal(carried.blocked.length, 1, carried.blocked.join('\n'));
+  assert.match(
+    carried.blocked[0],
+    /metadata:scripts\/read\.mjs: read `path` must exclude unit-test/,
+  );
+  // A complete declaration proposes the row and no witness sees an unaudited selection.
+  const good = deriveScopeProposal(input, [
+    {
+      kind: 'metadata',
+      entrypoint: 'scripts/read.mjs',
+      reads: [
+        { expression: 'path', purpose: 'identity', excludedInputs: ['documentation', 'unit-test'] },
+        {
+          expression: 'execFileSync(esbuild)',
+          purpose: 'runtime',
+          excludedInputs: ['documentation', 'unit-test'],
+        },
+      ],
+    },
+  ]);
+  assert.equal(good.blocked.length, 0);
 });

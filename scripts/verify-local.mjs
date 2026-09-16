@@ -5,7 +5,7 @@ import {
   initializeVerificationEnvironment,
 } from './verification-run.mjs';
 import { runCI } from './ci.mjs';
-import { affectedBrowserChecks } from './browser-selection.mjs';
+import { affectedBrowserChecks, unauditedLine } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
 import { withRequiredChecks, resolveRetrySelection } from './candidate-after.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
@@ -89,7 +89,7 @@ try {
             selection.reach = assertSelectionReach(selection, reach);
             report.selection = selection;
             console.log(
-              `Browser selection: ${selection.checks.length} checks; ${selection.fallback ?? 'see recorded dependency reasons'}`,
+              `Browser selection: ${selection.checks.length} checks; ${selection.fallback ?? 'see recorded dependency reasons'}${unauditedLine(selection.audit)}`,
             );
             return selection;
           }),

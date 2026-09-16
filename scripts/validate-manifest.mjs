@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
+import { classifyReads } from './read-classification.mjs';
 import { pathToFileURL } from 'node:url';
 import { validateInvariantCoverage } from './invariant-coverage.mjs';
 import { validateHostProfiles } from './host-profile.mjs';
@@ -221,18 +222,19 @@ export function validateManifest(m) {
     if (
       scope.reads !== undefined &&
       (!Array.isArray(scope.reads) ||
-        !scope.reads.every(
-          (r) =>
-            typeof r.expression === 'string' &&
-            ['identity', 'fixture', 'runtime', 'source-analysis'].includes(r.purpose) &&
-            Array.isArray(r.excludedInputs) &&
-            r.excludedInputs.every((k) => ['documentation', 'unit-test'].includes(k)),
-        ) ||
         !Array.isArray(scope.consumers) ||
         !reachingChecksOK(scope, browser) ||
         !/^[a-f0-9]{64}$/.test(scope.consumerSourceHash ?? ''))
     )
       throw Error('invalid audited browser reads');
+    if (scope.reads !== undefined) {
+      // The same predicate selection trusts: a hand-edited row cannot silently widen selection.
+      const classified = classifyReads(scope.reads);
+      if (!classified.ok)
+        throw Error(
+          `invalid audited browser reads for ${scope.entrypoint}: ${classified.reasons.join('; ')}; re-declare the row with browser:scopes -- prepare --declarations and apply`,
+        );
+    }
   }
   validateHostProfiles(m);
   return m;

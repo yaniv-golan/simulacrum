@@ -19,7 +19,7 @@ const selections = {
 const replacements = {
   'verification-run.mjs': `export function initializeVerificationEnvironment(){} export function createVerificationContext(){return {identity:{source:{head:'h',workingTreeDigest:'d'}},check:async(id,c,fn)=>fn(),receipts:()=>[],selection:${JSON.stringify(selections[scenario])}}}`,
   'ci.mjs': `export async function runCI(){return {ok:true}}`,
-  'browser-selection.mjs': `export function affectedBrowserChecks(files){const runtime=files.includes('src/foo.mjs');return {source:{head:'h',workingTreeDigest:'d'},files,scope:runtime?'local-contract':'documentation',checks:runtime?[{id:'foo'},{id:'bar'}]:[],reasons:runtime?[{id:'foo',reason:'import'},{id:'bar',reason:'import'}]:[]}}`,
+  'browser-selection.mjs': `export function affectedBrowserChecks(files){const runtime=files.includes('src/foo.mjs');return {source:{head:'h',workingTreeDigest:'d'},files,scope:runtime?'local-contract':'documentation',checks:runtime?[{id:'foo'},{id:'bar'}]:[],reasons:runtime?[{id:'foo',reason:'import'},{id:'bar',reason:'import'}]:[]}} export const unauditedLine=()=>'';`,
   // baz is a timing budget: a retry that requires it makes the tier reach a timing phase.
   'browser-registry.mjs': `export function browserChecks(){return [{id:'foo'},{id:'bar'},{id:'baz',timingSensitive:true}]}`,
   'verify-browser-suite.mjs': `export async function verifyBrowserSuite(ids){console.log('SUITE '+JSON.stringify(ids));return []}`,

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createVerificationContext } from './verification-run.mjs';
 import { runCI } from './ci.mjs';
-import { affectedBrowserChecks } from './browser-selection.mjs';
+import { affectedBrowserChecks, unauditedLine } from './browser-selection.mjs';
 import { browserChecks } from './browser-registry.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { mergeChanges, mergeSelection } from './merge-selection.mjs';
@@ -125,7 +125,7 @@ try {
             selection.reach = assertSelectionReach(selection, reach);
             report.selection = selection;
             console.log(
-              `Merge browser selection: ${selection.checks.length}; ${selection.fullReason ?? 'audited affected checks plus integration smoke'}`,
+              `Merge browser selection: ${selection.checks.length}; ${selection.fullReason ?? 'audited affected checks plus integration smoke'}${unauditedLine(selection.audit)}`,
             );
             return selection;
           }),

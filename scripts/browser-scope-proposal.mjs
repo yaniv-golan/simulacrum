@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { classifyReads, declarationSkeleton } from './read-classification.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -45,20 +46,19 @@ function validateDeclaration(d) {
     throw Error(
       'Invalid scope declaration; supply kind, entrypoint and authored reads/checks only',
     );
-  if (
-    d.reads !== undefined &&
-    (!Array.isArray(d.reads) ||
-      d.reads.some(
-        (r) =>
-          !only(r, ['expression', 'purpose', 'excludedInputs']) ||
-          typeof r.expression !== 'string' ||
-          !r.expression ||
-          !['identity', 'fixture', 'runtime', 'source-analysis'].includes(r.purpose) ||
-          !strings(r.excludedInputs) ||
-          r.excludedInputs.some((k) => !['documentation', 'unit-test'].includes(k)),
-      ))
-  )
-    throw Error('Invalid read classification');
+  if (d.reads !== undefined && !Array.isArray(d.reads))
+    throw Error(`${d.kind}:${d.entrypoint}: reads must be an array`);
+  for (const r of d.reads ?? []) {
+    if (!only(r, ['expression', 'purpose', 'excludedInputs']))
+      throw Error(
+        `${d.kind}:${d.entrypoint}: a read declares expression, purpose and excludedInputs only`,
+      );
+    if (typeof r.expression !== 'string' || !r.expression)
+      throw Error(`${d.kind}:${d.entrypoint}: a read declares a non-empty expression`);
+    // Classification is judged by the shared predicate below and reported as a blocked row
+    // naming the read and the field (a skeleton with a placeholder purpose left in included),
+    // so prepare and verify:prepare report BLOCKED_SCOPE rather than crashing.
+  }
   if (d.reads && new Set(d.reads.map((r) => r.expression)).size !== d.reads.length)
     throw Error('Duplicate read classification');
 }
@@ -162,7 +162,8 @@ export function deriveScopeProposal(
   }
   const before = JSON.parse(manifestText),
     after = structuredClone(before),
-    blocked = [...graph.errors];
+    blocked = [...graph.errors],
+    skeletons = [];
   const checks = before.browserChecks;
   const roots = checks.map((c) => `${c.id}:${c.environment}:${c.script}`).sort();
   const closures = browserCheckClosures(checks, graph),
@@ -250,8 +251,23 @@ export function deriveScopeProposal(
           if (index >= 0) return d?.reads ? available[index] : available.splice(index, 1)[0];
           return { expression, purpose: null, excludedInputs: [] };
         });
-        if (proposed.reads.some((r) => r.purpose === null))
+        if (proposed.reads.some((r) => r.purpose === null)) {
           blocked.push(`${key}: unclassified reads require explicit declarations`);
+          skeletons.push(
+            declarationSkeleton(path, proposed.reads, { checks: proposed.checks ?? [] }),
+          );
+        }
+        // A classification selection would not trust is refused here, naming the read and the
+        // field, instead of surfacing later as a widened selection inside the witness battery.
+        const classified = classifyReads(
+          proposed.reads.filter((r) => r.purpose !== null && !/^<one of /.test(r.purpose ?? '')),
+        );
+        if (!classified.ok) blocked.push(`${key}: ${classified.reasons.join('; ')}`);
+        const placeholders = proposed.reads.filter((r) => /^<one of /.test(r.purpose ?? ''));
+        if (placeholders.length)
+          blocked.push(
+            `${key}: choose a purpose for ${placeholders.map((r) => `\`${r.expression}\``).join(', ')} (skeleton placeholder left in)`,
+          );
         if (d?.reads?.some((r) => !expressions.includes(r.expression)))
           blocked.push(`${key}: declaration names an absent read`);
         proposed.sourceSha256 = digest(read(path));
@@ -292,6 +308,7 @@ export function deriveScopeProposal(
     declarations,
     roots: { current: roots, note: 'Recorded root digests do not preserve historical membership.' },
     blocked: [...new Set(blocked)].sort(),
+    ...(skeletons.length ? { declarationSkeletons: skeletons } : {}),
     changes,
     affectedNotWitnessed: skipped,
     proposedManifest,

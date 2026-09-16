@@ -129,3 +129,13 @@ test('checks that launch a system browser channel are registered so the channel 
   m.browserChecks[0].browserChannel = 'firefox';
   assert.throws(() => validateManifest(m), /browserChannel/);
 });
+
+test('a metadata scope row with a partially excluded read is refused by the manifest validator, naming the read', () => {
+  const m = structuredClone(manifest);
+  const row = m.browserReviewMetadataScopes.find((s) => s.reads?.length);
+  row.reads[0].excludedInputs = ['documentation'];
+  assert.throws(() => validateManifest(m), /must exclude unit-test/);
+  row.reads[0].excludedInputs = ['documentation', 'unit-test'];
+  row.reads[0].purpose = 'test-selection';
+  assert.throws(() => validateManifest(m), /needs purpose in/);
+});
