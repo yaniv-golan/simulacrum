@@ -1125,3 +1125,33 @@ test('fixed-path spring inactivity preserves authored energy and rejects a forge
     b.dispose();
   }
 });
+
+// Contract amendment batch (F3): the door's travel domain is keyed on stiffness.
+// Elastic rows keep the frozen 0.08–0.40 m bounds their controls were measured on;
+// zero-stiffness rows (powered linear guides, passive slides) admit 0.01–1.0 m.
+const travel = (limits, stiffness, restLength = (limits[0] + limits[1]) / 2) => ({
+  gravity: [0, -9.81, 0],
+  bodies: [body(0, 1, true), body(restLength)],
+  joints: [{ ...spring, limits, restLength, stiffness, damping: 0 }],
+});
+test('zero-stiffness spring rows admit 0.01–1.0 m travel while elastic rows keep 0.08–0.40 m', async () => {
+  for (const config of [
+    travel([0.03, 0.57], 0),
+    travel([0.01, 1], 0),
+    travel([0.08, 0.4], 100),
+    travel([0.08, 0.4], 0),
+  ]) {
+    const w = await createPhysicsWorld(config);
+    w.dispose();
+  }
+});
+test('spring travel outside the stiffness-keyed domain rejects before the world exists', async () => {
+  for (const config of [
+    travel([0.03, 0.57], 100), // elastic row outside 0.08–0.40
+    travel([0.005, 0.5], 0), // below the passive floor that keeps restLength > 0 (strain divides by it)
+    travel([0.1, 1.01], 0), // above the passive ceiling
+    travel([0.03, 0.57], 0, 0.6), // start position outside the limits
+    travel([0.57, 0.03], 0, 0.3), // unordered
+  ])
+    await assert.rejects(createPhysicsWorld(config), /invalid spring settings/);
+});

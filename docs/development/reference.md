@@ -45,6 +45,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run gate:M0 | node scripts/gate.mjs M0 |
 | npm run gate:structural | node scripts/gate-structural.mjs |
 | npm run inspect:change | node scripts/inspect-change.mjs |
+| npm run land | node scripts/land.mjs |
 | npm run native:qualify | node scripts/verification-window.mjs scripts/native-qualification.mjs |
 | npm run playtest:download | node scripts/playtest/download.mjs |
 | npm run playtest:local | wrangler dev --port 8787 |
@@ -65,6 +66,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run typecheck | node scripts/check-boundary-types.mjs |
 | npm run verify:candidate | node scripts/verify-candidate.mjs |
 | npm run verify:final | node scripts/verification-window.mjs scripts/verify-final.mjs |
+| npm run verify:host | node scripts/verify-host.mjs |
 | npm run verify:local | node scripts/verification-window.mjs scripts/verify-local.mjs |
 | npm run verify:merge | node scripts/verify-merge.mjs |
 | npm run verify:merge:shadow | node scripts/verify-merge-shadow.mjs |
@@ -125,6 +127,7 @@ These are registered commands and checks, not evidence that they passed.
 | candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |
 | private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
 | human-evidence-verdicts | [evaluateBar](../../scripts/bars.mjs), [Records a human assessment](../../scripts/assess.mjs), [formatVerificationOutcome](../../scripts/verification-outcome.mjs) | verification-scope-configuration |
+| app-identity-fingerprint | [appFingerprint](../../scripts/app-fingerprint.mjs) | verification-scope-configuration |
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
@@ -139,6 +142,7 @@ These are registered commands and checks, not evidence that they passed.
 | bounded-controller-programs | [compileController](../../src/scripting/controller-program.mjs), [createWorkshop](../../src/core/workshop.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [controllerDecision](../../src/model/controller-decision.mjs), [createControllerHistory](../../src/application/controller-history.mjs) | invariant-controls |
 | learning-feature-identity | [admitLearningModel](../../src/model/learning-model.mjs), [admitLearningBindings](../../src/model/learning-bindings.mjs) | invariant-controls |
 | candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [reexecutionSet](../../scripts/candidate-after.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs), [reusableAcrossCandidates](../../scripts/candidate-after.mjs), [acceptRetainedEvidence](../../scripts/verification-run.mjs) | verification-scope-configuration |
+| landing-integrity | [assertLandable](../../scripts/land.mjs), [findLandingReports](../../scripts/land.mjs), [land](../../scripts/land.mjs) | verification-scope-configuration |
 | candidate-citation-integrity | [compareIdentity](../../scripts/candidate-cite.mjs), [citeRelease](../../scripts/candidate-cite.mjs), [resolveCitation](../../scripts/candidate-cite.mjs), [packageRefusal](../../scripts/candidate-cite.mjs), [parseCiteArgs](../../scripts/candidate-cite.mjs) | verification-scope-configuration |
 | ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
 | verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |
@@ -147,9 +151,10 @@ These are registered commands and checks, not evidence that they passed.
 | tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
 | merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |
 | powered-release-topology | [compileAssembly](../../src/model/assembly.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createPhysicsWorld](../../src/simulation/physics/world.mjs), [releasedAttachment](../../src/presentation/release-state.mjs) | invariant-controls, verify-release-coupler |
-| parts-catalog-discovery | [searchParts](../../src/presentation/part-search.mjs), [createPartsBrowser](../../src/presentation/parts-browser.mjs), [createPartPlacement](../../src/presentation/part-placement.mjs) | verify-parts-catalog, verify-part-help-browser |
+| parts-catalog-discovery | [searchParts](../../src/presentation/part-search.mjs), [createPartsBrowser](../../src/presentation/parts-browser.mjs), [createPartPlacement](../../src/presentation/part-placement.mjs), [paletteKeyOpens](../../src/presentation/workbench-content.mjs) | verify-parts-catalog, verify-part-help-browser |
 | distributed-rope | [compileRopes](../../src/model/rope.mjs), [ropeVectorImpulses](../../src/simulation/physics/law/rope.mjs), [createPhysicsWorld](../../src/simulation/physics/world.mjs), [createSession](../../src/simulation/session.mjs), [ropeInspector](../../src/presentation/rope-controls.mjs), [createRopeView](../../src/presentation/rope-view.mjs) | invariant-controls, verify-rope-browser |
 | independent-feedback-receipts | [captureFeedbackContext](../../src/application/feedback-context.mjs), [validateFeedbackEnvelope](../../src/application/feedback-protocol.mjs), [openFeedbackStore](../../src/application/feedback-store.mjs), [mountFeedbackClient](../../src/application/feedback-client.mjs) | invariant-controls, verify-feedback-flow, verify-feedback-receipts, verify-feedback-lifecycle, verify-feedback-recovery |
+| feedback-sync-read-only | [syncFeedback](../../scripts/playtest/sync-feedback.mjs) | invariant-controls |
 | feedback-capture-privacy | [createFeedbackCaptureGate](../../src/application/feedback-capture-gate.mjs), [measureRecordedDuration](../../src/application/capture-media-duration.mjs) | invariant-controls, verify-feedback-receipts, verify-feedback-lifecycle |
 | feedback-server-publication | [NodeFeedbackStore](../../scripts/playtest/feedback-node.mjs), [CloudFeedbackStore](../../scripts/playtest/feedback-cloud.mjs) | invariant-controls |
 | camera-completed-exposure | [createCameraState](../../src/simulation/camera-state.mjs), [createWorkshop](../../src/core/workshop.mjs) | invariant-controls, verify-camera-browser, measure-cameras |
@@ -160,5 +165,5 @@ These are registered commands and checks, not evidence that they passed.
 | completed-draw-order | [createClock](../../src/application/clock.mjs), [mountWorkshopApp](../../src/application/workshop-app.mjs), [createWorkshopView](../../src/presentation/workshop-view.mjs), [createRenderSubmissionTracker](../../src/application/render-submission.mjs) | verify-attachment-status, verify-spring-performance, verify-render-lifecycle |
 | attachment-force-sensing | [createJointReactions](../../src/simulation/physics/joint-reactions.mjs), [readNativeResponse](../../src/simulation/physics/native-response.mjs), [sampleSensor](../../src/simulation/sensors.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-load-cell-browser, verify-load-cell-force-browser, verify-load-cell-copy-browser |
 | mechanical-audio-truth | [createMechanicalAudioAdapter](../../src/application/mechanical-audio-adapter.mjs), [createMechanicalEvents](../../src/presentation/mechanical-audio-model.mjs), [createMechanicalAudio](../../src/presentation/mechanical-audio.mjs) | invariant-controls, verify-mechanical-audio |
-| dialog-close-consistency | [createDialogClose](../../src/presentation/dialog-close.mjs), [.dialog-header](../../src/presentation/workshop.css), [createDialogClose('Close feedback'](../../src/application/feedback-client.mjs), [createDialogClose('Close recording setup'](../../src/application/remote-playtest.mjs) | invariant-controls, verify-feedback-flow, verify-motion-diagnostics, verify-assemblies-browser, verify-camera-browser, verify-authorable-scenes, verify-learning-controller |
+| dialog-close-consistency | [createDialogClose](../../src/presentation/dialog-close.mjs), [.dialog-header](../../src/presentation/workshop.css), [createDialogClose('Close feedback'](../../src/application/feedback-client.mjs), [createDialogClose('Close recording setup'](../../src/application/remote-playtest.mjs), [createDialogClose('Close parts'](../../src/presentation/parts-browser.mjs) | invariant-controls, verify-feedback-flow, verify-motion-diagnostics, verify-assemblies-browser, verify-camera-browser, verify-authorable-scenes, verify-learning-controller |
 | build-readiness-honesty | [readinessLine](../../src/model/motion-diagnostics.mjs), [function refreshHealth](../../src/presentation/workshop-view.mjs) | invariant-controls, verify-motion-diagnostics, verify-assembly-ux-browser |

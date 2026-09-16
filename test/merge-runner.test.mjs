@@ -51,6 +51,7 @@ for (const scenario of [
       reach: timing ? 'timing' : 'structural',
       mode: 'observe',
       bounds: { idle: 80, foreign: timing ? 40 : null },
+      budgetMs: 60000,
     });
     assert.equal(launch.result.admission.policy.foreignBound, timing ? 40 : null);
     assert.equal(launch.result.admission.policy.idleBound, 80);

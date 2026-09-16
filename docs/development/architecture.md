@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"f3f1166c07043f3c66aa01cd4d344716007f3ea46a3b44ad78fd643f6223da0e","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"aab2aea4189568d51c0b5940a951b42279b9ace713d0cd5e9219e73d65e43cc0","disposition":"still accurate","rationale":"Release final as merge evidence (tooling-final-as-merge-evidence on main cd8109aa): AGENTS.md changed by the citation row and rule; layer ownership, the registry reader's role and the module map are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8b8aca0cc0e6a4645b59d8d1f06a20014f0ab168a422f66fb0940bf12815b9a2","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"0a54771fc48a58613749500164a285fedc9afa243e3012b320d09702db82e81f","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Layer ownership and the physics door boundary are unchanged; the door still admits only numeric inputs."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"88359dd4bfd04d7b87e14b366ed85511e2a2962aa833abf63da77d2762c93384","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"34782e5f8e3b06813eb2bcab8163e50f80fc282d57713538afa101e4c2e58673","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The left column no longer hosts the Assemblies launcher (it lives in the header's Tools menu with Check machine, Measurements, New and Load), the header has one Build | Run switch with Pause and Step shown once the clock can run, the footer is a status line (mode, part count, status message, Next:) composed by footerModel, and the application calls view.offerFirstRun() after the remote playtest's setupClosed promise; the edit trace itself (command → session → frame → render) is unchanged. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
+<!-- doc-review {"version":1,"fingerprint":"08ec7f91ab578cc7b78fe7bc16393cd8a0a879cd5a9d3953dd68bb020471d596","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d67d9a10956fa2a1d04b2dd846c5fc4cc48ee4e9697c98e00399f4bf478ee560","disposition":"updated","rationale":"The header paragraph now names + Add part (P summons the non-modal parts overlay) and Edit scene under Tools, matching workshop-view.mjs and parts-browser.mjs on the palette branch."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -53,8 +53,10 @@ feedback and recording controls there and keeps protected feedback dialogs outsi
 the workshop root. Ordinary offline feedback does not add a second workbench row. That
 footer is otherwise a status line (mode, part count, status message, the pending step)
 composed by [footerModel](../../src/presentation/workbench-content.mjs#symbol=footerModel);
-the header holds one Build | Run switch and a Tools menu (Check machine, Measurements,
-Assemblies, New, Load), so the left column is the parts catalogue alone; and the
+the header holds + Add part (the parts are summoned by it or by P into a non-modal
+overlay), one Build | Run switch and a Tools menu (Check machine, Measurements,
+Assemblies, New, Load, Edit scene), so the left column is the compact parts catalogue
+alone; and the
 application offers the one-time first-run choice through `view.offerFirstRun()` only after
 the remote playtest's `setupClosed` promise resolves, keeping recording consent first. Optional
 [feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)
@@ -168,7 +170,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"4bbe74789f35abc23daa0d246c6de629efa24236806cf0e7fcf611ec9f1a37e8","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"c121fdf314d17b8611ac809169d3a577926750da670c4d9ca904279d71015548","disposition":"still accurate","rationale":"motion-diagnostics gained readinessLine/readinessNext derived from the same diagnoseMotion issues (no new authority), part-search's essentials list is the catalogue's one owner of that order, and the connection test's live line split its reason onto its own element; the canonical-decision reuse rules described here are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"421e92ce89e47f579d16b57ce2cc553ae0083b394ad7b052aa958984cda71574","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"edc6d3dafbc56a6e6e8ede47c79b508d15b4d2d1216a3991da9e4be80f151a6e","disposition":"still accurate","rationale":"Runtime v1 gained twelve amendment sentences (joint-face endpoints and anchors, the slide descriptor with the zero-stiffness 0.01–1.0 m travel domain, joint reactions/loads, thermal ratings and phase, the M11 time-scale and mass rules); the physics door's only code change keys the spring travel bound on stiffness (elastic rows keep 0.08–0.40 m). Canonical decision owners are unchanged; the stiffness-keyed bound is the same admission decision, now in two rows."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -232,7 +234,7 @@ from completed draw and remaining charge; an unbounded driver cannot report fals
 Ground contact and workshop motion are not Course qualification.
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"a8aafdf9aa213e9c9002c7f71f32553e6eb7ff71945821cd462b8f92a222d981","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"00e8073c14af8aa567386dffac47faef444aabf935aadf0b3fcc6f60e550732b","disposition":"still accurate","rationale":"What's-new candidate (pre-integration fe736bc): package.json and package-lock.json changed only the version field (2.0.0-alpha.0 → 0.3.0), no dependency or script change; sensing and behaviour authoring are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"4d6c67175bf82b0d028b49528ee2011db3b32fd1159744014ba6908b05766d20","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"a17505076e3a2cbef166b32c05ea6a56e5c1264e712c6a30bc52de47e2740731","disposition":"still accurate","rationale":"Tooling candidate land-script (guarded landing, version-field digest exclusion, stall evidence; pre-integration base 458e9b3): package.json/package-lock.json appear changed because implicit external-package coverage now digests them without their version fields (a one-time re-key of every sidecar); dependency ranges and the lockfile's resolved versions are unchanged; sensing and authoring untouched."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

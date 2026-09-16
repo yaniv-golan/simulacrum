@@ -3,6 +3,7 @@ import {
   parseCompletionArgs,
   launchAdmission,
   LAUNCH_ADMISSION_ID,
+  FINAL_PHASES,
 } from './verification-tiers.mjs';
 import { verificationOutcome, formatVerificationOutcome } from './verification-outcome.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -28,14 +29,19 @@ try {
   report.priority = options;
   const context = createVerificationContext();
   Object.assign(report, context.identity, { reach: 'timing' });
+  // Qualification runs every browser check, timing rows included: full policy at launch. The
+  // phase ids are the shared FINAL_PHASES list the release package consumer reads.
+  const runners = {
+    [LAUNCH_ADMISSION_ID]: () => launchAdmission({ reach: 'timing' }),
+    ci: () => runCI(context),
+    browser: () => verifyBrowserSuite('all', { context, ...options }),
+    gate: () => runGate(undefined, context),
+  };
   const results = await runVerificationPhases(
-    [
-      // Qualification runs every browser check, timing rows included: full policy at launch.
-      [LAUNCH_ADMISSION_ID, () => launchAdmission({ reach: 'timing' })],
-      ['ci', () => runCI(context)],
-      ['browser', () => verifyBrowserSuite('all', { context, ...options })],
-      ['gate', () => runGate(undefined, context)],
-    ],
+    FINAL_PHASES.map((id) => {
+      if (!runners[id]) throw Error(`no runner for final phase ${id}`);
+      return [id, runners[id]];
+    }),
     {
       onProgress: (rows) => {
         report.results = rows;

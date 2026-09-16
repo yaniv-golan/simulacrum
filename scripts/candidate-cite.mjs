@@ -222,7 +222,7 @@ export const exitCodeFor = (status) =>
   status === 'passed' ? 0 : status === 'pending final' ? PENDING_EXIT_CODE : 1;
 
 const citeUsage =
-  'Usage: verify:candidate -- merge --base <commit> --incoming <commit> --destination <ref> --satisfied-by <release directory> [--pending]';
+  'Usage: verify:candidate -- merge (--base <commit> --incoming <commit> --destination <ref> | --stack <ref>) --satisfied-by <release directory> [--pending]';
 /** Strip --satisfied-by/--pending from the tier arguments before the tier parses them. A
  * citation is a merge tier only, never a retry, resume or final; a pending citation (the
  * release's final still running) must be asked for by the slot owner. */

@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"c5296683a714a0a1d443be52ae707961de2811d484af0bc9a7f9d2ec1c7cfe55","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b5caef6a0098bacf221fb39d61e4c88f8f34f85deb309b1c27e86d4392bb4aaa","disposition":"still accurate","rationale":"Re-recorded after the fix pass: The guided build now says what to do next and ticks a step from what the player built (k-th part of the step's type, k-th connection of its kind between the two types) with Do it for me as the fallback; Learn & examples remains the primary home and the first-run choice is a one-time entry, not a hint system. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7cef6bf88b9dc9c5118baff31f38133b80da3c1fcd0912033e959332beca686","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"77a34cef5987d16e92ee651aa5a65db4888d34acf629320ba3392197522ce736","disposition":"still accurate","rationale":"The summoned palette adds no teaching, example or challenge entry; workshop-view.mjs changes are header placement and the parts overlay, so the admission rules are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,18 +128,19 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"54ffdcdd917643863e3301c7f7c5ec4464e244548086500c71e453c90c7647a3","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"51af65f7ec5433baa5166ee952819501309fb9fd9705d7f222ed054320baadc5","disposition":"still accurate","rationale":"Re-recorded after the fix pass: Rewritten for the bench refresh: header (Build | Run switch, Pause/Step once running, Tools menu contents, what stays visible), footer status line and key badges, the readiness line's two faces, the inspector summary line, the six essentials with purpose lines, the first-run choice (trigger, completion, retrieval, hosted ordering, harness seeding), the reserved reason lines beside controls, and the anchoring rule; feedback, recording and learning dispositions are unchanged. Merged with what's-new's paragraph: two automatic surfaces exist and never coincide — the first-run choice on a first visit, the what's-new notice on a returning device with unseen notes — and the application offers the first-run choice before considering the notice, which yields to it and re-checks on its close. The fix pass changed only the first-run decision's storage probe, the guide button's slot and two journeys' Tools-menu steps; the explanation as updated in the previous review stands."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b2f28450f56f4f6c5a268160c8258efac062077d6ae76580b6941f260ef0415","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Rewritten for the summoned parts: + Add part first with P, a non-modal Parts overlay at every width with its dismissals and snapshot restore, and Edit scene moved under Tools."} -->
 
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
-in the header, one Build | Run switch (Pause and Step appear once the clock can run;
-Step acts only while paused), Undo, Redo, Save, Choose scene, Edit scene, Learn &
-examples and Help stay visible, and the occasional commands — Check machine,
-Measurements, Assemblies, New, Load — live under one Tools ⋯ menu that closes on pick,
-Escape or leaving it, each keeping its name and `data-command`; parts in the left
-catalogue; separate edit and view groups at the workbench edge; selected properties and
-operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
+in the header, **+ Add part** first (the one way to summon the parts; P is its key), one
+Build | Run switch (Pause and Step appear once the clock can run; Step acts only while
+paused), Undo, Redo, Save, Choose scene, Learn & examples and Help stay visible, and the
+occasional commands — Check machine, Measurements, Assemblies, New, Load, Edit scene —
+live under one Tools ⋯ menu that closes on pick, Escape or leaving it, each keeping its
+name and `data-command`; the compact parts catalogue in the left column (the summoned
+overlay is its expanded state, see below); separate edit and view groups at the workbench
+edge; selected properties and operations in the inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 The selected part's header carries one summary line from
 [inspector-summary](../../src/presentation/inspector-summary.mjs#source): the catalogue
@@ -163,12 +164,19 @@ with optional coordinates under Precise position. Confirmation sends one ordinar
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
 Escape first cancels an active pickup, including when search has focus, and restores
-the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
+the originating query, category, focus and scroll even after browsing changes, without
+re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
 header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
-At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
-full width while Assemblies (in the Tools menu) and recording remain retrievable.
-Recent records accepted catalog placements. Expanded and compact catalogs are requested
-surfaces; picking closes them and cancellation restores the origin. The existing About
+The parts are **summoned**: + Add part or P opens the catalogue's expanded state as a
+non-modal overlay at every width (`role=dialog`, named "Parts", search focused; the
+compact sidebar keeps its landmark name), and it goes away on a pick, a drag onto the
+bench, Escape (focus returns to whatever summoned it), the shared × or entering Run; it
+reopens where it was left (search, category, scroll). Cancelling a placement restores
+that browse snapshot for the next open but never re-summons the overlay — the player
+decides when the parts come back. At narrow widths the compact catalogue shows nothing
+and the overlay is the only catalogue, leaving the canvas full width while Assemblies
+(in the Tools menu) and recording remain retrievable. Recent records accepted catalog
+placements. The existing About
 window retains Overview and How to connect, with diagram links that reveal catalog
 parts without placing them. Feedback and recording controls share the existing workshop footer.
 The canvas, catalog and inspector retain their own pointer regions without per-control
@@ -239,8 +247,8 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose Choose scene and Edit scene in place of the old
-Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+The document controls expose Choose scene in the header and Edit scene under Tools in
+place of the old Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
 replaces catalogue and inspector content while Editing scene is active; Done restores
 the preceding machine context. Scene objects are selected in this scope only, and
 machine parts remain protected. Move/Rotate handles and canvas positioning change
@@ -556,7 +564,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"1fb638c2ad2ff26afa7ab580603c48e994c11ef4bd96bdfc047e70835a0cfadf","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"051905c6bbcb3dcddfec1721f8b12681543c3dc11a9146c164dee85039752f61","disposition":"still accurate","rationale":"The workbench-content and learning-examples journeys gained the first-run, footer and guide assertions and workbench-content.mjs gained pure models with unit controls; the verification guidance (scope discovery, journeys, separation of automation from player evidence) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f95675fd15042eba95a4c76ddb64504d7a8b68b57d85a411c9ebe389658581df","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3ab09b3876da0820025b408c440628bd68a3f332cc7f02bbc551aa012718085d","disposition":"still accurate","rationale":"workbench-content gained the palette key helper with unit coverage and verify-authorable-scenes opens Edit scene through Tools; the verification and review policy text is unchanged."} -->
 
 
 

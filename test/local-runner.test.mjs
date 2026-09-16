@@ -35,6 +35,7 @@ test('the local tier applies its own policy to the base diff; a retry only widen
     reach: 'structural',
     mode: 'observe',
     bounds: { idle: 80, foreign: null },
+    budgetMs: 60000,
   });
   assert.equal(launchOf(plain).admission.policy.foreignBound, null);
 
@@ -84,6 +85,7 @@ test('the local tier applies its own policy to the base diff; a retry only widen
     reach: 'timing',
     mode: 'observe',
     bounds: { idle: 80, foreign: 40 },
+    budgetMs: 60000,
   });
   assert.equal(launchOf(required).admission.policy.foreignBound, 40);
 });

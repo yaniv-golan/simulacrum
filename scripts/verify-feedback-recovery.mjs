@@ -279,7 +279,7 @@ try {
     .getByText('Feedback is open in another workshop tab. Close it there, then try again.', {
       exact: true,
     })
-    .waitFor({ state: 'visible', timeout: 1500 });
+    .waitFor({ state: 'visible', timeout: evidence.waitBudget(1500) });
   evidence.assert('equal', [await second.locator('.feedback-dialog').isVisible(), false]);
   evidence.assert('equal', [await second.locator('[data-stop]').isVisible(), false]);
   evidence.assert('doesNotMatch', [
@@ -389,7 +389,7 @@ try {
   );
   await mediaPage
     .locator('[data-submitted-media] audio')
-    .waitFor({ state: 'visible', timeout: 1500 });
+    .waitFor({ state: 'visible', timeout: evidence.waitBudget(1500) });
   const receiptURL = await mediaPage.locator('[data-submitted-media] audio').getAttribute('src');
   await mediaPage.waitForFunction(
     () => document.querySelector('[data-submitted-media] audio').readyState >= 2,
