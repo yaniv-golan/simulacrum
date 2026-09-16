@@ -1,7 +1,8 @@
 /**
- * Header glyphs: Primer Octicons (Copyright (c) GitHub Inc., MIT licence),
- * 16 px grid, filled with the text colour. One icon language for the chrome; parts keep
- * their mesh thumbnails. Every icon is decorative — its control carries the name.
+ * Chrome glyphs: Primer Octicons (Copyright (c) GitHub Inc., MIT licence), 16 px grid,
+ * filled with the text colour. One icon language for the chrome — the header bar and the
+ * catalogue's per-tile favourite toggle, the first glyph used outside the header; parts
+ * keep their mesh thumbnails. Every icon is decorative — its control carries the name.
  */
 const SVG = 'http://www.w3.org/2000/svg';
 const SHAPES = Object.freeze({
@@ -79,6 +80,25 @@ const SHAPES = Object.freeze({
   pause: [
     ['rect', { x: '3.25', y: '2', width: '3.5', height: '12', rx: '1.25' }],
     ['rect', { x: '9.25', y: '2', width: '3.5', height: '12', rx: '1.25' }],
+  ],
+  // Octicon star-16 and star-fill-16: the same outer outline, the filled one without the
+  // inner cutout. A toggle shows one or the other, so its saved state reads as a change of
+  // shape and is never carried by colour alone.
+  star: [
+    [
+      'path',
+      {
+        d: 'M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z',
+      },
+    ],
+  ],
+  'star-fill': [
+    [
+      'path',
+      {
+        d: 'M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z',
+      },
+    ],
   ],
 });
 export const ICONS = Object.freeze(Object.keys(SHAPES));

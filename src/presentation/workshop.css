@@ -3664,9 +3664,7 @@ button:not(.keyed) > .key-badge {
 }
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
-  max-height: 48vh;
   overflow-y: auto;
   padding: 2px;
   align-content: start;
@@ -3726,6 +3724,42 @@ button:not(.keyed) > .key-badge {
   padding: 0;
   font-size: 15px;
 }
+.catalog-entry > .catalog-favorite {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #9fb5bf;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.catalog-entry > .catalog-favorite:hover {
+  color: #f5c286;
+  background: #ffffff10;
+}
+.catalog-entry > .catalog-favorite .star-filled {
+  display: none;
+}
+.catalog-entry > .catalog-favorite[aria-pressed='true'] .star-outline {
+  display: none;
+}
+.catalog-entry > .catalog-favorite[aria-pressed='true'] .star-filled {
+  display: block;
+}
+.catalog-entry > .catalog-favorite[aria-pressed='true'] {
+  color: #f5b866;
+}
+.catalog-entry > .catalog-favorite:focus-visible {
+  outline: 2px solid #f5b866;
+  outline-offset: 1px;
+}
 .catalog-reason {
   font-size: 10px;
   line-height: 1.3;
@@ -3750,10 +3784,6 @@ button:not(.keyed) > .key-badge {
   color: #b9cbd2;
   margin: 6px 0 10px;
 }
-.catalog-summary button {
-  padding: 5px 8px;
-  font-size: 12px;
-}
 .catalog-notice {
   font-size: 12px;
   color: #f5c286;
@@ -3769,10 +3799,6 @@ button:not(.keyed) > .key-badge {
   border: 1px solid #64838c;
   border-radius: 14px;
   box-shadow: 0 16px 50px #0008;
-}
-.catalog-expanded .catalog-grid {
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  max-height: calc(100vh - 365px);
 }
 .part-placement {
   position: absolute;
@@ -3826,9 +3852,6 @@ button:not(.keyed) > .key-badge {
   .catalog-expanded {
     inset: 76px 8px 8px;
     width: auto;
-  }
-  .catalog-expanded .catalog-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 .catalog-grid:not(.catalog-essentials) .catalog-entry .part-purpose {
@@ -3955,8 +3978,6 @@ button:not(.keyed) > .key-badge {
   }
   .parts-browser:not(.catalog-expanded) .catalog-summary:not([hidden]) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
     gap: 6px;
     padding: 8px;
   }
@@ -3964,13 +3985,7 @@ button:not(.keyed) > .key-badge {
     font-size: 0.8rem;
   }
   .parts-browser:not(.catalog-expanded) .catalog-summary p {
-    grid-column: 1 / -1;
-    grid-row: 2;
     margin: 0;
-  }
-  .parts-browser:not(.catalog-expanded) .catalog-summary button {
-    grid-column: 2;
-    grid-row: 1;
   }
 }
 .rope-field {

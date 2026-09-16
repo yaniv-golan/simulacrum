@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { CATALOG } from '../src/model/catalog.mjs';
 import { browseAllParts, placeCatalogPartByName, openTools } from './catalog-browser-actions.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -18,10 +19,22 @@ try {
   await browseAllParts(page);
   await page.getByRole('button', { name: 'Rope', exact: true }).focus();
   assert.equal(await page.locator('.catalog-summary strong').innerText(), 'Rope');
-  assert.equal(await page.locator('.catalog-summary button').isVisible(), false);
+  // Favouriting belongs to each part's own tile: the shared summary carries no favourite
+  // control for a grazed neighbour to re-target, and the Rope connection tool has no star.
+  assert.equal(await page.locator('.catalog-summary button').count(), 0);
+  // One star per catalogue part and no more. A descendant selector under .catalog-connection
+  // could never fail here — the star is a sibling of its tile, never a child of it — so this
+  // counts instead, and breaks if the Rope tool (in the grid, but not a part) ever gains one.
+  assert.equal(await page.locator('.catalog-favorite').count(), Object.keys(CATALOG).length);
   await page.locator('[data-part-type="powerCell"]').focus();
   assert.equal(await page.locator('.catalog-summary strong').innerText(), 'Power Cell');
-  assert.equal(await page.locator('.catalog-summary button').isVisible(), true);
+  assert.equal(
+    await page
+      .locator('.catalog-entry:has([data-part-type="powerCell"]) .catalog-favorite')
+      .isVisible(),
+    true,
+    'focusing Rope leaves the Power Cell tile its own star',
+  );
 
   const requestRope = async () => {
     await browseAllParts(page);

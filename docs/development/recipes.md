@@ -215,7 +215,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"4b243f9fbe4db2acfde810ccffd220f15b2b2efd948d46e189b3dc7573359d7c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"80641208ef64fac3c5c196e020a4f3ef88d09c84c6c1f75e7ce7a845f613b7bc","disposition":"still accurate","rationale":"No physics changed: the teeth are cosmetic, nothing new crosses the physics door, and the gear mesh remains the compliant pitch-point constraint with unsimulated phase. The recipes.md dependency edit was to the gear appearance sentences in 'Add or extend a part'; the browser case gained a rendered-versus-simulated pose assertion and the release note is player copy."} -->
+<!-- doc-review {"version":1,"fingerprint":"adb7c7f21bb0c5e9b9016cc914ff5e454d7a4d4446ac28395afab6f02d0b30c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"58caa06b6a220e9d03d397347a9f2b7ae4222b885b915990c1f758202187c1fc","disposition":"still accurate","rationale":"Unchanged prose within this section (the changed lines in recipes.md fall in add-or-extend-a-part and change-a-presentation-overlay). No law, simulation module or the physics door changed in either merged branch: the gear teeth are cosmetic geometry inside the existing collider and the favourite toggle is presentation state, so this recipe's owners, its narrow-door rule and its required checks all hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -619,7 +619,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"3238105773650c2175e0c0ebdf3558d0345efb6aea193179952781b9e634d657","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"5e14fff4bf6d94e980f61b03bb6baf9b2633d696b8e8c9ccbc522c2d7364c184","disposition":"updated","rationale":"Updated: gear mesh relationships are now described as having cosmetic teeth that are part of the body geometry and follow completed body transforms, replacing 'root-cylinder marks', and the shared part builder is described as creating each part's canonical solid envelope, matching the amended invariant guarantee."} -->
+<!-- doc-review {"version":1,"fingerprint":"03d11cc4261888e4a3471b75348035addb31a86dc2865a0c7aeced805d162399","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"18a510a66eacb0908c91180ac05ba7f770439d294ba3f35c0ca1e9c66d80cd5b","disposition":"updated","rationale":"Updated by the merged gear-appearance work: the section now states that gear meshes' cosmetic teeth are part of the body geometry and follow completed body transforms, replacing the earlier root-cylinder marks, and that the shared part builder creates each part's canonical solid envelope. The overlay's owner, visibility lifecycle and the preserved gear rendering controls are otherwise unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

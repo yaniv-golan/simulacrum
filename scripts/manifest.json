@@ -6029,6 +6029,10 @@
           {
             "path": "test/parts-browser.test.mjs",
             "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a tile star saves its own part, whatever the pointer, Rope or search touched last"
           }
         ],
         "negative": [
@@ -8573,7 +8577,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8744,7 +8748,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8983,7 +8987,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "c54be6fbf553955c1515c2a88a7145f71cd8838d17440b958f211a4bc3c2c96d",
+      "consumerSourceHash": "1544084ec82704f8602b98204c389fa39440e8a22b27425e8bea916f41374e8b",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9646,7 +9650,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9799,7 +9803,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "6923b720674d5eec61c001e040d676f1337459db1acadb6a5d6cb17debd359d6",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10212,7 +10216,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10316,7 +10320,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "658411b6454a82ec6e080ba53763abbf7a9c8c63b8d15378a48f291dac990bc6",
+      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10553,7 +10557,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "905d0ef19ad7a61009d2161ca195286f5f04e1e15af509f476865c32915811be",
+      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
