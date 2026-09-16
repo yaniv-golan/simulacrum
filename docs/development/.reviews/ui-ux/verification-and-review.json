@@ -8,7 +8,7 @@
     "scripts/verify-learning-examples.mjs": "b084518b55637c893915cc326ee7468b9156a44afdfe6c7b06d7329f660d4a3c",
     "scripts/verify-authorable-scenes.mjs": "ea935e66e0b70b74b8913f9bb8fa1801976dcf918b3b4bbfe4e1f630de1cc8c8",
     "test/scene-editor.test.mjs": "7d90d18178f2f36b83e0e1134af6a98b22af37be21a5d760e7b9da20f8d8f5be",
-    "docs/development/playtesting.md#remote-setup": "9d5bef5012be1ca2226f1bb760960b936c70d09596bd048a43d9bec1705c48ff",
+    "docs/development/playtesting.md#remote-setup": "4c280542cd39f51fbe46fea6e867a875492c0bbe9a3819996511ca324d0fb3da",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"

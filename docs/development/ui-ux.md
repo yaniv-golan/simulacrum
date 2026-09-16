@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"6b2f28450f56f4f6c5a268160c8258efac062077d6ae76580b6941f260ef0415","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Rewritten for the summoned parts: + Add part first with P, a non-modal Parts overlay at every width with its dismissals and snapshot restore, and Edit scene moved under Tools."} -->
+<!-- doc-review {"version":1,"fingerprint":"74ba303dc3efe21223bc7f4c98cea29e06e9b634d7e6ba5589a4ab2da976b9b0","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"bee66b9c180d37d8032fd24ba206bf03a1e52d6d3a0169483b73e0a28c2f6388","disposition":"updated","rationale":"Adds what a player sees when feedback storage is full: Send names only the outs that exist now and the draft stays reported as saved, matching the storageFullMessage branch in feedback-client.mjs."} -->
 
 
 
@@ -564,7 +564,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"f95675fd15042eba95a4c76ddb64504d7a8b68b57d85a411c9ebe389658581df","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3ab09b3876da0820025b408c440628bd68a3f332cc7f02bbc551aa012718085d","disposition":"still accurate","rationale":"workbench-content gained the palette key helper with unit coverage and verify-authorable-scenes opens Edit scene through Tools; the verification and review policy text is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"caee991f7fe1e63a96648a90b7dba9e9403d0982028ddc2922ba4c8751973354","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"2fddfe958873957e3e03dc2235ecb192ea9a429ca65ecb54144478142365aba8","disposition":"still accurate","rationale":"Its dependency playtesting.md#remote-setup gained the stored-once clause; the verification and review policy this section states is unchanged by that clause or by the storage fix."} -->
 
 
 

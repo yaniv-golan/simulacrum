@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"ed03530469d28d41b3d7d7db43d9a48d841138ac6f6684287add3f7b03b7cad7","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"ff65bac1b87af62ea051f725501d39a06987f3f14e88175770643859dda5eecb","disposition":"still accurate","rationale":"Only consumerSourceHash rows of 16 script metadata entries changed in scripts/manifest.json for the summoned palette; no milestone, bar, rule or check allocation changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef5385a979be83224b78df31adcf08860de8da4e76788cb1f3f266e02a73abbc","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"0ec1b1ed235e67f60dd9c8c833cf78e72e3a55e71904a9c56d63d38373d3b0a3","disposition":"still accurate","rationale":"Only consumerSourceHash rows and one check-script sourceSha256 changed in scripts/manifest.json for the feedback storage candidate; no milestone, bar, rule or check allocation changed."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"a9cba3a0b10b393520a2ac070ab23128602ed3f08423b26899dbcb4ee4be0fe9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"62c215c33c098986fdf320f7752830c64783395e3183e68f795b6bf155f1bbd5","disposition":"still accurate","rationale":"Decision 45-B on the frozen release-tooling tip (bed79d1a, main 9c4e08d0): `--when-quiet <maxWaitMs>` (scripts/when-quiet.mjs, a pre-capture poll of the same launch admission at the reach the tier's own selection policy gives the delta, outside the window, recorded under report.whenQuiet) and `--cause browser=@refusal` (candidate-after.mjs expands the parent's attested admission refusal into the browser phase cause). candidate-after.mjs gained the @refusal expansion only; the tiers, commands, exit codes and evidence rules here are unchanged, and the retry norm the section points to is documented in isolated-candidate-completion."} -->
+<!-- doc-review {"version":1,"fingerprint":"60304c455d1e7f4adb5da9cc5e319ab85255a71bf14e729ba9d7529f84d50ef7","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7a6813cd1d2184adf1883a3b383baa8abd9a02157e885d0657522b1c5a2c54e0","disposition":"still accurate","rationale":"playtesting.md#remote-setup gained one clause about a submission being stored once behind its upload hash; the tiers, scope arguments and candidate commands this section describes are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"a0ad8c0e6bfbfbc2987d2b247e65847700159f6ccd900951fb911c9d0dcc341f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"dbca9377c4421b6e6fcca9b6196d26e0eb872edb184ba8547a7fec9e3506a541","disposition":"still accurate","rationale":"The manifest change is a consumerSourceHash refresh for 16 metadata entrypoints; no browser check was added or removed and scope selection, schedule and platform rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"06118825ecf4c9b7a1c5dcc07d945faa256441f256c9d83c0f45cb71d99d3fbe","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"de982b34067caf2f4d37b4481096588d483aded9251d14134c370321b493351a","disposition":"still accurate","rationale":"The manifest change is a consumerSourceHash refresh plus verify-feedback-recovery's own sourceSha256; no browser check was added or removed and selection, scheduling and platform rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -690,7 +690,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"46a852f3588215e475dc218b3e6f7154224dcded69580d8707802558a5d30bec","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"21cc0c4fa76cdcbd7eab7e24e82b801e164f9709d9b89d046feab61f1ee4bd9d","disposition":"still accurate","rationale":"catalog-browser-actions.mjs now opens the parts via [data-command=add-part] instead of Expand parts, and the manifest hashes refreshed; candidate capture, tiers and receipts are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4cc3f08e9691d6c120baf26262f540eb25202a0a16d360927894c8e23c850377","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"86a0654b578fa293a32d9d2824cfdf2f8ffe58ca7c84bb0c93379d3b11b2b9f7","disposition":"still accurate","rationale":"The manifest refresh carries no new check or evidence rule; candidate capture, tiers, receipts and reuse behave exactly as described here."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

@@ -207,7 +207,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"1a7b63fa3be9cc4e4f5925af71ab0ef953a9e833241ea432a769d9090c4cf687","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4e2011129fe0ff7825687ec57eb1bb3d74eee409f7fbb977914b85658c87acfb","disposition":"still accurate","rationale":"The palette delta is presentation, release notes, browser helpers and hash refresh only; no physics, law or simulation module changed, so the physics recipe's owners and checks hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"6d8dc16997d938c142eaf164339ed49e2344a7569e3a6e7f4879d591e310e35c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"86563a82b3856bc6bfa01c64b12b9c77b44c605b63e07d7bfe499ef6610d1bf7","disposition":"still accurate","rationale":"The delta is feedback storage, its browser check and documentation prose; no physics, law or simulation module changed, so this recipe's owners, doors and checks hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
