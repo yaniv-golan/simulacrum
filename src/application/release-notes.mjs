@@ -7,8 +7,13 @@
  * setting, a sound, a fix the player could have noticed. Tooling, verification,
  * documentation and refactors never do.
  *
- * Fields: `id` (landing date + slug, unique, ordering key), `date` (the landing date,
- * never the writing date), `name`, `summary` (≤ 140 characters, no URL), optional
+ * Fields: `id` (the day the entry was committed + slug, unique, ordering key), `date` (that
+ * same day, never the landing day: the check refuses a date later than max(HEAD commit date,
+ * today), and an id is never changed once committed because it is the what's-new seen cursor.
+ * Place a new entry by date, and always above the last served release's newest entry: a
+ * returning player is shown only what sits above their stored id, and same-date ties are
+ * allowed, so an entry below that head would never be seen), `name`, `summary` (≤ 140
+ * characters, no URL), optional
  * `feature` (a UI_FEATURES key or catalog part type that must exist in this build) and
  * optional `example` (an existing Learn & examples card command, validated by the
  * browser check). `scripts/check-release-notes.mjs` enforces the shape.
