@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"83c229ddd86d7b3d6dfe5ca8c130dbeb45c64bc8d27638d626ad510aeeba8e49","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"74bd20e1f14675cbd14ac8f37bf56a039bb9c81c8aa15512b3ea3c7613f5f435","disposition":"still accurate","rationale":"No milestone allocation, bar, gate row or check ownership moved. The manifest change is the refreshed browser scope consumer hashes on top of the gear invariant's guarantee and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"80596132a3578a6fea3f00dd1b21ec0dd3b57ddae7ce694cfbd807f8b98a584b","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"c98cc0128c15a67471b22c2ee2d10760f1520b1737011dd3b25ae12f6b626938","disposition":"still accurate","rationale":"Unchanged prose. The one changed dependency is scripts/manifest.json, and it moved only by reviewed scope metadata: the sixteen browserReviewMetadataScopes consumerSourceHash digests this closure refreshed, plus the rows the merged attachment-1a integration had already refreshed on its own tip. The browserChecks set, every milestone allocation, every bar and every rule/check ownership row are byte-identical, so the M3b statement and the rule that the manifest owns allocation both still hold."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"4667619f45431d1369293c533d2d88905efb8d7cdf10410db73981331876355a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ff4cfd214ad39b0fe2bd008440c7786b29297bf8932ee4f4a39b1e9789997861","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md discovery, which this section tells the reader to regenerate; the prepare/review/check workflow it describes is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"39091d0931d37c8d29105ea52a86fada3584864f8b5bf9b900ed3e6de1097651","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"69c48529d67ae2e9bc7329accb1ea56c744769f420d6cac4b3c37281893aa543","disposition":"still accurate","rationale":"Unchanged prose. The one changed dependency is docs/development/reference.md, the generated discovery this section tells the reader to regenerate; docs:prepare regenerated it here for the merged placement and dialog owners. The prepare, review and check workflow, its ownership rules, and the marker/sidecar records it prescribes are all unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"ed98de819e19f19f55210f6e6b1dde2089b659e19c80fe45edb1e94689a93bb6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1f204a7d226ccdc344fdfd5092e118621ee360ecca86f7012d047e229090c6d6","disposition":"still accurate","rationale":"No browser check, host profile, scheduling phase, registered platform or scope rule changed; sixteen metadata scope rows carry refreshed consumerSourceHash values accepted with a technical rationale, which is what this section prescribes. The other changed dependencies are the schema's $id moving to urn:simulacrum:blueprint:4 with the save version, the catalog's gear-row admission rule and the partPrimitives gear branch."} -->
+<!-- doc-review {"version":1,"fingerprint":"69d4b12247f338da35f49f76e230282dbc230e848c3171362adecfbd7c1d33ff","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"812d26b8e53a4d5a97e4ce9e33c47afeed6537e1bd01741d5e414f80aa7e0b28","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json is the only changed dependency. This closure registers, removes and re-scopes no browser check: the manifest delta is sixteen metadata scope rows whose consumerSourceHash was accepted with a per-row technical rationale naming the closure input that actually moved, and the merged integration's own reviewed rows. Selection, phase scheduling, host profiles, registered platforms and the measured-scope rule are untouched, which is exactly what this section prescribes."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"5e08cad7482ff6d8a66ca38db0101c135a996a4322e7243958e91e1a5f77a26b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e90ae4b2947a399aa12e81d56398e230f6a4c8c6c76393a3aab3b1e2e5ae5f41","disposition":"still accurate","rationale":"No tier, candidate key, stacking, landing or receipt rule changed; the changed dependencies are the catalog gear-row rule, the regenerated validator and the partPrimitives gear branch, plus the manifest's refreshed scope hashes."} -->
+<!-- doc-review {"version":1,"fingerprint":"4e79f3776f7f8254deab5c80ebd6fefc01f1ad246c9aaf3158640fde14abdccc","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8c1dc395f117aaf71ef78a0ee4e3585cd85a24461caeec3ae9b7d2050aac0aa4","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are scripts/manifest.json, which moved only by reviewed scope metadata, and scripts/catalog-browser-actions.mjs, which the merged dialogs-r5 work gave the idempotent expandExample/expandExampleVariants journey helpers. Neither is completion evidence nor a rule about how evidence is captured. The tier set, candidate capture, candidate keys, receipts, receipt reuse and the stacking rule this candidate itself followed to stack on attachment-1a are all unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
