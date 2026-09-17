@@ -17,7 +17,7 @@
       ]
     },
     "version": {
-      "const": 3
+      "const": 4
     },
     "id": {
       "$ref": "#/$defs/id"

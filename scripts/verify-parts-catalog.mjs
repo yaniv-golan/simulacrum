@@ -123,7 +123,7 @@ try {
     ['detect rotation', 'rotationSensor'],
     ['detect rotatoin', 'rotationSensor'],
     ['motor spin', 'poweredMotor'],
-    ['24T', 'gear24'],
+    ['cog', 'spurGear'],
   ]) {
     await search.fill(query);
     equal(
@@ -134,8 +134,11 @@ try {
       type,
     );
   }
-  await search.fill('25T');
-  equal(await page.locator('.catalog-entry:not([hidden])').count(), 0);
+  // Tooth counts are authored per gear, so neither numeric query names a part type.
+  for (const query of ['24T', '25T']) {
+    await search.fill(query);
+    equal(await page.locator('.catalog-entry:not([hidden])').count(), 0);
+  }
   await search.fill('battery');
   await search.press('Space');
   await search.press('Control+z');

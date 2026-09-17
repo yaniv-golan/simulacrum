@@ -29,7 +29,7 @@ import {
   paletteKeyOpens,
 } from './workbench-content.mjs';
 import { icon } from './icons.mjs';
-import { portLabel, portPurpose } from './port-wording.mjs';
+import { portLabel, portPurpose, connectionSuffix } from './port-wording.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
 import { createPartHelp } from './part-help.mjs';
@@ -108,6 +108,8 @@ const parameterLabels = {
   dampingGain: 'Damping (s/rad)',
   capacityJ: 'Stored energy',
   internalResistance: 'Cell resistance',
+  teeth: 'Teeth',
+  module: 'Tooth size',
 };
 const parameterHelp = {
   torqueConstant: 'More torque per amp helps turn a heavier load.',
@@ -3241,7 +3243,7 @@ export function createWorkshopView(
                     CATALOG[target.type].ports.find((p) => p.id === other.port),
                   )
                 : other.port
-            }${diagnostic && diagnostic.reasonCode !== 'OK' ? ' · check alignment' : ''}`,
+            }${diagnostic ? connectionSuffix(diagnostic.reasonCode) : ''}`,
           ),
         );
       }

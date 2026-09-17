@@ -1,4 +1,4 @@
-import { CATALOG } from './catalog.mjs';
+import { gearFacts } from './gear-geometry.mjs';
 import { rotateVector } from './transforms.mjs';
 
 const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
@@ -8,33 +8,46 @@ const fail = (reasonCode, path) => {
   throw Object.assign(Error(reasonCode), { reasonCode, path });
 };
 
-/** Admit a forest of separately supported rotors; meshes never supply bearings. */
+// Authoring tolerance for the centre distance. The runtime tolerates 5 mm of drift before it
+// raises GEAR_MOTION_LIMIT, and the finest control that can place a gear steps in millimetres,
+// so a millimetre is both inside the band the physics already accepts and reachable by hand.
+const SPACING_TOLERANCE = 1e-3;
+
+/** Admit a forest of separately supported rotors; meshes never supply bearings.
+ *
+ * Returns the compiled joints and one diagnostic per authored gear edge. The two checks that
+ * depend on authored numbers -- equal tooth size and centre distance -- are per-edge diagnostics,
+ * not refusals: a player editing a tooth count must not have their edit rejected by a mesh they
+ * can still see and repair. A diagnosed edge emits no joint, so nothing transmits through it.
+ * Topology failures stay refusals; no parameter edit can produce one.
+ */
 export function compileGearMeshes(blueprint, joints) {
   const edges = blueprint.connections.filter((c) => c.kind === 'gear');
-  if (!edges.length) return [];
+  if (!edges.length) return { joints: [], diagnostics: [] };
   if (edges.length > 8) fail('UNSUPPORTED_GEAR_TOPOLOGY', 'connections');
   const parent = blueprint.parts.map((_, i) => i);
   const root = (i) => (parent[i] === i ? i : (parent[i] = root(parent[i])));
   for (const j of joints) if (j.kind === 'fixed') parent[root(j.a)] = root(j.b);
   const forest = new Map();
   const meshRoot = (i) => (forest.has(i) ? (forest.get(i) === i ? i : meshRoot(forest.get(i))) : i);
-  return edges.map((edge) => {
+  const compiled = [],
+    diagnostics = [];
+  for (const edge of edges) {
     const path = `connections[${blueprint.connections.indexOf(edge)}]`;
     const a = blueprint.parts.findIndex((p) => p.id === edge.a.part),
       b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
     const A = blueprint.parts[a],
       B = blueprint.parts[b],
-      ga = CATALOG[A.type].gear,
-      gb = CATALOG[B.type].gear;
+      ga = gearFacts(A),
+      gb = gearFacts(B);
     const u = rotateVector(A.rotation, [1, 0, 0]),
       v = rotateVector(B.rotation, [1, 0, 0]),
       delta = sub(B.position, A.position);
-    if (!ga || !gb || ga.module !== gb.module) fail('UNSUPPORTED_GEAR_TOPOLOGY', path);
-    if (
-      1 - Math.abs(dot(u, v)) > 1e-10 ||
-      Math.abs(dot(u, delta)) > 1e-6 ||
-      Math.abs(Math.hypot(...delta) - ga.pitchRadius - gb.pitchRadius) > 1e-6
-    )
+    // A gear edge between parts that are not gears is invalid authoring, not a mismatch.
+    if (!ga || !gb) fail('UNSUPPORTED_GEAR_TOPOLOGY', path);
+    // Axis parallelism and axial offset cannot be produced by a parameter edit; they stay
+    // refusals. Only the centre distance moves with the authored teeth.
+    if (1 - Math.abs(dot(u, v)) > 1e-10 || Math.abs(dot(u, delta)) > 1e-6)
       fail('GEAR_MISALIGNED', path);
     const ra = root(a),
       rb = root(b);
@@ -75,8 +88,21 @@ export function compileGearMeshes(blueprint, joints) {
     const fa = meshRoot(ra),
       fb = meshRoot(rb);
     if (fa === fb) fail('UNSUPPORTED_GEAR_TOPOLOGY', path);
+    // Whether the mesh is admitted is settled entirely above, by the authored topology; the two
+    // checks below are about numbers a player can change, so they diagnose the edge rather than
+    // refuse the edit. The forest already holds this edge either way, so admitting a second mesh
+    // never depends on whether the first one's numbers happen to line up.
     forest.set(fa, fb);
-    return {
+    if (ga.module !== gb.module) {
+      diagnostics.push({ id: edge.id, reasonCode: 'GEAR_TOOTH_SIZE_MISMATCH' });
+      continue;
+    }
+    if (Math.abs(Math.hypot(...delta) - ga.pitchRadius - gb.pitchRadius) > SPACING_TOLERANCE) {
+      diagnostics.push({ id: edge.id, reasonCode: 'GEAR_MISALIGNED' });
+      continue;
+    }
+    diagnostics.push({ id: edge.id, reasonCode: 'OK' });
+    compiled.push({
       kind: 'gear',
       a,
       b,
@@ -88,6 +114,7 @@ export function compileGearMeshes(blueprint, joints) {
       radiusB: gb.pitchRadius,
       stiffness: ga.stiffness,
       damping: ga.damping,
-    };
-  });
+    });
+  }
+  return { joints: compiled, diagnostics };
 }

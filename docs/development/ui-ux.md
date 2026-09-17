@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"da0e28c77369654614556f6db34322862538af69fdd133803dea2aaa3c9c8aa5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f2f68ba906b223d0dc08cccdb2ec1529b7c7e84990c4444aa8c8e07383260c2d","disposition":"still accurate","rationale":"Unchanged prose. workshop-view.mjs changed for the header rework; this candidate adds, extends and replaces no teaching, example, experiment or challenge entry, so the admission rules and the no entry / extend / replace / add record they require are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"943139e5addeddf4436405f05f35b0671ff3c8d46c506749d61ad875e7fe7d7e","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1fcd91a9c07a8633c072ac44082f31cd5eb3353cb3372c1db5458221cc5510f5","disposition":"still accurate","rationale":"No learning entry was added, extended or replaced: the gear-lift experiment and its copy are untouched, and the tooth-size mismatch is an error message rather than teaching, exactly as this policy requires."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"32aaacb6850c739f1db271188a92c8f3e2f7bf15c483dff2a1c35855e0a97eb9","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8bc055709f2e9ed5567c2e65e0f1516f359398bd42aa5ef190693cd0ddcdd4bc","disposition":"updated","rationale":"Updated: this section now describes the per-tile favourite toggle — a star in the card's top-left corner, a sibling of the tile button so the tile's drag and pick target is unchanged, labelled and titled with the action its press performs (Save, then Remove once saved), carrying state in aria-pressed and showing it as a filled star rather than by colour alone, tab order tile, star, (i), focus moving to the first card still shown when un-starring empties the grid, and the star staying live outside Build. It also records the in-card exception to the 36 px icon-only target: the corner star and (i) are 28 px and 24 px so both clear the 88 px compact tile."} -->
+<!-- doc-review {"version":1,"fingerprint":"13e7bc0b3c261c43095c51a99548b202f8801b9979b7a2cb5d32e6514a63fc1a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1a7b70aefd1ac45c2b5bd3ec8e06c80aafa2c4086fb92eb4eeb44f24a4312366","disposition":"still accurate","rationale":"The spur-gear surfaces paragraph already records one card, the two authored settings and the mesh-row diagnostic; no surface, region or lifecycle changed. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
 
 
 
@@ -383,8 +383,11 @@ or qualification outside their tested finite operating envelopes.
 
 
 Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
-Gear mesh explicitly leaves parts in place and requires independently supported
-aligned shafts. The requested Learn & examples browser adds one editable gear-lift
+One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
+gear, so no numeric query names a part type. Gear mesh explicitly leaves parts in place and
+requires independently supported aligned shafts. Mismatched tooth sizes and a centre distance more
+than a millimetre from the two pitch radii added are reported on that mesh row, in its own words,
+and drive nothing; they never refuse the setting that caused them. The requested Learn & examples browser adds one editable gear-lift
 experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
 or reduce motor current and retry. Its prerequisite is motor/shaft authoring. This
 adds a distinct speed-versus-load experiment; the rolling-machine example teaches

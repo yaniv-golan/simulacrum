@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CATALOG } from '../src/model/catalog.mjs';
+import { gearFacts } from '../src/model/gear-geometry.mjs';
+import { partPrimitives } from '../src/model/geometry.mjs';
 import { createPart } from '../src/model/blueprint.mjs';
 import { PART_HELP } from '../src/presentation/part-help-content.mjs';
 import {
@@ -12,11 +14,13 @@ import {
   gearRimProfile,
 } from '../src/presentation/part-mesh.mjs';
 
-const gearTypes = ['gear12', 'gear24'];
-// The drawing takes resolved gear facts, never the catalog, so it is exercised beyond the two
-// shipped counts: a coarse gear, the parametric range's ends and a count that does not divide by
-// 4, which is what decides whether a tip lands on every axis.
-const TOOTH_COUNTS = [8, 12, 13, 24, 36];
+// The drawing takes resolved gear facts, never the catalog, so it is exercised across the
+// authored range: both ends, and counts that do not divide by 4, which is what decides whether a
+// tip lands on every axis.
+const TOOTH_COUNTS = [12, 13, 24, 35, 36];
+// Counts drawn through createPartMesh, so the drawn body is proved to follow the parameters and
+// not a catalog constant. Each divides by 4, so its bounding box fills the canonical solid.
+const AUTHORED_COUNTS = [12, 24, 36];
 const MODULE = 0.01,
   HALF_WIDTH = 0.01,
   // The widest shaft a gear is drawn around: the steel axle's half-section.
@@ -34,18 +38,16 @@ function factsFor(teeth, scale = 1) {
     shaftRadius: SHAFT_RADIUS,
   };
 }
-// Built the way createPartMesh's one catalog read site builds it.
-function catalogFacts(type) {
-  const gear = CATALOG[type].gear,
-    [halfWidth, colliderRadius] = CATALOG[type].primitives[0].halfExtents;
-  return {
-    teeth: gear.teeth,
-    module: gear.module,
-    pitchRadius: gear.pitchRadius,
-    colliderRadius,
-    halfWidth,
-    shaftRadius: SHAFT_RADIUS,
-  };
+// An ordinary authored gear, and the facts createPartMesh's one read site builds from it.
+function gearPart(teeth) {
+  const part = createPart('spurGear', 'gear', [0, 0, 0]);
+  if (teeth !== undefined) part.parameters.teeth = teeth;
+  return part;
+}
+function partFacts(part) {
+  const resolved = gearFacts(part),
+    [halfWidth, colliderRadius] = partPrimitives(part)[0].halfExtents;
+  return { ...resolved, colliderRadius, halfWidth, shaftRadius: SHAFT_RADIUS };
 }
 
 // The drawn tooth is the standard full depth, 2.25 modules, referenced to the tip circle
@@ -127,13 +129,15 @@ const size = (geometry) => {
 };
 
 test('gear teeth are cut one per tooth count, tipped at the collider radius', () => {
-  // The shipped gears fill the canonical solid exactly: a tip sits on every axis.
-  for (const type of gearTypes) {
-    const facts = catalogFacts(type),
+  // A gear whose tooth count divides by 4 fills its canonical solid exactly: a tip sits on
+  // every axis, and the solid is the one the authored parameters resolve to.
+  for (const teeth of AUTHORED_COUNTS) {
+    const part = gearPart(teeth),
+      facts = partFacts(part),
       geometry = gearBodyGeometry(facts);
-    const extents = CATALOG[type].primitives[0].halfExtents.map((value) => 2 * value);
+    const extents = partPrimitives(part)[0].halfExtents.map((value) => 2 * value);
     size(geometry).forEach((value, axis) =>
-      assert.ok(Math.abs(value - extents[axis]) < 1e-7, type + ' exact bbox axis ' + axis),
+      assert.ok(Math.abs(value - extents[axis]) < 1e-7, teeth + 'T exact bbox axis ' + axis),
     );
     geometry.dispose();
   }
@@ -162,10 +166,11 @@ test('gear teeth are cut one per tooth count, tipped at the collider radius', ()
     );
     geometry.dispose();
   }
-  // A 12T and a 24T profile are not interchangeable.
+  // A 12T and a 24T profile are not interchangeable, and the difference comes from the authored
+  // parameters of the same catalog row.
   assert.notEqual(
-    gearRimProfile(catalogFacts('gear12')).length,
-    gearRimProfile(catalogFacts('gear24')).length,
+    gearRimProfile(partFacts(gearPart(12))).length,
+    gearRimProfile(partFacts(gearPart(24))).length,
   );
 });
 
@@ -237,9 +242,10 @@ test('gear teeth never leave the collider radius at any scale', () => {
     geometry.dispose();
   }
   withDocument(() => {
-    for (const type of gearTypes) {
-      const mesh = createPartMesh(createPart(type, 'gear', [0, 0, 0]));
-      within(mesh.geometry, catalogFacts(type), type + ' part mesh');
+    for (const teeth of AUTHORED_COUNTS) {
+      const part = gearPart(teeth),
+        mesh = createPartMesh(part);
+      within(mesh.geometry, partFacts(part), teeth + 'T part mesh');
       disposePart(mesh);
     }
   });
@@ -337,19 +343,25 @@ test('gear bodies have a keyed bore that clears the axle, a hub, a proportionall
     previous = body;
   }
   assert.ok(previous, 'tooth counts were exercised');
-  // The part mesh draws exactly this body from the facts its single catalog read site builds.
+  // The part mesh draws exactly this body from the facts its single read site resolves, so the
+  // drawn teeth follow the authored count. A drawing keyed to a catalog constant would repeat
+  // the default count's vertex total at every authored count.
   withDocument(() => {
-    for (const type of gearTypes) {
-      const mesh = createPartMesh(createPart(type, 'gear', [0, 0, 0])),
-        expected = gearBodyGeometry(catalogFacts(type));
+    const counts = new Set();
+    for (const teeth of AUTHORED_COUNTS) {
+      const part = gearPart(teeth),
+        mesh = createPartMesh(part),
+        expected = gearBodyGeometry(partFacts(part));
       assert.equal(
         mesh.geometry.attributes.position.count,
         expected.attributes.position.count,
-        type + ' draws the body built from its catalog facts',
+        teeth + 'T draws the body built from its resolved facts',
       );
+      counts.add(mesh.geometry.attributes.position.count);
       expected.dispose();
       disposePart(mesh);
     }
+    assert.equal(counts.size, AUTHORED_COUNTS.length, 'each authored count draws its own body');
   });
 });
 
@@ -414,9 +426,11 @@ test('curved gear walls shade as one surface while faces and chamfers keep their
 
 test('a selected gear is outlined by its tooth silhouette on both faces, not every crease of its body', () => {
   withDocument(() => {
-    for (const type of gearTypes) {
-      const mesh = createPartMesh(createPart(type, 'gear', [0, 0, 0])),
-        facts = catalogFacts(type);
+    for (const teeth of AUTHORED_COUNTS) {
+      const part = gearPart(teeth),
+        mesh = createPartMesh(part),
+        facts = partFacts(part),
+        type = teeth + 'T';
       const position = mesh.userData.selectionOutline.geometry.attributes.position;
       // One closed silhouette loop per face: hub, web, bore and chamfer creases would add loops the
       // player does not need to see which part is selected.
@@ -466,10 +480,12 @@ test('only gears are given teeth: other cylinders keep their three rotation mark
 
 test('a click in a tooth valley, the bore or the recessed web still picks the gear', () => {
   withDocument(() => {
-    for (const type of gearTypes) {
-      const mesh = createPartMesh(createPart(type, 'gear', [0, 0, 0]));
+    for (const teeth of AUTHORED_COUNTS) {
+      const part = gearPart(teeth),
+        mesh = createPartMesh(part),
+        type = teeth + 'T';
       mesh.updateMatrixWorld(true);
-      const facts = catalogFacts(type),
+      const facts = partFacts(part),
         body = gearBodyDimensions(facts);
       // Each ray runs down the axis onto a place the drawn body has cut away -- mid-valley (half a
       // pitch from a tip centre, for any tooth count), the open bore, the web -- so what is under
@@ -505,7 +521,7 @@ test('a click in a tooth valley, the bore or the recessed web still picks the ge
 });
 
 test('gear help copy calls the teeth cosmetic and explains the gap where the physics touches', () => {
-  for (const type of gearTypes) {
+  for (const type of ['spurGear']) {
     const explanation = PART_HELP[type].explanation;
     assert.doesNotMatch(explanation, /Tooth marks show actual body rotation/, type);
     assert.match(explanation, /cosmetic/i, type + ' says the teeth are cosmetic');

@@ -4,6 +4,7 @@ import { rotateVector } from './transforms.mjs';
 export const CYLINDER_SEGMENTS = 64;
 export const CYLINDER_MAX_RADIAL_ERROR_RATIO = 1 - Math.cos(Math.PI / CYLINDER_SEGMENTS);
 import { CATALOG } from './catalog.mjs';
+import { gearFacts } from './gear-geometry.mjs';
 /** Authored dimensions override the canonical catalog geometry. */
 /** @param {import('./generated/blueprint-types.js').Part} part @returns {readonly import('./boundaries.js').Primitive[]} */
 export function partPrimitives(part) {
@@ -19,6 +20,20 @@ export function partPrimitives(part) {
             ...primitive,
             halfExtents: [length / 2, primitive.halfExtents[1], primitive.halfExtents[2]],
           }
+        : primitive,
+    );
+  }
+  // A gear's collider is the root cylinder of its authored teeth and module. gearFacts resolves
+  // exactly when the catalog declares the gear capability, so this is the same capability
+  // dispatch as length and diameter above -- never a part type or name -- and it is what makes
+  // mass, inertia and picking follow the teeth. The axial half-extent is the face width and is
+  // not authored.
+  const gear = gearFacts(part);
+  if (gear) {
+    const radius = gear.colliderRadius;
+    return definition.primitives.map((primitive) =>
+      primitive.kind === 'cylinder'
+        ? { ...primitive, halfExtents: [primitive.halfExtents[0], radius, radius] }
         : primitive,
     );
   }

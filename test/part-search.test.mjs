@@ -34,7 +34,7 @@ test('everyday words and roles find the intended part before incidental referenc
     assert.equal(searchParts(query)[0]?.type, type, query);
   assert.deepEqual(
     searchParts('cog').map((r) => r.type),
-    ['gear12', 'gear24'],
+    ['spurGear'],
   );
   assert.ok(
     searchParts('detect distance')
@@ -48,10 +48,8 @@ test('everyday words and roles find the intended part before incidental referenc
   );
 });
 test('numeric identity, coverage, deduplication and empty queries fail closed', () => {
-  assert.deepEqual(
-    searchParts('24T').map((r) => r.type),
-    ['gear24'],
-  );
+  // Tooth counts are authored per gear, so no numeric query names a part type any more.
+  assert.deepEqual(searchParts('24T'), []);
   assert.deepEqual(searchParts('25T'), []);
   assert.deepEqual(searchParts('zz'), []);
   assert.deepEqual(searchParts(''), []);

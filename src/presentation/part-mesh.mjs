@@ -4,6 +4,7 @@ import { createElectronicsDetails } from './part-visuals/electronics.mjs';
 import { createMechanicalDetails } from './part-visuals/mechanical.mjs';
 import * as THREE from 'three';
 import { CATALOG } from '../model/catalog.mjs';
+import { gearFacts } from '../model/gear-geometry.mjs';
 import { partPrimitives, shaftSegments, CYLINDER_SEGMENTS } from '../model/geometry.mjs';
 import { surfaceRegions } from '../model/surfaces.mjs';
 import { createSurfaceMaterial, createPortHardware } from './part-finish.mjs';
@@ -447,13 +448,13 @@ export function createPartMesh(part) {
   const definition = partPrimitives(part)[0],
     material = part.authoredMaterial[definition.id] ?? definition.materialKey;
   const [halfLength, radius] = definition.halfExtents;
-  const catalogGear = definition.kind === 'cylinder' ? CATALOG[part.type].gear : undefined;
-  // The only place gear facts are read. The drawing takes them resolved, so a parametric gear
-  // swaps this one expression for a model helper and nothing else changes.
-  const gear = catalogGear && {
-    teeth: catalogGear.teeth,
-    module: catalogGear.module,
-    pitchRadius: catalogGear.pitchRadius,
+  const resolved = definition.kind === 'cylinder' ? gearFacts(part) : undefined;
+  // The only place gear facts are read: the model resolves the authored teeth and module, and
+  // the drawing takes them resolved, so the drawn teeth follow the parameters for free.
+  const gear = resolved && {
+    teeth: resolved.teeth,
+    module: resolved.module,
+    pitchRadius: resolved.pitchRadius,
     colliderRadius: radius,
     halfWidth: halfLength,
     // The widest shaft a gear is drawn around, so its bore visibly clears one.

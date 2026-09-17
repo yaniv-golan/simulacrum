@@ -108,7 +108,7 @@ test('legacy visual events preserve frozen bump descriptors without executable c
         observation: {
           metadata: {
             blueprint: {
-              version: 3,
+              version: 4,
               id: 'old',
               name: 'Old bump',
               parts: [],

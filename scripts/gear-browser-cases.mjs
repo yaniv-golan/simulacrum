@@ -20,10 +20,10 @@ export async function verifyGearJourney({ page, evidence, out }) {
   const replace = page.getByRole('button', { name: 'Replace without saving', exact: true });
   if (await replace.isVisible()) await replace.click();
   const built = (await read()).metadata.blueprint;
-  evidence.assert('equal', [built.parts.filter((p) => p.type.startsWith('gear')).length, 2]);
+  evidence.assert('equal', [built.parts.filter((p) => p.type === 'spurGear').length, 2]);
   evidence.assert('equal', [built.connections.filter((c) => c.kind === 'gear').length, 1]);
   await browseAllParts(page);
-  await placeCatalogPart(page, 'gear12');
+  await placeCatalogPart(page, 'spurGear');
   evidence.assert('equal', [
     (await read()).metadata.blueprint.parts.length,
     built.parts.length + 1,
@@ -141,8 +141,19 @@ async function verifyGearConstruction({ page, evidence, out }) {
   await mount(input, 'bottom', base, 'top', 60, -90);
   const output = await place('Powered Motor');
   await mount(output, 'bottom', base, 'top', 60, 90);
-  const small = await place('12T spur gear');
-  const large = await place('24T spur gear');
+  // One catalog row: the pair is made by authoring the tooth count, not by picking a part.
+  const small = await place('Spur gear');
+  const large = await place('Spur gear');
+  await select(large);
+  if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
+    await page.locator('.part-settings > summary').click();
+  await page.getByLabel('teeth', { exact: true }).fill('24');
+  await page.getByLabel('teeth', { exact: true }).press('Tab');
+  evidence.assert('equal', [
+    (await read()).metadata.blueprint.parts.at(-1).parameters.teeth,
+    24,
+    'the authored tooth count is stored on the gear',
+  ]);
   const unsupported = (await read()).metadata.blueprint;
   await connect(small, 'mesh', large, 'mesh', 'Mesh with');
   evidence.assert('deepEqual', [

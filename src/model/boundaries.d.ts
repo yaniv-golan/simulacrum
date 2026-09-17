@@ -44,7 +44,9 @@ export interface CatalogDefinition {
   controlBindingMilestone?: string;
   releaseFace?: string;
   jointFace?: { region: string; joint: 'revolute' | 'spherical' };
-  gear?: { teeth: number; module: number; pitchRadius: number; stiffness: number; damping: number };
+  /** Declares a mesh-capable gear and owns its compliance. Tooth count, module and every radius
+   * derived from them are authored parameters resolved by gearFacts, never catalog constants. */
+  gear?: { stiffness: number; damping: number };
   mirrorAxis?: 'x' | 'y' | 'z';
   sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }

@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"6895a31f5c92008c65ce6a949c0c5549a6f54056554598329ff62b2ab7384bd1","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"d65e3af729d943c2e8e8860ba4e65966cda60e6870c950bf87b642ff6b2fdd1b","disposition":"still accurate","rationale":"The manifest changes are gear controls in connection-display-isolation, that invariant's guarantee wording and refreshed scope consumer hashes; no milestone allocation, bar, gate row or check ownership moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"2219cacffe14ae3bfefcfbf2845b39b51e61db11df769dd0afe58835d98b67e8","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"b92825426afb4e9d7e0820fe7503f0ac5d452b712c8a837f14f27801eaa8587a","disposition":"still accurate","rationale":"The remaining manifest change is the refreshed browser scope consumer hashes written by browser:scopes apply, on top of the supported-spur-transmission guarantee wording and its control anchors; no milestone allocation, bar, gate row or check ownership moved."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f7575f3e8398022ef843d94d5fbae9aa0f71b1356062a455d8ab3aeec23c3f2a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d5b815b7cb86fa2bb14f0ce70326efa880d547e224255ed6b62ff8949f809f34","disposition":"still accurate","rationale":"reference.md regenerated only the registry rows that now list classifyRead and the read-classification module beside the existing owners; the documentation workflow this section describes (prepare, review, check and their ownership rules) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4667619f45431d1369293c533d2d88905efb8d7cdf10410db73981331876355a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ff4cfd214ad39b0fe2bd008440c7786b29297bf8932ee4f4a39b1e9789997861","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md discovery, which this section tells the reader to regenerate; the prepare/review/check workflow it describes is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"2ee1a03c2eeb83b7e4383e64c6e9df07ac9d9a8732e93e44ae7670090feb7309","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6e9aafdd9aa0a1806051b138fe007898802f8b88f2fbb39708fc1c3ec214716f","disposition":"still accurate","rationale":"Scope metadata hashes were refreshed by the reviewed scope apply after the app fingerprint moved; no browser check row, phase, host profile, selection rule or witness changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ebf3397db3e4e71622c9911785b51f539ae8823940b747c8aff151fde4f29235","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ad13a515a97625b6f27f6e557e534de8239f9c694914bde1d8b89e61350fdc4f","disposition":"still accurate","rationale":"The manifest change is exactly what this section prescribes: sixteen metadata scope rows carry refreshed consumerSourceHash values and one refreshed sourceSha256, each accepted with its own technical rationale and witnessed by invariant-controls. No browser check, host profile, scheduling phase, registered platform or scope rule changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"82a4bfd67ae251a9b4f5840857cb55648f98844a679995095b8d00b9927d0e04","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"00c9fcf4b3160b41565eb3bd766c25ed367e2aa9dfdfa5a9cb299ddc89bc7eb0","disposition":"still accurate","rationale":"No tier, candidate, stacking or landing rule changed; the manifest edits are gear controls, one invariant's guarantee wording and refreshed consumer hashes."} -->
+<!-- doc-review {"version":1,"fingerprint":"592ec9f9e4f25d129ccb326818bab260cb57e9eb8a3802ca62b60708e85bd65d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"484ae4b2fb7e4a0137679829ca90b85be7f709fd91bb09738fad554fa8c8e446","disposition":"still accurate","rationale":"No tier, candidate key, stacking, landing or receipt rule changed; the manifest edits are the gear invariant's guarantee and controls plus the scope registry's refreshed consumer hashes, which this workflow expects a candidate to record before capture."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

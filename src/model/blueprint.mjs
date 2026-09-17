@@ -28,7 +28,7 @@ export const BLUEPRINT_REASON_CODES = Object.freeze([
   'INVALID_ROTATION',
   'INCOMPATIBLE_PORT_DIRECTION',
 ]);
-export const CURRENT_SAVE_VERSION = 3;
+export const CURRENT_SAVE_VERSION = 4;
 export const QUATERNION_NORM_TOLERANCE = 1e-8;
 const result = (reasonCode, path = '') => ({ ok: reasonCode === 'OK', reasonCode, path });
 const escape = (key) => String(key).replaceAll('~', '~0').replaceAll('/', '~1');
@@ -253,7 +253,10 @@ export function validateBlueprint(blueprint) {
       if (!part) return result('UNKNOWN_PART', `${path}/${side}/part`);
       let port;
       if (endpoint.surface) {
-        if (blueprint.version !== 3 || !['fixed', 'pivot'].includes(connection.kind))
+        if (
+          blueprint.version !== CURRENT_SAVE_VERSION ||
+          !['fixed', 'pivot'].includes(connection.kind)
+        )
           return result('INVALID_BLUEPRINT', `${path}/${side}`);
         try {
           port = resolveSurfaceEndpoint(part, endpoint);

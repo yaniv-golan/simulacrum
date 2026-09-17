@@ -13,7 +13,7 @@ const part = (id, type = 'beam') => ({
   parameters: {},
 });
 const blueprint = () => ({
-  version: 3,
+  version: 4,
   id: 'machine',
   name: 'Machine',
   parts: [part('a'), part('b')],

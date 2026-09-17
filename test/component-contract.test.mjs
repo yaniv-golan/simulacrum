@@ -28,6 +28,27 @@ test('dimensioned beam uses authored length through save, compiler and physics',
         expectedHalfExtents: [length / 2, 0.02, 0.02],
       });
 });
+test('parametric spur gear uses authored teeth and module through save, compiler and physics', async () => {
+  // The one test that proves collider, mass and inertia follow the authored tooth count all the
+  // way through save, compiler and the physics door, at both module choices and every material.
+  for (const [teeth, module] of [
+    [12, 0.01],
+    [13, 0.01],
+    [24, 0.01],
+    [36, 0.01],
+    [12, 0.005],
+    [36, 0.005],
+  ]) {
+    const radius = (module * (teeth - 2)) / 2;
+    for (const material of [undefined, ...Object.keys(MATERIALS)])
+      await assertComponentContract({
+        type: 'spurGear',
+        parameters: { teeth, module },
+        material,
+        expectedHalfExtents: [0.01, radius, radius],
+      });
+  }
+});
 test('common suite rejects plausible wrong geometry and discarded material', async () => {
   const wrongGeometry = (bp, options) => {
     const compiled = compileAssembly(bp, options);

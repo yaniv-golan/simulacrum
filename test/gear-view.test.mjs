@@ -32,7 +32,7 @@ test('gear mesh draws a dashed relationship, never a supporting shaft', () => {
 
 test('mesh wording distinguishes transmission from structural support', () => {
   const port = { id: 'mesh', kind: 'gear' };
-  assert.equal(portLabel({ type: 'gear12' }, port), 'Gear mesh');
-  assert.match(portPurpose({ type: 'gear12' }, port), /separate.*shaft|independently/i);
-  assert.match(portPurpose({ type: 'gear12' }, port), /stay|move/i);
+  assert.equal(portLabel({ type: 'spurGear' }, port), 'Gear mesh');
+  assert.match(portPurpose({ type: 'spurGear' }, port), /separate.*shaft|independently/i);
+  assert.match(portPurpose({ type: 'spurGear' }, port), /stay|move/i);
 });

@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import {
+  CURRENT_SAVE_VERSION,
   createEmptyBlueprint,
   createPart,
   validateBlueprint,
@@ -84,7 +85,7 @@ test('a fixed attachment port cannot silently acquire a second connection', () =
 test('save versions explicitly refuse unsupported formats; no missing-field inference', () => {
   for (const version of [0, -1])
     assert.equal(loadSave({ ...valid(), version }).reasonCode, 'SAVE_VERSION_UNSUPPORTED_OLD');
-  assert.equal(loadSave({ ...valid(), version: 4 }).reasonCode, 'SAVE_VERSION_FUTURE');
+  assert.equal(loadSave({ ...valid(), version: 5 }).reasonCode, 'SAVE_VERSION_FUTURE');
   const missing = valid();
   delete missing.version;
   assert.equal(loadSave(missing).ok, false);
@@ -183,7 +184,7 @@ test('M3 factories expose complete player-authored electrical ratings', () => {
 });
 test('current runtime requires parameters and rejects unknown or out-of-range ratings', () => {
   const b = valid();
-  assert.equal(b.version, 3);
+  assert.equal(b.version, CURRENT_SAVE_VERSION);
   delete b.parts[0].parameters;
   assert.equal(validateBlueprint(b).ok, false);
   const motor = createPart('poweredMotor', 'motor', [0, 0, 0]);
@@ -199,7 +200,7 @@ test('current runtime requires parameters and rejects unknown or out-of-range ra
   assert.equal(validateBlueprint(machine).ok, false);
 });
 test('only the current save format is admitted', () => {
-  for (const version of [1, 2])
+  for (const version of [1, 2, 3])
     assert.equal(loadSave({ ...valid(), version }).reasonCode, 'SAVE_VERSION_UNSUPPORTED_OLD');
   assert.equal(loadSave(valid()).ok, true);
 });

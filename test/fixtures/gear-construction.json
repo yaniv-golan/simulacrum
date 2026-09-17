@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "id": "gear-construction",
   "name": "Grounded gear transmission",
   "parts": [
@@ -44,21 +44,21 @@
     },
     {
       "id": "part-5",
-      "type": "gear12",
-      "name": "12T spur gear",
+      "type": "spurGear",
+      "name": "Spur gear",
       "position": [-1.09, 0.2, -0.08999999999999998],
       "rotation": [0, 1, 0, 0],
       "authoredMaterial": {},
-      "parameters": {}
+      "parameters": { "teeth": 12, "module": 0.01 }
     },
     {
       "id": "part-6",
-      "type": "gear24",
-      "name": "24T spur gear",
+      "type": "spurGear",
+      "name": "Spur gear-2",
       "position": [-1.09, 0.2, 0.08999999999999998],
       "rotation": [0, 1, 0, 0],
       "authoredMaterial": {},
-      "parameters": {}
+      "parameters": { "teeth": 24, "module": 0.01 }
     },
     {
       "id": "part-7",
