@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"46dea11bd05bbfec96f2ddf1758a066168811a73a45ffac9c3cebeef033dc2f1","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"01dd3afeb64fe0982a7052673175b5b6d194c5d3b26980143363048815784c24","disposition":"still accurate","rationale":"The manifest milestone stays M3b and the candidate adds one invariant row; the contract amendment adds an M3b section without touching bars, gate rules or milestone allocation, so the status prose and the commands it names are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3947ec147a0c3d0331bbc2639ed390e8599df4ea7c8aaac8a2fce2c1500dad95","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"2c9f9f008e09e8c6ea04ee48b74b34e4985198ded10623f459382fa88a2eae84","disposition":"still accurate","rationale":"The manifest milestone stays M3b; the candidate adds one invariant row and its controls, and the contract amendment adds an M3b section and qualifies its own claims without touching bars, gate rules or milestone allocation."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"5449d1ce97cbfc5a83c6f883d10be4ac1e20b2d7ec08f7d4aa38aeb6e4aa5797","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b2d528e05ccd46305a8635cdfdd7f584f98028e6d153bf8abcd4f2b53978b6fc","disposition":"still accurate","rationale":"The candidate registers no browser check and changes no host profile, phase, scope kind or witness rule. The sixteen refreshed metadata rows moved only in consumerSourceHash because the manifest they hash gained an invariant row, which is exactly the prepare/apply path this section documents."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e732dd54f8fb8bed1fbe083a9e8a5e89935bccf37ce359b42f99a8795c9f843","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"bbc7e4258747101bb1715e007fc2dd072a0d9924e837d1955907cb5129ebfbdc","disposition":"still accurate","rationale":"No browser check, host profile, phase, scope kind or witness rule changed. The sixteen metadata rows moved only in consumerSourceHash because the manifest they hash gained an invariant row and its controls, which is the prepare/apply path this section documents; the generated boundary types moved only to admit one connection kind."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"17e6fd3ab515313d3fe87e4d274af64e74df63407dbf937b159896815cb3980e","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f3137b92c032a76d1665be6817cb302c1ba633ed75fd4f41c7ebc0b9a4b993de","disposition":"still accurate","rationale":"Candidate capture, tier selection, window ownership and landing admission are untouched. The changed dependencies are model modules and the manifest invariant list, which the documented commands read but whose procedure they do not define."} -->
+<!-- doc-review {"version":1,"fingerprint":"630e9ec5298d0989e96a07ab84e05ed15229ab5071ce5dd63bbee17f3a48ebc5","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d980d9f03cba9e6113e7c473fb78f9b031b88d98ab693a80a6b9ff1897bfb958","disposition":"still accurate","rationale":"Candidate capture, tier selection, window ownership and landing admission are untouched. The changed dependencies are the manifest's invariant list and the generated boundary types, which the documented commands read but whose procedure they do not define."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

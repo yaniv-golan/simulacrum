@@ -30,7 +30,7 @@
     "src/model/catalog.mjs": "15f3395b3ee4e8ed2b9c72f214a6647c590bc6621ac142661c0e966271c4edd1",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
-    "src/model/generated/blueprint-types.d.ts": "0190bf745986aa64ff7b4b14df211718d99500b9e9544fe0285ba4785cfecd58",
+    "src/model/generated/blueprint-types.d.ts": "24f90a1eca4ff28a9134b75539d29cc41c4904e46faae5f465584230df81b7bc",
     "src/model/generated/blueprint-validator.mjs": "8cd6aa068cde44b8035748a60c42f0d37155c8200d0fcacc0915d56b811229ac",
     "src/model/geometry.mjs": "513e6ec4d7178d097d4899677842cc36f536813207edb7d3484ab1c29294de32",
     "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",

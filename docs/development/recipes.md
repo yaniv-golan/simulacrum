@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"5cfe9093213169bf4fab68f408db32eef03e53bc64a8cf64451336246ec4269d","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"26578fdc70fab69f0e01d241a3e9bf2d4db9f68c56d12588d5e6db2770ef2353","disposition":"still accurate","rationale":"The candidate adds a connection kind, not a catalog part: CATALOG, parameter definitions, primitives, surface regions and the milestone declaration for parts are untouched, so this recipe's owners, worked examples and required checks all still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"e83f4b33b9f9c6fba2f4b931737d88163b2c213a29ff2f1ad7f3ced78ec8e940","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"19bb876a6365f04196aee136e6bc24f74a7db013ed891c0e868f7a6bd37cf58c","disposition":"still accurate","rationale":"The candidate adds a connection kind, not a catalog part: CATALOG, parameter definitions, primitives, surface regions and part milestone declarations are untouched, so this recipe's owners, worked examples and required checks all still hold."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -101,7 +101,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c7b702bb438782f65f7895858fa79ec971b5eaa31b6dde4d84a9f3ee75fe106e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"06c1465733814caad6bbf7fc5cae74711e0b042f7f2a5b2d1251da6133d16401","disposition":"updated","rationale":"Updated: the scene capacity sentence now counts distributed elastic-cord nodes alongside rope nodes, matching the body-budget rule the blueprint admission enforces. The command admission procedure is otherwise unchanged, and the new cord command follows the documented rope command shape exactly."} -->
+<!-- doc-review {"version":1,"fingerprint":"64b398f8180577eb7fe19127fbd6c161de52d0b4a1ed9b15abe9df15bafcbc18","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"e99773739521b5dea99df82eacf6fdd0c673848d6b4aa76ca7f68bda28e35d07","disposition":"still accurate","rationale":"The section already records that the cord command follows the documented rope shape and that scene capacity counts cord nodes. This revision adds that command's declaration on the WorkshopCommand boundary type, which the section's admission procedure already requires of any command."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -130,7 +130,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"1a64166239e5e2702c3e56977dbb27683e19d06819b4abdb1fc07e9684d93a0c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"44cd61610d5bb597aa46400ac492b9954e32f107ceb1fd1c32aa318085fece8a","disposition":"still accurate","rationale":"This candidate adds no presentation module, control or preview. messages.mjs gained three reason-code strings for Build-time and run-time refusals; no interaction owner, placement policy or rejected-draft explanation changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"bcb732a3d09c40bb29ed1bb0163279a240b739329b653aff4eb60336998e0a33","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"096f0f02e7d2251685a48b035aafbc270dfb854a988d6bfeb623508b5bc4bbf5","disposition":"still accurate","rationale":"No interaction owner, preview, placement policy or rejected-draft explanation changed. The two presentation edits are display corrections inside existing surfaces: a cord is excluded from the wiring overlay, and the shared connection labels name it instead of printing a raw id."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -179,7 +179,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"e251a98cd68520d7f09e5c6f2cec9476405962b6dfe772dd7245d5a989848a33","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"67380fc9c3508957bb29bc66e636526aa13cdddd0717bbcd8cb7b24d28cb30a1","disposition":"still accurate","rationale":"No diagnostic, readout or motion explanation was added. The cord's bounded failures reuse the existing reason-code, failure-bundle and Build-repair path this section already describes, and its rows publish through the existing distributed elastic read model."} -->
+<!-- doc-review {"version":1,"fingerprint":"05ca02a80e368ec5e0c8f386c359e40f54205a5a98ba01725f4c88a67dcf1387","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c42680875a3158c3765b6256c414ab8be398affed9a6d01a3aff6be00a91b995","disposition":"still accurate","rationale":"No diagnostic, readout or motion explanation was added. The cord's bounded failures reuse the existing reason-code, failure-bundle and Build-repair path this section already describes."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -218,7 +218,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"409644f0932f6a60689645768aa8598ac04fe2bebd96357b92f8b0d74ddaed42","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"71fc75ffed9e0af532463b617bb518e85daffd2bad340e9edce81cc4ce15b8db","disposition":"updated","rationale":"Updated: the section now describes the elastic cord as a second connection compiled into the same distributed rows, its single authoring owner for stiffness and damping against material and diameter owning only mass, its deliberate reuse of the existing tensile law rather than a duplicate, its own physics-door domain and bounded CORD_MOTION_LIMIT, the authoring-time elastic budget it shares with guided springs, and the four control files to preserve."} -->
+<!-- doc-review {"version":1,"fingerprint":"c28d552c3120cf2e7155b9215ab2b4dd4c3ea6dae5e62a5f97946a08b400c15f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9da6cd84e66991cd0f45706f006e34795d011ea0ae16c63e3bfd6f351be85a2c","disposition":"updated","rationale":"Updated: the section now names the physics door's direct cord counterexamples, which bypass the compiler, and the measurement of both extremes of the authored domain over 2400 ticks with its numbers (2400 N/m rows on 5.6e-5 kg nodes, about 66000 times the guided-spring island budget, converging without energy growth, jitter or a snapshot discontinuity), and states that convergence is claimed for that measured domain only so widening CORD_LIMITS requires a new measurement."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -470,10 +470,17 @@ share one machine-level elastic budget refused by
 [admitCordBudget](../../src/model/cord.mjs#symbol=admitCordBudget) during compilation,
 from authored masses over each elastic group; that budget keeps a machine inside the
 measured domain and is not a stability requirement, because the distributed rows are
-solved implicitly. Preserve [authoring, budget and identity controls](../../test/cord-authoring.test.mjs),
+solved implicitly. The door's own cord domain has
+[direct counterexamples](../../test/cord-door.test.mjs) that bypass the compiler, and both
+extremes of the authored domain are [measured over 2400 ticks](../../test/cord-domain-corners.test.mjs):
+the stiffest corner puts 2400 N/m rows on 5.6e-5 kg nodes, about 66000 times the guided-spring
+island budget, and still converges without energy growth, jitter or a snapshot discontinuity.
+Convergence is claimed for that measured domain only; widening `CORD_LIMITS` requires a new
+measurement, not an argument. Preserve [authoring, budget and identity controls](../../test/cord-authoring.test.mjs),
 [slack, analytic and bounded-failure controls](../../test/cord-physics.test.mjs),
 [energy and damper controls](../../test/cord-energy.test.mjs) and
-[both clock drivers](../../test/cord-determinism.test.mjs).
+[both clock drivers](../../test/cord-determinism.test.mjs), which cover the mid-domain cord and
+the stiffest corner.
 
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
@@ -542,7 +549,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"40d562021f6493610baa60793e33926a2e1c2b74bc928c938696252bac0d099d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"44071ce17dad811539abe94676ce847ddd86fd0f83517816b67092e1a66d107d","disposition":"still accurate","rationale":"The cord joins mechanical grouping, mirrored reference attachment and reusable capture through the same connection-kind lists this section already governs, and its authoring controls exercise them. No grouping, mirroring, capture or transform rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"180d2e29336e45115477cc264972912bcf111b9827289c5dc9b1f229607aa9b7","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"a4dd8fbde7ada1b22baa2f63ef1af39b648a0647e0ffed88752f19f4f6982a9e","disposition":"still accurate","rationale":"The cord joins mechanical grouping, mirrored reference attachment and reusable capture through the same connection-kind lists this section already governs, and its authoring controls exercise them. Declaring the command's boundary type changes no grouping, mirroring, capture or transform rule."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -639,7 +646,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"bad657bec7862f666d66378bd9ec197c06c52518bdfe8f3e98018ae64cc6b34b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e1f5674e95c65808711dbf6b81e1fce24e3877f59d96617658e5c161b88d137f","disposition":"still accurate","rationale":"Candidate 1 adds no overlay, view, renderer or selection behaviour. Cord rows publish through the existing distributed elastic read model, and no presentation module or its resource lifecycle changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"3293f58783c3f265c7d7a6ce5070aa08e867befee7069535116b567f31e572aa","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9965149eec3624b7a6a9679b245c95d6514eae104cbf9fc2aa72d01dd38578e3","disposition":"updated","rationale":"Updated: the overlay section now states that distributed elastic connections are not wiring, that both rope and cord edges are excluded from the wiring overlay, and that a cord is drawn in no surface yet because workshop rendering and the optical input both select rope connections, while the inspector still names it through the shared connection labels."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -648,7 +655,11 @@ connection overlay. The checked producer takes narrow display inputs; the checke
 The workshop view resolves endpoints from displayed meshes, including exploded offsets.
 The renderer never changes authored connectivity or sends a command. Visibility is an
 explicit required field. Normal electrical links use straight schematic lines; fixed/shaft mechanical
-geometry and exploded dashed styling retain their existing behavior. Gear meshes
+geometry and exploded dashed styling retain their existing behavior. Distributed elastic
+connections are not wiring: both rope and `cord` edges are excluded from the wiring
+overlay, and a cord is drawn in no surface yet — workshop rendering and the optical
+input both select rope connections — so it has completed geometry and no visual
+representation. The inspector still names it, through the shared connection labels. Gear meshes
 use dashed relationships without a solid supporting rod; their cosmetic teeth are part of
 the body geometry and follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 

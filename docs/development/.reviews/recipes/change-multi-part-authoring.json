@@ -3,7 +3,7 @@
   "dependencies": {
     "src/model/boundaries.d.ts": "60c30e2e12b9e2d11334e57d4cd3cd9fddfe17240cd79d6dcd38489a4c127b44",
     "src/model/connection-graph.mjs": "5032b66a6298f124ffe3a4300fee613a8390c35ef708d7026d336927ef6bdc6d",
-    "src/model/generated/blueprint-types.d.ts": "0190bf745986aa64ff7b4b14df211718d99500b9e9544fe0285ba4785cfecd58",
+    "src/model/generated/blueprint-types.d.ts": "24f90a1eca4ff28a9134b75539d29cc41c4904e46faae5f465584230df81b7bc",
     "src/model/assembly.mjs": "bd889e3c65964fe4d12bfdc709bc9df902caef0ff3eb3f255de85914b61a612a",
     "src/model/blueprint.mjs": "54db4c299fb382d32a4038f242652e6e81c86d78db24a2aa7e0e6e6cd4ceba86",
     "src/model/catalog.mjs": "15f3395b3ee4e8ed2b9c72f214a6647c590bc6621ac142661c0e966271c4edd1",
@@ -36,7 +36,7 @@
     "src/model/learning-bindings.mjs": "145e41c31a3966f0c69c9a278e1b0b9e79688b17f9b7da69386e00dbd02975a1",
     "src/model/power.mjs": "6b1db250c8db5561b8fec50cb34f941b60803a586f39a85aebf1e26f49c1912f",
     "src/model/reasons.mjs": "58740ab8a5bb390d28b46180c38cef4d6d3587c3a1b6884a2759149b4ae7f77f",
-    "src/model/workshop-command.d.ts": "e09d2e18e17e2e6bfffad958fd3ff7ddb23948bc3d90a25dce3590a293278eac",
+    "src/model/workshop-command.d.ts": "1c9a713b8c25475485e5894c07212b84ad1f0f88b5a461dfc8d67b541c196c44",
     "src/model/workshop-command.mjs": "b513ac52b92f9c8bedd1428e65ba8a30e83f00ae0a50b5821e1693da5b7c3605",
     "src/scripting/controller-executors.mjs": "973fed1b295ec635ee55036ab3458209d670e7ac26be0f85626017550719c6cd",
     "src/scripting/controller-program.mjs": "82db0a979977655cbe339b2c7d7f8500fefc47b8a70fbfdec45eb93d77559529",

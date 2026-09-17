@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"f48f4d9f05d7a701657974b652d54065f00da1cc0143d468aa9d549c43e56b8d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"65b485629ffcb53d5f375dc579a2d2474b47ac611a60cc0fab8048c47b298a24","disposition":"still accurate","rationale":"The only changed dependency is src/presentation/workshop-view.mjs, which renders the existing Learn entries as rows and collapses them on close. No teaching, example, experiment or challenge entry was added, extended or replaced, so the admission rules and the record they require are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"b95e891ee9330a0f70c29644e9a61193786dcab121c0dbcaf1893e37f689c39e","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"d89498e343ff710f306c97d80443ad6172bd4e8e40d8f5c148836540eef4919f","disposition":"still accurate","rationale":"This candidate adds, extends and replaces no teaching, example, experiment, challenge or contextual invitation, and the recorded decision remains no entry. workshop-view.mjs moved only by excluding cord edges from the wiring overlay."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3a900d1ebf50a805c63e52fcf6424cdef94bca6e4428f724763afe188ab265fe","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8441ff3500e80cc03d2fa62cc1eea16f2b9f68dc37e6990876bcc32730d85da3","disposition":"still accurate","rationale":"No player-facing surface, region, visibility lifecycle or copy changed: the elastic cord has no palette card, inspector panel or control in this candidate, and the only new strings are reason-code explanations shown by the existing failure surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"575d604965d51a226bbbedff48b218b1a62ba1c5c7b6d8ef5bcc32aab829564f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b8a4dc36ebd9186890e84b9e7dd19d200649fbad29890b5ea2e8c5e1246624b5","disposition":"still accurate","rationale":"No player-facing surface, region or visibility lifecycle changed: the elastic cord still has no palette card, panel or control. Two existing surfaces gain correct output rather than new copy owners: the wiring overlay no longer draws a cord as a wire, and the shared connection labels give it the name Elastic cord instead of printing a raw id in the inspector summary and the connect, trace and disconnect actions."} -->
 
 
 
