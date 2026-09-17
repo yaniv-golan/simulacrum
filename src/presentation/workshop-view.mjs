@@ -4194,7 +4194,8 @@ export function createWorkshopView(
       revealedConnectionIds,
       sourceEndpoint: sourcePort,
       connections: frame.metadata.blueprint.connections.filter(
-        (connection) => connection.kind !== 'rope' && !releasedAttachment(connection),
+        (connection) =>
+          !['rope', 'cord'].includes(connection.kind) && !releasedAttachment(connection),
       ),
       diagnostics: frame.metadata.connections,
       exploded: exploded || explodeAmount > 0,
