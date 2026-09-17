@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import { CATALOG, assertDimensionDefaults } from '../src/model/catalog.mjs';
-import { gearFacts, meshSpacingRepair } from '../src/model/gear-geometry.mjs';
+import { gearFacts } from '../src/model/gear-geometry.mjs';
+import { meshSpacingRepair } from '../src/model/gear-mesh.mjs';
 import { partPrimitives } from '../src/model/geometry.mjs';
 import {
   CURRENT_SAVE_VERSION,

@@ -69,7 +69,8 @@ import {
 import { createEditingControls } from './editing-controls.mjs';
 import { createPart } from '../model/blueprint.mjs';
 import { mechanicalGroup } from '../model/connection-graph.mjs';
-import { gearFacts, meshSpacingRepair } from '../model/gear-geometry.mjs';
+import { gearFacts } from '../model/gear-geometry.mjs';
+import { meshSpacingRepair } from '../model/gear-mesh.mjs';
 import { duplicatePart } from '../model/duplication.mjs';
 import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
