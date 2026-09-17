@@ -6,6 +6,13 @@
 // resolve does too. These checks hold each corner at the same transmitted force and the same
 // pitch-line speed and read what it delivered, so the bounds are decided from measurements
 // rather than from the one pair the constant was chosen for.
+//
+// Two things the steady phase deliberately cannot show. Constant force at constant speed drives
+// the relative slip to zero, so both of the mesh's dissipative terms are structurally near zero
+// there whatever `omega dt` is: a clean work balance in that phase is evidence about steady
+// transmission and nothing else. The transient claim rests on the engine's own per-tick energy
+// ledger, accumulated over the step-torque spin-up that actually rings the mesh, and on the
+// ledger closing to zero the way the shipped gear checks already require.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
@@ -17,6 +24,7 @@ import {
   measureCoast,
   measureTransmission,
   meshFrequency,
+  meshLedger,
   spinUpToPitchLineSpeed,
   tickPair,
 } from './fixtures/gear-bounds.mjs';
@@ -37,9 +45,17 @@ test('every authored bound corner holds its ratio and its strain under load and 
       label = cornerLabel(corner),
       world = await createPhysicsWorld(fixture.config);
     try {
-      spinUpToPitchLineSpeed(world, fixture, FORCE_N, PITCH_LINE_SPEED);
-      const run = measureTransmission(world, fixture, { force: FORCE_N, ticks: 1200 }),
-        coast = measureCoast(world, 1200);
+      const frequency = meshFrequency(fixture),
+        transient = meshLedger(),
+        steady = meshLedger(),
+        idle = meshLedger();
+      const spinUp = spinUpToPitchLineSpeed(world, fixture, FORCE_N, PITCH_LINE_SPEED, transient),
+        run = measureTransmission(world, fixture, {
+          force: FORCE_N,
+          ticks: 1200,
+          ledger: steady,
+        }),
+        coast = measureCoast(world, 1200, idle);
       // The ratio is the authored one, not a compliance-dependent approximation of it.
       assert.ok(
         run.maximumRatioError < RATIO_LIMIT,
@@ -48,17 +64,69 @@ test('every authored bound corner holds its ratio and its strain under load and 
       // Elastic displacement stays inside the recorded millimetre at every corner, so no corner
       // reaches the mesh's compliant domain limit by being small.
       assert.ok(run.maximumStrainM < STRAIN_LIMIT_M, `${label} strain ${run.maximumStrainM} m`);
-      // The output takes out what the input put in: a corner whose mesh quietly ate the work
-      // would show it here, because input work is identical across corners by construction.
+      // Steady transmission is clean: the output takes out what the input put in. This is a
+      // statement about the balanced operating point only — see the ledger assertions below for
+      // the dissipation the solver actually performs, which this phase structurally suppresses.
       assert.ok(
         Math.abs(run.lostWorkFraction) < 0.01,
-        `${label} lost ${run.lostWorkFraction} of the input work`,
+        `${label} steady phase lost ${run.lostWorkFraction} of the input work`,
       );
       // Backward Euler may dissipate; it may never pump. Measured growth is exactly zero at
       // every corner, so any growth at all is a defect and not a tolerance question.
       assert.ok(coast.growth <= 0, `${label} coast energy grew by ${coast.growth}`);
       assert.ok(coast.retained > 0.99, `${label} coast retained only ${coast.retained}`);
-      measured.push({ label, ...run, ...coast, ...meshFrequency(fixture) });
+      // The engine's own account must close, every tick of every phase, at every corner: the
+      // mesh's raw work, its elastic storage, its damper and the solver's dissipation cancel,
+      // and the island's kinetic change is the raw impulse plus the constraint reaction. This
+      // is the contract test/gear-physics.test.mjs and test/gear-law.test.mjs already assert
+      // one tick at a time; a corner is only allowed to be fast, never unaccounted for.
+      for (const [phase, ledger] of [
+        ['spin-up', transient],
+        ['loaded', steady],
+        ['coast', idle],
+      ]) {
+        assert.ok(
+          ledger.totals.ticks > 0,
+          `${label} ${phase} recorded no ticks, so its ledger proves nothing`,
+        );
+        assert.ok(
+          ledger.totals.maximumResidualJ < 1e-9,
+          `${label} ${phase} mesh ledger residual ${ledger.totals.maximumResidualJ} J`,
+        );
+        assert.ok(
+          ledger.totals.maximumIslandResidualJ < 1e-9,
+          `${label} ${phase} island ledger residual ${ledger.totals.maximumIslandResidualJ} J`,
+        );
+        // Dissipation is signed: the damper and the solver may only ever take energy out.
+        assert.ok(
+          ledger.totals.dampingWorkJ >= 0 && ledger.totals.numericalLossJ >= 0,
+          `${label} ${phase} returned energy: damper ${ledger.totals.dampingWorkJ} J, solver ${ledger.totals.numericalLossJ} J`,
+        );
+      }
+      // This is the term that actually degrades with omega dt, and it is not a mystery: at a
+      // held pitch-line force the mesh must pass an impulse of F dt every tick, and the energy
+      // the solver books against that impulse is exactly half the mobility times its square.
+      // So the mesh-local dissipation grows as M, i.e. as (omega dt)^2 at fixed stiffness -
+      // precisely R7's predicted degradation, here derived rather than fitted. What keeps it
+      // from being lost work is that the island returns it through the bearings, which is why
+      // the delivered-work and coast figures above stay clean while this term moves 170-fold.
+      const predictedNumericalLossJ = 1200 * 0.5 * frequency.mobility * (FORCE_N * DT) ** 2,
+        numericalLossRatio = steady.totals.numericalLossJ / predictedNumericalLossJ;
+      assert.ok(
+        Math.abs(numericalLossRatio - 1) < 0.02,
+        `${label} booked ${steady.totals.numericalLossJ} J against the predicted ${predictedNumericalLossJ} J`,
+      );
+      measured.push({
+        label,
+        ...run,
+        ...coast,
+        ...frequency,
+        transientLossFraction: transient.dissipatedJ / spinUp.driveWorkJ,
+        transientNumericalLossJ: transient.totals.numericalLossJ,
+        transientDampingWorkJ: transient.totals.dampingWorkJ,
+        steadyNumericalLossJ: steady.totals.numericalLossJ,
+        steadyDampingWorkJ: steady.totals.dampingWorkJ,
+      });
     } finally {
       world.dispose();
     }
@@ -73,9 +141,22 @@ test('every authored bound corner holds its ratio and its strain under load and 
     measured.every((row) => row.maximumRatioError < 100 * reference.maximumRatioError + 1e-6),
     'a bound corner tracks its ratio within two orders of magnitude of the reference pair',
   );
+  // The two-sided finding, stated as one assertion so neither half can be quoted alone. The
+  // mesh-local dissipation the solver books does degrade across the bounds, by more than two
+  // orders of magnitude, which is R7's mechanism and it is real. The work the mechanism
+  // actually fails to deliver does not: it stays under a hundredth of a percent everywhere.
+  const booked = measured.map((row) => row.steadyNumericalLossJ);
+  assert.ok(
+    Math.max(...booked) / Math.min(...booked) > 100,
+    `the booked mesh dissipation spans only ${Math.max(...booked) / Math.min(...booked)}x`,
+  );
+  assert.ok(
+    measured.every((row) => Math.abs(row.lostWorkFraction) < 1e-3),
+    'no corner fails to deliver a thousandth of its input work',
+  );
 });
 
-test('the bound set spans the mesh frequency the registered endurance apparatus already measures', () => {
+test('the bound set spans an order of magnitude of mesh frequency and reaches the endurance apparatus own', () => {
   // Pitch-point mobility is rA^2/IA + rB^2/IB, so it is set by the authored radii and the
   // compiled masses and nothing else. With one constant stiffness the mode the tick must
   // resolve therefore moves with the authored pair, and this is the number that moves.
@@ -92,10 +173,13 @@ test('the bound set spans the mesh frequency the registered endurance apparatus 
   assert.ok(Math.abs(fastest - 8.686) < 0.01, `fastest mesh ${fastest}`);
   assert.ok(fastest / slowest > 10, `the bound span is ${fastest / slowest}`);
 
-  // The envelope argument: the registered endurance apparatus runs eight coupled meshes on
-  // 0.1 kg rotors, which is already a faster mesh than every parametric corner but the very
-  // lightest, and it holds strain, split step and ratio for 7200 ticks. So the bounds do not
-  // open a numeric regime nothing measures; they reach one already under measurement.
+  // The envelope argument, stated exactly: the registered endurance apparatus runs eight
+  // coupled meshes on 0.1 kg rotors at a mesh frequency of its own, and it holds strain, split
+  // step and ratio there for 7200 ticks. The fastest parametric corner is 1.0162x that
+  // frequency — just outside it, not inside — so the claim this supports is about the numeric
+  // regime only: no corner asks the tick to resolve a mode meaningfully faster than one the
+  // suite already exercises. It is NOT an endurance claim, because that 7200-tick run has
+  // never been performed at any parametric corner.
   const capacity = gearCapacityFixture({ bodies: 12 }),
     mesh = capacity.joints.find((joint) => joint.kind === 'gear'),
     inertia = (index) =>
@@ -104,8 +188,8 @@ test('the bound set spans the mesh frequency the registered endurance apparatus 
     capacityOmegaDt = DT * Math.sqrt(mesh.stiffness * capacityMobility);
   assert.ok(Math.abs(capacityOmegaDt - 8.55) < 0.05, `capacity apparatus mesh ${capacityOmegaDt}`);
   assert.ok(
-    fastest < 1.05 * capacityOmegaDt,
-    `the fastest bound corner ${fastest} must sit at the capacity apparatus mesh ${capacityOmegaDt}`,
+    fastest < 1.02 * capacityOmegaDt,
+    `the fastest bound corner ${fastest} exceeds the capacity apparatus mesh ${capacityOmegaDt} by ${fastest / capacityOmegaDt}, and the recorded figure is 1.0162`,
   );
 });
 
@@ -193,6 +277,9 @@ test('a bound corner transmits the authored torque ratio in both directions and 
     }
     // Determinism at the corner, not only at the shipped pair: the same checkpoint and the
     // same ticks must reproduce the same bytes however stiff the mesh is relative to the tick.
+    // Scope, stated so it is not read as more: this is single-process checkpoint/restore
+    // snapshot equality, the same claim test/gear-physics.test.mjs makes for the shipped pair.
+    // The two-process, both-clock-driver projection hash is D1's, and it is not run here.
     const world = await createPhysicsWorld(fixture.config);
     try {
       spinUpToPitchLineSpeed(world, fixture, FORCE_N, PITCH_LINE_SPEED);

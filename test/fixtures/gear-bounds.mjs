@@ -115,27 +115,92 @@ export function meshFrequency(fixture) {
   };
 }
 
+/** The engine's own per-tick mesh energy account, accumulated across one phase.
+ *
+ * `applyGears` already closes a ledger for every joule the mesh moved — raw work along the
+ * tangent, elastic storage, the damper, and the solver's own dissipation — and
+ * `test/gear-physics.test.mjs` and `test/gear-law.test.mjs` both assert it sums to zero one tick
+ * at a time. Reading it here is what makes a numerical-dissipation claim measurable at all:
+ * holding a pair at a constant force and a constant speed drives the relative slip to zero, so
+ * both dissipative terms vanish structurally whatever `omega dt` is, and a steady-state work
+ * balance therefore cannot discriminate the mechanism R7 predicted. The transient is where the
+ * mesh mode is actually excited, so the ledger is accumulated over the spin-up too.
+ */
+export function meshLedger() {
+  const totals = {
+    ticks: 0,
+    rawWorkJ: 0,
+    potentialDeltaJ: 0,
+    dampingWorkJ: 0,
+    numericalLossJ: 0,
+    kineticDeltaJ: 0,
+    constraintWorkJ: 0,
+    maximumResidualJ: 0,
+    maximumIslandResidualJ: 0,
+  };
+  return {
+    totals,
+    record(receipt) {
+      totals.ticks += 1;
+      for (const key of [
+        'rawWorkJ',
+        'potentialDeltaJ',
+        'dampingWorkJ',
+        'numericalLossJ',
+        'kineticDeltaJ',
+        'constraintWorkJ',
+      ])
+        totals[key] += receipt[key];
+      // The mesh's own account: what it moved, stored, damped and dissipated must cancel.
+      totals.maximumResidualJ = Math.max(
+        totals.maximumResidualJ,
+        Math.abs(
+          receipt.rawWorkJ +
+            receipt.potentialDeltaJ +
+            receipt.dampingWorkJ +
+            receipt.numericalLossJ,
+        ),
+      );
+      // The island's account: the kinetic change is the raw impulse plus the constraint reaction.
+      totals.maximumIslandResidualJ = Math.max(
+        totals.maximumIslandResidualJ,
+        Math.abs(receipt.kineticDeltaJ - receipt.rawWorkJ - receipt.constraintWorkJ),
+      );
+      return receipt;
+    },
+    get dissipatedJ() {
+      return totals.dampingWorkJ + totals.numericalLossJ;
+    },
+  };
+}
+
 /** One ordinary tick: prepared constraints, authored torques, the mesh solve, then integration. */
-export function tickPair(world, driveTorque = 0, loadTorque = 0) {
+export function tickPair(world, driveTorque = 0, loadTorque = 0, ledger = null) {
   world.prepareConstraints();
   world.applyPreparedConstraints();
   if (driveTorque) world.applyTorquePair(0, 1, [1, 0, 0], driveTorque);
   if (loadTorque) world.applyTorquePair(0, 2, [1, 0, 0], loadTorque);
   const receipt = world.applyGears();
   world.step();
-  return receipt;
+  return ledger ? ledger.record(receipt) : receipt;
 }
 
 /** Spin the driver up to a pitch-line speed so every corner is compared at the same duty.
- * A heavier pair simply takes more ticks to get there; the operating point is what matters.
+ *
+ * A heavier pair simply takes more ticks to get there; the operating point is what matters. The
+ * drive arrives as a step, so this is the phase that rings the mesh, and the work the drive did
+ * getting here is the honest denominator for the dissipation the ledger saw while it rang.
  */
-export function spinUpToPitchLineSpeed(world, fixture, force, speed) {
-  let ticks = 0;
+export function spinUpToPitchLineSpeed(world, fixture, force, speed, ledger = null) {
+  let ticks = 0,
+    driveWorkJ = 0;
+  const torque = 4 * force * fixture.factsA.pitchRadius;
   while (world.jointState(0).speed * fixture.factsA.pitchRadius < speed) {
     if (++ticks > 100000) throw new Error('gear bounds spin-up did not reach the pitch-line speed');
-    tickPair(world, 4 * force * fixture.factsA.pitchRadius);
+    tickPair(world, torque, 0, ledger);
+    driveWorkJ += torque * world.jointState(0).speed * DT;
   }
-  return ticks;
+  return { ticks, driveWorkJ };
 }
 
 /** Hold a corner at one transmitted force and one pitch-line speed, then read what it delivered.
@@ -143,8 +208,14 @@ export function spinUpToPitchLineSpeed(world, fixture, force, speed) {
  * Driving the input at `force x rA` while loading the output at `force x rB` balances the mesh,
  * so the pair runs at a constant pitch-line force and speed. Input work is then identical across
  * corners by construction and any shortfall in delivered output work is the mesh losing it.
+ *
+ * Read that shortfall for exactly what it is: a *steady-state* balance. Constant force and
+ * constant speed mean no relative slip, so this phase is where both dissipative terms are
+ * structurally near zero however fast the mesh is, and a clean result here is evidence that
+ * steady transmission is clean — not that the solver dissipates nothing. The ledger totals and
+ * the spin-up phase are what carry the transient claim.
  */
-export function measureTransmission(world, fixture, { force, ticks }) {
+export function measureTransmission(world, fixture, { force, ticks, ledger = null }) {
   let inputWorkJ = 0,
     outputWorkJ = 0,
     maximumRatioError = 0,
@@ -155,7 +226,7 @@ export function measureTransmission(world, fixture, { force, ticks }) {
     expectedRatio = -fixture.factsA.pitchRadius / fixture.factsB.pitchRadius,
     started = performance.now();
   for (let i = 0; i < ticks; i++) {
-    tickPair(world, force * fixture.factsA.pitchRadius, force * fixture.factsB.pitchRadius);
+    tickPair(world, force * fixture.factsA.pitchRadius, force * fixture.factsB.pitchRadius, ledger);
     const input = world.jointState(0).speed,
       output = world.jointState(1).speed,
       mesh = world.gears()[0];
@@ -186,12 +257,12 @@ export function measureTransmission(world, fixture, { force, ticks }) {
 /** Let a loaded corner coast: nothing drives or loads it, so a mesh that neither pumps nor
  * quietly bleeds work keeps the mechanical energy it started with.
  */
-export function measureCoast(world, ticks) {
+export function measureCoast(world, ticks, ledger = null) {
   const before = world.mechanicalEnergy(),
     startJ = before.kineticJ + before.gearPotentialJ;
   let maximumJ = startJ;
   for (let i = 0; i < ticks; i++) {
-    tickPair(world);
+    tickPair(world, 0, 0, ledger);
     const energy = world.mechanicalEnergy();
     maximumJ = Math.max(maximumJ, energy.kineticJ + energy.gearPotentialJ);
   }

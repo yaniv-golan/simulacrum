@@ -10,6 +10,7 @@ import {
   measureCoast,
   measureTransmission,
   meshFrequency,
+  meshLedger,
   spinUpToPitchLineSpeed,
 } from '../test/fixtures/gear-bounds.mjs';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
@@ -90,6 +91,12 @@ export async function measureGearEndurance() {
  * magnitude from the heaviest pair to the lightest, and so does `omega dt`. Each corner is held
  * at the same transmitted force and the same pitch-line speed, so input work is identical by
  * construction and the recorded figures compare the mesh rather than the duty.
+ *
+ * The balanced operating point drives the relative slip to zero, which suppresses both
+ * dissipative terms structurally however fast the mesh is, so the delivered-work figure speaks
+ * only for steady transmission. The engine's own per-tick energy ledger is therefore recorded
+ * per phase as well, and the step-torque spin-up that rings the mesh is where the solver's
+ * dissipation is attributed.
  */
 export async function measureGearBounds() {
   const force = 2,
@@ -102,9 +109,16 @@ export async function measureGearBounds() {
       frequency = meshFrequency(fixture),
       world = await createPhysicsWorld(fixture.config);
     try {
-      const spinUpTicks = spinUpToPitchLineSpeed(world, fixture, force, pitchLineSpeed),
-        loaded = measureTransmission(world, fixture, { force, ticks: loadedTicks }),
-        coast = measureCoast(world, coastTicks);
+      const transient = meshLedger(),
+        steady = meshLedger(),
+        idle = meshLedger(),
+        spinUp = spinUpToPitchLineSpeed(world, fixture, force, pitchLineSpeed, transient),
+        loaded = measureTransmission(world, fixture, {
+          force,
+          ticks: loadedTicks,
+          ledger: steady,
+        }),
+        coast = measureCoast(world, coastTicks, idle);
       assert.ok(
         loaded.maximumStrainM < 0.001,
         `${cornerLabel(corner)} elastic displacement stays below one millimetre`,
@@ -115,9 +129,25 @@ export async function measureGearBounds() {
       );
       assert.ok(
         Math.abs(loaded.lostWorkFraction) < 0.01,
-        `${cornerLabel(corner)} delivers the input work to the output`,
+        `${cornerLabel(corner)} delivers the input work to the output at the balanced point`,
       );
       assert.ok(coast.growth <= 0, `${cornerLabel(corner)} never gains mechanical energy`);
+      for (const [phase, ledger] of [
+        ['spin-up', transient],
+        ['loaded', steady],
+        ['coast', idle],
+      ]) {
+        assert.ok(
+          ledger.totals.ticks > 0 &&
+            ledger.totals.maximumResidualJ < 1e-9 &&
+            ledger.totals.maximumIslandResidualJ < 1e-9,
+          `${cornerLabel(corner)} ${phase} closes the mesh and island energy ledgers`,
+        );
+        assert.ok(
+          ledger.totals.dampingWorkJ >= 0 && ledger.totals.numericalLossJ >= 0,
+          `${cornerLabel(corner)} ${phase} damper and solver only remove energy`,
+        );
+      }
       metrics.push({
         label: cornerLabel(corner),
         ...corner,
@@ -134,14 +164,34 @@ export async function measureGearBounds() {
         // past omega dt = 1 dissipates its mesh oscillation instead of diverging, and it is the
         // honest statement of what the small end loses: resolved compliance, not work.
         representedPhasePerTick: Math.atan(frequency.omegaDt),
-        spinUpTicks,
+        spinUpTicks: spinUp.ticks,
         loadedTicks,
         coastTicks,
         transmittedForceN: force,
         pitchLineSpeedMPerS: pitchLineSpeed,
         inputWorkJ: loaded.inputWorkJ,
         outputWorkJ: loaded.outputWorkJ,
-        lostWorkFraction: loaded.lostWorkFraction,
+        // Steady-state only: the balanced point suppresses slip, so read this beside the ledger.
+        steadyLostWorkFraction: loaded.lostWorkFraction,
+        // The transient the step torque excited, and what the mesh dissipated while it rang.
+        spinUpDriveWorkJ: spinUp.driveWorkJ,
+        spinUpNumericalLossJ: transient.totals.numericalLossJ,
+        spinUpDampingWorkJ: transient.totals.dampingWorkJ,
+        spinUpLossFraction: transient.dissipatedJ / spinUp.driveWorkJ,
+        loadedNumericalLossJ: steady.totals.numericalLossJ,
+        loadedDampingWorkJ: steady.totals.dampingWorkJ,
+        coastNumericalLossJ: idle.totals.numericalLossJ,
+        coastDampingWorkJ: idle.totals.dampingWorkJ,
+        maximumMeshLedgerResidualJ: Math.max(
+          transient.totals.maximumResidualJ,
+          steady.totals.maximumResidualJ,
+          idle.totals.maximumResidualJ,
+        ),
+        maximumIslandLedgerResidualJ: Math.max(
+          transient.totals.maximumIslandResidualJ,
+          steady.totals.maximumIslandResidualJ,
+          idle.totals.maximumIslandResidualJ,
+        ),
         maximumRatioError: loaded.maximumRatioError,
         maximumStrainM: loaded.maximumStrainM,
         maximumCumulativeDriftM: loaded.maximumDriftM,
