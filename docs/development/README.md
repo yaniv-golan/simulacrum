@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"6dd685788bb5a8ec7835814a8650ab0aeeb377bbf0a913397361f3cd1e1dc2f9","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"9f8e9bb8346f8da3f90897b8aadd604b60507bf34a7b60fc4650067433c043fc","disposition":"still accurate","rationale":"The manifest changed only recorded browser review metadata hashes in this pass; the spur-transmission bar's guarantee and controls were already reviewed. No milestone allocation, bar, rule or check ownership moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"674103697a683a3cd3c14fcae535d810504ddce297f9079a6477a6939ca15fbd","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"03dde099596f2d3df4362106af76701f022aa4db060b5f0cda0db4a631381148","disposition":"still accurate","rationale":"The manifest gained the elastic-cord invariant from connection-spring, keeps this branch's evolved spur-transmission guarantee, moved that invariant's meshSpacingRepair owner row to src/model/gear-mesh.mjs, and carries sixteen re-recorded browser review metadata hashes; docs/contracts/runtime-v1.md gained the cord section and its save-version repair. No milestone allocation, bar, gate rule or check ownership moved: the milestone stays M3b, the cord and the gear settings are ordinary catalog entries, and the manifest still owns allocation exactly as this section states."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f7e367f4d8f9fff13353d7f7ac462e06f5affa9d125213d3c4fa645baa6108a1","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"861d31deb24a287f977827f0dd940426e903a40e92ddb1fddf7398aab687c089","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md, which this section describes as generated output rather than quoting. The prepare/review/check workflow it prescribes is the one this candidate followed unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c6c0eee7f7c9ffcc7ee6a36e79aeae9bb07cda94d7517a7aaae2448209c1133c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a235bae4f0ab546ae0a662a0cf44897edb2e268e8cbe7e42239e6636b6abbf93","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md, which this section describes as generated output rather than quoting; its spur-transmission row now lists the repair under gear-mesh.mjs because the manifest owner moved. The prepare, review and check workflow this section prescribes is the one this closure followed, including re-running prepare after the source moved again rather than reusing the first pass."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"c96fab4698bccab763e8f556eeeadce83dfb8c8fe16c16ac232333f4e9dd5e1a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d05cb68a665fc27f65b5e64baf2bcf0b298447fe25566a556cc5766eb0ceb4b7","disposition":"still accurate","rationale":"The gear helper now also exports the spacing tolerance the compiler imports, which adds no opaque read and no browser entrypoint; the sixteen metadata rows changed only their consumer source hash. Scope derivation, phase scheduling and the measured-scope rule are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"32217c28c7910b924acf81951d4c1afdd8829c18f798f78f4363f6ae587ffb34","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ffbc6e87173e51d2d8d74132532568368b1e168f7c0d81a12cdcec2acb47ce79","disposition":"still accurate","rationale":"The sixteen metadata rows changed only consumerSourceHash, reviewed row by row against their own movers. The cord kind entered src/model/blueprint.schema.json, the generated validator and types, src/model/tick.mjs and src/model/cord.mjs; meshSpacingRepair moved from src/model/gear-geometry.mjs to src/model/gear-mesh.mjs inside the same hashed consumer closure. No read, purpose or excluded input changed, no browser entrypoint was added, and scope derivation, phase scheduling and the measured-scope rule are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"d79f50de020593aaa02f8ef5e4123c76b4d6cdd13034b0f2ceede7e665f497ae","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8464594903014374fad59d7301f9fe39d9631de4b24ca7bcb151eae19a512cd8","disposition":"still accurate","rationale":"Nothing about candidate tiers, attestation, stacking or landing changed. The moved edges are the gear helper's exported tolerance and the re-recorded metadata hashes, both ordinary inputs to the selection this section already describes."} -->
+<!-- doc-review {"version":1,"fingerprint":"8edcd07bb548edae0b2c0905c0c579b501fc5db5e8e0c0f66574c2fabcca8752","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4fbbe30c0eaa46844b1ebe3e607d5876fef216e529f4779c1c578475da311e68","disposition":"still accurate","rationale":"Nothing about candidate tiers, attestation, stacking or landing changed. The moved edges are the cord model, blueprint and generated validator, the relocation of the gear mesh repair, and the re-recorded metadata hashes; all are ordinary selection inputs this section already describes. Candidate evidence still applies only to its recorded bytes, which is why this stacked integration carries no tier receipt of its own yet."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

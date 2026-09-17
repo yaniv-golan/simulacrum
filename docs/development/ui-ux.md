@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"ed0896d7aba0738571b2417978444a2656ce2b0e68e65ef2cd74786f65517f0a","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"496c8f7f700512cfbbe32298467e143ff66a8b434dc7c7892d140233ea7187bf","disposition":"still accurate","rationale":"The policy prose is unchanged and it still governs the one extension. The gear-lift copy was corrected rather than expanded: it now names only the two tooth pairs measured to be authorable and the order that reaches them, because growing the input gear first passes through a pair whose discs do not clear the built shaft spacing. No lesson, challenge or second fixture was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"45e98ce1abe032c208935a9af5b5eb9b892465e3e381fc0d176b6d6a05dc79f2","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"02009c6adb44b23f39f48f5108d6648a6429636fcf247b60eb3ee9004faa195f","disposition":"still accurate","rationale":"src/presentation/workshop-view.mjs is the only changed dependency, and it records the outcome this policy demands rather than a change to it: the gear-lift example copy was extended in place, so the disposition was extend and no new entry was earned, and the cord added no learning entry at all. The admission rules and the record this section requires are unchanged."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"495ecf7332682ce5c72e4898d2d1c7245edc7e6ef2a2ae3ccc4aa6df9abd2b3e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"fdf3c848f309795e1097e2477cf0c9d782178fffe6634d13812e100f2066bbc1","disposition":"updated","rationale":"Recorded that the derived read-out carries the two lengths only and that mass is not repeated there, because Engineering details already owns it. The rest of the gear's surfaces, its primary tooth setting, the tooth-size row's home and the Space to mesh action, stand as recorded."} -->
+<!-- doc-review {"version":1,"fingerprint":"2afb8cb852bc5c47c62ab0a77030ae3ac609bb9fb44a941a71a9b11de6dbeb03","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cc22ac37f0eed7abfd1d4ed65116ee9683f45dc294f31f0ef913b5e985326b94","disposition":"still accurate","rationale":"The gear teeth and tooth-size rows join the existing settings region for the selected part, Space to mesh sits on the mesh connection row that already reported check spacing, and src/presentation/workshop.css carries their styling; the cord contributes one connection label in src/presentation/inspector-summary.mjs. No region, visibility lifecycle or displaced surface changed, and no consequential state or unique action was removed."} -->
 
 
 

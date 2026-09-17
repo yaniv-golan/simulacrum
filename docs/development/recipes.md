@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"92483939f3b9d0e607555a29f40a5e18ad913e86df0551383d4a3c94aa62de25","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"38beaf2ba43fbd4cec4ebaf741bf7448e8fe7fec01c76c1cff880710e7a3af29","disposition":"still accurate","rationale":"Both branches followed this recipe as written. The cord added its schema entry, regenerated the validator and types, and registered its invariant and controls; this branch extended the spur gear with authored teeth and tooth size, updated src/presentation/part-help-content.mjs and src/presentation/part-search.mjs, and added test/gear-authoring.test.mjs cases. No step, owner or ordering in the recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"113d89fa5325b4efc2263860bd47dfcbc87e7ef9c8bf6d3141a22d3cba0b511b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ce465317c03c3e4c91d722b20f1024d3f1a5b76348413740712a4d1c889252c7","disposition":"updated","rationale":"The meshSpacingRepair link now names src/model/gear-mesh.mjs, where the function moved unchanged to keep src/model/gear-geometry.mjs free of surface knowledge and break a geometry/gear-geometry/surfaces module cycle. The recipe's steps are otherwise unchanged and both merged branches followed them: the cord added its schema entry, regenerated validator and types and registered its invariant and controls, and this branch extended the spur gear with authored teeth and tooth size, its help copy, its search tokens and its tests."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -122,7 +122,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"b1c4d3f44656e6b2a282b16d5970b21a653aa7a2b8b2fce1403442049aef61fe","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6aaf9e5f52bfc0580282bc059a799038bea74ac2f738cfb17024b5e3df4454d3","disposition":"still accurate","rationale":"The cord's command reached the surface through the same src/model/workshop-command.d.ts declaration, src/core/workshop.mjs admission and boundary typing this recipe prescribes, and this branch added no command beyond ordinary parameter and surface-mount edits. The declaration, admission and typing steps, and the membership check that keeps declared and admitted commands equal, are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7b480b4afed04fc0bab08671d52b5c9e1938273c466ae5f7ce2c98cfae4bf9d9","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"31649a67643c4f7b0e79f2d96885fd5915a6e56cab573e023fe3f9edb39e1aef","disposition":"still accurate","rationale":"The cord's command reached the surface through the same src/model/workshop-command.d.ts declaration, src/core/workshop.mjs admission and boundary typing this recipe prescribes, and this branch added no command beyond ordinary parameter and surface-mount edits. The declaration, admission and typing steps, and the membership check that keeps declared and admitted commands equal, are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -151,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"46def4c1752be588d4eede0b752281c7c7c9c3d8b8e98e9b3a36425b47106302","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"022157b478c3eeb8908da7e9ebacc060ecb8acd468acdaff0e4985730e4f2af2","disposition":"still accurate","rationale":"src/model/messages.mjs gained this branch's gear spacing and tooth-size wording and the cord's messages, both through the existing reason-code registry, and docs/development/ui-ux.md moved by its own reviewed prose. The interaction recipe's steps, the owning regions it names and its requirement to verify the affected journey and rendered layout are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d97d409687bd8bbbd7f8ae72d14714e53e7737b7be8edfc3fbcb2c542cbedf7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"5b4fe6bdd876ef43b77437c4a1eee126c8e93a68c280307d179cf075746f8822","disposition":"still accurate","rationale":"src/model/messages.mjs gained this branch's gear spacing and tooth-size wording and the cord's messages, both through the existing reason-code registry, and docs/development/ui-ux.md moved by its own reviewed prose. The interaction recipe's steps, the owning regions it names and its requirement to verify the affected journey and rendered layout are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -200,7 +200,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"ceef271f6aaf24865a1520436fd5d49660ccaf54aa9990f46e942e7f78d9abcb","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"f36bf8c6f1527bef8836e44eaff42f1afad3130a505029cf4abee58acf0dc304","disposition":"still accurate","rationale":"Both new diagnostics entered exactly as this recipe prescribes: the cord's codes join REASON_CODES through src/model/reasons.mjs, and the gear's unequal tooth size and centre-distance findings are stamped per edge on the connection row. No diagnostic owner, code registry or per-edge plumbing changed, and neither diagnosis dispatches on part identity."} -->
+<!-- doc-review {"version":1,"fingerprint":"7940a79502f44c7438a0077f5b97cb85ec5f7977f08b50c88193e8eb2ae6df75","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"64c7288ac1fd118e9143061c09571db5d9793661b5ded54b15a58bcdc91f6496","disposition":"still accurate","rationale":"Both new diagnostics entered exactly as this recipe prescribes: the cord's codes join REASON_CODES through src/model/reasons.mjs, and the gear's unequal tooth size and centre-distance findings are stamped per edge on the connection row. No diagnostic owner, code registry or per-edge plumbing changed, and neither diagnosis dispatches on part identity."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"52ffdca8a7d815cfb9be056f176a202109a8552e606c4b55c2bbd68d2bb04217","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d11de87a907cbd9325b5ca945166c5c90ad3d20f00b12510a8a3a9d4900042b8","disposition":"still accurate","rationale":"The cord added its law and world constraint through the existing narrow physics door in src/simulation/physics/world.mjs, with its own determinism, energy and corner tests, and this branch touched no law: src/model/gear-geometry.mjs changed only typing and a guard. The door's ownership, the single 1/120 s integration order, the no-live-physics-object rule and the analytical and conservation evidence this recipe requires are all unchanged. The very wide flagged dependency list is this recipe's declared closure, not behavior this section states."} -->
+<!-- doc-review {"version":1,"fingerprint":"2f91983333d155ebaec803dacc8f7fd9d62bc11191f6605574b8d002298d6b5c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9474072681fde9629275e0be209f00d24a089ee63404876100464f6070c43406","disposition":"still accurate","rationale":"The cord added its law and world constraint through the existing narrow physics door in src/simulation/physics/world.mjs, with its own determinism, energy and corner tests, and this branch touched no law: the gear work is authoring plus moving one helper between model modules. The door's ownership, the single 1/120 s integration order, the no-live-physics-object rule and the analytical and conservation evidence this recipe requires are all unchanged. The very wide flagged dependency list is this recipe's declared closure, not behavior this section states."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -570,7 +570,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"f3cc28d5346afb4272c056009868c5d672a0c0a2ccb871d45ecb7b53ca6ab333","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7ec30be655df278c731fd143045202a052e2dcde2ef12e1ce75c0c1c53c17f3f","disposition":"still accurate","rationale":"Cord connections copy through subassembly instantiation and mirroring in src/model/assembly.mjs and src/model/mirror-assembly.mjs the way ropes already do, deriving nothing from role, name or rig position, and src/model/messages.mjs gained wording from both branches. The authoring authority, selection rules and copy semantics this recipe states are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"642b7257723290cbf7da593abfbdc4bbe1eb44b077fc24474462b4eaa3340d2c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"17461fd363253d432a1bd63350d08e43c9f08fa3ecb9a32fdb8e6ec93db4c86a","disposition":"still accurate","rationale":"Cord connections copy through subassembly instantiation and mirroring in src/model/assembly.mjs and src/model/mirror-assembly.mjs the way ropes already do, deriving nothing from role, name or rig position, and src/model/messages.mjs gained wording from both branches. The authoring authority, selection rules and copy semantics this recipe states are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -667,7 +667,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"9645bbaeee4f6588b7e7fb570c16f791dad11456fc7f9cfe4455e138f66f262a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bb85af94bcd393164d4f1e013582f686d8e6dadf606cabfda9462eff232bbcdb","disposition":"still accurate","rationale":"Neither branch added or restructured an overlay. The cord's only presentation edge excludes its kind from the wiring overlay alongside rope, and this branch's gear settings are inspector rows rather than overlay geometry; docs/development/architecture.md moved by its own reviewed prose. The overlay owners, their telemetry-only inputs and the recipe's steps are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"69bb216de918a7d2f7d71c10eeb2faa8500bfa5f833006798060ab8340c24e23","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"4290f9495b3f3a888f9b3a79cf7734368b800bc0ac8013c81a5b25435cccf3a7","disposition":"still accurate","rationale":"Neither branch added or restructured an overlay. The cord's only presentation edge excludes its kind from the wiring overlay alongside rope, and this branch's gear settings are inspector rows rather than overlay geometry; docs/development/architecture.md moved by its own reviewed prose. The overlay owners, their telemetry-only inputs and the recipe's steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
