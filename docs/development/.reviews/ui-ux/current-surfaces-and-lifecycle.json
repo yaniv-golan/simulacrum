@@ -3,7 +3,7 @@
   "dependencies": {
     "src/presentation/workshop-view.mjs": "412dc35f67de00d3e036a85d65757b07d4372e39dc695c6a911629c21e60f059",
     "src/presentation/icons.mjs": "5f257bc0240a5e75872769d2fd517df3520c2dc9af04034c196acfe7ce98eab2",
-    "src/presentation/workshop.css": "2cd0816ec5c9a85e74d4a15812de82f447e734ca63bfe0fe0b209b9a6b274433",
+    "src/presentation/workshop.css": "2366f66132adc0ea04b91a1bd5113a1a1c78c4a736c3c3c5c59495e4eaa53fed",
     "src/presentation/inspector-summary.mjs": "4a17c94a2b2025ef725de44af687d5c5825bed6db7a63372a2a10b2346dd1266",
     "src/presentation/parts-browser.mjs": "046ff85ecca566d08ddd2fb32731fe91e85f7d96f8802b18e7b3ecb6167df417",
     "src/presentation/placement-lifecycle.mjs": "1f3c1f56dd541308543971087691a53540df9244f9dcb7a7296df3a43128d762",

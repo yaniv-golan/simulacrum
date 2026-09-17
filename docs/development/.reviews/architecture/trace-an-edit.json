@@ -6,7 +6,7 @@
     "src/presentation/parts-browser.mjs": "046ff85ecca566d08ddd2fb32731fe91e85f7d96f8802b18e7b3ecb6167df417",
     "src/presentation/part-search.mjs": "c107b9d2e527cc88fd2a0e8763637dd735efef016052368c927f35ee2017108a",
     "src/presentation/part-placement.mjs": "70ea1593db6f1e695aa5b195055edde316de4be96a14247b06945fbb458c383f",
-    "src/presentation/surface-controls.mjs": "cbbee1faaddf9e5a433b04efa65f7d1ebf70bb146f40390d29db6cb53a898045",
+    "src/presentation/surface-controls.mjs": "c6211a9730b81da9f67e2140bb93686849262d3f892a7117a7410103962f2381",
     "src/presentation/placement-lifecycle.mjs": "1f3c1f56dd541308543971087691a53540df9244f9dcb7a7296df3a43128d762",
     "src/presentation/assembly-mirror.mjs": "b8a4e6fe720534a09c169561594bf84c4184a08dac697d594422361c9c9a62fa",
     "src/model/boundaries.d.ts": "0074c018defa839816105d7a81d84040ec7f5b265bc0350c22ddb01b7fd6b9da",

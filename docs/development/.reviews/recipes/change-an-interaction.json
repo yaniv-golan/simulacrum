@@ -32,7 +32,7 @@
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/presentation/placement-lifecycle.mjs": "b71d4300558eb3e85d269c9261b43b94fb5dcd71bbd7b53aaa59ffca416b308f",
     "src/presentation/surface-anchor-layout.mjs": "811bbe443964fa17ae277fe52cc2dc591714d09b7826e9df6c6f5de5e0ce2648",
-    "src/presentation/surface-controls.mjs": "7ada7a3d1ff05cff32c4de6d082d5c599222b7e5043a66471705c64cbea33612",
+    "src/presentation/surface-controls.mjs": "3c963cd46fd812599991ed11654fae8f2cd84393e7238e298fc41e8b652a5af7",
     "src/presentation/workbench-content.mjs": "5dc4140e8a1284cb039b819483621fab2f491079caac5e23e9a2fc730244320b",
     "src/model/editing.mjs": "23e2b40ea6aaf87354dd5c545cbb20b305a3af9bfb766651dbcc79e398620608",
     "src/presentation/editing-controls.mjs": "bc76cd6d46bffcb9825a85541ddd445d421fcb8401e1cdb5c50086a3989e9500",
