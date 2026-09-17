@@ -501,11 +501,12 @@ export async function createWorkshop(
           ).blueprint;
           break;
         }
-        case 'rope': {
-          if (keys !== 'connection,type' || command.connection?.kind !== 'rope')
+        case 'rope':
+        case 'cord': {
+          if (keys !== 'connection,type' || command.connection?.kind !== command.type)
             return result(false, 'INVALID_COMMAND', 'connection');
           const previous = next.connections.find((c) => c.id === command.connection.id);
-          if (previous && previous.kind !== 'rope')
+          if (previous && previous.kind !== command.type)
             return result(false, 'INVALID_COMMAND', 'connection.id');
           if (previous) next.connections[next.connections.indexOf(previous)] = command.connection;
           else next.connections.push(command.connection);

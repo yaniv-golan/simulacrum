@@ -1,4 +1,5 @@
 import { ROPE_SCHEMA } from '../src/model/rope.mjs';
+import { CORD_SCHEMA } from '../src/model/cord.mjs';
 import { CONTROLLER_AUTHORING_SCHEMA } from '../src/model/controller-authoring.mjs';
 import { LEARNING_MODEL_SCHEMA } from '../src/model/learning-model.mjs';
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
@@ -19,8 +20,11 @@ export function buildBlueprintSchema() {
         ...edge,
         properties: {
           ...edge.properties,
-          kind: { enum: edge.properties.kind.enum.filter((k) => k !== 'rope') },
+          kind: {
+            enum: edge.properties.kind.enum.filter((k) => k !== 'rope' && k !== 'cord'),
+          },
           rope: false,
+          cord: false,
         },
       },
       {
@@ -30,6 +34,17 @@ export function buildBlueprintSchema() {
           ...edge.properties,
           kind: { const: 'rope' },
           rope: structuredClone(ROPE_SCHEMA),
+          cord: false,
+        },
+      },
+      {
+        ...edge,
+        required: [...edge.required, 'cord'],
+        properties: {
+          ...edge.properties,
+          kind: { const: 'cord' },
+          rope: false,
+          cord: structuredClone(CORD_SCHEMA),
         },
       },
     ],

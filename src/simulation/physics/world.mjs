@@ -214,11 +214,11 @@ export async function createPhysicsWorld(configuration) {
   if (!Array.isArray(configuration.joints) || configuration.joints.length > 8192)
     throw new TypeError('invalid joints');
   const joints = configuration.joints.map((joint) => {
-    if (!['fixed', 'revolute', 'spring', 'gear', 'rope', 'spherical'].includes(joint?.kind))
+    if (!['fixed', 'revolute', 'spring', 'gear', 'rope', 'cord', 'spherical'].includes(joint?.kind))
       throw new TypeError('invalid joint kind');
     record(
       joint,
-      ['rope', 'spherical'].includes(joint.kind)
+      ['rope', 'cord', 'spherical'].includes(joint.kind)
         ? [
             'kind',
             'a',
@@ -228,6 +228,7 @@ export async function createPhysicsWorld(configuration) {
             ...(joint.kind === 'rope'
               ? ['restLength', 'stiffness', 'damping', 'strength', 'maxStrain']
               : []),
+            ...(joint.kind === 'cord' ? ['restLength', 'stiffness', 'damping', 'maxStrain'] : []),
           ]
         : joint.kind === 'fixed'
           ? ['kind', 'a', 'b', 'anchorA', 'anchorB', 'rotationA', 'rotationB']
@@ -301,9 +302,28 @@ export async function createPhysicsWorld(configuration) {
         joint.damping > 100)
     )
       throw new TypeError('invalid gear settings');
-    if (joint.kind === 'rope' || joint.kind === 'spherical') {
+    if (joint.kind === 'rope' || joint.kind === 'cord' || joint.kind === 'spherical') {
       const anchorA = vector(joint.anchorA),
         anchorB = vector(joint.anchorB);
+      // An elastic-cord row is the same unilateral element as a rope row with an
+      // authored constitutive pair; it has no material rating, so no strength,
+      // and its linear elastic domain reaches double its rest length.
+      if (
+        joint.kind === 'cord' &&
+        (![joint.restLength, joint.stiffness, joint.damping, joint.maxStrain].every(
+          Number.isFinite,
+        ) ||
+          joint.restLength <= 0 ||
+          joint.restLength > 0.2 ||
+          joint.stiffness <= 0 ||
+          joint.stiffness > 20000 ||
+          joint.damping < 0 ||
+          joint.damping > 2000 ||
+          joint.maxStrain <= 0 ||
+          joint.maxStrain > 1 ||
+          [...anchorA, ...anchorB].some((x) => x !== 0))
+      )
+        throw TypeError('invalid cord settings');
       if (joint.kind === 'rope') {
         if (
           ![
@@ -362,7 +382,11 @@ export async function createPhysicsWorld(configuration) {
   if (joints.filter((j) => j.kind === 'spring').length > 8)
     throw new RangeError('at most 8 guided springs');
   admitGearTopology(descriptions, joints);
-  const ropeIndices = joints.flatMap((j, i) => (j.kind === 'rope' ? [i] : []));
+  // Distributed unilateral elastic rows. Rope segments and elastic-cord segments
+  // share one law, one solve, one capacity and one work ledger.
+  const ropeIndices = joints.flatMap((j, i) =>
+    j.kind === 'rope' || j.kind === 'cord' ? [i] : [],
+  );
   if (ropeIndices.length > 64) throw RangeError('rope capacity limit');
   let ropesApplied = false,
     ropeState = ropeIndices.map(() => 0),
@@ -421,7 +445,7 @@ export async function createPhysicsWorld(configuration) {
         while (parent[i] !== i) i = parent[i];
         return i;
       };
-    const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope');
+    const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope' && j.kind !== 'cord');
     for (const j of nativeJoints) parent[root(j.b)] = root(j.a);
     const active = new Set(nativeJoints.flatMap((j) => [root(j.a), root(j.b)]));
     const groups = new Map([...active].map((id) => [id, []]));
@@ -543,7 +567,7 @@ export async function createPhysicsWorld(configuration) {
     }
     rebuildFixedHandles();
     for (const joint of joints) {
-      if (joint.kind === 'gear' || joint.kind === 'rope') {
+      if (joint.kind === 'gear' || joint.kind === 'rope' || joint.kind === 'cord') {
         jointHandles.push(null);
         continue;
       }
@@ -774,6 +798,7 @@ export async function createPhysicsWorld(configuration) {
     const reactionIndices = joints.flatMap((j, i) =>
       j.kind !== 'gear' &&
       j.kind !== 'rope' &&
+      j.kind !== 'cord' &&
       !opened.has(i) &&
       !planned.has(i) &&
       offsets.has(j.a) &&
@@ -989,29 +1014,46 @@ export async function createPhysicsWorld(configuration) {
       });
     } catch (error) {
       if (error.message === 'rope nonlinear convergence limit')
-        error.reasonCode = 'ROPE_MOTION_LIMIT';
+        // A non-converging solve is a whole-island failure, not one row's; keep the
+        // rope code whenever rope rows are present and attribute to the cord only
+        // when the cord rows are the only distributed elastic rows in the machine.
+        error.reasonCode = joints.some((j) => j.kind === 'rope')
+          ? 'ROPE_MOTION_LIMIT'
+          : 'CORD_MOTION_LIMIT';
       throw error;
     }
-    if (receipt.impulses.some((p, i) => Math.hypot(...p) / DT > joints[readings[i].index].strength))
+    if (
+      receipt.impulses.some(
+        (p, i) =>
+          joints[readings[i].index].kind === 'rope' &&
+          Math.hypot(...p) / DT > joints[readings[i].index].strength,
+      )
+    )
       throw Object.assign(
         Error(
           'Rope load limit: return to Build, lengthen the rope or reduce the load, then retry.',
         ),
         { reasonCode: 'ROPE_MOTION_LIMIT' },
       );
-    if (
-      receipt.impulses.some(
-        (p, i) =>
-          p.reduce((sum, v, k) => sum + v * (readings[i].pointB[k] - readings[i].pointA[k]), 0) <
-          -1e-14,
-      )
-    )
-      throw Object.assign(
-        Error(
-          'Rope segment turns too far in one tick: return to Build and reduce speed or increase length.',
-        ),
-        { reasonCode: 'ROPE_MOTION_LIMIT' },
-      );
+    const reversed = readings.findIndex(
+      (r, i) =>
+        receipt.impulses[i].reduce((sum, v, k) => sum + v * (r.pointB[k] - r.pointA[k]), 0) <
+        -1e-14,
+    );
+    if (reversed >= 0)
+      throw joints[readings[reversed].index].kind === 'cord'
+        ? Object.assign(
+            Error(
+              'Cord segment turns too far in one tick: return to Build and reduce speed or increase cord length.',
+            ),
+            { reasonCode: 'CORD_MOTION_LIMIT' },
+          )
+        : Object.assign(
+            Error(
+              'Rope segment turns too far in one tick: return to Build and reduce speed or increase length.',
+            ),
+            { reasonCode: 'ROPE_MOTION_LIMIT' },
+          );
     const applied = Array(size).fill(0),
       flat = receipt.impulses.flat();
     rows.forEach((r, i) =>
@@ -1893,11 +1935,21 @@ export async function createPhysicsWorld(configuration) {
       );
       pendingRopeWork = null;
       pendingRopeState = null;
-      if (ropeReadings().some((r) => r.strain > joints[r.index].maxStrain))
-        throw Object.assign(
-          Error('Rope overstretch: return to Build, increase length or reduce load, and retry.'),
-          { reasonCode: 'ROPE_MOTION_LIMIT' },
-        );
+      const overstretched = ropeReadings().find((r) => r.strain > joints[r.index].maxStrain);
+      if (overstretched)
+        throw joints[overstretched.index].kind === 'cord'
+          ? Object.assign(
+              Error(
+                'Cord stretch limit: return to Build, increase cord length or stiffness, reduce the load, and retry.',
+              ),
+              { reasonCode: 'CORD_MOTION_LIMIT' },
+            )
+          : Object.assign(
+              Error(
+                'Rope overstretch: return to Build, increase length or reduce load, and retry.',
+              ),
+              { reasonCode: 'ROPE_MOTION_LIMIT' },
+            );
       completeGearSlip();
       changedState();
       clearPreparedTorqueIslands();
@@ -1962,7 +2014,10 @@ export async function createPhysicsWorld(configuration) {
         !Array.isArray(decoded.ropeState) ||
         decoded.ropeState.length !== ropeIndices.length ||
         decoded.ropeState.some(
-          (v, i) => !Number.isFinite(v) || v < 0 || v > joints[ropeIndices[i]].strength,
+          (v, i) =>
+            !Number.isFinite(v) ||
+            v < 0 ||
+            (joints[ropeIndices[i]].kind === 'rope' && v > joints[ropeIndices[i]].strength),
         )
       )
         throw TypeError('invalid rope snapshot readings');

@@ -89,6 +89,17 @@ export type JointConfiguration = { a: number; b: number; anchorA: Vec3; anchorB:
       limits?: never;
     }
   | {
+      kind: 'cord';
+      restLength: number;
+      stiffness: number;
+      damping: number;
+      maxStrain: number;
+      strength?: never;
+      axisA?: never;
+      axisB?: never;
+      limits?: never;
+    }
+  | {
       kind: 'gear';
       axisA: Vec3;
       axisB: Vec3;

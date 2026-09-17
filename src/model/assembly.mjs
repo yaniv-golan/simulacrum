@@ -1,4 +1,5 @@
 import { compileRopes } from './rope.mjs';
+import { compileCords } from './cord.mjs';
 import { compileGearMeshes } from './gear-mesh.mjs';
 import { channelDefinition } from './sensors.mjs';
 import { mechanicalGroup } from './connection-graph.mjs';
@@ -321,7 +322,7 @@ export function compileAssembly(
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
-    if (connection.kind === 'gear' || connection.kind === 'rope') {
+    if (connection.kind === 'gear' || connection.kind === 'rope' || connection.kind === 'cord') {
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
@@ -573,6 +574,7 @@ export function compileAssembly(
   // Explicit ground:null overrides the floor only; saved obstacles remain authored.
   bodies.push(...structuredClone(environmentObstacles(blueprint.environment)));
   compileRopes(blueprint, bodies, joints, connections);
+  compileCords(blueprint, bodies, joints, connections);
   return { configuration: { gravity: [...gravity], bodies, joints, power }, mapping, connections };
 }
 
