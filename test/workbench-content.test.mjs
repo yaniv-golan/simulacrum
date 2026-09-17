@@ -9,6 +9,8 @@ import {
   paletteKeyOpens,
   controlTitle,
   historyChord,
+  LEARN_GROUPS,
+  learnRow,
 } from '../src/presentation/workbench-content.mjs';
 
 test('scope predicts multi-part direct dragging and rotation before the gesture', () => {
@@ -115,4 +117,36 @@ test('history chords follow the platform modifier', () => {
   assert.deepEqual(historyChord('Win32'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
   assert.deepEqual(historyChord('Linux x86_64'), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
   assert.deepEqual(historyChord(undefined), { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' });
+});
+
+test('each Learn row keeps a short summary, its readiness clause and an honest claim', () => {
+  const rows = LEARN_GROUPS.flatMap((group) => group.rows);
+  assert.deepEqual(
+    LEARN_GROUPS.map((group) => group.label),
+    ['Start here', 'Drive and lift', 'Spring experiments'],
+  );
+  assert.equal(rows.length, 12, 'every entry in the browser is one row');
+  assert.equal(new Set(rows.map((row) => row.id)).size, rows.length, 'row ids identify the row');
+  for (const row of rows) {
+    const words = row.summary.split(/\s+/).filter((word) => word !== '·');
+    assert.ok(words.length > 0 && words.length <= 10, `${row.id} summary is one short line`);
+    assert.doesNotMatch(row.summary, /\.$/, `${row.id} summary is a label, not a sentence`);
+    // A picker line may not claim behaviour the authored activity does not have.
+    assert.doesNotMatch(row.summary, /it learns|learns by itself|teaches itself/i);
+  }
+  // Prerequisites advise readiness while the player is choosing, not after the machine loads.
+  assert.match(learnRow('cargo-delivery').summary, /keyboard driving first/);
+  assert.match(learnRow('gear-lift').summary, /motor and shaft connections first/);
+  // One row edits the current machine; it says so instead of relying on its position.
+  assert.match(learnRow('reusable-suspension').summary, /^Adds a module to your machine/);
+  assert.deepEqual(
+    rows.filter((row) => row.adds).map((row) => row.id),
+    ['reusable-suspension'],
+  );
+});
+
+test('an unlisted Learn row is a rendering mistake rather than a blank line', () => {
+  assert.throws(() => learnRow('no-such-example'), /Unknown Learn & examples row/);
+  assert.throws(() => learnRow(undefined), /Unknown Learn & examples row/);
+  assert.equal(learnRow('rolling-machine').id, 'rolling-machine');
 });

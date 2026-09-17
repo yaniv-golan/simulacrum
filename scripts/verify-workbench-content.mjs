@@ -2,7 +2,7 @@ import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { openTools } from './catalog-browser-actions.mjs';
+import { expandExample, expandExampleVariants, openTools } from './catalog-browser-actions.mjs';
 
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/workbench-content');
@@ -90,27 +90,138 @@ try {
   ]);
   await page.locator('.examples-browser .dialog-header h2').click();
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), true]);
-  // The header × must stay reachable when requested content is taller than the viewport.
+  // The browser is a picker: every entry is one row, nothing is opened for the player, and
+  // each replacement launcher stays beside the name it belongs to.
+  const picker = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('.examples-browser .example-card')];
+    const shown = (node) => node.getClientRects().length > 0;
+    return {
+      rows: cards.length,
+      expanded: cards.filter(
+        (card) => card.querySelector('.example-toggle')?.getAttribute('aria-expanded') === 'true',
+      ).length,
+      closedDetails: cards.filter((card) => card.querySelector('.example-detail')?.hidden === true)
+        .length,
+      launchers: [...document.querySelectorAll('.examples-browser .example-head [data-command]')]
+        .length,
+      reachable: [
+        ...document.querySelectorAll('.examples-browser .example-head [data-command]'),
+      ].filter(shown).length,
+      insideRows: [...document.querySelectorAll('.examples-browser .example-detail [data-command]')]
+        .length,
+      groups: [...document.querySelectorAll('.examples-browser .example-group')].map(
+        (node) => node.textContent,
+      ),
+    };
+  });
+  evidence.assert('equal', [picker.rows, 12, 'every Learn entry is one row']);
+  evidence.assert('equal', [picker.expanded, 0, 'no row is expanded for the player on arrival']);
+  evidence.assert('equal', [
+    picker.closedDetails,
+    12,
+    'instruction prose waits inside its own row instead of filling the dialog',
+  ]);
+  evidence.assert('equal', [
+    picker.reachable,
+    picker.launchers,
+    'a collapsed row still shows its own action',
+  ]);
+  evidence.assert('equal', [picker.launchers, 11, 'eleven launchers need no disclosure']);
+  evidence.assert('equal', [
+    picker.insideRows,
+    3,
+    'the module inserts that edit the current machine stay in the DOM inside their row',
+  ]);
+  evidence.assert('deepEqual', [
+    picker.groups,
+    ['Start here', 'Drive and lift', 'Spring experiments'],
+    'rows are grouped by readiness',
+  ]);
+  // Opening a row shows that entry's instruction verbatim; opening another closes the first.
+  await expandExample(page, 'drive-and-return');
+  evidence.assert('match', [
+    await page.locator('#example-detail-drive-and-return').innerText(),
+    /Press Run: W\/S drives and A\/D turns/,
+    'the instruction paragraph survives inside its row',
+  ]);
+  evidence.assert('match', [
+    await page.locator('#example-detail-drive-and-return .example-format').innerText(),
+    /^Editable example · Keyboard driving$/,
+    'the format line stays with the entry it describes',
+  ]);
+  await expandExample(page, 'cargo-delivery');
+  evidence.assert('equal', [
+    await page.locator('#example-detail-drive-and-return').isVisible(),
+    false,
+    'at most one row is open',
+  ]);
+  evidence.assert('equal', [
+    await page.locator('#example-detail-cargo-delivery [data-command=start-guide]').count(),
+    0,
+    'a row holds only its own actions',
+  ]);
+  await page.locator('.example-card[data-example="cargo-delivery"] .example-toggle').click();
+  evidence.assert('equal', [
+    await page.locator('#example-detail-cargo-delivery').isVisible(),
+    false,
+    'the row that is open can be closed again',
+  ]);
+  // Requested content arrives as a picker: a row opened last visit does not come back open.
+  const openRows = () =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('.examples-browser .example-toggle')].filter(
+          (toggle) => toggle.getAttribute('aria-expanded') === 'true',
+        ).length,
+    );
+  await expandExample(page, 'spring-launcher');
+  evidence.assert('equal', [await openRows(), 1, 'the row opened before closing was open']);
+  await page.getByRole('button', { name: 'Close examples', exact: true }).click();
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+  evidence.assert('equal', [
+    await openRows(),
+    0,
+    'reopening Learn & examples arrives with every row closed',
+  ]);
+  // The header × must stay reachable when requested content is taller than the viewport: the
+  // bounded browser scrolls its row list, so the header row cannot scroll out of the dialog.
   await page.setViewportSize({ width: 640, height: 360 });
   const scrolledClose = await page.evaluate(() => {
-    const dialog = document.querySelector('.examples-browser');
+    const dialog = document.querySelector('.examples-browser'),
+      pane = dialog.querySelector('.starter-guide');
     const inset = () =>
       dialog.querySelector('.dialog-close').getBoundingClientRect().top -
       dialog.getBoundingClientRect().top;
-    dialog.scrollTop = 0;
+    pane.scrollTop = 0;
     const before = inset();
+    pane.scrollTop = pane.scrollHeight;
+    const taller = pane.scrollHeight > pane.clientHeight,
+      scrolled = pane.scrollTop > 0;
+    // Ask the dialog itself to scroll: a bounded browser must have nowhere to go.
     dialog.scrollTop = dialog.scrollHeight;
     const close = dialog.querySelector('.dialog-close').getBoundingClientRect(),
       box = dialog.getBoundingClientRect();
     return {
-      scrolled: dialog.scrollTop > 0,
+      taller,
+      scrolled,
+      dialogScrolled: dialog.scrollTop,
       inside: close.top >= box.top && close.bottom <= box.bottom,
       before,
       after: inset(),
       size: Math.min(close.width, close.height),
     };
   });
-  evidence.assert('equal', [scrolledClose.scrolled, true, 'examples overflow the short viewport']);
+  evidence.assert('equal', [
+    scrolledClose.taller,
+    true,
+    'the rows are taller than a short viewport',
+  ]);
+  evidence.assert('equal', [scrolledClose.scrolled, true, 'the row list is what scrolls']);
+  evidence.assert('equal', [
+    scrolledClose.dialogScrolled,
+    0,
+    'the dialog refuses to scroll when asked, so its header cannot leave',
+  ]);
   evidence.assert('equal', [
     scrolledClose.inside,
     true,
@@ -266,6 +377,28 @@ try {
   await page.screenshot({ path: `${out}/smaller.png` });
   await page.locator('[data-command=build]').click();
   const preserved = (await read()).metadata.blueprint;
+  // A pending replacement keeps its own trigger visible: the row holding it cannot collapse.
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+  await expandExampleVariants(page, 'cargo-delivery');
+  await page.getByRole('button', { name: 'Try contact rules', exact: true }).click();
+  evidence.assert('match', [
+    await page.locator('.example-message').innerText(),
+    /Replace your current workshop/,
+  ]);
+  await page.locator('.example-card[data-example="spring-settle"] .example-toggle').click();
+  evidence.assert('equal', [
+    await page.locator('#example-detail-cargo-delivery').isVisible(),
+    true,
+    'the row that asked for the replacement stays open while the question is unanswered',
+  ]);
+  await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
+  evidence.assert('equal', [
+    await page.evaluate(() => document.activeElement?.textContent),
+    'Try contact rules',
+    'cancelling returns focus to the launcher that asked',
+  ]);
+  evidence.assert('deepEqual', [(await read()).metadata.blueprint, preserved]);
+  await page.getByRole('button', { name: 'Close examples', exact: true }).click();
   const learn = page.getByRole('button', { name: 'Learn & examples', exact: true });
   await learn.focus();
   await page.keyboard.press('Enter');

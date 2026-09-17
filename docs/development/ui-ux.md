@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"da0e28c77369654614556f6db34322862538af69fdd133803dea2aaa3c9c8aa5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f2f68ba906b223d0dc08cccdb2ec1529b7c7e84990c4444aa8c8e07383260c2d","disposition":"still accurate","rationale":"Unchanged prose. workshop-view.mjs changed for the header rework; this candidate adds, extends and replaces no teaching, example, experiment or challenge entry, so the admission rules and the no entry / extend / replace / add record they require are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"f48f4d9f05d7a701657974b652d54065f00da1cc0143d468aa9d549c43e56b8d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"65b485629ffcb53d5f375dc579a2d2474b47ac611a60cc0fab8048c47b298a24","disposition":"still accurate","rationale":"The only changed dependency is src/presentation/workshop-view.mjs, which renders the existing Learn entries as rows and collapses them on close. No teaching, example, experiment or challenge entry was added, extended or replaced, so the admission rules and the record they require are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -371,8 +371,14 @@ actions such as Send feedback, Keep or Discard draft, Retry uploads, Save photo,
 photos and Stop tab recording remain text buttons, never collapsed into the ×. Backdrop
 dismissal remains a per-dialog choice. The nonmodal Part help window keeps its own
 titlebar pair (expand and close) as an adjacent, separately owned surface.
-Learn & examples opens a bounded browser. The top-right close control, Escape, or a
-click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
+Learn & examples opens a bounded browser whose row list scrolls beneath the fixed header.
+The top-right close control, Escape, or a click outside dismisses it; clicks within its
+content keep it open. Every entry is one row, grouped by readiness: the collapsed row keeps
+its name, its own launcher and a summary naming what the player will do and the readiness it
+needs, while the format line, the whole instruction and any extra actions open inside that
+row. Nothing is expanded on arrival, at most one row is open, a closed row keeps its actions
+in the page, and a pending replacement keeps the row holding its trigger open so cancelling
+returns focus to it. Starting a lesson moves its current step
 into the parts area; leaving removes it. The guided build says what to do next ("Next:
 Place Motor") and ticks a step from what the player built, not from who placed it: the
 k-th part of the step's type, or the k-th connection of its kind between the two types,
@@ -616,7 +622,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"475a40b192c3176724e08afe95c558ef7150dfc289862c7935bdd8e426994562","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3cc8cea836b8a687014281e65f7e66c2b4ee01aff3e2d93314b849c61d335a9f","disposition":"still accurate","rationale":"Unchanged prose. Its dependencies moved because verify-workbench-content.mjs and its unit test gained coverage of the reworked header and verify-authorable-scenes.mjs follows Choose scene into Tools; what this section requires a player-facing change to verify and record is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e225d838df4e5b1f3b1bd571bfa28bd0493017cff7bec4f95c9f478b6c8efd1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a90990019948858e9f47c3b14bde3fae285cc9e93c4c41d48112817eb72b04e7","disposition":"updated","rationale":"Updated: this section now records that the workbench-content browser journey checks the collapsed example rows with their launchers and instructions and the header x staying inside the dialog while its rows scroll in a short viewport. Its dependencies scripts/verify-workbench-content.mjs (the picker journey, the reopen-arrives-collapsed assertion and the dialog.scrollTop write), test/workbench-content.test.mjs, src/presentation/workbench-content.mjs and playtesting.md#remote-setup moved with that work."} -->
 
 
 
@@ -629,8 +635,8 @@ explanations. Unknown changes stay conservative. Registration is not execution.
 [Scope controls](../../test/workbench-content.test.mjs) cover meaningful and wrong
 states; the [browser journey](../../scripts/verify-workbench-content.mjs#source)
 checks requested learning/results, scope against changed parts, preserved operations,
-non-mutating help and the header × staying inside the dialog while examples overflow
-a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
+non-mutating help, the collapsed example rows with their launchers and instructions, and the
+header × staying inside the dialog while its example rows scroll in a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
 checks the independent motor edit, Run and Undo, and a zero-damping comparison that
 preserves other spring tuning. It also checks cancellation of example replacement
 and the gear extension: construction from an empty workshop, palette insertion,

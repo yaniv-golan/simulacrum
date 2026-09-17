@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"1203afa462d5539010ecbdc710e87756179f1193e4af06ad8afb270c9595105e","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"424bcb026fb702b2132acc099dba128af42032e40768c1071878136dd310037f","disposition":"updated","rationale":"Updated: the spur-gear paragraph now states that the disc is drawn with cosmetic teeth cut inward from the collider radius and that two meshed gears therefore show a small visible gap, replacing the claim that painted radial marks depict body rotation without pretending to collide as teeth."} -->
+<!-- doc-review {"version":1,"fingerprint":"97ef90b0bfaec19e622cb9ccc9250bd3998dc397d9bf834177b8b844cf7c383b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a7391037f0c9400ee4103f81868ade850e16c04471085c1236367be9722c8928","disposition":"updated","rationale":"Updated: the spur-gear paragraph now says the teeth are involute, that the hub, recessed web and bore are equally cosmetic over a solid collider so nothing can be placed through the bore, and that the drawing takes resolved gear facts built at one catalog read site."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,8 +58,11 @@ canonicalizes empty contact records without changing explicit zero or mutating t
 
 The 12T and 24T spur gears use solid root cylinders for collision, inertia and
 material selection, with separate fixed pitch radii for transmission. The disc is drawn
-with cosmetic teeth cut inward from that collider radius, so it reads as a gear without
-pretending to collide as teeth; two meshed gears therefore show a small visible gap. The
+with cosmetic involute teeth cut inward from that collider radius, so it reads as a gear without
+pretending to collide as teeth; two meshed gears therefore show a small visible gap. Its hub,
+recessed web and bore are drawn inward too and are equally cosmetic: the collider stays a solid
+cylinder, so nothing can be placed through the bore. The drawing takes resolved gear facts (tooth count, module, pitch and collider radius,
+face width, shaft radius) built at one catalog read site, not the catalog itself. The
 [gear compiler](../../src/model/gear-mesh.mjs) admits explicit meshes only between
 independently revolute-supported rotors on one rigid carrier: a forest of at most
 eight edges. Limited bearings and extra non-revolute rotor supports reject. A mesh
@@ -522,7 +525,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"1c77b7b5409b3b6a1392de6b32542486d914e544ca2f41ac9baaad4e3ebe8d89","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d4b53f027c94fbdcd0ee9ecdec73d45a47169665f8977d20729769819798f03f","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"fd0e5dbd1f30d83dc9686f870b4a67354b8c0194805f19195f9fcc79f3b4b670","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"9d06df0f8a9d2caa774150ac2e17940a0b5f5a0978b46304b888d936d0b9ff99","disposition":"still accurate","rationale":"The only changed dependency is scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row. Subassembly authoring, its owners and its invariants are untouched."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -619,7 +622,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"03d11cc4261888e4a3471b75348035addb31a86dc2865a0c7aeced805d162399","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"18a510a66eacb0908c91180ac05ba7f770439d294ba3f35c0ca1e9c66d80cd5b","disposition":"updated","rationale":"Updated by the merged gear-appearance work: the section now states that gear meshes' cosmetic teeth are part of the body geometry and follow completed body transforms, replacing the earlier root-cylinder marks, and that the shared part builder creates each part's canonical solid envelope. The overlay's owner, visibility lifecycle and the preserved gear rendering controls are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"fc32bdd2e57f50c63360ea8288e298c328abf514356733e7ac53d9002237626f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"888cd74c1f935b94199495b0585276aaf943650523cdcd03099d569f21c10e19","disposition":"still accurate","rationale":"Re-recorded because the merge produced a sidecar matching neither parent; this merge changed no prose, it only carried the gear-look-v2 builder paragraph in unchanged. The dependencies this merge delta touched are src/presentation/part-mesh.mjs (the inward-drawn gear body and its declared selection silhouette, which the section now records) and test/presentation-resources.test.mjs. The overlay recipe's owning region, telemetry-only reads and verification order are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -634,7 +637,9 @@ the body geometry and follow completed body transforms. Preserve the [gear rende
 
 The shared [part builder](../../src/presentation/part-mesh.mjs#symbol=createPartMesh)
 creates each part's canonical solid envelope and owns their disposable finishes for the workbench, catalogue,
-help images, editing/placement and assembly previews. Family builders receive authored
+help images, editing/placement and assembly previews. A body drawn inward of that solid, as a gear's
+is, is declared by its builder and may fall short of the solid's bounding box but never exceed it;
+a builder may also supply a simpler selection silhouette, which must match the drawn body. Family builders receive authored
 dimensions and relevant parameters or ports; they never receive a controller or session.
 [Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
 distinguish measurement identities with static graphics and large top identification
@@ -770,7 +775,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"bdfff47728b51868b8381fec3fbcad56f9575e9e9241035042d7876eb850c539","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"07dabbee06a8c59af9db207125992a977652e450a16121f9c0486eac6367a260","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-spring-browser.mjs changed only in the steps that drive the reworked header controls; the adaptive graphics tiers, their quality transitions and the registered check that measures them are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"11ba32b6735cae361db96b20f5924a1116e393b0a42a9dce7893eba62899fa55","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"5f8cd7a8beb3eecccf4f1c59922b27caf8930f0290adcbb4941c57f6c582d338","disposition":"still accurate","rationale":"The only changed dependency is scripts/verify-spring-browser.mjs, which opens one Learn row through the shared helper instead of reading a long example screen. Its adaptive-graphics measurements, budgets and owners are unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

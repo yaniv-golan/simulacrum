@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "8e0a90856f30c2fde1b20acd2cdb3aa7f159f2202915a067d6cf7e0a18537d4c",
+    "src/presentation/workshop-view.mjs": "412dc35f67de00d3e036a85d65757b07d4372e39dc695c6a911629c21e60f059",
     "src/presentation/icons.mjs": "5f257bc0240a5e75872769d2fd517df3520c2dc9af04034c196acfe7ce98eab2",
     "src/presentation/workshop.css": "f8ae1b2f1aca489932ae2f515f665dae91ce75f8af5ed56529aae9dde6a50a05",
     "src/presentation/inspector-summary.mjs": "4a17c94a2b2025ef725de44af687d5c5825bed6db7a63372a2a10b2346dd1266",
@@ -23,10 +23,10 @@
     "src/presentation/camera-controls.mjs": "a3586639b0bad5008661df9012e20c8066b7463465947a9560e0e4d93b94dce4",
     "src/presentation/scene-editor.mjs": "a48ca8ffd1f329aa14065410db9a0538551770558079134000824e0f51741ddb",
     "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
-    "src/presentation/workbench-content.mjs": "d0868d7e74defb8414e649d2eed69e855c4a4cb7253847976f42775f199bc2fa",
+    "src/presentation/workbench-content.mjs": "8048942245129df1d585bab147bbe575d7daaa6eb8ef704f9e3fc4393f0f126e",
     "src/presentation/dialog-close.mjs": "a18dceaa4774e3e0e56eea5a57f0b00432aad05c0b4fb51e870ba363ef23d814",
     "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
-    "scripts/catalog-browser-actions.mjs": "8082f78183107a56bd60445e175a75c35068640d465c848752c745f20436c73c",
+    "scripts/catalog-browser-actions.mjs": "6480fdef830b59129c7d67596af1839bc36b3b9da9840a6c1e218efa0ae9c9b8",
     "scripts/gear-browser-cases.mjs": "e3bb495a78c60e48c43555e57379e71e1adcd1006c3426052c7fca02e87b6ebd",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
     "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",

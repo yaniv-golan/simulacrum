@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"11f9457f088e086e5ae773cac96678f3e5851ad69602ce1a182620c944537900","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"deb9e1cf2d3d8f284c2cc46c40008eee7749040eb49d5e54add3d10f4fbe3f69","disposition":"still accurate","rationale":"Unchanged prose. package.json moved only in its version field, 0.3.0 to 0.4.0 for the R4 release. The tiers, scope arguments and candidate commands this section describes (local, merge and final; --base, --incoming, --destination and --stack) are untouched by a version bump."} -->
+<!-- doc-review {"version":1,"fingerprint":"93d29f09d549b13bf9199b5a709ab76508b172b5fe88729842bf34fbbb3ae2d9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"f5b3bd6c34b8634e93364db93fe783cbae2b8f55b64033564c34390d7bda236a","disposition":"still accurate","rationale":"The only changed dependency is docs/development/playtesting.md#remote-setup, whose prose now says project information states what works today and keeps the maintainer plan in recording setup's consent text. The tiers, commands and probe-versus-completion rules this section names are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.

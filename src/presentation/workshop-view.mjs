@@ -20,10 +20,12 @@ import {
 } from './graphics-quality.mjs';
 import {
   FIRST_RUN_KEY,
+  LEARN_GROUPS,
   controlTitle,
   firstRunDecision,
   footerModel,
   historyChord,
+  learnRow,
   modeControlState,
   movementScope,
   paletteKeyOpens,
@@ -518,6 +520,9 @@ export function createWorkshopView(
   const guide = element('section', 'starter-guide');
   let pendingExample = null,
     renderedGuideActive;
+  // The rendered rows are rebuilt on guide changes; the dialog's close reaches the current
+  // ones through this, so collapsing them stays the job of whoever rendered them.
+  let collapseExampleRows = () => {};
   const replacement = element('div', 'example-replacement');
   replacement.hidden = true;
   const cancelReplacement = button('Cancel replacement', () => {
@@ -558,6 +563,8 @@ export function createWorkshopView(
     if (examples.open) return;
     replacement.hidden = true;
     pendingExample = null;
+    // Requested content arrives as a picker every time: a row opened last visit is closed.
+    collapseExampleRows();
   });
   async function openExample(entry) {
     if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
@@ -621,23 +628,64 @@ export function createWorkshopView(
     renderedGuideActive = guideActive;
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
+    // The previous render's rows are gone; a guide has none until the browser rebuilds.
+    collapseExampleRows = () => {};
     if (!guideActive) {
       examples.append(guide);
-      const addExample = (parent, name, format, description, label, command, guided = false) => {
+      // One row per entry. The collapsed row carries the name, its summary and its own
+      // action; the format line, the instruction paragraph and any extra actions live
+      // inside the row, which opens on request. At most one row is open and none is open
+      // on arrival, so the browser is a picker instead of six screens of prose. Every
+      // action stays in the DOM while its row is closed.
+      const rows = new Map();
+      const setExpanded = (id) => {
+        // A pending replacement keeps its own trigger visible; collapsing it would drop focus.
+        if (pendingExample) return;
+        for (const [rowId, row] of rows) {
+          const open = rowId === id;
+          row.detail.hidden = !open;
+          row.toggle.setAttribute('aria-expanded', String(open));
+        }
+      };
+      collapseExampleRows = () => {
+        for (const row of rows.values()) {
+          row.detail.hidden = true;
+          row.toggle.setAttribute('aria-expanded', 'false');
+        }
+      };
+      const addRow = (id, name) => {
+        const { summary } = learnRow(id);
         const card = element('section', 'example-card');
+        card.dataset.example = id;
+        const head = element('div', 'example-head'),
+          heading = element('h4', 'example-title'),
+          detail = element('div', 'example-detail');
+        detail.id = `example-detail-${id}`;
+        detail.hidden = true;
+        const toggle = button('', () => setExpanded(detail.hidden ? id : null), 'example-toggle');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-controls', detail.id);
+        toggle.append(
+          element('span', 'example-name', name),
+          element('span', 'example-summary', summary),
+          icon('chevron-down'),
+        );
+        heading.append(toggle);
+        head.append(heading);
+        card.append(head, detail);
+        rows.set(id, { card, head, detail, toggle });
+        return detail;
+      };
+      const addExample = (id, name, format, description, label, command, guided = false) => {
+        const detail = addRow(id, name);
         const launch = button(label, () => chooseExample({ name, command, guide: guided }, launch));
         launch.dataset.command = guided ? 'start-guide' : command.type;
-        card.append(
-          element('h3', '', name),
-          element('p', 'example-format', format),
-          element('p', '', description),
-          launch,
-        );
-        parent.append(card);
-        return card;
+        rows.get(id).head.append(launch);
+        detail.append(element('p', 'example-format', format), element('p', '', description));
+        return detail;
       };
       addExample(
-        guide,
+        'rolling-machine',
         'Build a rolling machine',
         'Guided build · Start here',
         'Start with an empty workbench. Place parts and connect power and axles one step at a time. Run your machine, then try switching its motor off yourself. You can leave the guide and keep building at any time.',
@@ -646,22 +694,23 @@ export function createWorkshopView(
         true,
       );
       addExample(
-        guide,
+        'drive-and-return',
         'Drive and return',
         'Editable example · Keyboard driving',
         'Open a four-wheel machine. Press Run: W/S drives and A/D turns. Try driving away, turning around and returning to where you started. For another experiment, return to Build, select Shared cell and lower Voltage in Engineering details. Predict how it will drive; try again, then return to Build and Undo to restore the setting.',
         'Try driving example',
         { type: 'driving-example', replace: true },
       );
-      const sensingCard = addExample(
-        guide,
+      const sensingDetail = addExample(
+        'cargo-delivery',
         'Teach a cargo delivery',
         'Editable challenge · Keyboard driving first',
         'Open a cart with a loose package and a bay marker. Select Delivery learner, then Teach a controller. Drive forward with W; stop near the marker without losing the package. Stop teaching, return to Build, train and install a candidate, then Try it. Inspect failures and change examples, sensing or construction. The powered forward range sensor sees the first physical obstacle; closing speed is relative to that surface.',
         'Try learning delivery',
         { type: 'learning-delivery-example', replace: true },
       );
-      const variants = element('details');
+      // Sensor variants stay one more click inside the row: the row is a choice, not a lecture.
+      const variants = element('details', 'example-variants');
       variants.append(element('summary', '', 'Start with a rule · optional sensor experiments'));
       variants.append(
         element(
@@ -703,9 +752,9 @@ export function createWorkshopView(
         ),
       );
       variants.append(baseline);
-      sensingCard.append(variants);
+      sensingDetail.append(variants);
       addExample(
-        guide,
+        'gear-lift',
         'Lift with gears',
         'Editable experiment · Motor and shaft connections first',
         'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. The 12T gear drives the 24T gear with reduction. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
@@ -713,17 +762,15 @@ export function createWorkshopView(
         { type: 'gear-lift-example', replace: true },
       );
       addExample(
-        guide,
+        'spring-settle',
         'Make a spring settle',
         'Experiment · Change one setting',
         'Open a supported carriage and spring. Run to watch the falling weight land and the carriage bounce. Return to Build and change Damping in the selected guide’s settings. Can you make it settle after one bounce? Open Compare damping there to try zero damping without replacing your machine.',
         'Try spring playground',
         { type: 'spring-example', replace: true },
       );
-      const springExperiments = element('details', 'spring-experiments');
-      springExperiments.append(element('summary', '', 'Spring experiments'));
       addExample(
-        springExperiments,
+        'ball-drop',
         'Roll onto a spring',
         'Experiment · Rolling and falling',
         'A supported beam slopes toward a spring plate. Run to watch the Ball roll, leave the edge and land. Try again to repeat. In Build, change its material or the spring damping and predict what changes.',
@@ -731,7 +778,7 @@ export function createWorkshopView(
         { type: 'ball-drop-example', replace: true },
       );
       addExample(
-        springExperiments,
+        'spring-launcher',
         'Spring launcher',
         'Experiment · Stored energy',
         'Run to let the powered gate hold a compressed spring. Hold L to open the gate and send the Ball toward the catcher. The compressed spring stores energy; operating the gate uses battery power. Choose Try again for another shot. In Build, move the Catcher farther away and change the spring’s rest length to adjust preload.',
@@ -739,7 +786,7 @@ export function createWorkshopView(
         { type: 'spring-launcher-example', replace: true },
       );
       addExample(
-        springExperiments,
+        'guided-suspension',
         'Guided wheel suspension',
         'Editable example · Suspension travel',
         'Four sliding springs carry a powered cart over a rounded bump. Run and hold W/S to drive. Select the same chassis in each cart and open Measurements; compare matching windows and speed just before the bump. The same key press may give different speeds: in Build, select the receiver and adjust Keyboard settings → Output strength. Then change stiffness, damping or load. In Build, Edit scene lets you change the bump; repeat both carts with the same scene, approach speed and measurement window. Smoother motion does not necessarily use less energy.',
@@ -747,7 +794,7 @@ export function createWorkshopView(
         { type: 'guided-suspension-example', replace: true },
       );
       addExample(
-        springExperiments,
+        'rigid-suspension',
         'Rigid wheel comparison',
         'Editable example · Same cart, bolted suspension',
         'The same cart has four extra bolts that lock its suspension braces. Compare the same chassis and measurement window at matching approach speed; adjust the receiver’s Keyboard settings → Output strength in Build if needed. Disconnect a brace bolt in Build to free that spring.',
@@ -755,7 +802,7 @@ export function createWorkshopView(
         { type: 'rigid-suspension-example', replace: true },
       );
       addExample(
-        springExperiments,
+        'articulated-suspension',
         'Articulated spring ends',
         'Editable example · Pivoting strut',
         'A wheel arm loads a spring through two real pivot pins. Run to see it settle, then inspect both bearings. The guide slides along its own axis; the pins let the whole strut change angle. Try Manual movement in Active suspension to see the pivots move farther. Every mount remains editable; check clearance after changing it.',
@@ -763,16 +810,17 @@ export function createWorkshopView(
         { type: 'articulated-suspension-example', replace: true },
       );
       addExample(
-        springExperiments,
+        'active-suspension',
         'Active suspension',
         'Experiment · Manual and automatic control',
         'A powered upper rocker changes spring length. Run in Manual and hold W/S to shorten/lengthen it; Manual can hold a fixed load. Select the rocker receiver and choose Automatic to use the travel sensor for a requested length. Try 0.26–0.33 m and compare target changes. Check clearance after editing mounts. Zero takes Manual control; Off removes drive power and does not lock the arm.',
         'Try active suspension',
         { type: 'active-suspension-example', replace: true },
       );
-      const modules = element('section', 'example-card');
+      // These inserts edit the machine the player already has, so the row says so and
+      // keeps them apart from the launchers that replace it behind a confirmation.
+      const modules = addRow('reusable-suspension', 'Reusable suspension');
       modules.append(
-        element('h3', '', 'Reusable suspension'),
         element(
           'p',
           '',
@@ -803,8 +851,15 @@ export function createWorkshopView(
       });
       insertPinStrut.dataset.command = 'pin-ended-strut-module';
       modules.append(insertPinStrut);
-      springExperiments.append(modules);
-      guide.append(springExperiments);
+      // The copy table is the running order: a row it does not list never reaches a player.
+      for (const group of LEARN_GROUPS) {
+        guide.append(element('h3', 'example-group', group.label));
+        for (const { id } of group.rows) {
+          const row = rows.get(id);
+          if (!row) throw Error(`Learn & examples is missing the ${id} row`);
+          guide.append(row.card);
+        }
+      }
       return;
     }
     left.insertBefore(guide, partsHeading);

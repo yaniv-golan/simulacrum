@@ -170,7 +170,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"637075f93fd4868495f4cdc656161a8b52bf01e0ba239fcc35d79c5e6cb7aa35","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1c6085f84b9a3efd09c2629d1725051bca7b85668390747a7e0dc3038d52dff0","disposition":"still accurate","rationale":"Only the gear help wording changed. The canonical-decision reuse rules, their owners and the catalog-keyed structure of the help content are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"a84adb7bba06afb932b0474827b22a2c61033924cfec30dbf4ee6c8aad714470","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1455146032f0761459e462c11a60c66d9f1015be6df0a180929cf0cbb534297c","disposition":"updated","rationale":"Updated: the render-only decoration rule now reads 'may illustrate a hub or a bore; it must not replace the collision geometry, and a visible hole admits nothing through it', replacing 'must not imply an authorable hole', because gears now draw a see-through bore over an unchanged solid collider."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -202,8 +202,8 @@ of opened joints and completed rope work.
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.
 These links explain policy responsibilities, not a second inventory of module edges.
-Render-only decoration may illustrate a hub; it must not imply an authorable hole or
-replace the collision geometry. Preserve independent physical test calculations when
+Render-only decoration may illustrate a hub or a bore; it must not replace the collision
+geometry, and a visible hole admits nothing through it. Preserve independent physical test calculations when
 sharing production policy: an oracle that calls the implementation proves little.
 
 Powered linear guides compile to the same five constrained sliding degrees of freedom
