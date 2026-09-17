@@ -3,12 +3,24 @@ import assert from 'node:assert/strict';
 import { createSession } from '../src/simulation/session.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
 import { gearCapacityFixture } from '../test/fixtures/gear-capacity.mjs';
+import {
+  GEAR_BOUND_CORNERS,
+  cornerLabel,
+  gearBoundsFixture,
+  measureCoast,
+  measureTransmission,
+  meshFrequency,
+  spinUpToPitchLineSpeed,
+} from '../test/fixtures/gear-bounds.mjs';
+import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { cpus, platform, arch } from 'node:os';
+import { cpus, platform, arch, loadavg } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 const latest = (s) => s.observe().frames[0];
+// Two fifths of a 1/120 s tick, the same share the capacity rows are held to, in microseconds.
+const TICK_BUDGET_US = (1000 / 120) * 0.4 * 1000;
 const p95 = (values) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * 0.95) - 1];
 function ratioError(f) {
   const input = f.physics[1].angularVelocity[0];
@@ -65,6 +77,80 @@ export async function measureGearEndurance() {
       });
     } finally {
       session.dispose();
+    }
+  }
+  return metrics;
+}
+
+/** What one constant mesh stiffness costs at the edges of the authored bounds.
+ *
+ * The capacity apparatus above measures many meshes at one tooth size. This measures one mesh
+ * at every tooth size the catalog admits, because with `stiffness` fixed the mode the tick has
+ * to resolve is set by the authored pair: the pitch-point mobility spans more than an order of
+ * magnitude from the heaviest pair to the lightest, and so does `omega dt`. Each corner is held
+ * at the same transmitted force and the same pitch-line speed, so input work is identical by
+ * construction and the recorded figures compare the mesh rather than the duty.
+ */
+export async function measureGearBounds() {
+  const force = 2,
+    pitchLineSpeed = 1,
+    loadedTicks = 1200,
+    coastTicks = 1200,
+    metrics = [];
+  for (const corner of GEAR_BOUND_CORNERS) {
+    const fixture = gearBoundsFixture(corner),
+      frequency = meshFrequency(fixture),
+      world = await createPhysicsWorld(fixture.config);
+    try {
+      const spinUpTicks = spinUpToPitchLineSpeed(world, fixture, force, pitchLineSpeed),
+        loaded = measureTransmission(world, fixture, { force, ticks: loadedTicks }),
+        coast = measureCoast(world, coastTicks);
+      assert.ok(
+        loaded.maximumStrainM < 0.001,
+        `${cornerLabel(corner)} elastic displacement stays below one millimetre`,
+      );
+      assert.ok(
+        loaded.maximumRatioError < 0.03,
+        `${cornerLabel(corner)} ratio stays within three percent`,
+      );
+      assert.ok(
+        Math.abs(loaded.lostWorkFraction) < 0.01,
+        `${cornerLabel(corner)} delivers the input work to the output`,
+      );
+      assert.ok(coast.growth <= 0, `${cornerLabel(corner)} never gains mechanical energy`);
+      metrics.push({
+        label: cornerLabel(corner),
+        ...corner,
+        reference: corner.reference === true,
+        massAKg: fixture.massA,
+        massBKg: fixture.massB,
+        centreDistanceM: fixture.centreDistance,
+        pitchPointMobility: frequency.mobility,
+        meshOmegaRadPerS: frequency.omega,
+        meshOmegaDt: frequency.omegaDt,
+        meshDampingRatio: frequency.dampingRatio,
+        // Backward Euler represents a mode of frequency omega as atan(omega dt)/dt, which can
+        // never reach a quarter turn of phase per tick. That saturation is why a corner well
+        // past omega dt = 1 dissipates its mesh oscillation instead of diverging, and it is the
+        // honest statement of what the small end loses: resolved compliance, not work.
+        representedPhasePerTick: Math.atan(frequency.omegaDt),
+        spinUpTicks,
+        loadedTicks,
+        coastTicks,
+        transmittedForceN: force,
+        pitchLineSpeedMPerS: pitchLineSpeed,
+        inputWorkJ: loaded.inputWorkJ,
+        outputWorkJ: loaded.outputWorkJ,
+        lostWorkFraction: loaded.lostWorkFraction,
+        maximumRatioError: loaded.maximumRatioError,
+        maximumStrainM: loaded.maximumStrainM,
+        maximumCumulativeDriftM: loaded.maximumDriftM,
+        coastRetainedFraction: coast.retained,
+        coastEnergyGrowthFraction: coast.growth,
+        costPerTickUs: loaded.costPerTickUs,
+      });
+    } finally {
+      world.dispose();
     }
   }
   return metrics;
@@ -143,23 +229,35 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       cpu: cpus()[0].model,
       platform: platform(),
       arch: arch(),
+      // Timing figures are read against the host they were taken on, so the load carried while
+      // they were taken is part of the measurement rather than a note beside it.
+      loadAverage: loadavg(),
     },
     status: 'failed',
   };
   try {
     report.endurance = await measureGearEndurance();
+    report.bounds = await measureGearBounds();
     report.performance = await measureGearPerformance();
     const failures = report.performance.flatMap((row) => {
       const label = `trial${row.trial}/${row.bodies}bodies/${row.meshes}meshes`;
       return [
-        ['tickP95Ms', (1000 / 120) * 0.4],
+        ['tickP95Ms', TICK_BUDGET_US / 1000],
         ['actuatorP95Ms', 2],
         ['integrationP95Ms', 2],
       ]
         .filter(([key, limit]) => !Number.isFinite(row[key]) || row[key] > limit)
         .map(([key, limit]) => `${label} ${key} ${row[key]} exceeds ${limit}`);
     });
+    // A bound corner is a three-body world, so it has to fit the same fraction of a tick the
+    // capacity rows are held to; the figure is recorded either way, but it is also enforced.
+    failures.push(
+      ...report.bounds
+        .filter((row) => !Number.isFinite(row.costPerTickUs) || row.costPerTickUs > TICK_BUDGET_US)
+        .map((row) => `${row.label} costPerTickUs ${row.costPerTickUs} exceeds ${TICK_BUDGET_US}`),
+    );
     assert.equal(failures.length, 0, failures.join('; '));
+    report.environment.loadAverageAfter = loadavg();
     report.status = 'passed';
   } catch (error) {
     report.failure = error.message;

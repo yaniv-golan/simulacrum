@@ -5057,7 +5057,7 @@
       "id": "supported-spur-transmission",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint.",
+      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint. One constant mesh stiffness serves every pair the bounds admit: across authored teeth 12 to 36 and both modules the pitch-point mesh frequency spans omega dt 0.66 to 8.69, and at every corner the pair gains no mechanical energy, delivers its input work to the output, and holds its ratio and its elastic displacement inside the recorded three percent and one millimetre. What the fastest corners lose is resolved compliance, not work: backward Euler represents the mesh mode as atan(omega dt) of phase per tick, which is why the stiffest pair dissipates rather than diverges.",
       "owners": [
         {
           "path": "src/model/gear-geometry.mjs",
@@ -5113,6 +5113,22 @@
           {
             "path": "test/component-contract.test.mjs",
             "anchor": "parametric spur gear uses authored teeth and module through save, compiler and physics"
+          },
+          {
+            "path": "test/gear-bounds.test.mjs",
+            "anchor": "every authored bound corner holds its ratio and its strain under load and gives the work back"
+          },
+          {
+            "path": "test/gear-bounds.test.mjs",
+            "anchor": "the bound set spans the mesh frequency the registered endurance apparatus already measures"
+          },
+          {
+            "path": "test/gear-bounds.test.mjs",
+            "anchor": "the mesh mode the tick represents is the warped one, which is why no corner can pump energy"
+          },
+          {
+            "path": "test/gear-bounds.test.mjs",
+            "anchor": "a bound corner transmits the authored torque ratio in both directions and replays exactly"
           }
         ],
         "negative": [
@@ -9044,7 +9060,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "fb7c656412cd8a3bdc0d55befec0ef5237baf907df8c0fb3a4f282ac577243fa",
+      "consumerSourceHash": "44b611fb74874bff1bbb06e409c883aa2bcc838036cac9fc99dfd425275df774",
       "externalImports": [
         "node:child_process",
         "node:crypto",

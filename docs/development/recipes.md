@@ -230,7 +230,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"9fda1515d35b021e4c6904acb6818eb813b5474f1a18d7db238fbaf9d643efb3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"818d7f24573bb26534a99e9a67bc93e659e34c4fe1d3fcf636edcf8a34b05d7c","disposition":"still accurate","rationale":"Unchanged prose, re-recorded because the merge left the marker and its dependency sidecar matching neither parent, so docs:prepare reports all 781 dependencies as changed. The 27 that this integration actually moved are documentation (docs/development/README.md, playtesting.md, recipes.md, reference.md, ui-ux.md, docs/player-guide.md), manifest scope metadata (scripts/manifest.json), browser-check and journey scripts (scripts/catalog-browser-actions.mjs, gear-browser-cases.mjs, verify-parts-catalog.mjs, verify-spring-browser.mjs, verify-surface-browser.mjs, verify-ui-lifecycle-browser.mjs, verify-workbench-content.mjs), presentation and release-note sources (src/application/release-notes.mjs, src/application/remote-playtest.mjs, src/presentation/part-placement.mjs, placement-lifecycle.mjs, surface-controls.mjs, workbench-content.mjs, workshop-view.mjs, workshop.css) and unit tests (test/part-placement-pending.test.mjs, placement-lifecycle.test.mjs, remote-playtest.test.mjs, surface-placement-feedback.test.mjs, workbench-content.test.mjs). No law, simulation module, tick order, integration or physics-door shape is among them: a gear still crosses the door as a cylinder with half extents and a mass, the compiled mesh joint keeps its exact eleven keys, and teeth and module stay unreachable from src/simulation. This recipe's owners, its narrow-door rule and its required checks all still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"d3001bb36ae589bcc1dced3ba707bc9c7a03ed0e1e9c1d648fea2d23b0c63c59","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ecf18a46de3131c001fe2d512f4ae0201307955ade4c758481f27960b57079b4","disposition":"updated","rationale":"Behaviour this recipe must prescribe did change, so the prose changed with it. Candidate 3 measured what one constant gear mesh stiffness costs across the authored teeth 12 to 36 and module {0.005, 0.01} bounds: the pitch-point mobility, and therefore the mode the 1/120 s tick has to resolve, spans omega dt 0.661 to 8.686. The section now states the obligation that follows - an elastic constant serving a range of authored sizes owes evidence at the ends of that range, changing stiffness, damping or the authored bounds means re-recording the corners in measure-gears, and the question measurements answer is what compliance the tick still resolves rather than whether backward Euler stays stable, because a mode above omega dt = 1 is represented at the warped frequency atan(omega dt)/dt. The other changed dependencies are the two new files that carry that evidence (test/fixtures/gear-bounds.mjs, test/gear-bounds.test.mjs), scripts/measure-gears.mjs which now records it, and scripts/manifest.json which registers the four new controls. No law, simulation module, tick order, integration or physics-door shape moved: src/simulation/physics/law/gear.mjs, the door's gear admission and the compiled joint's eleven keys are byte-identical, so this recipe's owners and its narrow-door rule are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -256,7 +256,15 @@ Use analytical expectations and passive mirrored controls before tuning a contro
 For guided springs, preserve five constrained degrees of freedom, simultaneous
 coupled damping, solver-integrated elasticity, bounded frequency/topology admission and
 signed integration/contact residuals. [Topology admission](../../src/simulation/physics/spring-topology.mjs)
-uses authored fixed connectivity and ground, never approximate row deletion. Dependency
+uses authored fixed connectivity and ground, never approximate row deletion.
+One elastic constant serving a range of authored sizes owes evidence at the ends of that
+range, not only at the size it was chosen for: the pitch-point mobility of a spur mesh moves
+with the authored tooth count, module and material, so the gear mesh keeps
+[bound-corner measurements](../../test/gear-bounds.test.mjs#source) beside its law. Changing
+`stiffness`, `damping` or the authored teeth and module bounds means re-recording those
+corners in `measure-gears`; a mode whose `omega dt` exceeds one is represented at the warped
+frequency `atan(omega dt)/dt`, so the question to answer with measurements is what compliance
+the tick still resolves, never whether backward Euler stays stable. Dependency
 changes follow the pinned [spring/contact build recipe](../../vendor/rapier-contact/README.md);
 retain loaded sag, coupled energy, completed-tick stop bounds and native motor restore controls.
 The physics door freezes four temporal subdivisions and thirty-two internal projected
