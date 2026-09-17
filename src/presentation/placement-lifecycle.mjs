@@ -46,10 +46,12 @@ export function createPlacementLifecycle() {
 }
 
 /** One interpretation for inspector text, preview cues and commit availability.
- * Both homes of the same act read their state word, their instruction and the name of
- * their confirming control here: the placement strip over the bench (`free`, no face and
- * no rotation) and the surface panel (faces, sliding and turning). Neither writes its own
- * vocabulary, so the two cannot contradict each other while the player crosses a face.
+ * Both homes of the same act read their state word and the name of their confirming
+ * control here — the placement strip over the bench (`free`, no face and no rotation) and
+ * the surface panel (faces, sliding and turning) — and the surface panel its instruction
+ * sentence too; the strip's one row carries the state word alone and leaves confirming and
+ * cancelling to its two named controls. Neither writes its own vocabulary, so the two
+ * cannot contradict each other while the player crosses a face.
  * @param {Readonly<PlacementState<unknown>>} state */
 export function placementPresentation(
   state,

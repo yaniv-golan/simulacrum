@@ -138,10 +138,23 @@ try {
   });
   equal([row.controls, row.offRow], [5, 0]);
   equal(row.height <= row.tallest + 20, true);
+  // Enter belongs to the control that has focus: on Cancel it closes the strip and
+  // commits nothing.
+  await page.getByRole('button', { name: 'Cancel placement', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  equal(await strip.isVisible(), false);
+  equal(await read(), original);
+  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel placement', exact: true }).click();
   equal(await read(), original);
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
+  const coordinates = page.locator('.placement-coordinates');
+  await page.locator('.part-placement summary').click();
+  equal(await coordinates.isVisible(), true);
   await page.getByRole('button', { name: 'Place part', exact: true }).click();
+  // The coordinates go away with the fields they edit: a placed row is never left with an
+  // orphan card floating above it.
+  equal(await coordinates.isVisible(), false);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   equal((await read()).blueprint.parts.length, 1);
   await page.getByRole('button', { name: 'Create assembly…', exact: true }).click();
@@ -245,6 +258,55 @@ try {
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   equal((await read()).blueprint, beforeMount.blueprint);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  equal((await read()).blueprint, placed.blueprint);
+  // Narrow: the longest state sentence a learner can sit in stays wholly readable and
+  // inside the stage, and the row reserves the machine control band it shares the bench's
+  // bottom edge with, so a placement never covers Sound or takes its click.
+  await page.setViewportSize({ width: 780, height: 720 });
+  await addPart.click();
+  await search.fill('battery');
+  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
+  const occupied = (await read()).blueprint.parts[0].position;
+  await page.locator('.part-placement summary').click();
+  for (const [index, axis] of ['X', 'Y', 'Z'].entries())
+    await page
+      .getByRole('spinbutton', { name: `${axis} position`, exact: true })
+      .fill(String(occupied[index]));
+  await page.locator('.part-placement summary').click();
+  const narrow = await strip.evaluate((panel) => {
+    const status = panel.querySelector('p[role=status]'),
+      box = panel.getBoundingClientRect(),
+      toggle = document.querySelector('.sound-controls > button'),
+      sound = toggle.getBoundingClientRect(),
+      band = document.querySelector('.attempt-controls').getBoundingClientRect();
+    return {
+      sentence: status.textContent,
+      clipped:
+        status.scrollWidth > status.clientWidth + 1 ||
+        status.scrollHeight > status.clientHeight + 1,
+      inside:
+        box.left >= 0 &&
+        box.top >= 0 &&
+        box.right <= window.innerWidth &&
+        box.bottom <= window.innerHeight,
+      coversBand:
+        box.left < band.right &&
+        box.right > band.left &&
+        box.top < band.bottom &&
+        box.bottom > band.top,
+      soundReached: toggle.contains(
+        document.elementFromPoint(sound.left + sound.width / 2, sound.top + sound.height / 2),
+      ),
+    };
+  });
+  equal(narrow.sentence, 'Overlaps another part. Move the preview clear.');
+  equal(
+    [narrow.clipped, narrow.inside, narrow.coversBand, narrow.soundReached],
+    [false, true, false, true],
+  );
+  equal(await page.getByRole('button', { name: 'Place part', exact: true }).isEnabled(), false);
+  await page.screenshot({ path: '/tmp/placement-strip-780-invalid.png' });
+  await page.keyboard.press('Escape');
   equal((await read()).blueprint, placed.blueprint);
   // The drawer is bounded and choosing then cancelling returns to the same browser.
   await page.setViewportSize({ width: 600, height: 800 });

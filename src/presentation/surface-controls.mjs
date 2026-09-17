@@ -499,12 +499,13 @@ export function createSurfaceControls({
     if (!state || placement.read().kind === 'committing') return;
     onInvalidate?.();
     placement.assess(null, !!state.target);
-    stateLabel.textContent = 'Preview · not attached';
+    // Every state word in this panel comes from the shared placement vocabulary, including
+    // the one that survives an assessment that throws; the panel never writes its own.
+    stateLabel.textContent = presentation().label;
     state.previewParts = [];
     clearPreview();
     apply.disabled = true;
     if (!state.target) {
-      stateLabel.textContent = 'Choose a surface';
       status.textContent =
         'Choose the top, side or underside of a part. Drag empty space to orbit.';
       return;

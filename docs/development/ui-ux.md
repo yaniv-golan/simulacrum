@@ -174,12 +174,17 @@ cursor-guarded `place` or `surface-mount` command. Invalid and stale previews ca
 commit, and pending placement disables duplicate submission and cancellation.
 Empty-space placement shows one row over the bench — the part, its state word, the
 Precise position chip and the two actions, with the confirming action carrying the
-primary weight — and it grows only when a longer state sentence needs the room; the
-coordinates open above the row rather than displacing it. Both homes of the act read
-their state word, their instruction and the name of their confirming control from
-[one placement vocabulary](../../src/presentation/placement-lifecycle.mjs#source), so
-the strip and the surface panel cannot disagree while the player crosses a mounting
-face: the strip names neither a face nor a rotation, and the surface owner keeps both.
+primary weight. The row reserves the machine control band it shares the bench's bottom
+edge with, so a longer state sentence wraps inside the free bench instead of covering
+Sound; the coordinates open above the row rather than displacing it, and they go away
+with the fields they edit once the part is placed. Both homes of the act read their
+state word and the name of their confirming control from
+[one placement vocabulary](../../src/presentation/placement-lifecycle.mjs#source) — the
+surface panel takes its instruction sentence from there too, while the strip's
+`role=status` region carries the state word alone and leaves confirming and cancelling to
+its two named controls — so the strip and the surface panel cannot disagree while the
+player crosses a mounting face: the strip names neither a face nor a rotation, and the
+surface owner keeps both.
 The two Precise position disclosures keep the same words and say in their hover help
 which numbers they hold — exact coordinates over the bench, sliding and turning on a
 face. Every control the strip relabels keeps its own accessible name, and Enter belongs
