@@ -23,6 +23,9 @@ export function surfaceRegions(partOrType) {
       typeof partOrType === 'string' ? definition.primitives : partPrimitives(partOrType)
     )[0].halfExtents,
     s = Math.SQRT1_2;
+  // The row shape is written down because a mixed literal otherwise infers one union for every
+  // column, and a checked reader then sees a face rotation as possibly a name.
+  /** @type {[string, [number, number, number], [number, number, number, number], [number, number]][]} */
   const faces = [
     ['right', [x, 0, 0], [0, 0, 0, 1], [y, z]],
     ['left', [-x, 0, 0], [0, 1, 0, 0], [y, z]],

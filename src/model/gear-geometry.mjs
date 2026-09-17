@@ -46,6 +46,7 @@ export function gearFacts(part) {
   };
 }
 
+/** @param {number[]} a @param {number[]} b */
 const dot = (a, b) => a.reduce((sum, x, i) => sum + x * b[i], 0);
 
 /** The one mount whose offset restores a mis-spaced mesh, and the offset it needs.
@@ -72,6 +73,7 @@ const dot = (a, b) => a.reduce((sum, x, i) => sum + x * b[i], 0);
 export function meshSpacingRepair(blueprint, connectionId) {
   const edge = blueprint.connections.find((c) => c.id === connectionId && c.kind === 'gear');
   if (!edge) return undefined;
+  /** @param {string} id */
   const part = (id) => blueprint.parts.find((p) => p.id === id);
   const a = part(edge.a.part),
     b = part(edge.b.part);
@@ -84,27 +86,39 @@ export function meshSpacingRepair(blueprint, connectionId) {
     distance = Math.hypot(...delta);
   if (!(distance > 1e-9) || Math.abs(distance - centreDistance) <= SPACING_TOLERANCE)
     return undefined;
+  /** @param {string[]} ids */
   const motored = (ids) => ids.some((id) => part(id)?.type === 'poweredMotor');
   const later = blueprint.parts.indexOf(a) > blueprint.parts.indexOf(b) ? a : b;
   let chosen;
   for (const mount of blueprint.connections) {
-    if (!mount.a.surface || !mount.b.surface) continue;
-    const side = mechanicalGroup(blueprint, mount.b.part, { omitConnectionIds: [mount.id] });
+    const target = mount.a,
+      mounted = mount.b;
+    if (!target.surface || !mounted.surface) continue;
+    // Bind the two authored placements once: the endpoints are read again well below, past
+    // calls after which a property narrowing on the connection no longer holds.
+    const targetSurface = target.surface,
+      mountedSurface = mounted.surface;
+    const side = mechanicalGroup(blueprint, mounted.part, { omitConnectionIds: [mount.id] });
     const holdsA = side.includes(a.id),
       holdsB = side.includes(b.id);
     // The mount must separate the two gears, and the moving side is the mounted part's side.
     if (holdsA === holdsB) continue;
     const moving = holdsA ? a : b,
       anchor = holdsA ? b : a;
-    const receiver = part(mount.a.part),
-      region = surfaceRegions(receiver).find((r) => r.id === mount.a.surface.region);
+    const receiver = part(target.part);
+    if (!receiver) continue;
+    const region = surfaceRegions(receiver).find((r) => r.id === targetSurface.region);
     if (!region) continue;
     // The offset moves the mounted side within the receiving face; a correction with any
     // component out of that plane is not something this mount can author.
-    const axes = [
+    /** @type {[number, number, number][]} */
+    const faceAxes = [
       [0, 1, 0],
       [0, 0, 1],
-    ].map((axis) => rotateVector(receiver.rotation, rotateVector(region.rotation, axis)));
+    ];
+    const axes = faceAxes.map((axis) =>
+      rotateVector(receiver.rotation, rotateVector(region.rotation, axis)),
+    );
     const towards = moving.position.map((x, i) => (x - anchor.position[i]) / distance);
     const correction = towards.map((x) => x * (centreDistance - distance));
     const [du, dv] = axes.map((axis) => dot(correction, axis));
@@ -113,13 +127,13 @@ export function meshSpacingRepair(blueprint, connectionId) {
     const candidate = {
       connection: mount.id,
       moving: moving.id,
-      part: mount.b.part,
-      sourceRegion: mount.b.surface.region,
-      targetPart: mount.a.part,
-      targetRegion: mount.a.surface.region,
-      u: mount.a.surface.u + du,
-      v: mount.a.surface.v + dv,
-      twist: mount.a.surface.twist,
+      part: mounted.part,
+      sourceRegion: mountedSurface.region,
+      targetPart: target.part,
+      targetRegion: targetSurface.region,
+      u: targetSurface.u + du,
+      v: targetSurface.v + dv,
+      twist: targetSurface.twist,
       centreDistance,
       driven: motored(side),
     };
