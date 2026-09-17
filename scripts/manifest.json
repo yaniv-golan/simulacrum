@@ -6021,6 +6021,10 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "one vocabulary names both homes of the same placement act"
+          },
+          {
+            "path": "test/parts-browser.test.mjs",
+            "anchor": "a tile star saves its own part, whatever the pointer, Rope or search touched last"
           }
         ],
         "negative": [
@@ -8565,7 +8569,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8736,7 +8740,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8975,7 +8979,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a0a2eef087b2f885c9bf30616024ee5919c6ae14ad2b5e7e1acd103867f8d8d5",
+      "consumerSourceHash": "1544084ec82704f8602b98204c389fa39440e8a22b27425e8bea916f41374e8b",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9638,7 +9642,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a34db517aca76640314587034ab7d7281bf6e0ab4ddc81847424b6815de116f7",
+      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9791,7 +9795,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "a052d0f6072b146254da41c928015199941182a1d8a62ee3da3e27b13c8b351e",
+      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10204,7 +10208,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "2e81967d81840b108c7d142e7e837a066bf2239e018a6a9961238d5e85a9e1ba",
+      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10308,7 +10312,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "2e81967d81840b108c7d142e7e837a066bf2239e018a6a9961238d5e85a9e1ba",
+      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10545,7 +10549,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "a34db517aca76640314587034ab7d7281bf6e0ab4ddc81847424b6815de116f7",
+      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
