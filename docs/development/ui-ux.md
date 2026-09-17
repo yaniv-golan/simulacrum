@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"32aaacb6850c739f1db271188a92c8f3e2f7bf15c483dff2a1c35855e0a97eb9","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8bc055709f2e9ed5567c2e65e0f1516f359398bd42aa5ef190693cd0ddcdd4bc","disposition":"updated","rationale":"Updated: this section now describes the per-tile favourite toggle — a star in the card's top-left corner, a sibling of the tile button so the tile's drag and pick target is unchanged, labelled and titled with the action its press performs (Save, then Remove once saved), carrying state in aria-pressed and showing it as a filled star rather than by colour alone, tab order tile, star, (i), focus moving to the first card still shown when un-starring empties the grid, and the star staying live outside Build. It also records the in-card exception to the 36 px icon-only target: the corner star and (i) are 28 px and 24 px so both clear the 88 px compact tile."} -->
+<!-- doc-review {"version":1,"fingerprint":"41aa64df6fcd84d7c8e43eda09672a593312f3318b6f9cfb07b6059e87465650","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"58fb7f4bbdcab2f88086241ca0d90f221f1c809f139d0b518b31c09062828544","disposition":"updated","rationale":"Updated: this section now records what a live placement shows — the ghost casting the key light's shadow, a dashed drop-line from its lowest point to the floor ending in a landing ring directly beneath it, and a transient chip at the aimed point naming the part the mounting pad will land on and the gap left, in tenths of a millimetre so a fraction of a millimetre cannot read as contact. It also states that the chip never takes the pointer and leaves with the placement, and that the drop-line is drawn whether or not the quality level allows shadows."} -->
 
 
 
@@ -185,10 +185,11 @@ cursor-guarded `place` or `surface-mount` command. Invalid and stale previews ca
 commit, and pending placement disables duplicate submission and cancellation.
 While a placement is live the ghost casts the key light's shadow and drops a dashed line from
 its lowest point to the floor, ending in a landing ring directly beneath it, and a transient
-chip at the aimed point names the part the mounting pad will land on and the gap left, in
-tenths of a millimetre so a fraction of a millimetre cannot read as contact. The chip never
-takes the pointer and leaves with the placement; the drop-line is drawn whether or not the
-quality level allows shadows, so contact stays readable without orbiting the camera.
+chip at the aimed point names the part the mounting pad will land on and the gap left, to a
+tenth of a millimetre. The cues are a transient overlay over the canvas owned by the placement
+itself, displacing no existing surface. The chip never takes the pointer and leaves with the
+placement; the drop-line is drawn whether or not the quality level allows shadows, so contact
+stays readable without orbiting the camera.
 Escape first cancels an active pickup, including when search has focus, and restores
 the originating query, category, focus and scroll even after browsing changes, without
 re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
