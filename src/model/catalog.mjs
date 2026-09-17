@@ -656,7 +656,10 @@ export const CATALOG = freeze({
  * and "default" are the same geometry. Checked at load for every dimensioned definition.
  * Length is read from the first primitive only; a multi-primitive dimensioned part needs
  * the declarative dimension map deferred by the parametric-beam plan.
- * @param {Record<string, { parameterDefinitions?: Record<string, { default?: number }>, primitives: readonly { halfExtents: readonly number[] }[] }>} catalog */
+ * A row that declares the gear capability must author both defaults, because partPrimitives
+ * resolves its collider from them; a row that declared `gear` without them would fail as a
+ * TypeError inside the compiler instead of naming itself here.
+ * @param {Record<string, { gear?: object, parameterDefinitions?: Record<string, { default?: number }>, primitives: readonly { halfExtents: readonly number[] }[] }>} catalog */
 export function assertDimensionDefaults(catalog) {
   for (const [type, definition] of Object.entries(catalog)) {
     const length = definition.parameterDefinitions?.length;
@@ -666,9 +669,11 @@ export function assertDimensionDefaults(catalog) {
     // the canonical primitive exactly. check-identity.mjs computes expected mass from that
     // primitive while the compiler uses partPrimitives; a disagreement here fails every
     // identity check for every material instead of naming the catalog row.
-    const teeth = definition.parameterDefinitions?.teeth,
-      module = definition.parameterDefinitions?.module;
-    if (typeof teeth?.default === 'number' && typeof module?.default === 'number') {
+    if (definition.gear) {
+      const teeth = definition.parameterDefinitions?.teeth,
+        module = definition.parameterDefinitions?.module;
+      if (typeof teeth?.default !== 'number' || typeof module?.default !== 'number')
+        throw Error(`${type}: a gear row must author default teeth and module`);
       // Exactly the expression gearFacts resolves, so this rule guards the number the compiler
       // actually uses rather than an algebraically equal one that rounds differently.
       const radius = (module.default * (teeth.default - 2)) / 2;

@@ -30,6 +30,7 @@ import {
 } from './workbench-content.mjs';
 import { icon } from './icons.mjs';
 import { portLabel, portPurpose, connectionSuffix } from './port-wording.mjs';
+import { parameterInputRange } from './parameter-input.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
 import { createPartHelp } from './part-help.mjs';
@@ -2652,6 +2653,10 @@ export function createWorkshopView(
       input.addEventListener('change', async () => {
         const target = tabTarget;
         tabTarget = null;
+        // An out-of-range or off-menu value never becomes a command: the field reports it and the
+        // authored value stands. Otherwise the refusal arrives from the generated schema, about a
+        // number the control itself could have refused.
+        if (!input.checkValidity()) return;
         // Send while the trusted change event is active. Only focus restoration
         // waits for the rebuilt inspector; native Tab still chooses its direction.
         await send({ type: 'parameter', id: part.id, key, value: Number(input.value) });
@@ -3500,9 +3505,10 @@ export function createWorkshopView(
       const input = element('input');
       input.type = 'number';
       input.value = part.parameters[key];
-      input.min = parameter.minimum;
-      input.max = parameter.maximum;
-      input.step = parameter.type === 'integer' ? '1' : 'any';
+      const range = parameterInputRange(parameter);
+      input.min = range.min;
+      input.max = range.max;
+      input.step = range.step === null ? 'any' : String(range.step);
       input.disabled = mode !== 'build';
       input.setAttribute('aria-label', key === 'defaultDuty' ? 'Drive setting' : key);
       bindParameterInput(input, key);

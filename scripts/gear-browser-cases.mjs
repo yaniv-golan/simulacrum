@@ -103,6 +103,15 @@ async function verifyGearConstruction({ page, evidence, out }) {
     evidence.assert('equal', [parts.length, before + 1]);
     return parts.at(-1);
   };
+  // Placing a second part of the same kind cannot go by display name: the machine picker names
+  // its rows after the part, so "Spur gear" would match the catalog tile and the placed gear.
+  const placeType = async (type) => {
+    const before = (await read()).metadata.blueprint.parts.length;
+    await placeCatalogPart(page, type);
+    const parts = (await read()).metadata.blueprint.parts;
+    evidence.assert('equal', [parts.length, before + 1]);
+    return parts.at(-1);
+  };
   const mount = async (part, source, target, face, along = 0, across = 0) => {
     await select(part);
     await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
@@ -142,13 +151,17 @@ async function verifyGearConstruction({ page, evidence, out }) {
   const output = await place('Powered Motor');
   await mount(output, 'bottom', base, 'top', 60, 90);
   // One catalog row: the pair is made by authoring the tooth count, not by picking a part.
-  const small = await place('Spur gear');
-  const large = await place('Spur gear');
-  await select(large);
-  if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
-    await page.locator('.part-settings > summary').click();
-  await page.getByLabel('teeth', { exact: true }).fill('24');
-  await page.getByLabel('teeth', { exact: true }).press('Tab');
+  const small = await placeType('spurGear');
+  const large = await placeType('spurGear');
+  const setting = async (part, key, value) => {
+    await select(part);
+    if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
+      await page.locator('.part-settings > summary').click();
+    const input = page.getByLabel(key, { exact: true });
+    await input.fill(value);
+    await input.press('Tab');
+  };
+  await setting(large, 'teeth', '24');
   evidence.assert('equal', [
     (await read()).metadata.blueprint.parts.at(-1).parameters.teeth,
     24,
@@ -229,6 +242,43 @@ async function verifyGearConstruction({ page, evidence, out }) {
   evidence.assert('equal', [(await read()).tick, 0]);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, completed]);
+  // A tooth size the other gear cannot mesh with is reported on the mesh row itself, in words
+  // about tooth size, and the setting is accepted rather than refused. Repairing it clears the
+  // row: the diagnosis is reachable and escapable from the same control that caused it.
+  const meshId = completed.connections.find((c) => c.kind === 'gear').id;
+  const meshRow = async (part) => {
+    await select(part);
+    const port = page.locator('[data-port-id=mesh]');
+    if ((await port.getAttribute('aria-expanded')) !== 'true') await port.click();
+    return port.locator('.port-peer').first().innerText();
+  };
+  // An off-menu tooth size never becomes a command: the field reports it and the authored value
+  // stands, so the player is not told about a refusal the control could have shown.
+  await setting(large, 'module', '0.007');
+  evidence.assert('deepEqual', [
+    (await read()).metadata.blueprint,
+    completed,
+    'an off-menu tooth size is reported by the field and never authored',
+  ]);
+  await setting(large, 'module', '0.005');
+  const mismatched = await read();
+  evidence.assert('equal', [
+    mismatched.metadata.blueprint.parts.find((p) => p.id === large.id).parameters.module,
+    0.005,
+    'an unmeshable tooth size is still accepted as an authored setting',
+  ]);
+  evidence.assert('equal', [
+    mismatched.metadata.connections.find((c) => c.id === meshId).reasonCode,
+    'GEAR_TOOTH_SIZE_MISMATCH',
+  ]);
+  evidence.assert('match', [await meshRow(small), /different tooth sizes/]);
+  await page.screenshot({ path: `${out}/tooth-size-mismatch.png` });
+  await setting(large, 'module', '0.01');
+  evidence.assert('equal', [
+    (await read()).metadata.connections.find((c) => c.id === meshId).reasonCode,
+    'OK',
+  ]);
+  evidence.assert('doesNotMatch', [await meshRow(small), /different tooth sizes|check/]);
   writeFileSync(
     `${out}/construction-result.json`,
     JSON.stringify(

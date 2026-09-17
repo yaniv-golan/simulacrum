@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:simulacrum:blueprint:3",
+  "$id": "urn:simulacrum:blueprint:4",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "id", "name", "parts", "connections"],

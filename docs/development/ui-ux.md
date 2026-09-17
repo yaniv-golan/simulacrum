@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"943139e5addeddf4436405f05f35b0671ff3c8d46c506749d61ad875e7fe7d7e","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1fcd91a9c07a8633c072ac44082f31cd5eb3353cb3372c1db5458221cc5510f5","disposition":"still accurate","rationale":"No learning entry was added, extended or replaced: the gear-lift experiment and its copy are untouched, and the tooth-size mismatch is an error message rather than teaching, exactly as this policy requires."} -->
+<!-- doc-review {"version":1,"fingerprint":"66b4835db59d460c460db25598e17da112b4ac52cf3de385c818638fa7438393","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"91a413c1563a4ae7b020c2e21a3f044c7457101955f32a8d09e6941c778692e0","disposition":"still accurate","rationale":"No learning entry was added, extended or replaced; the gear-lift experiment and its copy are untouched, and the tooth-size mismatch remains an error message rather than teaching."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"13e7bc0b3c261c43095c51a99548b202f8801b9979b7a2cb5d32e6514a63fc1a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1a7b70aefd1ac45c2b5bd3ec8e06c80aafa2c4086fb92eb4eeb44f24a4312366","disposition":"still accurate","rationale":"The spur-gear surfaces paragraph already records one card, the two authored settings and the mesh-row diagnostic; no surface, region or lifecycle changed. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"74d93c52ea0b26223633be0066df4287ecb8f6c6b852234aa7fba9f81c636dc4","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b8c4a05d094498331564433c54afcf3729f31523fa64cd57bc3ea6952407aabc","disposition":"updated","rationale":"Updated: the spur-gear surfaces paragraph now records that tooth size is a two-value menu, that a parameter declaring a menu gives its control that menu's bounds and spacing, and that an off-menu number is reported by the field and never sent as an edit."} -->
 
 
 
@@ -384,7 +384,9 @@ or qualification outside their tested finite operating envelopes.
 
 Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
 One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
-gear, so no numeric query names a part type. Gear mesh explicitly leaves parts in place and
+gear, so no numeric query names a part type. Tooth size is a two-value menu, and a parameter that
+declares a menu gives its control that menu's bounds and spacing, so an off-menu number is
+reported by the field and never sent as an edit. Gear mesh explicitly leaves parts in place and
 requires independently supported aligned shafts. Mismatched tooth sizes and a centre distance more
 than a millimetre from the two pitch radii added are reported on that mesh row, in its own words,
 and drive nothing; they never refuse the setting that caused them. The requested Learn & examples browser adds one editable gear-lift

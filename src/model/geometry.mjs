@@ -24,10 +24,10 @@ export function partPrimitives(part) {
     );
   }
   // A gear's collider is the root cylinder of its authored teeth and module. gearFacts resolves
-  // exactly when the catalog declares the gear capability, so this is the same capability
-  // dispatch as length and diameter above -- never a part type or name -- and it is what makes
-  // mass, inertia and picking follow the teeth. The axial half-extent is the face width and is
-  // not authored.
+  // exactly when the catalog declares the gear capability, so this is the same kind of dispatch
+  // as the length branch above and the diameter branch below -- a component capability, never a
+  // part type or name -- and it is what makes mass, inertia and picking follow the teeth. The
+  // axial half-extent is the face width and is not authored.
   const gear = gearFacts(part);
   if (gear) {
     const radius = gear.colliderRadius;

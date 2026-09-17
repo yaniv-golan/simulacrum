@@ -16,7 +16,9 @@ import {
 
 // The drawing takes resolved gear facts, never the catalog, so it is exercised across the
 // authored range: both ends, and counts that do not divide by 4, which is what decides whether a
-// tip lands on every axis.
+// tip lands on every axis. 13T and 35T therefore carry only the upper bound -- their bounding box
+// is asserted to stay inside the canonical solid, never to fill it -- while the exact-fill
+// assertion is made separately for the counts that do divide by 4.
 const TOOTH_COUNTS = [12, 13, 24, 35, 36];
 // Counts drawn through createPartMesh, so the drawn body is proved to follow the parameters and
 // not a catalog constant. Each divides by 4, so its bounding box fills the canonical solid.

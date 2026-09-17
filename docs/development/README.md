@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"2219cacffe14ae3bfefcfbf2845b39b51e61db11df769dd0afe58835d98b67e8","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"b92825426afb4e9d7e0820fe7503f0ac5d452b712c8a837f14f27801eaa8587a","disposition":"still accurate","rationale":"The remaining manifest change is the refreshed browser scope consumer hashes written by browser:scopes apply, on top of the supported-spur-transmission guarantee wording and its control anchors; no milestone allocation, bar, gate row or check ownership moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"83c229ddd86d7b3d6dfe5ca8c130dbeb45c64bc8d27638d626ad510aeeba8e49","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"74bd20e1f14675cbd14ac8f37bf56a039bb9c81c8aa15512b3ea3c7613f5f435","disposition":"still accurate","rationale":"No milestone allocation, bar, gate row or check ownership moved. The manifest change is the refreshed browser scope consumer hashes on top of the gear invariant's guarantee and controls."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"ebf3397db3e4e71622c9911785b51f539ae8823940b747c8aff151fde4f29235","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ad13a515a97625b6f27f6e557e534de8239f9c694914bde1d8b89e61350fdc4f","disposition":"still accurate","rationale":"The manifest change is exactly what this section prescribes: sixteen metadata scope rows carry refreshed consumerSourceHash values and one refreshed sourceSha256, each accepted with its own technical rationale and witnessed by invariant-controls. No browser check, host profile, scheduling phase, registered platform or scope rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed98de819e19f19f55210f6e6b1dde2089b659e19c80fe45edb1e94689a93bb6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1f204a7d226ccdc344fdfd5092e118621ee360ecca86f7012d047e229090c6d6","disposition":"still accurate","rationale":"No browser check, host profile, scheduling phase, registered platform or scope rule changed; sixteen metadata scope rows carry refreshed consumerSourceHash values accepted with a technical rationale, which is what this section prescribes. The other changed dependencies are the schema's $id moving to urn:simulacrum:blueprint:4 with the save version, the catalog's gear-row admission rule and the partPrimitives gear branch."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"592ec9f9e4f25d129ccb326818bab260cb57e9eb8a3802ca62b60708e85bd65d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"484ae4b2fb7e4a0137679829ca90b85be7f709fd91bb09738fad554fa8c8e446","disposition":"still accurate","rationale":"No tier, candidate key, stacking, landing or receipt rule changed; the manifest edits are the gear invariant's guarantee and controls plus the scope registry's refreshed consumer hashes, which this workflow expects a candidate to record before capture."} -->
+<!-- doc-review {"version":1,"fingerprint":"5e08cad7482ff6d8a66ca38db0101c135a996a4322e7243958e91e1a5f77a26b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e90ae4b2947a399aa12e81d56398e230f6a4c8c6c76393a3aab3b1e2e5ae5f41","disposition":"still accurate","rationale":"No tier, candidate key, stacking, landing or receipt rule changed; the changed dependencies are the catalog gear-row rule, the regenerated validator and the partPrimitives gear branch, plus the manifest's refreshed scope hashes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

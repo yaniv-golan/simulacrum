@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
-import { CATALOG } from '../src/model/catalog.mjs';
+import { CATALOG, assertDimensionDefaults } from '../src/model/catalog.mjs';
 import { gearFacts } from '../src/model/gear-geometry.mjs';
 import { partPrimitives } from '../src/model/geometry.mjs';
 import {
@@ -49,6 +49,36 @@ test('a spur gear resolves its radii from the authored teeth and module, and not
   assert.deepEqual(partPrimitives(bare)[0].halfExtents, CATALOG.spurGear.primitives[0].halfExtents);
   // A part with no gear fact has no gear facts: the helper never invents them from a name.
   assert.equal(gearFacts(createPart('steelAxle', 'axle', [0, 0, 0])), undefined);
+});
+
+test('a catalog row that declares the gear capability must author both defaults, agreeing with its primitive', () => {
+  // The shipped catalog is the positive control; it is asserted at import time too.
+  assertDimensionDefaults(CATALOG);
+  const row = (parameterDefinitions, radius = 0.05) => ({
+    rigged: {
+      gear: { stiffness: 20000, damping: 20 },
+      parameterDefinitions,
+      primitives: [{ halfExtents: [0.01, radius, radius] }],
+    },
+  });
+  const teeth = { type: 'integer', default: 12, minimum: 12, maximum: 36 },
+    module = { type: 'number', default: 0.01, minimum: 0.005, maximum: 0.01 };
+  // A gear row with no authored dimensions resolves nothing, so partPrimitives would throw a
+  // TypeError inside the compiler; the catalog must refuse it by name instead.
+  for (const parameterDefinitions of [{}, { teeth }, { module }, { teeth: {}, module }])
+    assert.throws(
+      () => assertDimensionDefaults(row(parameterDefinitions)),
+      /rigged: a gear row must author default teeth and module/,
+      JSON.stringify(Object.keys(parameterDefinitions)),
+    );
+  // And defaults that do not reproduce the canonical primitive are refused by name.
+  assert.throws(
+    () => assertDimensionDefaults(row({ teeth, module }, 0.06)),
+    /rigged: default teeth and module disagree with its canonical primitive/,
+  );
+  // The plausible wrong trace: the agreeing row is admitted, so the two refusals above are the
+  // missing defaults and the disagreement, not a rule that rejects every gear row.
+  assertDimensionDefaults(row({ teeth, module }));
 });
 
 test('spur gear parameters are strict: unknown keys, out-of-range teeth and off-menu modules fail', () => {

@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"58f11636b1a9a45deddf9c9df09587677431aae8c8a8ea26aff2af0a2379b6b4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"eca12eca6fe8060d718934d9c3970d121c640a9f3bcd78ef1e32db038196683f","disposition":"updated","rationale":"Updated: the spur-gear paragraph now says the partPrimitives gear branch dispatches on whether gearFacts resolves, which is exactly when the catalog declares the gear capability, rather than reading the catalog fact directly; that is the form the boundary typecheck accepts and it keeps the same authority rule."} -->
+<!-- doc-review {"version":1,"fingerprint":"3acb34f11565a25393181b40b1cca110e78b3eb061770857cd370bdfb4b26406","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"7ae89b9f206d8853910e1804852c17534d456733a7d6811e250b23ae9f1161e6","disposition":"updated","rationale":"Updated: the spur-gear paragraph now records that a row declaring the gear capability must author both defaults and that they must reproduce its canonical primitive exactly, with assertDimensionDefaults refusing the row by name at load instead of letting partPrimitives fail on it. test/gear-authoring.test.mjs, the authoring control this section names, gains that rule's rigged-row counterexamples."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -62,7 +62,10 @@ they become a pitch radius or a collider radius. The gear branch in
 [partPrimitives](../../src/model/geometry.mjs#source) dispatches on whether that helper resolves,
 which is exactly when the catalog declares the `gear` capability and exactly as the `length` and
 `diameter` branches dispatch on a parameter name, so collider, mass and inertia follow the
-authored teeth through the compiler and the physics door unchanged. Gears use solid root
+authored teeth through the compiler and the physics door unchanged. A row that declares the
+`gear` capability must author both defaults and they must reproduce its canonical primitive
+exactly; [assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)
+refuses the row by name at load rather than letting the compiler fail on it. Gears use solid root
 cylinders for collision, inertia and material selection. The disc is drawn
 with cosmetic involute teeth cut inward from that collider radius, so it reads as a gear without
 pretending to collide as teeth; two meshed gears therefore show a small visible gap. Its hub,
@@ -110,7 +113,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"4b0d2e6d6fb869f4f05ae2d58fef24065b5a8f269b7d6557eccb24f91a2b9378","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"401a27919e59d9b9d16df83c67ca64eabddf3c7bdab4056f5242e15137870dff","disposition":"still accurate","rationale":"No command was added or changed: teeth and module are edited by the existing parameter command. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"51b8d0a07f7baa63ffba908acdcca6ccd856c81b838b976ba97b9e2945ee7e93","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c6a546264acbb8869fb50ccec2d270b17343755d9cf128de53dccde5cdd7fdcd","disposition":"still accurate","rationale":"No command was added or changed: teeth and tooth size are edited by the existing parameter command, and the new field-level validity guard only stops a value the generated schema would have refused from being sent at all."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -139,7 +142,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2e389349093c13f31f0562ea4d5bc7fdedc48c87dcf8b0d35912163d9449e785","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9d818f6cf2af57c4884f8186406808a979b5e786e1e7e7d65d57b0950e6f00ae","disposition":"still accurate","rationale":"The interaction rules are unchanged: connect and parameter remain the owning commands and nothing snaps. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"9bd910211bd9dd7102a151076ba5d5bf0e3ef0dde05a194be28666faf20ff282","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"4568b8b3877c60ef6105d2dec1eb6ebd54eba78ff5ef93dc9a2365a1b929af63","disposition":"still accurate","rationale":"The interaction rules are unchanged: connect and parameter remain the owning commands, nothing snaps, and the model still owns every reason code while presentation owns its wording."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -188,7 +191,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"7c9f56b5c510ced34a8bc1e01937147fe8f1bb8e0bc2433d5e07a27c0e42f7b9","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"d766c5aee8479595d8834a2a099ca778ad230362082f8967822adc7e38d95067","disposition":"still accurate","rationale":"Unchanged prose and unchanged mechanism: GEAR_TOOTH_SIZE_MISMATCH is an assembly reason code with a player message, not a motion-diagnostics class. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"98f001a1ffd38498e04d461fa3d18fedb8b78b7d8b5dfeb1081d43373d19a5ba","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"dca2fe361e233328a4f323b057f94eaa3736b1bdea7bea1e0f09d133a13999ce","disposition":"still accurate","rationale":"Unchanged prose and unchanged mechanism: GEAR_TOOTH_SIZE_MISMATCH is an assembly reason code with a player message, not a motion-diagnostics class, so no readiness line, footer next step or issue class moved."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -227,7 +230,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8109b12f4afdb435c7128fb99648e9f7102868ec3c75aa2ed77494f511720551","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"a6a653a2a8a2062e4ec30c6360707207ec524ed5209e1fc74603eb4ca531d544","disposition":"still accurate","rationale":"No law, tick order, integration or physics-door shape changed: a gear still crosses as a cylinder with half extents and a mass, the compiled mesh joint keeps its exact eleven keys, and teeth and module are unreachable from src/simulation. The manifest dependency moved only for the gear invariant's guarantee text, its control anchors and the refreshed scope consumer hashes."} -->
+<!-- doc-review {"version":1,"fingerprint":"3025617064853be7434b90ffffd36739fb0423bda1d60794ea8c9781275f9e8f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"fce4cce6c41cfdc753de0dbdd385e22b60f8f86c99e2b1ae9585e0084a3dbdef","disposition":"still accurate","rationale":"No law, tick order, integration or physics-door shape changed: a gear still crosses as a cylinder with half extents and a mass, the compiled mesh joint keeps its exact eleven keys, and teeth and module are unreachable from src/simulation. The remaining changed dependencies are the schema $id, the catalog gear-row rule, the partPrimitives branch, the new presentation range helper and the gear tests and browser journey."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -534,7 +537,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"f1cc90a59616c3bebb87c671262aa90014a35919e549dd389afeb8533edb50fe","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"3e45ca4819c1564bf326641ae838b5149963e5abd4f03dcb6610fceb0b9e2d8a","disposition":"still accurate","rationale":"Mirror, duplication and reusable assemblies still copy parameters by structuredClone, so authored teeth and module travel with the part. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"f2d01eea20a66dadbca7f65aff217addac843dba025f2537b998e485a32ad67d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"527a9831abb16e405dd368b1a277db401ebd2e89e5e57a4f9844d4070a6346ee","disposition":"still accurate","rationale":"Mirror, duplication and reusable assemblies still copy parameters by structuredClone, so authored teeth and tooth size travel with the part and are never re-derived; no multi-part authoring path changed."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -631,7 +634,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"95e27f714da06edc4c8561fa751de19be9e15f473e41ad91d9c3d86b14e6f04a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0995f92f1aadaa6752a629c7d6ce4fbf4b7b60bef94e28d6fc35f413b43d6efa","disposition":"still accurate","rationale":"The overlay and part-builder rules are unchanged: the gear body is still drawn inward of its canonical solid from one resolved facts site. The changed dependencies are the two type-soundness fixes the boundary typecheck required: assertDimensionDefaults now guards that a gear row's teeth and module defaults are numbers, and the partPrimitives gear branch dispatches on the resolved facts (which exist exactly when the catalog declares the gear capability) instead of asserting non-null."} -->
+<!-- doc-review {"version":1,"fingerprint":"87047939479efe6f4e5a7b791e83b0ce480b9ba1b7713abfa5c61bc00366cec1","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"60973678476c5c6d2ba1eaf893541f3e67c606e21f54e827bfb41fc2dd69bfb8","disposition":"updated","rationale":"Updated: the part-builder paragraph now records that a generic numeric setting takes its bounds and step from parameterInputRange, which narrows both to a parameter's enum when it declares one, and that no parameter edit is sent while the field reports the value invalid."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -650,6 +653,10 @@ help images, editing/placement and assembly previews. A body drawn inward of tha
 is, is declared by its builder and may fall short of the solid's bounding box but never exceed it;
 a builder may also supply a simpler selection silhouette, which must match the drawn body. Family builders receive authored
 dimensions and relevant parameters or ports; they never receive a controller or session.
+A generic numeric setting takes its bounds and step from
+[parameterInputRange](../../src/presentation/parameter-input.mjs#source), which narrows both to a
+parameter's `enum` when it declares one, and no parameter edit is sent while the field reports the
+value invalid.
 [Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
 distinguish measurement identities with static graphics and large top identification
 emblems around the real power socket; contact pad ink occurs only on +Z. [Electronics coatings](../../src/presentation/part-visuals/electronics.mjs#symbol=createElectronicsDetails)
