@@ -8569,7 +8569,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
+      "consumerSourceHash": "f814b8d21c9962f3f4a3910d07c6b12af2ca6a96ee6541641064cdc7ad6b12ca",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8740,7 +8740,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
+      "consumerSourceHash": "f814b8d21c9962f3f4a3910d07c6b12af2ca6a96ee6541641064cdc7ad6b12ca",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8979,7 +8979,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "c4bac53eb73b1181b48f1bfd611bc46f48584181bbb152d92d02a2d0d2b7e991",
+      "consumerSourceHash": "cac526350946b76eade6bdc609c2da574193d90eec4e03509f0181f3680fdd47",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9642,7 +9642,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "619c5fc25120b7aaa001b62abfdd9f25b953b3aa602ef26c1bf8b1a712634691",
+      "consumerSourceHash": "09578d60bf87858b8915c0aadbd55fa71aec6681ac900b0fc7c9403aa84c9ed7",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9795,7 +9795,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "467bb4c2f78c839aee825fb4c9f7fb0df9a45574aa4712a7e66b10847b3345a7",
+      "consumerSourceHash": "f814b8d21c9962f3f4a3910d07c6b12af2ca6a96ee6541641064cdc7ad6b12ca",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10208,7 +10208,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "d44ed9c07462b76c4909fa7fac16eb0e84b16543d1529a1f69fca5cc01ba3ddb",
+      "consumerSourceHash": "0bfa4e8a9e178ac4f0b398c9c93ef69e720677dcf8880c93b62c223feafb0b32",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10312,7 +10312,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "d44ed9c07462b76c4909fa7fac16eb0e84b16543d1529a1f69fca5cc01ba3ddb",
+      "consumerSourceHash": "0bfa4e8a9e178ac4f0b398c9c93ef69e720677dcf8880c93b62c223feafb0b32",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10383,7 +10383,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "2260515eb4ee8f7faa82b7caebae76ea2c040e11bbad1adf83dc9ad3e02c594a",
+      "sourceSha256": "46655dcb52c3a785dca4c19ab607215883d0a7f3b6fcc6073df82661032b1269",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -10549,7 +10549,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "619c5fc25120b7aaa001b62abfdd9f25b953b3aa602ef26c1bf8b1a712634691",
+      "consumerSourceHash": "09578d60bf87858b8915c0aadbd55fa71aec6681ac900b0fc7c9403aa84c9ed7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",

@@ -127,7 +127,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"215542870314e13773d10aadfd78e57028ef5f416210c5af35d75d5e7d3cf6fc","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d68c6942ecc6402acba897f88aebad7f7b3ffb7834b9b2affc5962da3826c3a3","disposition":"still accurate","rationale":"Only gear help copy changed. No interaction, control, command, admission path or history behaviour described in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"86af609c6ea2a77d7fa9b580d89498faf9a9128a6a9c0673e03260cac53cd88f","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"696041dc6c34a876eaaabb12f0c54bac818439811f41aaa8ee575356d5f27117","disposition":"still accurate","rationale":"The only changed dependency is scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row. The recipe's owners, invariants and verification order for an interaction change are unchanged; the helper is a journey convenience, not an owner."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -215,7 +215,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"adb7c7f21bb0c5e9b9016cc914ff5e454d7a4d4446ac28395afab6f02d0b30c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"58caa06b6a220e9d03d397347a9f2b7ae4222b885b915990c1f758202187c1fc","disposition":"still accurate","rationale":"Unchanged prose within this section (the changed lines in recipes.md fall in add-or-extend-a-part and change-a-presentation-overlay). No law, simulation module or the physics door changed in either merged branch: the gear teeth are cosmetic geometry inside the existing collider and the favourite toggle is presentation state, so this recipe's owners, its narrow-door rule and its required checks all hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"be7045adedf32eec847495bae9edd463c72e1ef9762b798bc54c1dc21eafe77c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"699033aca437d94908200ccc5fd16b0f74be0aa11b621615025f07a155f693b2","disposition":"still accurate","rationale":"Every changed dependency belongs to the Learn & examples picker and project-status work: workshop-view.mjs, workbench-content.mjs, workshop.css, remote-playtest.mjs, release-notes.mjs, verify-workbench-content.mjs, verify-spring-browser.mjs, catalog-browser-actions.mjs, their two unit tests, ui-ux.md, playtesting.md and scripts/manifest.json. No law, door, tick order or physics owner changed, so this recipe's sequence still holds."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -522,7 +522,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"1c77b7b5409b3b6a1392de6b32542486d914e544ca2f41ac9baaad4e3ebe8d89","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d4b53f027c94fbdcd0ee9ecdec73d45a47169665f8977d20729769819798f03f","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"fd0e5dbd1f30d83dc9686f870b4a67354b8c0194805f19195f9fcc79f3b4b670","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"9d06df0f8a9d2caa774150ac2e17940a0b5f5a0978b46304b888d936d0b9ff99","disposition":"still accurate","rationale":"The only changed dependency is scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row. Subassembly authoring, its owners and its invariants are untouched."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -619,7 +619,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"03d11cc4261888e4a3471b75348035addb31a86dc2865a0c7aeced805d162399","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"18a510a66eacb0908c91180ac05ba7f770439d294ba3f35c0ca1e9c66d80cd5b","disposition":"updated","rationale":"Updated by the merged gear-appearance work: the section now states that gear meshes' cosmetic teeth are part of the body geometry and follow completed body transforms, replacing the earlier root-cylinder marks, and that the shared part builder creates each part's canonical solid envelope. The overlay's owner, visibility lifecycle and the preserved gear rendering controls are otherwise unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4576532768174b9dbe4d7e4543974c54c0fee73558b8dc18e3e561d3ac679cb","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9a297e5546bdd4bfcfcc0a23d2d23490ccb68c0e8aa261ae21a6c28d2ed2f17d","disposition":"still accurate","rationale":"Changed dependencies are scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row and scripts/verify-spring-browser.mjs, which now opens one Learn row through that helper. The overlay recipe's owning region, telemetry-only reads and verification order are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -770,7 +770,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"bdfff47728b51868b8381fec3fbcad56f9575e9e9241035042d7876eb850c539","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"07dabbee06a8c59af9db207125992a977652e450a16121f9c0486eac6367a260","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-spring-browser.mjs changed only in the steps that drive the reworked header controls; the adaptive graphics tiers, their quality transitions and the registered check that measures them are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"11ba32b6735cae361db96b20f5924a1116e393b0a42a9dce7893eba62899fa55","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"5f8cd7a8beb3eecccf4f1c59922b27caf8930f0290adcbb4941c57f6c582d338","disposition":"still accurate","rationale":"The only changed dependency is scripts/verify-spring-browser.mjs, which opens one Learn row through the shared helper instead of reading a long example screen. Its adaptive-graphics measurements, budgets and owners are unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

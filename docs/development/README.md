@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"66c58165136ad4d63f9d86ccb6492a2438aa532c523390840974abd0d2144ef3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"71799964aedfc652756e512ffd73f8801d666ee657c436feab0dff8af250074d","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by reviewed scope digests, the controls.positive anchor registering this candidate's anti-retarget unit test under the existing parts-catalog-discovery invariant, and the merged gear-appearance registrations that arrived reviewed on c44f92de. No milestone, bar or rule allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a11f64d54326cf06bcda66806eefc4e379c449b9df2cdec28419b402a044467","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"6fcae9471f89f2052b81f144d8af9d4decd6fb55cddc7541ba53b23dbad38720","disposition":"still accurate","rationale":"The only changed dependency is scripts/manifest.json: the workbench-content-lifecycle guarantee gaining the Learn picker sentences, three control rows (two positive, one negative) and regenerated scope metadata (16 consumerSourceHash rows plus verify-workbench-content's sourceSha256). No milestone allocation, bar, gate or rule ownership moved, which is what this section reports."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"11f9457f088e086e5ae773cac96678f3e5851ad69602ce1a182620c944537900","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"deb9e1cf2d3d8f284c2cc46c40008eee7749040eb49d5e54add3d10f4fbe3f69","disposition":"still accurate","rationale":"Unchanged prose. package.json moved only in its version field, 0.3.0 to 0.4.0 for the R4 release. The tiers, scope arguments and candidate commands this section describes (local, merge and final; --base, --incoming, --destination and --stack) are untouched by a version bump."} -->
+<!-- doc-review {"version":1,"fingerprint":"93d29f09d549b13bf9199b5a709ab76508b172b5fe88729842bf34fbbb3ae2d9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"f5b3bd6c34b8634e93364db93fe783cbae2b8f55b64033564c34390d7bda236a","disposition":"still accurate","rationale":"The only changed dependency is docs/development/playtesting.md#remote-setup, whose prose now says project information states what works today and keeps the maintainer plan in recording setup's consent text. The tiers, commands and probe-versus-completion rules this section names are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"08580f0267feeb3bb77bb1a7bfee2f2bf718b1931bb5a71bd57668be0f64f943","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"21cc489db285be409c367994284a9c99397d7e192588f080a0f40869e77fd00b","disposition":"still accurate","rationale":"Unchanged prose. This candidate registers, removes and re-scopes no browser check of its own; it edits two existing check scripts and adds one positive control anchor, and the gear registrations it merges were reviewed on their own tip. Selection, phase scheduling and platform rules are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"ca0dafba2e6697ebf5f8d630e89eaccb0581e5799fcab8cbebe6caf8987672f4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"63be1335efa5efba8079dc16b527782cd0d9049720027497ff86905f42922a0a","disposition":"still accurate","rationale":"The only changed dependency is scripts/manifest.json: the workbench-content-lifecycle guarantee gaining the Learn picker sentences, three control rows (two positive, one negative) and regenerated scope metadata (16 consumerSourceHash rows plus verify-workbench-content's sourceSha256). No browser check was registered, retired or re-witnessed and no scope declaration or read changed, so selection, execution and scope review work exactly as described."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"28fc0e28ad4598e451fe31aa1d142417bd82f864c8a3ba2bcdbd6914163bac91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d7d0da73ef6b71208305390b73747c34eca3bdab4e4455503b089f29ab572d30","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged. The manifest moved only by reviewed scope digests, a control anchor and the merged gear rows; none of those is completion evidence or a rule about how it is captured."} -->
+<!-- doc-review {"version":1,"fingerprint":"702ad949b11aeeef8fdea9614aca2521bd921ab6c440843ca2c5cbfbe4c6a81c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"191ff1acf96c06a953b2d868e00a87dc93f9a5ca3dd015ac9b3e0ff17e0cf8ec","disposition":"still accurate","rationale":"Changed dependencies are scripts/manifest.json (the workbench-content-lifecycle guarantee gaining the Learn picker sentences, three control rows (two positive, one negative) and regenerated scope metadata (16 consumerSourceHash rows plus verify-workbench-content's sourceSha256)) and scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row. Neither touches the candidate, stacking or landing steps this section prescribes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

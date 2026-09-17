@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"da0e28c77369654614556f6db34322862538af69fdd133803dea2aaa3c9c8aa5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f2f68ba906b223d0dc08cccdb2ec1529b7c7e84990c4444aa8c8e07383260c2d","disposition":"still accurate","rationale":"Unchanged prose. workshop-view.mjs changed for the header rework; this candidate adds, extends and replaces no teaching, example, experiment or challenge entry, so the admission rules and the no entry / extend / replace / add record they require are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"f48f4d9f05d7a701657974b652d54065f00da1cc0143d468aa9d549c43e56b8d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"65b485629ffcb53d5f375dc579a2d2474b47ac611a60cc0fab8048c47b298a24","disposition":"still accurate","rationale":"The only changed dependency is src/presentation/workshop-view.mjs, which renders the existing Learn entries as rows and collapses them on close. No teaching, example, experiment or challenge entry was added, extended or replaced, so the admission rules and the record they require are unaffected."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"32aaacb6850c739f1db271188a92c8f3e2f7bf15c483dff2a1c35855e0a97eb9","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8bc055709f2e9ed5567c2e65e0f1516f359398bd42aa5ef190693cd0ddcdd4bc","disposition":"updated","rationale":"Updated: this section now describes the per-tile favourite toggle — a star in the card's top-left corner, a sibling of the tile button so the tile's drag and pick target is unchanged, labelled and titled with the action its press performs (Save, then Remove once saved), carrying state in aria-pressed and showing it as a filled star rather than by colour alone, tab order tile, star, (i), focus moving to the first card still shown when un-starring empties the grid, and the star staying live outside Build. It also records the in-card exception to the 36 px icon-only target: the corner star and (i) are 28 px and 24 px so both clear the 88 px compact tile."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d7fafbd2a252f3f0b9c8096bc2870f4e5c1b7190dacd46859d0c17ff0968c14","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"675986d18abfad3b93f967c51ce773d5c121f05a6e453ec08c42ed531eae4101","disposition":"updated","rationale":"Updated: alongside the per-tile favourite star recorded on main, this section now describes Learn & examples as a bounded picker whose row list scrolls beneath the fixed header — one row per entry grouped by readiness, the collapsed row keeping its name, launcher and readiness summary, the format line, instruction and extra actions opening inside the row, nothing expanded on arrival, at most one row open, a closed row keeping its actions in the page, and a pending replacement keeping the row holding its trigger open. Its dependencies workshop-view.mjs, workshop.css, workbench-content.mjs and catalog-browser-actions.mjs implement and exercise exactly that, including the close listener that makes 'nothing expanded on arrival' true on a second visit."} -->
 
 
 
@@ -603,7 +603,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"475a40b192c3176724e08afe95c558ef7150dfc289862c7935bdd8e426994562","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3cc8cea836b8a687014281e65f7e66c2b4ee01aff3e2d93314b849c61d335a9f","disposition":"still accurate","rationale":"Unchanged prose. Its dependencies moved because verify-workbench-content.mjs and its unit test gained coverage of the reworked header and verify-authorable-scenes.mjs follows Choose scene into Tools; what this section requires a player-facing change to verify and record is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e225d838df4e5b1f3b1bd571bfa28bd0493017cff7bec4f95c9f478b6c8efd1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a90990019948858e9f47c3b14bde3fae285cc9e93c4c41d48112817eb72b04e7","disposition":"updated","rationale":"Updated: this section now records that the workbench-content browser journey checks the collapsed example rows with their launchers and instructions and the header x staying inside the dialog while its rows scroll in a short viewport. Its dependencies scripts/verify-workbench-content.mjs (the picker journey, the reopen-arrives-collapsed assertion and the dialog.scrollTop write), test/workbench-content.test.mjs, src/presentation/workbench-content.mjs and playtesting.md#remote-setup moved with that work."} -->
 
 
 

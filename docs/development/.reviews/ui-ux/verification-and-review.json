@@ -2,13 +2,13 @@
   "version": 1,
   "dependencies": {
     "scripts/manifest.json#check=verify-workbench-content": "f63985647ed87015f112c48b300f856a2d1738702e9bb91702ef4be8909ea46c",
-    "src/presentation/workbench-content.mjs": "a3f657cc141deb80f7095ebc4e91a54f97dcfe277a82d9f5b71d9da5c9d98e30",
-    "test/workbench-content.test.mjs": "d70679e49dfb7a600ba7dbbdb5a8bc4b43a0dceb6a0b58d6c49d3929763a5765",
-    "scripts/verify-workbench-content.mjs": "bb1d18b70c216b45634ebdf1a972d363bec57a97c944ac5767a19090cebdd599",
+    "src/presentation/workbench-content.mjs": "5dc4140e8a1284cb039b819483621fab2f491079caac5e23e9a2fc730244320b",
+    "test/workbench-content.test.mjs": "7b4b9a221e0a1f925c9ae9d247f6ec4d8b35f68a01104371f77a890e21002f72",
+    "scripts/verify-workbench-content.mjs": "b66d6c7049f26c363a1ae1455e8d932161bba436acace74e70a7b79ca04f23ee",
     "scripts/verify-learning-examples.mjs": "b084518b55637c893915cc326ee7468b9156a44afdfe6c7b06d7329f660d4a3c",
     "scripts/verify-authorable-scenes.mjs": "3ffbee3e4546ebbd64f0288b0f3cac2af5965fc049c62d21851f0d57825dc3e3",
     "test/scene-editor.test.mjs": "7d90d18178f2f36b83e0e1134af6a98b22af37be21a5d760e7b9da20f8d8f5be",
-    "docs/development/playtesting.md#remote-setup": "4c280542cd39f51fbe46fea6e867a875492c0bbe9a3819996511ca324d0fb3da",
+    "docs/development/playtesting.md#remote-setup": "f270196cb1baee785e0673ab24b8610fc094b2960a922915183cfdd34ed4def2",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
