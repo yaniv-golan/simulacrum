@@ -499,7 +499,9 @@ instead of continuing. Cords use the distributed elastic ledger the law produces
 `ropeNumericalLossJ` and `ropeSplitWorkJ` — and never the guided-spring terms, so a
 cord-only machine requires no spring preparation and does not consume the
 eight-spring allowance. Completed frames publish cord rows in `ropes` with the same
-fields; `springs` is unchanged. An undamped cord keeps swinging: only the authored
+fields; `springs` is unchanged. No surface draws a cord yet: workshop rendering and
+the optical input both select rope connections, so a cord has completed geometry and
+no visual representation, and it is not wiring. An undamped cord keeps swinging: only the authored
 damper removes its energy.
 
 ## Completed contact observations (M3b)
@@ -715,7 +717,7 @@ admitted, within the existing sensor limit; the ninth rejects atomically.
 The version-1 pinhole profile is fixed: 320 × 240, 60 degrees horizontal field of
 view, near 10 micrometres, far 100 m, lens origin (0, 0, 0.020001) m in the body
 frame, forward +Z, up +Y, screen right −X. Canonical solids, exposed shafts, floor
-and environment obstacles are opaque, two-sided optical geometry. Rope and elastic-cord spans use the
+and environment obstacles are opaque, two-sided optical geometry. Rope spans use the
 same completed physical node centres and authored diameter as workshop rendering,
 without selection highlighting; their visual surface adds no collision authority. Only the owning
 camera housing is excluded. Wires, labels, editor decorations and exploded poses
