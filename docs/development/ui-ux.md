@@ -185,9 +185,8 @@ cursor-guarded `place` or `surface-mount` command. Invalid and stale previews ca
 commit, and pending placement disables duplicate submission and cancellation.
 Empty-space placement shows one row over the bench — the part, its state word, the
 Precise position chip and the two actions, with the confirming action carrying the
-primary weight. The row reserves the machine control band it shares the bench's bottom
-edge with, so a longer state sentence wraps inside the free bench instead of covering
-Sound; the coordinates open above the row rather than displacing it, and they go away
+primary weight. The row reserves the Sound band it shares the bench's bottom edge with,
+so a longer state sentence wraps inside the free bench instead of covering Sound; the coordinates open above the row rather than displacing it, and they go away
 with the fields they edit once the part is placed. Both homes of the act read their
 state word and the name of their confirming control from
 [one placement vocabulary](../../src/presentation/placement-lifecycle.mjs#source) — the

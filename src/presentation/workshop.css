@@ -3803,9 +3803,10 @@ button:not(.keyed) > .key-badge {
 /* One row over the bench while a part is being placed: the part, its state word, the
    coordinates chip and the two actions. It hugs its content and only wraps when a longer
    state sentence needs the room. The row shares the bench's bottom edge with the machine
-   control band, so the left inset reserves that band — the .machine-panels inset plus the
-   Sound button and its settings, the whole band Build owns — and a long sentence wraps
-   inside what is left instead of growing over Sound. The auto margins centre the row in
+   control band, so the left inset reserves the Sound band — the .machine-panels inset plus
+   the Sound button and its settings — and a long sentence wraps inside what is left instead
+   of growing over Sound. (A collapsed receiver card above Sound can still meet a two-line
+   row at narrow widths; that residual is follow-up work, not covered by this reservation.) The auto margins centre the row in
    the free bench. The reservation is a measured layout fact, so the parts-catalog check
    reads the band and the row at a narrow width and refuses an overlap. */
 .part-placement {
