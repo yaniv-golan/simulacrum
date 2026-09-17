@@ -11,13 +11,13 @@ import { CORD_LIMITS, CORD_MATERIALS, admitCordBudget } from '../src/model/cord.
 import { DT } from '../src/model/tick.mjs';
 const fixture = () => {
   const bp = createEmptyBlueprint('cord-test', 'Cord test');
-  bp.parts = [createPart('beam', 'a', [0, 1, 0]), createPart('plate', 'b', [0, 0.6, 0])];
+  bp.parts = [createPart('beam', 'a', [0, 1, 0]), createPart('plate', 'b', [0.69, 1, 0])];
   bp.connections = [
     {
       id: 'line',
       kind: 'cord',
-      a: { part: 'a', surface: { region: 'bottom', u: 0, v: 0, twist: 0 } },
-      b: { part: 'b', surface: { region: 'top', u: 0, v: 0, twist: 0 } },
+      a: { part: 'a', surface: { region: 'right', u: 0, v: 0, twist: 0 } },
+      b: { part: 'b', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
       cord: {
         restLength: 0.3,
         stiffness: 120,
@@ -34,9 +34,8 @@ const fixture = () => {
  * inside the authored 1-300 N/m range. */
 const lightFixture = (stiffness) => {
   const bp = fixture();
-  bp.parts = [createPart('beam', 'a', [0, 1, 0]), createPart('beam', 'b', [0, 0.7, 0])];
+  bp.parts = [createPart('beam', 'a', [0, 1, 0]), createPart('beam', 'b', [0.3, 1, 0])];
   bp.parts.forEach((p) => (p.parameters.length = 0.1));
-  bp.connections[0].b = { part: 'b', surface: { region: 'top', u: 0, v: 0, twist: 0 } };
   bp.connections[0].cord.stiffness = stiffness;
   return bp;
 };
@@ -118,17 +117,17 @@ test('cord domain, capacity and shared elastic budget reject while ordinary cont
   assert.equal(validateBlueprint(missing).ok, false);
   // Authored separation beyond the linear elastic domain rejects at compile time.
   const stretched = fixture();
-  stretched.parts[1].position = [0, -0.2, 0];
+  stretched.parts[1].position = [1.5, 1, 0];
   assert.throws(() => compileAssembly(stretched, { ground: null }), {
     reasonCode: 'CORD_DOMAIN_LIMIT',
   });
   const capacity = fixture();
-  capacity.parts.push(createPart('plate', 'c', [0, 0.3, 0]), createPart('plate', 'd', [0, 0.1, 0]));
+  capacity.parts.push(createPart('plate', 'c', [1.2, 1, 0]), createPart('plate', 'd', [1.7, 1, 0]));
   capacity.connections = [0, 1, 2].map((i) => ({
     ...structuredClone(capacity.connections[0]),
     id: `cord-${i}`,
-    a: { part: capacity.parts[i].id, surface: { region: 'bottom', u: 0, v: 0, twist: 0 } },
-    b: { part: capacity.parts[i + 1].id, surface: { region: 'top', u: 0, v: 0, twist: 0 } },
+    a: { part: capacity.parts[i].id, surface: { region: 'right', u: 0, v: 0, twist: 0 } },
+    b: { part: capacity.parts[i + 1].id, surface: { region: 'left', u: 0, v: 0, twist: 0 } },
   }));
   assert.throws(() => compileAssembly(capacity, { ground: null }), {
     reasonCode: 'CORD_DOMAIN_LIMIT',
@@ -195,7 +194,7 @@ test('cord identity and copied reusable graphs preserve authored material and nu
   renamed.connections[0].b.part = 'renamed-1';
   assert.deepEqual(compileAssembly(renamed).configuration, compileAssembly(bp).configuration);
   const { definition } = captureAssembly(bp, { name: 'Cord rig', ids: ['a', 'b'], ports: [] });
-  const result = insertAssembly(bp, definition, [3, 1, 0], [0, 0, 0, 1]),
+  const result = insertAssembly(bp, definition, [0, 3, 0], [0, 0, 0, 1]),
     copy = result.blueprint.connections.find((c) => c.id !== bp.connections[0].id);
   assert.deepEqual(copy.cord, bp.connections[0].cord);
   assert.equal(copy.a.part, result.idMap.a);

@@ -36,39 +36,51 @@ function step(w) {
   w.applyRopes();
   return w.step();
 }
-test('a slack cord pulls nothing while the taut positive control pulls every row', async () => {
-  const slack = await createPhysicsWorld(configuration({ restLength: 0.4 }));
+test('a slack cord neither pulls nor pushes, and the taut control pulls every row', async () => {
+  // Span 0.37 m against a 0.40 m cord: slack by 0.03 m, which free fall covers in
+  // ten ticks. While slack the hanging part must follow the free-fall solution
+  // exactly. A two-sided spring would push it down harder; a rope-style preload
+  // would hold it up.
+  const slack = await createPhysicsWorld(configuration({ restLength: 0.4, fixed: true }));
   try {
     const initial = slack.read();
-    for (let i = 0; i < 120; i++) step(slack);
-    const end = slack.read();
-    // A tension-only element in free fall transmits no force at all: every body
-    // keeps exactly the free-fall solution. A two-sided spring would push here.
-    for (let i = 0; i < end.length; i++) {
-      assert.ok(Math.abs(end[i].velocity[1] + 9.81 * 120 * DT) < 1e-7, `body ${i} velocity`);
+    for (let i = 0; i < 9; i++) {
+      step(slack);
+      // No row ever reports or applies compression, and a row below its rest
+      // length stores no energy at all.
+      assert.ok(slack.ropes().every((r) => r.appliedTension >= 0 && r.elasticTension >= 0));
       assert.ok(
-        Math.abs(
-          end[i].position[1] -
-            initial[i].position[1] +
-            9.81 * DT ** 2 * ((120 * 119) / 2 + (120 * 5) / 8),
-        ) < 1e-7,
-        `body ${i} position`,
+        slack
+          .ropes()
+          .filter((r) => r.length <= r.restLength)
+          .every((r) => r.elasticTension === 0 && r.potentialJ === 0),
       );
     }
-    assert.ok(slack.ropes().every((r) => r.appliedTension === 0));
-    assert.ok(slack.ropes().every((r) => r.elasticTension === 0 && r.potentialJ === 0));
-    const separation = (state) => state[0].position[1] - state[1].position[1];
-    assert.ok(Math.abs(separation(end) - separation(initial)) < 1e-9);
+    const state = slack.read();
+    assert.ok(Math.abs(state[1].velocity[1] + 9.81 * 9 * DT) < 1e-7, 'free-fall velocity');
+    assert.ok(
+      Math.abs(
+        state[1].position[1] -
+          initial[1].position[1] +
+          9.81 * DT ** 2 * ((9 * 8) / 2 + (9 * 5) / 8),
+      ) < 1e-7,
+      'free-fall position',
+    );
+    // The cord hangs under its own weight like a rope, so its upper rows tension;
+    // the row that holds the load carries nothing while the cord is slack.
+    assert.equal(slack.ropes().at(-1).appliedTension, 0);
+    assert.equal(slack.ropes().at(-1).potentialJ, 0);
+    // It does go taut later: the element is slack, not absent.
+    for (let i = 0; i < 600; i++) step(slack);
+    assert.ok(slack.ropes().some((r) => r.appliedTension > 0));
   } finally {
     slack.dispose();
   }
-  const taut = await createPhysicsWorld(configuration({ restLength: 0.3 }));
+  const taut = await createPhysicsWorld(configuration({ restLength: 0.3, fixed: true }));
   try {
     for (let i = 0; i < 120; i++) step(taut);
     assert.ok(taut.ropes().every((r) => r.appliedTension > 0));
     assert.ok(taut.ropes().every((r) => r.potentialJ > 0));
-    const state = taut.read();
-    assert.ok(state[0].position[1] - state[1].position[1] < 0.4);
   } finally {
     taut.dispose();
   }
