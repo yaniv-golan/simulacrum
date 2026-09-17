@@ -69,6 +69,8 @@ import {
 import { createEditingControls } from './editing-controls.mjs';
 import { createPart } from '../model/blueprint.mjs';
 import { mechanicalGroup } from '../model/connection-graph.mjs';
+import { gearFacts } from '../model/gear-geometry.mjs';
+import { meshSpacingRepair } from '../model/gear-mesh.mjs';
 import { duplicatePart } from '../model/duplication.mjs';
 import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -111,9 +113,16 @@ const parameterLabels = {
   dampingGain: 'Damping (s/rad)',
   capacityJ: 'Stored energy',
   internalResistance: 'Cell resistance',
-  teeth: 'Teeth',
-  module: 'Tooth size',
 };
+// A parameter the catalog stores in metres that a player reads in millimetres. Only the control
+// scales: the authored SI number keeps its single writing owner, the `parameter` command.
+const parameterDisplay = {
+  module: { label: 'Tooth size', aria: 'Tooth size (mm)', unit: 'mm', scale: 1000 },
+};
+// Read a scaled value back as the decimal it was authored in: multiplying an authored decimal
+// can land a few units in the last place away and then refuse the value it came from.
+const displayValue = (value, scale) =>
+  String(scale === 1 ? value : Number((value * scale).toPrecision(12)));
 const parameterHelp = {
   torqueConstant: 'More torque per amp helps turn a heavier load.',
   currentLimit: 'Caps current and therefore available motor torque.',
@@ -760,7 +769,7 @@ export function createWorkshopView(
         'gear-lift',
         'Lift with gears',
         'Editable experiment · Motor and shaft connections first',
-        'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. The 12T gear drives the 24T gear with reduction. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
+        'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. A 12-tooth gear drives a 24-tooth gear, so the arm turns slower with more force. The shafts are bolted 180 mm apart, so a pair whose Teeth add to 36 still meshes: try 16 and 20, or 18 and 18. Shrink the bigger gear first, or the discs touch on the way. Predict the new speed before you Run. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
         'Try gear lift',
         { type: 'gear-lift-example', replace: true },
       );
@@ -2688,7 +2697,10 @@ export function createWorkshopView(
       );
       target.append(note);
     }
-    function bindParameterInput(input, key) {
+    function bindParameterInput(input, key, scale = 1) {
+      // An absent optional parameter is the catalog default, in the control as in the physics:
+      // the field must never read `undefined` for a value the part resolves perfectly well.
+      const authored = () => part.parameters[key] ?? definition.parameterDefinitions[key].default;
       let tabTarget = null;
       const tabStops = () =>
         [
@@ -2697,7 +2709,7 @@ export function createWorkshopView(
       input.addEventListener('keydown', (event) => {
         tabTarget = null;
         if (event.key === 'Escape') {
-          input.value = String(part.parameters[key]);
+          input.value = displayValue(authored(), scale);
           return;
         }
         if (event.key !== 'Tab') return;
@@ -2714,17 +2726,64 @@ export function createWorkshopView(
         // generated schema, about a number the control itself could have refused.
         if (!input.checkValidity()) {
           input.reportValidity();
-          input.value = String(part.parameters[key]);
+          input.value = displayValue(authored(), scale);
           return;
         }
+        const value =
+          scale === 1 ? Number(input.value) : Number((Number(input.value) / scale).toPrecision(12));
+        // Confirming the catalog default on a part that never stored one is not an edit, exactly
+        // as it is not for the primary dimension above: a save that omitted an optional setting
+        // stays omitted unless the player chooses a different number.
+        if (!(key in part.parameters) && value === definition.parameterDefinitions[key].default)
+          return;
         // Send while the trusted change event is active. Only focus restoration
         // waits for the rebuilt inspector; native Tab still chooses its direction.
-        await send({ type: 'parameter', id: part.id, key, value: Number(input.value) });
+        await send({ type: 'parameter', id: part.id, key, value });
         if (target !== null && selected === part.id) tabStops()[target]?.focus();
       });
       input.addEventListener('blur', () => {
         tabTarget = null;
       });
+    }
+    // One generic setting row, wherever it is shown. A parameter that declares a menu takes that
+    // menu's bounds and spacing from parameterInputRange, so the control cannot reach an
+    // off-menu value; a parameter with a display scale is read in its player unit.
+    function settingControl(key, parameter) {
+      const display = parameterDisplay[key],
+        scale = display?.scale ?? 1,
+        label = element('label', 'setting');
+      label.append(
+        element(
+          'span',
+          '',
+          display?.label ?? parameterLabels[key] ?? key.replace(/([A-Z])/g, ' $1'),
+        ),
+      );
+      const input = element('input');
+      input.type = 'number';
+      input.value = displayValue(part.parameters[key] ?? parameter.default, scale);
+      const range = parameterInputRange(parameter);
+      input.min = displayValue(range.min, scale);
+      input.max = displayValue(range.max, scale);
+      input.step = range.step === null ? 'any' : displayValue(range.step, scale);
+      input.disabled = mode !== 'build';
+      input.setAttribute(
+        'aria-label',
+        display?.aria ?? (key === 'defaultDuty' ? 'Drive setting' : key),
+      );
+      bindParameterInput(input, key, scale);
+      label.append(input, element('span', 'unit', display?.unit ?? parameter.unit));
+      if (parameterHelp[key])
+        label.append(
+          element(
+            'span',
+            'parameter-help',
+            part.type === 'linearActuator' && key === 'currentLimit'
+              ? 'Caps current and therefore available pushing force.'
+              : parameterHelp[key],
+          ),
+        );
+      return label;
     }
     function parameterControl(key) {
       const parameter = definition.parameterDefinitions[key],
@@ -2989,40 +3048,49 @@ export function createWorkshopView(
       }
       right.append(controls);
     }
-    // One authored dimension per part: diameter (ball, wheel) or length (beam). Labels are
-    // explicit because registered checks assert them verbatim.
+    // The authored dimension a part is chosen by: diameter (ball, wheel), length (beam) or the
+    // gear's tooth count. Labels are explicit because registered checks assert them verbatim.
+    // Every one of them previews its own growth and refuses before commit.
     const dimension = definition.parameterDefinitions.diameter
       ? 'diameter'
       : definition.parameterDefinitions.length
         ? 'length'
-        : null;
+        : definition.parameterDefinitions.teeth
+          ? 'teeth'
+          : null;
     if (dimension) {
       const rating = definition.parameterDefinitions[dimension],
+        // A tooth count is a count: it is authored and read as the integer itself, where a
+        // length is authored in metres and read in millimetres.
+        scale = dimension === 'teeth' ? 1 : 1000,
+        unit = dimension === 'teeth' ? 'count' : 'mm',
         dimensions = element('div', 'setting primary-setting'),
         number = element('input'),
         slider = element('input'),
+        derived = element('p', 'parameter-help derived-dimensions'),
         notice = element('p', 'parameter-help');
       const authored = dimension in part.parameters ? part.parameters[dimension] : undefined,
-        value = (authored ?? rating.default) * 1000,
-        title = dimension === 'diameter' ? 'Diameter' : 'Length',
+        value = (authored ?? rating.default) * scale,
+        title = dimension === 'diameter' ? 'Diameter' : dimension === 'length' ? 'Length' : 'Teeth',
         subject = { ball: 'Ball', gripWheel: 'Wheel', beam: 'Beam' }[part.type] ?? definition.name;
-      dimensions.append(element('label', '', `${title} (mm)`));
+      dimensions.append(element('label', '', `${title} (${unit})`));
       number.type = 'number';
       slider.type = 'range';
       for (const control of [number, slider]) {
-        control.min = String(rating.minimum * 1000);
-        control.max = String(rating.maximum * 1000);
-        control.step = control === number ? 'any' : '10';
+        control.min = String(rating.minimum * scale);
+        control.max = String(rating.maximum * scale);
+        control.step =
+          control === number ? (dimension === 'teeth' ? '1' : 'any') : scale === 1 ? '1' : '10';
         control.value = String(value);
         control.disabled = !editable;
         control.setAttribute(
           'aria-label',
-          `${subject} ${dimension}${control === number ? ' (mm)' : ''}`,
+          `${subject} ${dimension}${control === number ? ` (${unit})` : ''}`,
         );
       }
       const candidate = () => ({
         ...part,
-        parameters: { ...part.parameters, [dimension]: Number(number.value) / 1000 },
+        parameters: { ...part.parameters, [dimension]: Number(number.value) / scale },
       });
       const obstruction = (next) =>
         parts.find(
@@ -3032,10 +3100,26 @@ export function createWorkshopView(
               placementEnvelopes(other).some((b) => solidsOverlap(a, b)),
             ),
         );
+      // Pitch circle and solid disc are read from the authored parameters, never stored; during
+      // a preview the same derivation describes the count under the cursor, which is the number
+      // the player is deciding about. Mass stays in Engineering details, which already owns it.
+      const gearLine = (subject) => {
+        const facts = gearFacts(subject);
+        return facts
+          ? `Pitch circle ${format(facts.pitchRadius * 2000, 0)} mm · solid disc ${format(
+              facts.colliderRadius * 2000,
+              0,
+            )} mm across`
+          : '';
+      };
+      if (dimension === 'teeth') derived.textContent = gearLine(part);
       function previewDimension(control) {
         number.value = slider.value = control.value;
         if (!number.checkValidity()) {
-          notice.textContent = `Choose a ${dimension} from ${number.min} to ${number.max} mm.`;
+          notice.textContent =
+            dimension === 'teeth'
+              ? `Choose a tooth count from ${number.min} to ${number.max}.`
+              : `Choose a ${dimension} from ${number.min} to ${number.max} mm.`;
           return;
         }
         const next = candidate(),
@@ -3043,7 +3127,9 @@ export function createWorkshopView(
         editing.showPreview([next], { color: other ? 0xff836f : 0x8cf5cf });
         notice.textContent = other
           ? `Too large here: overlaps ${other.name}. Move the part to make room, then resize.`
-          : 'Size preview · release the slider or confirm the number to apply.';
+          : dimension === 'teeth'
+            ? `Size preview · ${gearLine(next)} · release the slider or confirm the number to apply.`
+            : 'Size preview · release the slider or confirm the number to apply.';
         invalidateScene();
       }
       for (const control of [number, slider]) {
@@ -3051,7 +3137,7 @@ export function createWorkshopView(
         control.addEventListener('change', async () => {
           if (!number.checkValidity() || obstruction(candidate())) return;
           editing.clearPreview();
-          const next = Number(number.value) / 1000;
+          const next = Number(number.value) / scale;
           // Confirming the default on a part that never stored one is not an edit.
           if (authored === undefined && next === rating.default) {
             notice.textContent = '';
@@ -3077,8 +3163,14 @@ export function createWorkshopView(
           }
         });
       }
-      dimensions.append(number, slider, notice);
+      dimensions.append(number, slider);
+      if (dimension === 'teeth') dimensions.append(derived);
+      dimensions.append(notice);
       right.append(dimensions);
+      // The second authored dimension of a gear belongs beside the first, not inside a closed
+      // Engineering details: the tooth-size mismatch message asks the player to change it.
+      if (definition.parameterDefinitions.module)
+        right.append(settingControl('module', definition.parameterDefinitions.module));
       const axle = definition.ports.find((p) => p.kind === 'shaft'),
         connection = axle && portConnections(part, axle)[0];
       if (connection) {
@@ -3347,6 +3439,49 @@ export function createWorkshopView(
         disconnect.dataset.disconnectId = connection.id;
         disconnect.disabled = !editable;
         explanation.append(disconnect);
+        // A mesh whose centres are more than a millimetre from the two pitch radii added. Axis
+        // and face alignment are refusals, so a diagnosed gear edge is always this one number.
+        const spacing = frame.metadata.connections.find((c) => c.id === connection.id);
+        if (connection.kind === 'gear' && spacing?.reasonCode === 'GEAR_MISALIGNED' && editable) {
+          const repair = meshSpacingRepair(frame.metadata.blueprint, connection.id),
+            note = element('p', 'parameter-help');
+          const moved = repair && parts.find((p) => p.id === repair.moving);
+          if (!repair)
+            note.textContent =
+              'No single mount can move these gears apart, so change the tooth counts instead: they must add to the spacing the shafts already have.';
+          else {
+            const action = button(
+              `Space to mesh · ${moved?.name ?? repair.moving}`,
+              async () => {
+                const result = await send({
+                  type: 'surface-mount',
+                  id: repair.connection,
+                  replaceConnection: repair.connection,
+                  part: repair.part,
+                  sourceRegion: repair.sourceRegion,
+                  targetPart: repair.targetPart,
+                  targetRegion: repair.targetRegion,
+                  u: repair.u,
+                  v: repair.v,
+                  twist: repair.twist,
+                });
+                if (!result?.ok)
+                  note.textContent = `Cannot space these gears: ${explainFailure(
+                    result ?? {},
+                    frame.metadata.blueprint,
+                  )}`;
+              },
+              'quiet',
+            );
+            action.dataset.meshSpacing = connection.id;
+            explanation.append(action);
+            note.textContent = `Moves ${moved?.name ?? repair.moving} on its mount until the centres are ${format(
+              repair.centreDistance * 1000,
+              0,
+            )} mm apart. One undo step.`;
+          }
+          explanation.append(note);
+        }
       }
       if (!editable) {
         returnToBuild(explanation);
@@ -3551,6 +3686,8 @@ export function createWorkshopView(
         part.type === 'poweredLamp' ||
         key === 'diameter' ||
         key === 'length' ||
+        key === 'teeth' ||
+        key === 'module' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
         (part.type === 'poweredMotor' &&
@@ -3560,30 +3697,7 @@ export function createWorkshopView(
           ))
       )
         continue;
-      const label = element('label', 'setting');
-      label.append(element('span', '', parameterLabels[key] ?? key.replace(/([A-Z])/g, ' $1')));
-      const input = element('input');
-      input.type = 'number';
-      input.value = part.parameters[key];
-      const range = parameterInputRange(parameter);
-      input.min = range.min;
-      input.max = range.max;
-      input.step = range.step === null ? 'any' : String(range.step);
-      input.disabled = mode !== 'build';
-      input.setAttribute('aria-label', key === 'defaultDuty' ? 'Drive setting' : key);
-      bindParameterInput(input, key);
-      label.append(input, element('span', 'unit', parameter.unit));
-      if (parameterHelp[key])
-        label.append(
-          element(
-            'span',
-            'parameter-help',
-            part.type === 'linearActuator' && key === 'currentLimit'
-              ? 'Caps current and therefore available pushing force.'
-              : parameterHelp[key],
-          ),
-        );
-      settings.append(label);
+      settings.append(settingControl(key, parameter));
     }
     const materialLabel = element('label', 'setting material-setting');
     materialLabel.append(element('span', '', 'Material'));
@@ -4207,7 +4321,8 @@ export function createWorkshopView(
       revealedConnectionIds,
       sourceEndpoint: sourcePort,
       connections: frame.metadata.blueprint.connections.filter(
-        (connection) => connection.kind !== 'rope' && !releasedAttachment(connection),
+        (connection) =>
+          !['rope', 'cord'].includes(connection.kind) && !releasedAttachment(connection),
       ),
       diagnostics: frame.metadata.connections,
       exploded: exploded || explodeAmount > 0,

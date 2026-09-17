@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"3acb34f11565a25393181b40b1cca110e78b3eb061770857cd370bdfb4b26406","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"7ae89b9f206d8853910e1804852c17534d456733a7d6811e250b23ae9f1161e6","disposition":"updated","rationale":"Updated: the spur-gear paragraph now records that a row declaring the gear capability must author both defaults and that they must reproduce its canonical primitive exactly, with assertDimensionDefaults refusing the row by name at load instead of letting partPrimitives fail on it. test/gear-authoring.test.mjs, the authoring control this section names, gains that rule's rigged-row counterexamples."} -->
+<!-- doc-review {"version":1,"fingerprint":"113d89fa5325b4efc2263860bd47dfcbc87e7ef9c8bf6d3141a22d3cba0b511b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ce465317c03c3e4c91d722b20f1024d3f1a5b76348413740712a4d1c889252c7","disposition":"updated","rationale":"The meshSpacingRepair link now names src/model/gear-mesh.mjs, where the function moved unchanged to keep src/model/gear-geometry.mjs free of surface knowledge and break a geometry/gear-geometry/surfaces module cycle. The recipe's steps are otherwise unchanged and both merged branches followed them: the cord added its schema entry, regenerated validator and types and registered its invariant and controls, and this branch extended the spur gear with authored teeth and tooth size, its help copy, its search tokens and its tests."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -79,7 +79,16 @@ the authored topology alone; the two checks that move with the authored numbers 
 and a centre distance within a millimetre of the two pitch radii added -- are per-edge diagnostics
 stamped on the connection row, emit no joint and never refuse the parameter edit. A mesh
 neither snaps nor provides shaft support; ordinary Connect/Disconnect and history
-remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
+remain the editing owners. Because an admitted mesh needs one shared rigid carrier, both gears
+always belong to one mechanical group, so no pose edit of either gear can change the distance
+between them: the authored distance is the surface-mount offset that separates the two shafts.
+[meshSpacingRepair](../../src/model/gear-mesh.mjs#symbol=meshSpacingRepair) names the one
+mount that can express a correction and the offset it needs, and the mesh row sends it as an
+ordinary `surface-mount` command replacing that same connection, so mount admission --
+footprint, bounds and overlap -- refuses it in its own words. It returns nothing rather than a
+command that would leave the same diagnosis. The gear that moves is the one on the side of that
+mount which drives nothing, and otherwise the later-placed gear; neither rule reads a part name,
+a blueprint id or a role. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
 
 Release Coupler designates one mounting face with `releaseFace` in the catalog.
@@ -113,7 +122,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"51b8d0a07f7baa63ffba908acdcca6ccd856c81b838b976ba97b9e2945ee7e93","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c6a546264acbb8869fb50ccec2d270b17343755d9cf128de53dccde5cdd7fdcd","disposition":"still accurate","rationale":"No command was added or changed: teeth and tooth size are edited by the existing parameter command, and the new field-level validity guard only stops a value the generated schema would have refused from being sent at all."} -->
+<!-- doc-review {"version":1,"fingerprint":"7b480b4afed04fc0bab08671d52b5c9e1938273c466ae5f7ce2c98cfae4bf9d9","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"31649a67643c4f7b0e79f2d96885fd5915a6e56cab573e023fe3f9edb39e1aef","disposition":"still accurate","rationale":"The cord's command reached the surface through the same src/model/workshop-command.d.ts declaration, src/core/workshop.mjs admission and boundary typing this recipe prescribes, and this branch added no command beyond ordinary parameter and surface-mount edits. The declaration, admission and typing steps, and the membership check that keeps declared and admitted commands equal, are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -132,7 +141,7 @@ and the existing chronological history. The environment controls in
 geometry, authored scene identity, aggregate capacity, rejection and continuation.
 [Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
 nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
-Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
+Combined capacity includes machine bodies, every distributed rope and elastic-cord node, compiled scene solids and ground.
 [Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
 legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
 
@@ -142,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"f15c1499dc7fd6cd74598d3408df69cf611cdeaf9202b6d41bf2cc9b1064c451","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"4663686308a7e7e38527bf9bd3cc8eb1138b1fcb525d920a051c5df4e65f1a9b","disposition":"still accurate","rationale":"Unchanged prose, re-recorded because the merge left the marker and its dependency sidecar matching neither parent. The dependencies this integration actually moved are src/presentation/placement-lifecycle.mjs, src/presentation/surface-controls.mjs and src/presentation/workbench-content.mjs (the merged placing row and placement cues), scripts/catalog-browser-actions.mjs (the merged journey helpers) and the docs/development/ui-ux.md#before-changing-player-facing-ui anchor. The recipe's owners and rules hold: connect, parameter and one cursor-guarded surface-mount command remain the owning commands, one nonmutating placement controller draws the preview, nothing snaps, and the model still owns every reason code while presentation owns its wording. The refused parameter entry adds no command path: it reports the control's own validity and restores the authored value."} -->
+<!-- doc-review {"version":1,"fingerprint":"d97d409687bd8bbbd7f8ae72d14714e53e7737b7be8edfc3fbcb2c542cbedf7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"5b4fe6bdd876ef43b77437c4a1eee126c8e93a68c280307d179cf075746f8822","disposition":"still accurate","rationale":"src/model/messages.mjs gained this branch's gear spacing and tooth-size wording and the cord's messages, both through the existing reason-code registry, and docs/development/ui-ux.md moved by its own reviewed prose. The interaction recipe's steps, the owning regions it names and its requirement to verify the affected journey and rendered layout are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -191,7 +200,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"98f001a1ffd38498e04d461fa3d18fedb8b78b7d8b5dfeb1081d43373d19a5ba","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"dca2fe361e233328a4f323b057f94eaa3736b1bdea7bea1e0f09d133a13999ce","disposition":"still accurate","rationale":"Unchanged prose and unchanged mechanism: GEAR_TOOTH_SIZE_MISMATCH is an assembly reason code with a player message, not a motion-diagnostics class, so no readiness line, footer next step or issue class moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"7940a79502f44c7438a0077f5b97cb85ec5f7977f08b50c88193e8eb2ae6df75","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"64c7288ac1fd118e9143061c09571db5d9793661b5ded54b15a58bcdc91f6496","disposition":"still accurate","rationale":"Both new diagnostics entered exactly as this recipe prescribes: the cord's codes join REASON_CODES through src/model/reasons.mjs, and the gear's unequal tooth size and centre-distance findings are stamped per edge on the connection row. No diagnostic owner, code registry or per-edge plumbing changed, and neither diagnosis dispatches on part identity."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -488,6 +497,30 @@ energy fields before swapping native state. Preserve [independent ledger oracles
 [bounded capacity measurement](../../scripts/measure-ropes.mjs) for sustained ordinary
 support contact; this does not qualify arbitrary impacts, duration or hardware.
 
+An [elastic cord](../../src/model/cord.mjs) is a second connection compiled into the
+same distributed rows. It authors its own end-to-end stiffness and damping in the
+measured 1-300 N/m and 0-100 N s/m ranges, while material and diameter own only the
+distributed mass; each row takes N times the authored pair so N rows in series restore
+it. It adds no law: the tension-only Kelvin element it needs is the existing rope law,
+and duplicating it would put one law under two owners. Its rows are validated in the
+physics door against their own domain, reach twice their rest length before a bounded
+CORD_MOTION_LIMIT, and carry no material strength rating. Guided springs and cords
+share one machine-level elastic budget refused by
+[admitCordBudget](../../src/model/cord.mjs#symbol=admitCordBudget) during compilation,
+from authored masses over each elastic group; that budget keeps a machine inside the
+measured domain and is not a stability requirement, because the distributed rows are
+solved implicitly. The door's own cord domain has
+[direct counterexamples](../../test/cord-door.test.mjs) that bypass the compiler, and both
+extremes of the authored domain are [measured over 2400 ticks](../../test/cord-domain-corners.test.mjs):
+the stiffest corner puts 2400 N/m rows on 5.6e-5 kg nodes, about 66000 times the guided-spring
+island budget, and still converges without energy growth, jitter or a snapshot discontinuity.
+Convergence is claimed for that measured domain only; widening `CORD_LIMITS` requires a new
+measurement, not an argument. Preserve [authoring, budget and identity controls](../../test/cord-authoring.test.mjs),
+[slack, analytic and bounded-failure controls](../../test/cord-physics.test.mjs),
+[energy and damper controls](../../test/cord-energy.test.mjs) and
+[both clock drivers](../../test/cord-determinism.test.mjs), which cover the mid-domain cord and
+the stiffest corner.
+
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 [Sphere physics controls](../../test/ball-physics.test.mjs#source) cover analytical
@@ -555,7 +588,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"6cd57dfe5a80f1d8dabaae7fd9d3a2e8bc0ac7eb60da05aa20050928df4068d0","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"c4942f068b3662be75efd35d36f9261fb27b6b9f5801f9caf16b847e45581099","disposition":"still accurate","rationale":"Unchanged prose, re-recorded because the merge left the marker and its dependency sidecar matching neither parent. The only dependency this integration actually moved is scripts/catalog-browser-actions.mjs, which gained the idempotent expandExample/expandExampleVariants helpers a journey uses to open one Learn row. Subassembly authoring, its owners and its invariants are untouched: mirror, duplication and reusable assemblies still copy parameters by structuredClone, so authored teeth and tooth size travel with the part and are never re-derived."} -->
+<!-- doc-review {"version":1,"fingerprint":"642b7257723290cbf7da593abfbdc4bbe1eb44b077fc24474462b4eaa3340d2c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"17461fd363253d432a1bd63350d08e43c9f08fa3ecb9a32fdb8e6ec93db4c86a","disposition":"still accurate","rationale":"Cord connections copy through subassembly instantiation and mirroring in src/model/assembly.mjs and src/model/mirror-assembly.mjs the way ropes already do, deriving nothing from role, name or rig position, and src/model/messages.mjs gained wording from both branches. The authoring authority, selection rules and copy semantics this recipe states are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -652,7 +685,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"d2859bca5411074e2a533cc545c3dcebc0213f2399410b0d5972ff3eb433615d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c956ffe30e24e5e4a1376f3383f92ce34563339b801e46229d6e71d963619119","disposition":"still accurate","rationale":"Unchanged prose, re-recorded because the merge left the marker and its dependency sidecar matching neither parent. The dependencies this integration actually moved are scripts/catalog-browser-actions.mjs and scripts/verify-spring-browser.mjs, both browser-journey action code rather than overlay sources. The part-builder paragraph this tip added, recording that a generic numeric setting takes its bounds and step from parameterInputRange and that no parameter edit is sent while the field reports the value invalid, is carried in unchanged and remains true; this tip only added the field's restoration of the authored value on that same refusal, which writes no overlay state. The overlay recipe's owning region, its telemetry-only reads and its verification order are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"69bb216de918a7d2f7d71c10eeb2faa8500bfa5f833006798060ab8340c24e23","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"4290f9495b3f3a888f9b3a79cf7734368b800bc0ac8013c81a5b25435cccf3a7","disposition":"still accurate","rationale":"Neither branch added or restructured an overlay. The cord's only presentation edge excludes its kind from the wiring overlay alongside rope, and this branch's gear settings are inspector rows rather than overlay geometry; docs/development/architecture.md moved by its own reviewed prose. The overlay owners, their telemetry-only inputs and the recipe's steps are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -661,7 +694,11 @@ connection overlay. The checked producer takes narrow display inputs; the checke
 The workshop view resolves endpoints from displayed meshes, including exploded offsets.
 The renderer never changes authored connectivity or sends a command. Visibility is an
 explicit required field. Normal electrical links use straight schematic lines; fixed/shaft mechanical
-geometry and exploded dashed styling retain their existing behavior. Gear meshes
+geometry and exploded dashed styling retain their existing behavior. Distributed elastic
+connections are not wiring: both rope and `cord` edges are excluded from the wiring
+overlay, and a cord is drawn in no surface yet — workshop rendering and the optical
+input both select rope connections — so it has completed geometry and no visual
+representation. The inspector still names it, through the shared connection labels. Gear meshes
 use dashed relationships without a solid supporting rod; their cosmetic teeth are part of
 the body geometry and follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 

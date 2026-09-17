@@ -5057,11 +5057,15 @@
       "id": "supported-spur-transmission",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint. One constant mesh stiffness serves every pair the bounds admit: across authored teeth 12 to 36 and both modules the pitch-point mesh frequency spans omega dt 0.66 to 8.69, and at every corner the pair gains no mechanical energy, holds its ratio and its elastic displacement inside the recorded three percent and one millimetre, and closes the mesh and island energy ledgers every tick of the spin-up, loaded and coasting phases. The dissipation the mesh books under load is exactly half the pitch-point mobility times the square of the impulse it passes, so it grows as omega dt squared and spans more than two orders of magnitude across the bounds; over the loaded phase the constraint reaction does no work and that dissipation appears as the gear phase's own kinetic decrement, which the drive replaces. A delivered-work residual cannot measure it, because the mesh constraint pins output work to minus input work for every meshing pair; the passive coast, where the transmitted force and the booked term both vanish, is what bounds the net loss. What the fastest corners lose is resolved compliance, not work: backward Euler represents the mesh mode as atan(omega dt) of phase per tick, which is why the stiffest pair dissipates rather than diverges.",
+      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint. A reported centre distance names the one authored mount whose offset can restore it, chosen by what that mount carries and by authored order rather than by any identity, and offers it as an ordinary mount edit that ordinary mount admission may refuse; where no mount can express it, none is offered. One constant mesh stiffness serves every pair the bounds admit: across authored teeth 12 to 36 and both modules the pitch-point mesh frequency spans omega dt 0.66 to 8.69, and at every corner the pair gains no mechanical energy, holds its ratio and its elastic displacement inside the recorded three percent and one millimetre, and closes the mesh and island energy ledgers every tick of the spin-up, loaded and coasting phases. The dissipation the mesh books under load is exactly half the pitch-point mobility times the square of the impulse it passes, so it grows as omega dt squared and spans more than two orders of magnitude across the bounds; over the loaded phase the constraint reaction does no work and that dissipation appears as the gear phase's own kinetic decrement, which the drive replaces. A delivered-work residual cannot measure it, because the mesh constraint pins output work to minus input work for every meshing pair; the passive coast, where the transmitted force and the booked term both vanish, is what bounds the net loss. What the fastest corners lose is resolved compliance, not work: backward Euler represents the mesh mode as atan(omega dt) of phase per tick, which is why the stiffest pair dissipates rather than diverges.",
       "owners": [
         {
           "path": "src/model/gear-geometry.mjs",
           "anchor": "gearFacts"
+        },
+        {
+          "path": "src/model/gear-mesh.mjs",
+          "anchor": "meshSpacingRepair"
         },
         {
           "path": "src/model/gear-mesh.mjs",
@@ -5111,6 +5115,10 @@
             "anchor": "editing the teeth of a meshed pair is accepted and diagnosed, never refused"
           },
           {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "a mis-spaced mesh names the one mount that can restore its centre distance"
+          },
+          {
             "path": "test/component-contract.test.mjs",
             "anchor": "parametric spur gear uses authored teeth and module through save, compiler and physics"
           },
@@ -5135,6 +5143,10 @@
           {
             "path": "test/gear-authoring.test.mjs",
             "anchor": "gear edges do not snap or structurally connect unsupported parts"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "mesh spacing repair is offered only where a mount can express it, and never from identity"
           },
           {
             "path": "test/gear-physics.test.mjs",
@@ -6378,6 +6390,128 @@
       "qualificationBars": [
         "F1"
       ]
+    },
+    {
+      "id": "elastic-cord",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "An authored tension-only elastic cord connects two ordinary mounting faces on the rope's admission set, carries the distributed mass of the player's chosen material and diameter, and applies the authored end-to-end stiffness and damping through the one distributed unilateral elastic law. A slack cord applies nothing and leaves a hanging load in exact free fall; a loaded cord settles at the analytical extension of its authored stiffness; mechanical energy never increases. An undamped cord in the middle of the authored domain keeps swinging, so only the authored damper removes energy there; at the stiffest measured corner the implicit projection's own numerical loss settles the load without a damper, and that loss is reported through ropeNumericalLossJ, never as damping work or heat. Stiffness and mass have one authoring owner each, and identity perturbation leaves the compiled plant unchanged. Guided springs and cords share one machine-level elastic budget refused at authoring time, capacity and the linear elastic domain are bounded with preserved failure evidence, and the physics door refuses every row value outside its own domain. Both extremes of the authored domain, measured over 2400 ticks, converge without energy growth or jitter and continue exactly from a snapshot; cord rows project identically across processes and both production clocks through the unchanged physics envelope. Stability is claimed only for the measured authored domain, not for arbitrary row stiffness or node mass.",
+      "owners": [
+        {
+          "path": "src/model/cord.mjs",
+          "anchor": "compileCords"
+        },
+        {
+          "path": "src/model/cord.mjs",
+          "anchor": "admitCordBudget"
+        },
+        {
+          "path": "src/simulation/physics/law/rope.mjs",
+          "anchor": "ropeVectorImpulses"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "ordinary cord descriptor saves and compiles distributed mass with authored series compliance"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord identity and copied reusable graphs preserve authored material and numeric plant"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord joins mechanical authoring and mirrored reference attachments remain explicit"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a slack cord neither pulls nor pushes, and the taut control pulls every row"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a hanging load settles at the analytical extension of the authored stiffness"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "slack and taut cord snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "a damped cord never increases mechanical energy and settles the load it carries"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "an undamped cord keeps swinging while the damped control settles"
+          },
+          {
+            "path": "test/cord-determinism.test.mjs",
+            "anchor": "cord projections match separate processes and both production clocks"
+          },
+          {
+            "path": "test/cord-determinism.test.mjs",
+            "anchor": "the stiffest authored corner projects identically across processes and clocks"
+          },
+          {
+            "path": "test/cord-door.test.mjs",
+            "anchor": "the physics door admits an ordinary cord row and refuses every value outside its domain"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "both extremes of the authored cord domain converge without growth or jitter"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "the stiffest authored corner is far outside the guided-spring budget and still converges"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord domain, capacity and shared elastic budget reject while ordinary controls admit"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "the elastic budget counts guided springs with cords and exempts an immobile pair"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a cord stretched past its linear domain stops the run with a bounded cord reason"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "slack and taut cord snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "an undamped cord keeps swinging while the damped control settles"
+          },
+          {
+            "path": "test/cord-door.test.mjs",
+            "anchor": "the physics door admits an ordinary cord row and refuses every value outside its domain"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "the stiffest authored corner is far outside the guided-spring budget and still converges"
+          }
+        ]
+      },
+      "qualificationBars": []
     },
     {
       "id": "independent-feedback-receipts",
@@ -8586,7 +8720,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8650,7 +8784,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "71ca028d87064d6ddede43fd32ab9dae63a7255e2eff0bc54c9423edf8666587",
+      "consumerSourceHash": "84ca471d73d758ab4c7054a8d7abbc1318e1660c7d9536c227935974b6c1d044",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8821,7 +8955,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "71ca028d87064d6ddede43fd32ab9dae63a7255e2eff0bc54c9423edf8666587",
+      "consumerSourceHash": "84ca471d73d758ab4c7054a8d7abbc1318e1660c7d9536c227935974b6c1d044",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9060,7 +9194,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "11354576878bb1717ed3f6da16b64bd26d8f2ab5300c1721553d17ba913cc861",
+      "consumerSourceHash": "343a6a6b2c674812709c7c1f60072b1c8108a3a5ab3a0004add020d8b9224cdb",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9343,7 +9477,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "1e6ed9261bdef96e85522ce180423715d054cbe5551f59572a8abe0dcfad2bea",
+      "consumerSourceHash": "5d672152493e8911f8d5e0cb97b71e6a799658427d189e0992e4e4dede96c862",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9377,7 +9511,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9454,7 +9588,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9525,7 +9659,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9568,7 +9702,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9723,7 +9857,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "c6504135a761a12bcc2e2ddf2b0c9cbc0c798dd5d04faa4eae2888c169f4b11a",
+      "consumerSourceHash": "f7544a55681b970256df7de6787d2b16ef1905fb89190ba93ee6fc6affb1b361",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9876,7 +10010,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "71ca028d87064d6ddede43fd32ab9dae63a7255e2eff0bc54c9423edf8666587",
+      "consumerSourceHash": "84ca471d73d758ab4c7054a8d7abbc1318e1660c7d9536c227935974b6c1d044",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10204,7 +10338,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10289,7 +10423,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "21827e91b54fc0b0a2ef43a1d0c1e3361348bb4ab1214c362d235d3a9af39892",
+      "consumerSourceHash": "66e02335feb97533ee2eb22921b7ac367dc0fa9ff0fd4afb5051e621bba58f0e",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10393,7 +10527,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "21827e91b54fc0b0a2ef43a1d0c1e3361348bb4ab1214c362d235d3a9af39892",
+      "consumerSourceHash": "66e02335feb97533ee2eb22921b7ac367dc0fa9ff0fd4afb5051e621bba58f0e",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10547,7 +10681,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "15495e1c05909abdf37b7f6797c51a3d6731b88864f31aa8ebaf9e2e4ce2e754",
+      "consumerSourceHash": "e5ae8856a55283c2c19059380de15dd74de403a81fbd9b8f5be37ea51b9e09f7",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10630,7 +10764,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "c6504135a761a12bcc2e2ddf2b0c9cbc0c798dd5d04faa4eae2888c169f4b11a",
+      "consumerSourceHash": "f7544a55681b970256df7de6787d2b16ef1905fb89190ba93ee6fc6affb1b361",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",

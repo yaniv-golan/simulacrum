@@ -177,7 +177,7 @@ export function proposeMirroredAssembly(blueprint, options) {
     if (classification === 'external') continue;
     const a = selected.has(connection.a.part);
     const referenceAttachment =
-      ['fixed', 'pivot', 'shaft', 'spring', 'rope'].includes(connection.kind) &&
+      ['fixed', 'pivot', 'shaft', 'spring', 'rope', 'cord'].includes(connection.kind) &&
       (a ? connection.b.part === referenceId : connection.a.part === referenceId);
     if (classification !== 'internal' && !referenceAttachment) {
       omittedExternalConnectionIds.push(connection.id);

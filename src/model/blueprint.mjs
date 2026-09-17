@@ -85,7 +85,12 @@ export function validateBlueprint(blueprint) {
     const obstacles = environmentObstacles(blueprint.environment);
     const ropeNodes = blueprint.connections.reduce(
       (count, connection) =>
-        count + (connection.kind === 'rope' ? connection.rope.segments + 1 : 0),
+        count +
+        (connection.kind === 'rope'
+          ? connection.rope.segments + 1
+          : connection.kind === 'cord'
+            ? connection.cord.segments + 1
+            : 0),
       0,
     );
     if (blueprint.parts.length + ropeNodes + obstacles.length + 1 > 4097)
@@ -187,7 +192,9 @@ export function validateBlueprint(blueprint) {
     if (connections.has(connection.id)) return result('DUPLICATE_ID', `${path}/id`);
     connections.add(connection.id);
     if (connection.a.part === connection.b.part) return result('SELF_CONNECTION', `${path}/b/part`);
-    if (connection.kind === 'rope') {
+    // An elastic cord binds to surfaces on the rope's admission set: the same
+    // resolution, the same faces, the same absence of port occupancy.
+    if (connection.kind === 'rope' || connection.kind === 'cord') {
       for (const side of ['a', 'b']) {
         const endpoint = connection[side],
           part = parts.get(endpoint.part);

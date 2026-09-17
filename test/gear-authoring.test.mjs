@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import { CATALOG, assertDimensionDefaults } from '../src/model/catalog.mjs';
 import { gearFacts } from '../src/model/gear-geometry.mjs';
+import { meshSpacingRepair } from '../src/model/gear-mesh.mjs';
 import { partPrimitives } from '../src/model/geometry.mjs';
 import {
   CURRENT_SAVE_VERSION,
@@ -11,7 +12,7 @@ import {
   loadSave,
   validateBlueprint,
 } from '../src/model/blueprint.mjs';
-import { compileAssembly, snapConnection } from '../src/model/assembly.mjs';
+import { compileAssembly, proposeSurfaceMount, snapConnection } from '../src/model/assembly.mjs';
 import { mechanicalGroup } from '../src/model/connection-graph.mjs';
 
 const gear = (id, position, parameters = {}) => {
@@ -511,4 +512,151 @@ test('gear lift separates the arm plane from the gear faces with an ordinary axl
   assert.ok(arm.position[0] - gearPart.position[0] > 0.18);
   assert.equal(bp.parts.find((p) => p.id === 'arm-axle').type, 'steelAxle');
   compileAssembly(bp);
+});
+
+test('a mis-spaced mesh names the one mount that can restore its centre distance', () => {
+  // 12 and 26 pitch radii add to 190 mm; the shafts are bolted 180 mm apart, so the mesh is
+  // diagnosed. The repair is a mount offset, not a gear pose: an admitted mesh needs one shared
+  // rigid carrier, so both gears always sit in one mechanical group and moving either of them
+  // moves the other with it.
+  const bp = createGearLift();
+  bp.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  assert.ok(
+    mechanicalGroup(bp, 'input-gear').includes('output-gear'),
+    'a supported pair is one mechanical group, which is why no transform can space it',
+  );
+  assert.equal(
+    compileAssembly(bp).connections.find((row) => row.id === 'gear-mesh').reasonCode,
+    'GEAR_MISALIGNED',
+  );
+  const repair = meshSpacingRepair(bp, 'gear-mesh');
+  assert.equal(repair.moving, 'output-gear', 'the driven shaft is the datum the player built');
+  assert.equal(repair.connection, 'mount-bearing-spacer');
+  assert.equal(repair.part, 'bearing-spacer');
+  assert.equal(repair.targetPart, 'carrier');
+  assert.equal(repair.targetRegion, 'bottom');
+  assert.ok(Math.abs(repair.centreDistance - 0.19) < 1e-12);
+  // The mount slides 10 mm further along the axis the two shafts are separated on, and on no other.
+  assert.ok(Math.abs(repair.v - 0.1) < 1e-12, `v = ${repair.v}`);
+  assert.equal(repair.u, 0);
+  assert.equal(repair.twist, 0);
+  // Applying it restores the mesh, and the positive control is that nothing else was needed.
+  const spaced = proposeSurfaceMount(bp, {
+    ...repair,
+    id: repair.connection,
+    replaceConnection: repair.connection,
+  }).blueprint;
+  assert.equal(
+    compileAssembly(spaced).connections.find((row) => row.id === 'gear-mesh').reasonCode,
+    'OK',
+  );
+  // A repair that would drive the moved side into another part is refused by the same surface
+  // admission every mount edit passes through, not by a special case for gears.
+  const tight = createGearLift();
+  tight.parts.find((p) => p.id === 'output-gear').parameters.teeth = 18;
+  const closer = meshSpacingRepair(tight, 'gear-mesh');
+  assert.ok(Math.abs(closer.v - 0.06) < 1e-12);
+  assert.throws(
+    () =>
+      proposeSurfaceMount(tight, {
+        ...closer,
+        id: closer.connection,
+        replaceConnection: closer.connection,
+      }),
+    (error) => error.reasonCode === 'SURFACE_OVERLAP' && error.obstructingPartId === 'motor',
+  );
+  // Wrong traces: an already meshed pair has nothing to repair, and a tooth-size mismatch is a
+  // different diagnosis that spacing cannot fix.
+  assert.equal(meshSpacingRepair(createGearLift(), 'gear-mesh'), undefined);
+  const mismatched = createGearLift();
+  mismatched.parts.find((p) => p.id === 'output-gear').parameters.module = 0.005;
+  assert.equal(meshSpacingRepair(mismatched, 'gear-mesh'), undefined);
+  assert.equal(meshSpacingRepair(bp, 'power'), undefined, 'only a gear edge has a centre distance');
+});
+
+test('mesh spacing repair is offered only where a mount can express it, and never from identity', () => {
+  // No surface mount separates these rotors, so nothing is offered rather than a command that
+  // would move both gears together and leave the same diagnosis.
+  const bare = createEmptyBlueprint('mesh', 'Mesh');
+  bare.parts.push(gear('a', [0, 1, 0]), gear('b', [0, 1, 0.2], { teeth: 24 }));
+  bare.connections.push({
+    id: 'mesh',
+    kind: 'gear',
+    a: { part: 'a', port: 'mesh' },
+    b: { part: 'b', port: 'mesh' },
+  });
+  assert.equal(meshSpacingRepair(bare, 'mesh'), undefined);
+  // Identity may not choose the moving side: renaming every part and the blueprint leaves the
+  // same mount, the same offset and the same moving gear.
+  const renamed = createGearLift();
+  renamed.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  renamed.id = 'renamed';
+  for (const part of renamed.parts) part.name = `X-${part.name}`;
+  const plain = createGearLift();
+  plain.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  assert.deepEqual(meshSpacingRepair(renamed, 'gear-mesh'), meshSpacingRepair(plain, 'gear-mesh'));
+  // And the wrong trace: the repair follows the authored teeth, not the mount it happens to find.
+  const coarser = createGearLift();
+  coarser.parts.find((p) => p.id === 'output-gear').parameters.teeth = 28;
+  assert.ok(Math.abs(meshSpacingRepair(coarser, 'gear-mesh').centreDistance - 0.2) < 1e-12);
+});
+
+test('every tooth pair the gear-lift copy names is authorable, in the order the copy tells', async () => {
+  // The experiment's copy sends a player at the ratio while the shafts stay bolted 180 mm apart.
+  // Each named pair is authored here through ordinary parameter commands, because "their pitch
+  // radii add to the spacing" is necessary but not sufficient: the discs must also clear each
+  // other at every step on the way, and the intermediate pair is not the one being aimed at.
+  const author = async (pairs) => {
+    const workshop = await createWorkshop(createGearLift());
+    const results = [];
+    for (const [id, teeth] of pairs)
+      results.push(await workshop.act({ type: 'parameter', id, key: 'teeth', value: teeth }));
+    const row = workshop
+      .observe()
+      .frames.at(-1)
+      .metadata.connections.find((connection) => connection.id === 'gear-mesh');
+    return { results, reasonCode: row.reasonCode };
+  };
+  for (const [input, output] of [
+    [16, 20],
+    [18, 18],
+  ]) {
+    // Shrink the bigger gear first, which is what the copy tells the player to do.
+    const shrinkFirst = await author([
+      ['output-gear', output],
+      ['input-gear', input],
+    ]);
+    assert.deepEqual(
+      shrinkFirst.results.map((result) => result.ok),
+      [true, true],
+      `${input}/${output} authored bigger-first: ${JSON.stringify(shrinkFirst.results)}`,
+    );
+    assert.equal(shrinkFirst.reasonCode, 'OK', `${input} and ${output} mesh at the built spacing`);
+  }
+  // The wrong trace the copy's order exists for: growing the small gear first passes through
+  // 18 and 24, whose solid discs are 190 mm across the 180 mm the shafts are bolted at, so
+  // placement refuses that step and the pair never arrives.
+  const growFirst = await author([
+    ['input-gear', 18],
+    ['output-gear', 18],
+  ]);
+  assert.equal(growFirst.results[0].ok, false);
+  assert.equal(growFirst.results[0].reasonCode, 'SURFACE_OVERLAP');
+  assert.equal(growFirst.reasonCode, 'GEAR_MISALIGNED');
+  // And 16/20 has no such step, so the order rule is about the discs on the way, not about the
+  // pair: it survives in both orders.
+  const eitherWay = await author([
+    ['input-gear', 16],
+    ['output-gear', 20],
+  ]);
+  assert.deepEqual(
+    eitherWay.results.map((result) => result.ok),
+    [true, true],
+  );
+  assert.equal(eitherWay.reasonCode, 'OK');
+  // The pair the earlier proposal also listed is not authorable at all: 10 is below the row's
+  // own minimum, so the copy must never name it.
+  const belowMinimum = await author([['input-gear', 10]]);
+  assert.equal(belowMinimum.results[0].ok, false);
+  assert.equal(belowMinimum.results[0].reasonCode, 'INVALID_BLUEPRINT');
 });

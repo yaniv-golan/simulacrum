@@ -1,6 +1,13 @@
 // @ts-check
 import { CATALOG } from './catalog.mjs';
 
+/** Authoring tolerance for a mesh's centre distance, owned here with the radii it is compared
+ * against. The runtime tolerates 5 mm of drift before it raises GEAR_MOTION_LIMIT, and the
+ * finest control that can place a gear steps in millimetres, so a millimetre is both inside the
+ * band the physics already accepts and reachable by hand. The compiler diagnoses beyond it and a
+ * repair must not offer to move a pair already inside it, so both read this one number. */
+export const SPACING_TOLERANCE = 1e-3;
+
 /** The one place a gear's authored tooth count and module become lengths.
  *
  * Nothing stores a pitch or collider radius: a stored radius would be a second writer of the

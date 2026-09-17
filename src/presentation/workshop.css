@@ -941,6 +941,12 @@ button:not(.keyed) > .key-badge {
   font-size: 10px;
   line-height: 1.5;
 }
+/* Live derived dimensions read beside the control that changes them, so their digits must not
+   shift width as the count changes. */
+.derived-dimensions {
+  color: #bcd8cd;
+  font-variant-numeric: tabular-nums;
+}
 .machine-health {
   position: absolute;
   bottom: 48px;

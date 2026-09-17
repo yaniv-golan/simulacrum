@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"da1f9345a8681d4dd8999cc7d1d2ac1406120a78c3d5b851eac69becbed4abb7","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"98bc55f4373c6602c18630278dc6f66b6f549e3317ce93205eabd8aa8bdbd5a5","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is src/presentation/workshop-view.mjs, which renders the existing Learn entries as rows that collapse on close and, on this tip, derives a parameter field's range from its own menu. No teaching, example, experiment or challenge entry was added, extended or replaced, and the tooth-size mismatch remains an error message rather than teaching, so the admission rules and the record they require are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"45e98ce1abe032c208935a9af5b5eb9b892465e3e381fc0d176b6d6a05dc79f2","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"02009c6adb44b23f39f48f5108d6648a6429636fcf247b60eb3ee9004faa195f","disposition":"still accurate","rationale":"src/presentation/workshop-view.mjs is the only changed dependency, and it records the outcome this policy demands rather than a change to it: the gear-lift example copy was extended in place, so the disposition was extend and no new entry was earned, and the cord added no learning entry at all. The admission rules and the record this section requires are unchanged."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"94035da7745181bbd21112472e4248f1cd2901c75244c454285709598dc9c0b5","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"d437fa06a9366df61fbcdea8dfd764699f0c67c81ae119ecf112b95c1bc173b6","disposition":"updated","rationale":"Updated, and re-recorded because the merge left the marker and its dependency sidecar matching neither parent. The section now carries both sides of the stack. From the merged attachment-1a integration: the placing row reserves the Sound band it shares the bench's bottom edge with so a longer state sentence wraps inside the free bench, the coordinates card opens above the row and leaves with the fields it edits once the part is placed, both homes of the act read their state word and their confirming control's name from the shared placement vocabulary while the row's role=status region carries the state word alone, the live placement's ghost drops a dashed line to a landing ring with a transient chip naming the part it will land on and the gap left, and Learn & examples is a bounded picker whose rows scroll beneath a fixed header. Carried in from this tip: tooth size is a two-value menu, a parameter declaring a menu gives its control that menu's bounds and spacing, and an off-menu number is reported by the field, never sent as an edit, and replaced in the control by the authored value so the player is never left reading a number the part does not have. The dependencies behind those statements are src/presentation/workshop-view.mjs, workshop.css, placement-lifecycle.mjs and workbench-content.mjs, with scripts/catalog-browser-actions.mjs and scripts/gear-browser-cases.mjs carrying the journey evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"2afb8cb852bc5c47c62ab0a77030ae3ac609bb9fb44a941a71a9b11de6dbeb03","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cc22ac37f0eed7abfd1d4ed65116ee9683f45dc294f31f0ef913b5e985326b94","disposition":"still accurate","rationale":"The gear teeth and tooth-size rows join the existing settings region for the selected part, Space to mesh sits on the mesh connection row that already reported check spacing, and src/presentation/workshop.css carries their styling; the cord contributes one connection label in src/presentation/inspector-summary.mjs. No region, visibility lifecycle or displaced surface changed, and no consequential state or unique action was removed."} -->
 
 
 
@@ -414,15 +414,31 @@ These examples extend construction possibilities, not evidence of player compreh
 or qualification outside their tested finite operating envelopes.
 
 
-Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
+Spur gears use the Motion catalog category and search, the selected inspector's primary setting,
+selected Connections and the existing part-help window.
 One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
-gear, so no numeric query names a part type. Tooth size is a two-value menu, and a parameter that
+gear, so no numeric query names a part type. Teeth is the gear's primary setting, in the same
+inspector block a beam's length and a ball's diameter own, so a growing disc previews against its
+neighbours and a count that would clip one is refused before it is committed; the pitch circle
+and solid disc width that count implies are read back beside it, and the preview names the
+pitch circle of the count under the cursor. Mass is not repeated there: Engineering details
+already owns it. Tooth size sits directly beneath it rather than inside
+Engineering details, because the tooth-size diagnosis asks the player to change it. Tooth size is a
+two-value menu read in millimetres, and a parameter that
 declares a menu gives its control that menu's bounds and spacing, so an off-menu number is
-reported by the field and never sent as an edit. Gear mesh explicitly leaves parts in place and
+reported by the field and never sent as an edit. A field never reads `undefined` for a setting a
+save left out: the control falls back to the same catalog default the physics resolves.
+Gear mesh explicitly leaves parts in place and
 requires independently supported aligned shafts. Mismatched tooth sizes and a centre distance more
 than a millimetre from the two pitch radii added are reported on that mesh row, in its own words,
-and drive nothing; they never refuse the setting that caused them. The requested Learn & examples browser adds one editable gear-lift
-experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
+and drive nothing; they never refuse the setting that caused them. A mis-spaced row offers one
+action, Space to mesh, which moves the gear that drives nothing on its own mount until the centres
+are the two pitch radii apart, as one undoable edit refused by ordinary mount admission when the
+target is occupied. Where no single mount can express that correction the row says so and names the
+reachable repair instead: tooth counts that add to the spacing already built.
+The requested Learn & examples browser adds one editable gear-lift
+experiment: predict the slower rotor, run the loaded arm, then change the ratio at that fixed shaft
+spacing by keeping the two tooth counts adding to 36, or disconnect the mesh
 or reduce motor current and retry. Its prerequisite is motor/shaft authoring. This
 adds a distinct speed-versus-load experiment; the rolling-machine example teaches
 power and connection basics without a transmission load comparison. The need is a

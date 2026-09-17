@@ -59,9 +59,10 @@ is disconnected, while opening a bypass can make B a measurable bridge.
 At tick zero there is no completed force interval: supported joint receipts are
 initializing, while sensor readings retain power, mounting and domain validity
 precedence. Restore validates receipt ages and topology without advancing physics.
-Session checkpoint and blueprint save versions remain 3.
+The session checkpoint version remains 3; the blueprint save version is 4. The two are
+independent, and a checkpoint still requires the exact admitted configuration it was taken on.
 
-Version 3 admits an optional `environment`: the unchanged legacy `flat` or
+Version 4 admits an optional `environment`: the unchanged legacy `flat` or
 `rounded-bump` string, or authored `{objects,ground}` scene data. Omission means
 flat. This is compatible admission within the current schema, not a historical
 reader or migration chain. Old preset descriptors remain unchanged for visual
@@ -77,7 +78,7 @@ outside machine membership, metrics and assembly capture. Matching face-adjacent
 boxes with identical cross-section, orientation, density and contact properties
 compile as their exact rectangular union, removing internal collision faces.
 Individual objects remain independently editable and visible in recording review.
-The combined machine bodies, distributed rope nodes, scene solids and floor cannot exceed 4097 physics bodies.
+The combined machine bodies, distributed rope and elastic-cord nodes, scene solids and floor cannot exceed 4097 physics bodies.
 Recording remains a separate subset of at most 512 machine parts, subject to its
 unchanged event and session byte limits.
 
@@ -267,7 +268,7 @@ approximation is documented in the physics contact ADR.
 
 ### Surface mounting (M3b)
 
-Save version 4 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
+Save version 4 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets; the surface-bound `rope` and `cord` connections also use `{part, surface:{region,u,v,twist}}` bindings, resolved the same way and granting no additional force or support. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
 faces. Their local X is the outward normal, Y is the u tangent, and Z is the v
 tangent. Coordinates use metres and radians. A surface connection's a endpoint
 is the receiving region and b is the centered source pad. Resolved normals oppose using the existing fixed-joint convention; a joint-face endpoint additionally carries its declared joint and sits at `u = v = 0`. The compiler emits an ordinary fixed joint for a `fixed` pair, a passive revolute about the mated normal for a `pivot` pair, and a passive spherical at the coincident anchors for a `spherical` pair; surface placement grants no special force, support or power. Joint faces on a release face or a Load Cell face reject.
@@ -411,7 +412,7 @@ The single integration and nine phases are unchanged.
 The undamped scalar oscillator preserves modified energy `E - h k x v / 2`,
 up to numerical error, rather than suppressing the intended bounce. Admission retains
 `dt² trace(K W) <= 0.09`; exceeding it produces preserved failure evidence before
-impulses are applied. At most eight spring-kind joints are admitted. Rows with k > 0 admit k ≤ 300 N/m, c=0–100 N·s/m and 0.08–0.40 m travel; rows with k = 0 (powered linear guides and passive slides) admit 0.01–1.0 m travel with the same damping range, while each part's catalog ratings still bound what a player can author. Limits must be ordered and contain the start position. Stops are unilateral prismatic limits, not pose clamps or a
+impulses are applied. At most eight spring-kind joints are admitted. Rows with k > 0 admit k ≤ 300 N/m, c=0–100 N·s/m and 0.08–0.40 m travel; rows with k = 0 (powered linear guides and passive slides) admit 0.01–1.0 m travel with the same damping range, while each part's catalog ratings still bound what a player can author. Limits must be ordered and contain the start position. An authored elastic-cord rest length stays inside the same frozen 0.08-0.40 m domain. Stops are unilateral prismatic limits, not pose clamps or a
 breakage model. Isolated completed-tick impact bounds do not qualify unseen substep
 penetration or actual mechanism clearances.
 
@@ -458,6 +459,63 @@ The balance becomes
   Checkpoint admission binds spring energy to restored geometry and configuration;
   completed spring values also enter deterministic projection.
 
+## Elastic cords (M3b)
+
+A `cord` connection joins two catalog mounting faces through the same surface
+bindings and the same admission set as a rope: `resolveSurfaceEndpoint` resolves
+both endpoints, no port is occupied, and no joint-face, latch or load-cell rule is
+added or removed by the kind. The connection owns rest length (m), stiffness (N/m)
+and damping (N s/m); its material and diameter own only the distributed mass, and no
+quantity is authored twice. Authored ranges are the measured elastic domain the
+guided spring's frequency and energy controls were taken on: rest length
+0.08-0.40 m, stiffness 1-300 N/m, damping 0-100 N s/m, with 2-8 segments, a
+4-20 mm diameter and at most two cords per machine. Edits are Build-only. Current
+save version 4 admits this additional connection vocabulary.
+
+An elastic cord is tension-only. It compiles to `n+1` appended nodes carrying the
+authored material's mass, `n` numeric unilateral elastic rows and two spherical
+joints at the resolved anchors, exactly the rope's shape; each row takes `n` times
+the authored stiffness and damping, so `n` rows in series restore the authored pair.
+The rows are solved by the one distributed elastic law, in `integration-contacts`
+beside the rope solve, inside the same single integration. A cord below its rest
+length applies nothing at all: a slack cord leaves a hanging load in exact free
+fall, and no row reports or applies compression. A cord therefore has no push
+branch, no coil bind and no lateral guidance; it constrains no relative degree of
+freedom. Its damper is not visible to power allocation, as the rope's is not.
+
+Guided springs and elastic cords share one machine's elastic response, so they share
+one budget. Admission sums `dt² k W` over each elastic group — bodies joined by
+authored bilateral joints, then by cord ends — using authored masses, where `W` is
+the relative mobility of the rigidly bolted sets an element's ends belong to and an
+immobile pair spends nothing. Exceeding 0.09 rejects the authored machine in Build
+before any run, and zero-stiffness guides spend nothing. A firm cord therefore
+requires heavier attached parts; this is a machine-level authoring budget in the
+measured domain, not a stability requirement, because the distributed rows are
+solved by an implicit convex projection rather than an explicit impulse. Cord rows
+are consequently admitted far outside that budget: both extremes of the authored
+domain are measured to converge without energy growth or jitter and to continue
+exactly from a snapshot. Convergence is claimed for the measured authored domain,
+not for arbitrary row stiffness or node mass.
+
+Beyond twice its rest length a cord has left the linear elastic model that was
+measured, so the run stops with preserved failure evidence and an explanation
+instead of continuing. Cords use the distributed elastic ledger the law produces —
+`ropePotentialJ`, `ropeWorkJ`, `ropeElasticDeltaJ`, `ropeDampingWorkJ`,
+`ropeNumericalLossJ` and `ropeSplitWorkJ` — and never the guided-spring terms, so a
+cord-only machine requires no spring preparation and does not consume the
+eight-spring allowance. Completed frames publish cord rows in `ropes` with the same
+fields; `springs` is unchanged. No surface draws a cord yet: workshop rendering and
+the optical input both select rope connections, so a cord has completed geometry and
+no visual representation, and it is not wiring. Mechanical energy never increases. An
+undamped cord in the middle of the authored domain keeps swinging, so only the
+authored damper removes energy there; at the stiffest authored corner the implicit
+projection's own numerical loss settles the load without a damper, and that loss is
+reported through `ropeNumericalLossJ`, never as heat. That row ledger accounts for the
+cord rows alone: the remainder of a measured mechanical-energy drop leaves through the
+resolved spherical anchors and the appended node chain's own solve, which the distributed
+elastic rows neither measure nor claim, so the corner is evidenced by the rows' share of
+the drop rather than by closing the machine's books exactly.
+
 ## Completed contact observations (M3b)
 
 The physics door returns copied numeric contact rows; the session publishes them
@@ -492,7 +550,11 @@ error bounds beyond this numeric observation contract.
 
 Opaque physics envelope version 9 binds the pinned f64 backend identity and requires
 `gearState`, `opened`, `ropeState`, `ropeWork` and `reactions`, including empty
-collections when a feature is absent. The `opened` field is a strictly increasing
+collections when a feature is absent. `ropeState` and `ropeWork` carry every
+distributed elastic row, rope and elastic cord alike, so admitting cords adds rows
+to those collections and no fields; envelope version 9 and save version 4 are both
+unchanged by cords. Cord rows carry no material rating, so a restored applied tension is
+admitted on finiteness and non-negativity rather than against a breaking load. The `opened` field is a strictly increasing
 list of authored fixed-joint indices; indices retain their original configuration
 meaning after removal. Extra or missing fields, unsupported versions and backend
 identities reject before native snapshot deserialization. Native motor configuration
@@ -510,7 +572,7 @@ joint properties remain validated. Rejected admission leaves the live completed 
 unchanged. Restoring an admitted released snapshot refreshes contact-filter membership
 and response topology; it does not recreate a closed latch or reset body motion.
 Rope work and force readings are validated independently of opened-joint state, and
-both families are admitted before the native state is swapped. Numeric rope links
+both families are admitted before the native state is swapped. Numeric rope and elastic-cord links
 remain outside bilateral native constraint groups; their spherical anchors remain
 native joints after a fixed latch opens. Release commits before the rope force solve,
 which uses the prepared post-release response. One ordinary integration follows.

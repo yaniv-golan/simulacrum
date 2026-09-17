@@ -28,6 +28,10 @@ export type WorkshopCommand =
       connection: Extract<import('./generated/blueprint-types.js').Connection, { kind: 'rope' }>;
     }
   | {
+      type: 'cord';
+      connection: Extract<import('./generated/blueprint-types.js').Connection, { kind: 'cord' }>;
+    }
+  | {
       type: 'install-controller-program';
       id: string;
       program: NonNullable<Extract<Part, { type: 'logicController' }>['controllerProgram']>;

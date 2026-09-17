@@ -41,9 +41,9 @@ const messages = {
   INVALID_GRAVITY: 'Gravity must contain three finite values.',
   INVALID_ENDPOINT: 'Choose an existing connector on each part.',
   GEAR_MISALIGNED:
-    'Align both shaft axes, then set the gear centres their two pitch radii apart. Connecting a gear mesh does not move parts.',
+    'Line up both shaft axes and both gear faces, then set the gear centres the two pitch radii apart. Either move the mount that separates the two shafts, or choose tooth counts whose pitch radii add to the spacing already built. Connecting a gear mesh never moves parts.',
   GEAR_TOOTH_SIZE_MISMATCH:
-    'These gears have different tooth sizes and cannot mesh. Set the same tooth size on both gears, then they will drive each other.',
+    'These gears have different tooth sizes, so their teeth cannot mesh at any distance. Set the same Tooth size on both gears and they will drive each other.',
   UNSUPPORTED_GEAR_TOPOLOGY:
     'Mount each gear on its own rotating shaft, with both shafts attached to the same rigid support. Use at most eight meshes, without a closed loop.',
   MISALIGNED: 'These connectors are not aligned. Reconnect them to snap the parts together.',
@@ -71,6 +71,12 @@ const messages = {
     'Choose a rope length of 0.25–4 m near or above the attachment distance. Use at most four ropes. Previous settings are preserved.',
   ROPE_MOTION_LIMIT:
     'Rope load or stretch limit reached. Return to Build, increase rope length or diameter, reduce the load or speed, then try again. The rope has not broken.',
+  CORD_DOMAIN_LIMIT:
+    'Choose a cord length of 0.08\u20130.40 m, stiffness 1\u2013300 N/m and damping 0\u2013100 N s/m, and keep the attachment distance within twice the cord length. Use at most two cords. Previous settings are preserved.',
+  CORD_ELASTIC_BUDGET:
+    'This machine\u2019s springs and cords together are too stiff for the parts they pull on. Reduce a stiffness, or attach the cord to heavier parts. Previous settings are preserved.',
+  CORD_MOTION_LIMIT:
+    'Cord stretch or speed limit reached. Return to Build, increase cord length or stiffness, reduce the load or speed, then try again. The cord has not broken.',
   GEAR_MOTION_LIMIT:
     'Gear motion exceeded this model’s limits. Return to Build; check shaft supports, reduce motor current, or start with the machine resting on the floor.',
   PHYSICS_FAILURE: 'The physics step failed. Return to Build; the failure record is available.',

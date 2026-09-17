@@ -28,6 +28,33 @@ export async function verifyGearJourney({ page, evidence, out }) {
     (await read()).metadata.blueprint.parts.length,
     built.parts.length + 1,
   ]);
+  // The tooth count is the gear's front setting, and the pitch circle, solid disc and weight it
+  // implies are read back beside it rather than derived by the player.
+  const placed = (await read()).metadata.blueprint.parts.at(-1);
+  if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
+    await page.locator('.machine-picker > summary').click();
+  await page.locator(`.part-list-item[data-part-id="${placed.id}"]`).click();
+  const derived = () => page.locator('.primary-setting .derived-dimensions').innerText();
+  evidence.assert('equal', [
+    await derived(),
+    'Pitch circle 120 mm · solid disc 100 mm across',
+    'a placed gear reads back the lengths its shipped count implies',
+  ]);
+  const teeth = page.getByRole('spinbutton', { name: 'Spur gear teeth (count)', exact: true });
+  await teeth.fill('14');
+  await teeth.press('Tab');
+  evidence.assert('equal', [
+    (await read()).metadata.blueprint.parts.at(-1).parameters.teeth,
+    14,
+    'the primary gear setting authors the tooth count',
+  ]);
+  evidence.assert('equal', [
+    await derived(),
+    'Pitch circle 140 mm · solid disc 120 mm across',
+    'every read-back length follows the authored count',
+  ]);
+  await page.screenshot({ path: `${out}/tooth-count-setting.png` });
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, built]);
   await chooseInput();
@@ -153,26 +180,24 @@ async function verifyGearConstruction({ page, evidence, out }) {
   // One catalog row: the pair is made by authoring the tooth count, not by picking a part.
   const small = await placeType('spurGear');
   const large = await placeType('spurGear');
-  const setting = async (part, key, value) => {
+  // Both authored gear settings are front settings beside the machine, not entries inside
+  // Engineering details: the tooth-size diagnosis asks the player to change one of them.
+  const setting = async (part, label, value) => {
     await select(part);
-    if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
-      await page.locator('.part-settings > summary').click();
-    const input = page.getByLabel(key, { exact: true });
+    const input = page.getByRole('spinbutton', { name: label, exact: true });
     await input.fill(value);
     await input.press('Tab');
   };
   // Reads the field back in the inspector the entry was typed into, without reselecting the part:
   // a reselect rebuilds the control from the frame and would hide what the field itself shows.
-  const settingEntry = async (part, key, value) => {
+  const settingEntry = async (part, label, value) => {
     await select(part);
-    if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
-      await page.locator('.part-settings > summary').click();
-    const input = page.getByLabel(key, { exact: true });
+    const input = page.getByRole('spinbutton', { name: label, exact: true });
     await input.fill(value);
     await input.press('Tab');
-    return page.getByLabel(key, { exact: true }).inputValue();
+    return page.getByRole('spinbutton', { name: label, exact: true }).inputValue();
   };
-  await setting(large, 'teeth', '24');
+  await setting(large, 'Spur gear teeth (count)', '24');
   evidence.assert('equal', [
     (await read()).metadata.blueprint.parts.at(-1).parameters.teeth,
     24,
@@ -266,7 +291,7 @@ async function verifyGearConstruction({ page, evidence, out }) {
   // An off-menu tooth size never becomes a command: the field reports it and the authored value
   // stands, so the player is not told about a refusal the control could have shown. The field
   // goes back to the authored value too, so the player never reads a number the gear does not have.
-  const offMenuShown = await settingEntry(large, 'module', '0.007');
+  const offMenuShown = await settingEntry(large, 'Tooth size (mm)', '7');
   evidence.assert('deepEqual', [
     (await read()).metadata.blueprint,
     completed,
@@ -274,10 +299,10 @@ async function verifyGearConstruction({ page, evidence, out }) {
   ]);
   evidence.assert('equal', [
     offMenuShown,
-    '0.01',
+    '10',
     'the field shows the authored tooth size again after an off-menu entry is reported',
   ]);
-  await setting(large, 'module', '0.005');
+  await setting(large, 'Tooth size (mm)', '5');
   const mismatched = await read();
   evidence.assert('equal', [
     mismatched.metadata.blueprint.parts.find((p) => p.id === large.id).parameters.module,
@@ -290,12 +315,48 @@ async function verifyGearConstruction({ page, evidence, out }) {
   ]);
   evidence.assert('match', [await meshRow(small), /different tooth sizes/]);
   await page.screenshot({ path: `${out}/tooth-size-mismatch.png` });
-  await setting(large, 'module', '0.01');
+  await setting(large, 'Tooth size (mm)', '10');
   evidence.assert('equal', [
     (await read()).metadata.connections.find((c) => c.id === meshId).reasonCode,
     'OK',
   ]);
   evidence.assert('doesNotMatch', [await meshRow(small), /different tooth sizes|check/]);
+  // A tooth count the built shaft spacing cannot host is the other diagnosis, and one action on
+  // the same row slides the later gear on its own mount until the pair drives again.
+  await setting(large, 'Spur gear teeth (count)', '26');
+  evidence.assert('equal', [
+    (await read()).metadata.connections.find((c) => c.id === meshId).reasonCode,
+    'GEAR_MISALIGNED',
+    'an authored count the built spacing cannot host is accepted and diagnosed',
+  ]);
+  evidence.assert('match', [await meshRow(small), /check spacing/]);
+  const misSpaced = (await read()).metadata.blueprint;
+  await page.screenshot({ path: `${out}/mesh-spacing.png` });
+  await page.locator(`[data-mesh-spacing="${meshId}"]`).click();
+  const spaced = await read();
+  const centres = (blueprint) => {
+    const at = (id) => blueprint.parts.find((p) => p.id === id).position;
+    return Number(Math.hypot(...at(large.id).map((x, i) => x - at(small.id)[i])).toFixed(6));
+  };
+  // The distance first, so a repair that moves nothing reports the metres it left behind rather
+  // than only the reason code that follows from them.
+  evidence.assert('equal', [
+    centres(spaced.metadata.blueprint),
+    0.19,
+    'the centres end up the two pitch radii apart',
+  ]);
+  evidence.assert('equal', [
+    spaced.metadata.connections.find((c) => c.id === meshId).reasonCode,
+    'OK',
+    'Space to mesh restores the centre distance the authored counts ask for',
+  ]);
+  await page.screenshot({ path: `${out}/mesh-spaced.png` });
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  evidence.assert('deepEqual', [
+    (await read()).metadata.blueprint,
+    misSpaced,
+    'spacing a mesh is one undo step',
+  ]);
   writeFileSync(
     `${out}/construction-result.json`,
     JSON.stringify(

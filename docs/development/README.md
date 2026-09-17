@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"39091d0931d37c8d29105ea52a86fada3584864f8b5bf9b900ed3e6de1097651","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"69c48529d67ae2e9bc7329accb1ea56c744769f420d6cac4b3c37281893aa543","disposition":"still accurate","rationale":"Unchanged prose. The one changed dependency is docs/development/reference.md, the generated discovery this section tells the reader to regenerate; docs:prepare regenerated it here for the merged placement and dialog owners. The prepare, review and check workflow, its ownership rules, and the marker/sidecar records it prescribes are all unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c6c0eee7f7c9ffcc7ee6a36e79aeae9bb07cda94d7517a7aaae2448209c1133c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a235bae4f0ab546ae0a662a0cf44897edb2e268e8cbe7e42239e6636b6abbf93","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md, which this section describes as generated output rather than quoting; its spur-transmission row now lists the repair under gear-mesh.mjs because the manifest owner moved. The prepare, review and check workflow this section prescribes is the one this closure followed, including re-running prepare after the source moved again rather than reusing the first pass."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes

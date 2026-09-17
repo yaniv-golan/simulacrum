@@ -9,11 +9,12 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
 const gearHelp = () =>
   help(
     'Trades rotation speed for available torque',
-    `A spur gear with an authored tooth count. A 12-tooth gear driving a 24-tooth gear gives roughly half the speed in the opposite direction and greater available torque; a gear with more teeth is also larger and heavier, and aluminium is selectable. The teeth and bore you see are cosmetic and are cut inside the collision cylinder that supplies collision and mass, so nothing passes through the bore and two meshed gears show a small gap where the physics actually touches. The explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
-    'A motor or bearing for each shaft, fixed to the same rigid support. The gear centres must be the two pitch radii added, with aligned axes and gear faces. Both gears must use the same tooth size.',
+    `One spur gear with two settings: Teeth, the tooth count, and Tooth size, the height and spacing of each tooth. A 12-tooth gear driving a 24-tooth gear gives roughly half the speed in the opposite direction and greater available torque; a gear with more teeth is also larger and heavier, and aluminium is selectable. The teeth and bore you see are cosmetic and are cut inside the collision cylinder that supplies collision and mass, so nothing passes through the bore and two meshed gears show a small gap where the physics actually touches. The explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
+    'A motor or bearing for each shaft, fixed to the same rigid support. Two rules decide whether a pair drives: the centre distance is the two pitch radii added, and both gears use the same tooth size. A pitch radius is Teeth times Tooth size, halved.',
     [
       'Attach each gear to its own supported shaft using either axle port. The other axle port can carry an output arm or wheel.',
       'Select Gear mesh, then Mesh with the aligned gear. Connecting does not move either gear or create a bearing. Disconnecting stops torque transfer through that mesh.',
+      'Change Teeth to change the ratio. With the shafts already bolted in place, keep the two tooth counts adding to the same total and the spacing still fits; shrink the bigger gear first, or the discs touch on the way. Otherwise the mesh row says check spacing, and Space to mesh there moves one gear on its mount.',
       'Open Learn & examples → Lift with gears for an editable loaded mechanism. Predict which way the large gear turns before pressing Run.',
       'A mesh flexes slightly under load. This model does not include backlash or tooth breakage. Up to eight mesh edges are supported; closed mesh loops and moving shaft supports are rejected.',
     ],
