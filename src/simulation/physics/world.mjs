@@ -384,9 +384,7 @@ export async function createPhysicsWorld(configuration) {
   admitGearTopology(descriptions, joints);
   // Distributed unilateral elastic rows. Rope segments and elastic-cord segments
   // share one law, one solve, one capacity and one work ledger.
-  const ropeIndices = joints.flatMap((j, i) =>
-    j.kind === 'rope' || j.kind === 'cord' ? [i] : [],
-  );
+  const ropeIndices = joints.flatMap((j, i) => (j.kind === 'rope' || j.kind === 'cord' ? [i] : []));
   if (ropeIndices.length > 64) throw RangeError('rope capacity limit');
   let ropesApplied = false,
     ropeState = ropeIndices.map(() => 0),

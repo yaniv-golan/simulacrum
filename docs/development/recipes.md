@@ -120,7 +120,7 @@ and the existing chronological history. The environment controls in
 geometry, authored scene identity, aggregate capacity, rejection and continuation.
 [Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
 nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
-Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
+Combined capacity includes machine bodies, every distributed rope and elastic-cord node, compiled scene solids and ground.
 [Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
 legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
 
@@ -457,6 +457,23 @@ energy fields before swapping native state. Preserve [independent ledger oracles
 [both clock drivers](../../test/rope-determinism.test.mjs). Use the
 [bounded capacity measurement](../../scripts/measure-ropes.mjs) for sustained ordinary
 support contact; this does not qualify arbitrary impacts, duration or hardware.
+
+An [elastic cord](../../src/model/cord.mjs) is a second connection compiled into the
+same distributed rows. It authors its own end-to-end stiffness and damping in the
+measured 1-300 N/m and 0-100 N s/m ranges, while material and diameter own only the
+distributed mass; each row takes N times the authored pair so N rows in series restore
+it. It adds no law: the tension-only Kelvin element it needs is the existing rope law,
+and duplicating it would put one law under two owners. Its rows are validated in the
+physics door against their own domain, reach twice their rest length before a bounded
+CORD_MOTION_LIMIT, and carry no material strength rating. Guided springs and cords
+share one machine-level elastic budget refused by
+[admitCordBudget](../../src/model/cord.mjs#symbol=admitCordBudget) during compilation,
+from authored masses over each elastic group; that budget keeps a machine inside the
+measured domain and is not a stability requirement, because the distributed rows are
+solved implicitly. Preserve [authoring, budget and identity controls](../../test/cord-authoring.test.mjs),
+[slack, analytic and bounded-failure controls](../../test/cord-physics.test.mjs),
+[energy and damper controls](../../test/cord-energy.test.mjs) and
+[both clock drivers](../../test/cord-determinism.test.mjs).
 
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 

@@ -6332,6 +6332,104 @@
       ]
     },
     {
+      "id": "elastic-cord",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "An authored tension-only elastic cord connects two ordinary mounting faces on the rope's admission set, carries the distributed mass of the player's chosen material and diameter, and applies the authored end-to-end stiffness and damping through the one distributed unilateral elastic law. A slack cord applies nothing and leaves a hanging load in exact free fall; a loaded cord settles at the analytical extension of its authored stiffness; mechanical energy never increases, and only the authored damper removes it. Stiffness and mass have one authoring owner each, and identity perturbation leaves the compiled plant unchanged. Guided springs and cords share one machine-level elastic budget refused at authoring time, capacity and the linear elastic domain are bounded with preserved failure evidence, and cord rows continue deterministically across processes and both production clocks through the unchanged physics envelope.",
+      "owners": [
+        {
+          "path": "src/model/cord.mjs",
+          "anchor": "compileCords"
+        },
+        {
+          "path": "src/model/cord.mjs",
+          "anchor": "admitCordBudget"
+        },
+        {
+          "path": "src/simulation/physics/law/rope.mjs",
+          "anchor": "ropeVectorImpulses"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "ordinary cord descriptor saves and compiles distributed mass with authored series compliance"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord identity and copied reusable graphs preserve authored material and numeric plant"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord joins mechanical authoring and mirrored reference attachments remain explicit"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a slack cord neither pulls nor pushes, and the taut control pulls every row"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a hanging load settles at the analytical extension of the authored stiffness"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "slack and taut cord snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "a damped cord never increases mechanical energy and settles the load it carries"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "an undamped cord keeps swinging while the damped control settles"
+          },
+          {
+            "path": "test/cord-determinism.test.mjs",
+            "anchor": "cord projections match separate processes and both production clocks"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "cord domain, capacity and shared elastic budget reject while ordinary controls admit"
+          },
+          {
+            "path": "test/cord-authoring.test.mjs",
+            "anchor": "the elastic budget counts guided springs with cords and exempts an immobile pair"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "a cord stretched past its linear domain stops the run with a bounded cord reason"
+          },
+          {
+            "path": "test/cord-physics.test.mjs",
+            "anchor": "slack and taut cord snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/cord-energy.test.mjs",
+            "anchor": "an undamped cord keeps swinging while the damped control settles"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "independent-feedback-receipts",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",

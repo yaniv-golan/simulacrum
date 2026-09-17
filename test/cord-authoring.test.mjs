@@ -81,7 +81,8 @@ test('ordinary cord descriptor saves and compiles distributed mass with authored
   const rubber = compileAssembly(bp, { ground: null });
   bp.connections[0].cord.material = 'bungee';
   const bungee = compileAssembly(bp, { ground: null });
-  const total = (c) => c.connections[0].cord.nodes.reduce((s, i) => s + c.configuration.bodies[i].mass, 0);
+  const total = (c) =>
+    c.connections[0].cord.nodes.reduce((s, i) => s + c.configuration.bodies[i].mass, 0);
   assert.ok(total(bungee) < total(rubber));
   // Every material row is player-selectable and complete.
   for (const row of Object.values(CORD_MATERIALS)) {

@@ -187,17 +187,7 @@
           "$ref": "#/$defs/id"
         },
         "kind": {
-          "enum": [
-            "fixed",
-            "pivot",
-            "shaft",
-            "power",
-            "signal",
-            "spring",
-            "gear",
-            "rope",
-            "cord"
-          ]
+          "enum": ["fixed", "pivot", "shaft", "power", "signal", "spring", "gear", "rope", "cord"]
         },
         "a": {
           "$ref": "#/$defs/endpoint"
