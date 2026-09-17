@@ -338,5 +338,5 @@
       }
     }
   },
-  "$comment": "Current catalog membership and parameter schemas are joined by generate-schema.mjs. Only save version 3 is admitted."
+  "$comment": "Current catalog membership and parameter schemas are joined by generate-schema.mjs. Only save version 4 is admitted."
 }

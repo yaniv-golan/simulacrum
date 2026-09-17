@@ -21,6 +21,13 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-17-save-format-4',
+      date: '2026-09-17',
+      name: 'Old saves no longer open',
+      summary:
+        'Machines saved by an earlier version no longer open. Build yours again in this workshop and save it once more.',
+    },
+    {
       id: '2026-09-17-gear-tooth-settings',
       date: '2026-09-17',
       name: 'Gear settings sit beside the machine',
