@@ -25,7 +25,7 @@ export const RELEASE_NOTES = Object.freeze(
       date: '2026-09-17',
       name: 'Gear settings sit beside the machine',
       summary:
-        'Teeth and Tooth size are front settings on a selected gear, with its pitch circle, disc size and weight shown as you change them.',
+        'Teeth and Tooth size are front settings on a selected gear, with the pitch circle and disc size they give read back beside them.',
       feature: 'spurGears',
     },
     {

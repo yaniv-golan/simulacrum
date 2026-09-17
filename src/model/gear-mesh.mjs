@@ -1,4 +1,4 @@
-import { gearFacts } from './gear-geometry.mjs';
+import { gearFacts, SPACING_TOLERANCE } from './gear-geometry.mjs';
 import { rotateVector } from './transforms.mjs';
 
 const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
@@ -7,11 +7,6 @@ const add = (a, b) => a.map((x, i) => x + b[i]);
 const fail = (reasonCode, path) => {
   throw Object.assign(Error(reasonCode), { reasonCode, path });
 };
-
-// Authoring tolerance for the centre distance. The runtime tolerates 5 mm of drift before it
-// raises GEAR_MOTION_LIMIT, and the finest control that can place a gear steps in millimetres,
-// so a millimetre is both inside the band the physics already accepts and reachable by hand.
-const SPACING_TOLERANCE = 1e-3;
 
 /** Admit a forest of separately supported rotors; meshes never supply bearings.
  *

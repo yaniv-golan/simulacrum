@@ -41,7 +41,7 @@ const messages = {
   INVALID_GRAVITY: 'Gravity must contain three finite values.',
   INVALID_ENDPOINT: 'Choose an existing connector on each part.',
   GEAR_MISALIGNED:
-    'Line up both shaft axes and both gear faces, then set the gear centres the two pitch radii apart. Space to mesh on the mesh row can do that spacing for you, or choose tooth counts that add to the spacing you already built. Connecting a gear mesh never moves parts.',
+    'Line up both shaft axes and both gear faces, then set the gear centres the two pitch radii apart. Either move the mount that separates the two shafts, or choose tooth counts whose pitch radii add to the spacing already built. Connecting a gear mesh never moves parts.',
   GEAR_TOOTH_SIZE_MISMATCH:
     'These gears have different tooth sizes, so their teeth cannot mesh at any distance. Set the same Tooth size on both gears and they will drive each other.',
   UNSUPPORTED_GEAR_TOPOLOGY:

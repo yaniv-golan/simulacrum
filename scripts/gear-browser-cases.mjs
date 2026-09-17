@@ -37,8 +37,8 @@ export async function verifyGearJourney({ page, evidence, out }) {
   const derived = () => page.locator('.primary-setting .derived-dimensions').innerText();
   evidence.assert('equal', [
     await derived(),
-    'Pitch circle 120 mm · solid disc 100 mm across · 1.23 kg',
-    'a placed gear reads back the lengths and weight its shipped count implies',
+    'Pitch circle 120 mm · solid disc 100 mm across',
+    'a placed gear reads back the lengths its shipped count implies',
   ]);
   const teeth = page.getByRole('spinbutton', { name: 'Spur gear teeth (count)', exact: true });
   await teeth.fill('14');
@@ -50,8 +50,8 @@ export async function verifyGearJourney({ page, evidence, out }) {
   ]);
   evidence.assert('equal', [
     await derived(),
-    'Pitch circle 140 mm · solid disc 120 mm across · 1.78 kg',
-    'every read-back length and the weight follow the authored count',
+    'Pitch circle 140 mm · solid disc 120 mm across',
+    'every read-back length follows the authored count',
   ]);
   await page.screenshot({ path: `${out}/tooth-count-setting.png` });
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
@@ -334,18 +334,21 @@ async function verifyGearConstruction({ page, evidence, out }) {
   await page.screenshot({ path: `${out}/mesh-spacing.png` });
   await page.locator(`[data-mesh-spacing="${meshId}"]`).click();
   const spaced = await read();
+  const centres = (blueprint) => {
+    const at = (id) => blueprint.parts.find((p) => p.id === id).position;
+    return Number(Math.hypot(...at(large.id).map((x, i) => x - at(small.id)[i])).toFixed(6));
+  };
+  // The distance first, so a repair that moves nothing reports the metres it left behind rather
+  // than only the reason code that follows from them.
+  evidence.assert('equal', [
+    centres(spaced.metadata.blueprint),
+    0.19,
+    'the centres end up the two pitch radii apart',
+  ]);
   evidence.assert('equal', [
     spaced.metadata.connections.find((c) => c.id === meshId).reasonCode,
     'OK',
     'Space to mesh restores the centre distance the authored counts ask for',
-  ]);
-  const centres = (blueprint) => {
-    const at = (id) => blueprint.parts.find((p) => p.id === id).position;
-    return Math.hypot(...at(large.id).map((x, i) => x - at(small.id)[i]));
-  };
-  evidence.assert('ok', [
-    Math.abs(centres(spaced.metadata.blueprint) - 0.19) < 1e-6,
-    'the centres end up the two pitch radii apart',
   ]);
   await page.screenshot({ path: `${out}/mesh-spaced.png` });
   await page.getByRole('button', { name: 'Undo', exact: true }).click();

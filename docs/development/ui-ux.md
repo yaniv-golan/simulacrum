@@ -419,9 +419,10 @@ selected Connections and the existing part-help window.
 One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
 gear, so no numeric query names a part type. Teeth is the gear's primary setting, in the same
 inspector block a beam's length and a ball's diameter own, so a growing disc previews against its
-neighbours and a count that would clip one is refused before it is committed; the pitch circle,
-solid disc width and weight that count implies are read back beside it, and the preview names the
-pitch circle of the count under the cursor. Tooth size sits directly beneath it rather than inside
+neighbours and a count that would clip one is refused before it is committed; the pitch circle
+and solid disc width that count implies are read back beside it, and the preview names the
+pitch circle of the count under the cursor. Mass is not repeated there: Engineering details
+already owns it. Tooth size sits directly beneath it rather than inside
 Engineering details, because the tooth-size diagnosis asks the player to change it. Tooth size is a
 two-value menu read in millimetres, and a parameter that
 declares a menu gives its control that menu's bounds and spacing, so an off-menu number is

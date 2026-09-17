@@ -30,6 +30,10 @@ test('everyday words and roles find the intended part before incidental referenc
     ['detect rotation', 'rotationSensor'],
     ['load cell', 'loadCellSensor'],
     ['measure tension', 'loadCellSensor'],
+    // Both authored gear settings are searchable words, so a player who knows the setting name
+    // reaches the part; neither is a number.
+    ['tooth size', 'spurGear'],
+    ['teeth', 'spurGear'],
   ])
     assert.equal(searchParts(query)[0]?.type, type, query);
   assert.deepEqual(

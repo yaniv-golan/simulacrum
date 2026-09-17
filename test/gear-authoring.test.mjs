@@ -599,3 +599,63 @@ test('mesh spacing repair is offered only where a mount can express it, and neve
   coarser.parts.find((p) => p.id === 'output-gear').parameters.teeth = 28;
   assert.ok(Math.abs(meshSpacingRepair(coarser, 'gear-mesh').centreDistance - 0.2) < 1e-12);
 });
+
+test('every tooth pair the gear-lift copy names is authorable, in the order the copy tells', async () => {
+  // The experiment's copy sends a player at the ratio while the shafts stay bolted 180 mm apart.
+  // Each named pair is authored here through ordinary parameter commands, because "their pitch
+  // radii add to the spacing" is necessary but not sufficient: the discs must also clear each
+  // other at every step on the way, and the intermediate pair is not the one being aimed at.
+  const author = async (pairs) => {
+    const workshop = await createWorkshop(createGearLift());
+    const results = [];
+    for (const [id, teeth] of pairs)
+      results.push(await workshop.act({ type: 'parameter', id, key: 'teeth', value: teeth }));
+    const row = workshop
+      .observe()
+      .frames.at(-1)
+      .metadata.connections.find((connection) => connection.id === 'gear-mesh');
+    return { results, reasonCode: row.reasonCode };
+  };
+  for (const [input, output] of [
+    [16, 20],
+    [18, 18],
+  ]) {
+    // Shrink the bigger gear first, which is what the copy tells the player to do.
+    const shrinkFirst = await author([
+      ['output-gear', output],
+      ['input-gear', input],
+    ]);
+    assert.deepEqual(
+      shrinkFirst.results.map((result) => result.ok),
+      [true, true],
+      `${input}/${output} authored bigger-first: ${JSON.stringify(shrinkFirst.results)}`,
+    );
+    assert.equal(shrinkFirst.reasonCode, 'OK', `${input} and ${output} mesh at the built spacing`);
+  }
+  // The wrong trace the copy's order exists for: growing the small gear first passes through
+  // 18 and 24, whose solid discs are 190 mm across the 180 mm the shafts are bolted at, so
+  // placement refuses that step and the pair never arrives.
+  const growFirst = await author([
+    ['input-gear', 18],
+    ['output-gear', 18],
+  ]);
+  assert.equal(growFirst.results[0].ok, false);
+  assert.equal(growFirst.results[0].reasonCode, 'SURFACE_OVERLAP');
+  assert.equal(growFirst.reasonCode, 'GEAR_MISALIGNED');
+  // And 16/20 has no such step, so the order rule is about the discs on the way, not about the
+  // pair: it survives in both orders.
+  const eitherWay = await author([
+    ['input-gear', 16],
+    ['output-gear', 20],
+  ]);
+  assert.deepEqual(
+    eitherWay.results.map((result) => result.ok),
+    [true, true],
+  );
+  assert.equal(eitherWay.reasonCode, 'OK');
+  // The pair the earlier proposal also listed is not authorable at all: 10 is below the row's
+  // own minimum, so the copy must never name it.
+  const belowMinimum = await author([['input-gear', 10]]);
+  assert.equal(belowMinimum.results[0].ok, false);
+  assert.equal(belowMinimum.results[0].reasonCode, 'INVALID_BLUEPRINT');
+});

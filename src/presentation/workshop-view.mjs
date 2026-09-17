@@ -112,8 +112,6 @@ const parameterLabels = {
   dampingGain: 'Damping (s/rad)',
   capacityJ: 'Stored energy',
   internalResistance: 'Cell resistance',
-  teeth: 'Teeth',
-  module: 'Tooth size',
 };
 // A parameter the catalog stores in metres that a player reads in millimetres. Only the control
 // scales: the authored SI number keeps its single writing owner, the `parameter` command.
@@ -770,7 +768,7 @@ export function createWorkshopView(
         'gear-lift',
         'Lift with gears',
         'Editable experiment · Motor and shaft connections first',
-        'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. A 12-tooth gear drives a 24-tooth gear, so the arm turns slower with more force. The shafts are bolted 180 mm apart, so any pair whose Teeth add to 36 still meshes: try 16 and 20, or 18 and 18, and predict the new speed first. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
+        'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. A 12-tooth gear drives a 24-tooth gear, so the arm turns slower with more force. The shafts are bolted 180 mm apart, so a pair whose Teeth add to 36 still meshes: try 16 and 20, or 18 and 18. Shrink the bigger gear first, or the discs touch on the way. Predict the new speed before you Run. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
         'Try gear lift',
         { type: 'gear-lift-example', replace: true },
       );
@@ -2730,17 +2728,16 @@ export function createWorkshopView(
           input.value = displayValue(authored(), scale);
           return;
         }
+        const value =
+          scale === 1 ? Number(input.value) : Number((Number(input.value) / scale).toPrecision(12));
+        // Confirming the catalog default on a part that never stored one is not an edit, exactly
+        // as it is not for the primary dimension above: a save that omitted an optional setting
+        // stays omitted unless the player chooses a different number.
+        if (!(key in part.parameters) && value === definition.parameterDefinitions[key].default)
+          return;
         // Send while the trusted change event is active. Only focus restoration
         // waits for the rebuilt inspector; native Tab still chooses its direction.
-        await send({
-          type: 'parameter',
-          id: part.id,
-          key,
-          value:
-            scale === 1
-              ? Number(input.value)
-              : Number((Number(input.value) / scale).toPrecision(12)),
-        });
+        await send({ type: 'parameter', id: part.id, key, value });
         if (target !== null && selected === part.id) tabStops()[target]?.focus();
       });
       input.addEventListener('blur', () => {
@@ -3102,9 +3099,9 @@ export function createWorkshopView(
               placementEnvelopes(other).some((b) => solidsOverlap(a, b)),
             ),
         );
-      // Pitch circle, solid disc and mass are read from the authored parameters, never stored;
-      // during a preview the same derivation describes the count under the cursor, which is the
-      // number the player is deciding about.
+      // Pitch circle and solid disc are read from the authored parameters, never stored; during
+      // a preview the same derivation describes the count under the cursor, which is the number
+      // the player is deciding about. Mass stays in Engineering details, which already owns it.
       const gearLine = (subject) => {
         const facts = gearFacts(subject);
         return facts
@@ -3114,8 +3111,7 @@ export function createWorkshopView(
             )} mm across`
           : '';
       };
-      if (dimension === 'teeth')
-        derived.textContent = `${gearLine(part)}${body ? ` · ${format(body.mass, 2)} kg` : ''}`;
+      if (dimension === 'teeth') derived.textContent = gearLine(part);
       function previewDimension(control) {
         number.value = slider.value = control.value;
         if (!number.checkValidity()) {
