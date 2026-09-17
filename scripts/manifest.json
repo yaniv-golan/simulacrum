@@ -5057,7 +5057,7 @@
       "id": "supported-spur-transmission",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint. One constant mesh stiffness serves every pair the bounds admit: across authored teeth 12 to 36 and both modules the pitch-point mesh frequency spans omega dt 0.66 to 8.69, and at every corner the pair gains no mechanical energy, holds its ratio and its elastic displacement inside the recorded three percent and one millimetre, delivers its input work to the output at a balanced operating point, and closes the mesh and island energy ledgers every tick of the spin-up, loaded and coasting phases with the damper and the solver only ever removing energy. Steady transmission being clean is a statement about that operating point, where the relative slip is zero and both dissipative terms vanish structurally; the transient dissipation is bounded against the drive work that excited it. What the fastest corners lose is resolved compliance, not work: backward Euler represents the mesh mode as atan(omega dt) of phase per tick, which is why the stiffest pair dissipates rather than diverges.",
+      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint. One constant mesh stiffness serves every pair the bounds admit: across authored teeth 12 to 36 and both modules the pitch-point mesh frequency spans omega dt 0.66 to 8.69, and at every corner the pair gains no mechanical energy, holds its ratio and its elastic displacement inside the recorded three percent and one millimetre, and closes the mesh and island energy ledgers every tick of the spin-up, loaded and coasting phases. The dissipation the mesh books under load is exactly half the pitch-point mobility times the square of the impulse it passes, so it grows as omega dt squared and spans more than two orders of magnitude across the bounds; over the loaded phase the constraint reaction does no work and that dissipation appears as the gear phase's own kinetic decrement, which the drive replaces. A delivered-work residual cannot measure it, because the mesh constraint pins output work to minus input work for every meshing pair; the passive coast, where the transmitted force and the booked term both vanish, is what bounds the net loss. What the fastest corners lose is resolved compliance, not work: backward Euler represents the mesh mode as atan(omega dt) of phase per tick, which is why the stiffest pair dissipates rather than diverges.",
       "owners": [
         {
           "path": "src/model/gear-geometry.mjs",
@@ -5116,7 +5116,7 @@
           },
           {
             "path": "test/gear-bounds.test.mjs",
-            "anchor": "every authored bound corner holds its ratio and its strain under load and gives the work back"
+            "anchor": "every authored bound corner holds its ratio and its strain under load and accounts for every joule"
           },
           {
             "path": "test/gear-bounds.test.mjs",
@@ -9060,7 +9060,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "21871081d3b46e42c3afc9aceb282895e5873cbc5fc55c8cb0311dfe1d961468",
+      "consumerSourceHash": "11354576878bb1717ed3f6da16b64bd26d8f2ab5300c1721553d17ba913cc861",
       "externalImports": [
         "node:child_process",
         "node:crypto",

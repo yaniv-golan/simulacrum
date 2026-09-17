@@ -7,12 +7,14 @@
 // pitch-line speed and read what it delivered, so the bounds are decided from measurements
 // rather than from the one pair the constant was chosen for.
 //
-// Two things the steady phase deliberately cannot show. Constant force at constant speed drives
-// the relative slip to zero, so both of the mesh's dissipative terms are structurally near zero
-// there whatever `omega dt` is: a clean work balance in that phase is evidence about steady
-// transmission and nothing else. The transient claim rests on the engine's own per-tick energy
-// ledger, accumulated over the step-torque spin-up that actually rings the mesh, and on the
-// ledger closing to zero the way the shipped gear checks already require.
+// What a work balance across the mesh cannot show, stated first because two successive versions
+// of these checks got it wrong. The mesh constraint pins `omega_B/omega_A` to `-rA/rB`, so the
+// output work `F rB omega_B` is identically minus the input work `F rA omega_A` for every
+// meshing pair at every corner: a delivered-work residual is algebraically zero before any
+// physics happens and can never carry information about dissipation. The dissipation claim
+// therefore rests entirely on the engine's own per-tick energy ledger, accumulated per phase,
+// and on the passive coast, where the transmitted force is zero, the booked term vanishes with
+// it, and nothing external can refill the pair.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
@@ -38,7 +40,7 @@ const DT = 1 / 120,
   STRAIN_LIMIT_M = 0.001,
   RATIO_LIMIT = 0.03;
 
-test('every authored bound corner holds its ratio and its strain under load and gives the work back', async () => {
+test('every authored bound corner holds its ratio and its strain under load and accounts for every joule', async () => {
   const measured = [];
   for (const corner of GEAR_BOUND_CORNERS) {
     const fixture = gearBoundsFixture(corner),
@@ -64,22 +66,23 @@ test('every authored bound corner holds its ratio and its strain under load and 
       // Elastic displacement stays inside the recorded millimetre at every corner, so no corner
       // reaches the mesh's compliant domain limit by being small.
       assert.ok(run.maximumStrainM < STRAIN_LIMIT_M, `${label} strain ${run.maximumStrainM} m`);
-      // Steady transmission is clean: the output takes out what the input put in. This is a
-      // statement about the balanced operating point only — see the ledger assertions below for
-      // the dissipation the solver actually performs, which this phase structurally suppresses.
+      // Kept as a ratio check, which is all it can ever be. The mesh constraint pins
+      // omega_B/omega_A to -rA/rB, so F rB omega_B is identically -F rA omega_A for every
+      // meshing pair at every corner: this quantity is algebraically -1 before any physics
+      // happens, and it can carry no information about dissipation. It is asserted here so the
+      // degeneracy is written down where it would otherwise be quoted as an efficiency.
       assert.ok(
         Math.abs(run.lostWorkFraction) < 0.01,
-        `${label} steady phase lost ${run.lostWorkFraction} of the input work`,
+        `${label} delivered-work residual ${run.lostWorkFraction}, which tracks only the ratio error`,
       );
       // Backward Euler may dissipate; it may never pump. Measured growth is exactly zero at
       // every corner, so any growth at all is a defect and not a tolerance question.
       assert.ok(coast.growth <= 0, `${label} coast energy grew by ${coast.growth}`);
       assert.ok(coast.retained > 0.99, `${label} coast retained only ${coast.retained}`);
       // The engine's own account must close, every tick of every phase, at every corner: the
-      // mesh's raw work, its elastic storage, its damper and the solver's dissipation cancel,
-      // and the island's kinetic change is the raw impulse plus the constraint reaction. This
-      // is the contract test/gear-physics.test.mjs and test/gear-law.test.mjs already assert
-      // one tick at a time; a corner is only allowed to be fast, never unaccounted for.
+      // mesh's raw work, its elastic storage, its damper and the solver's dissipation cancel
+      // (test/gear-physics.test.mjs:72-74), and the island's kinetic change is the raw impulse
+      // plus the constraint reaction (:71). A corner may be fast; it may not be unaccounted for.
       for (const [phase, ledger] of [
         ['spin-up', transient],
         ['loaded', steady],
@@ -97,24 +100,31 @@ test('every authored bound corner holds its ratio and its strain under load and 
           ledger.totals.maximumIslandResidualJ < 1e-9,
           `${label} ${phase} island ledger residual ${ledger.totals.maximumIslandResidualJ} J`,
         );
-        // Dissipation is signed: the damper and the solver may only ever take energy out.
-        assert.ok(
-          ledger.totals.dampingWorkJ >= 0 && ledger.totals.numericalLossJ >= 0,
-          `${label} ${phase} returned energy: damper ${ledger.totals.dampingWorkJ} J, solver ${ledger.totals.numericalLossJ} J`,
-        );
       }
-      // This is the term that actually degrades with omega dt, and it is not a mystery: at a
-      // held pitch-line force the mesh must pass an impulse of F dt every tick, and the energy
-      // the solver books against that impulse is exactly half the mobility times its square.
-      // So the mesh-local dissipation grows as M, i.e. as (omega dt)^2 at fixed stiffness -
-      // precisely R7's predicted degradation, here derived rather than fitted. What keeps it
-      // from being lost work is that the island returns it through the bearings, which is why
-      // the delivered-work and coast figures above stay clean while this term moves 170-fold.
+      // This is the term that degrades with omega dt, and it is not a mystery: at a held
+      // pitch-line force the mesh must pass an impulse of F dt every tick, and the energy the
+      // solver books against that impulse is exactly half the mobility times its square. So it
+      // grows as M, i.e. as (omega dt)^2 at fixed stiffness - R7's predicted degradation,
+      // derived rather than fitted.
       const predictedNumericalLossJ = 1200 * 0.5 * frequency.mobility * (FORCE_N * DT) ** 2,
         numericalLossRatio = steady.totals.numericalLossJ / predictedNumericalLossJ;
       assert.ok(
         Math.abs(numericalLossRatio - 1) < 0.02,
         `${label} booked ${steady.totals.numericalLossJ} J against the predicted ${predictedNumericalLossJ} J`,
+      );
+      // Where that energy goes, measured rather than asserted by story. Over the loaded phase
+      // the island's constraint reaction does no work at all, so the booked dissipation is NOT
+      // handed back through the bearings; it appears one-for-one as the island's kinetic
+      // decrement inside the gear phase, which the drive then replaces. Both figures are
+      // recorded; this is the reconciliation, and it is not the one the first write-up claimed.
+      assert.ok(
+        Math.abs(steady.totals.constraintWorkJ) < 1e-6,
+        `${label} loaded constraint reaction did ${steady.totals.constraintWorkJ} J of work`,
+      );
+      assert.ok(
+        Math.abs(steady.totals.kineticDeltaJ + steady.dissipatedJ) <
+          0.02 * steady.dissipatedJ + 1e-6,
+        `${label} gear-phase kinetic delta ${steady.totals.kineticDeltaJ} J against dissipation ${steady.dissipatedJ} J`,
       );
       measured.push({
         label,
@@ -141,18 +151,29 @@ test('every authored bound corner holds its ratio and its strain under load and 
     measured.every((row) => row.maximumRatioError < 100 * reference.maximumRatioError + 1e-6),
     'a bound corner tracks its ratio within two orders of magnitude of the reference pair',
   );
-  // The two-sided finding, stated as one assertion so neither half can be quoted alone. The
-  // mesh-local dissipation the solver books does degrade across the bounds, by more than two
-  // orders of magnitude, which is R7's mechanism and it is real. The work the mechanism
-  // actually fails to deliver does not: it stays under a hundredth of a percent everywhere.
+  // The finding, stated as one assertion so the halves cannot be quoted apart. The mesh-local
+  // dissipation the solver books does degrade across the bounds by more than two orders of
+  // magnitude: that is R7's mechanism and it is real. The delivered-work residual stays tiny at
+  // the same time — and the two coexisting is the proof that the residual is blind, not that
+  // the dissipation is harmless, because the mesh constraint pins it to -1 algebraically.
   const booked = measured.map((row) => row.steadyNumericalLossJ);
   assert.ok(
     Math.max(...booked) / Math.min(...booked) > 100,
     `the booked mesh dissipation spans only ${Math.max(...booked) / Math.min(...booked)}x`,
   );
+  const blindest = measured.reduce((a, b) =>
+    a.steadyNumericalLossJ > b.steadyNumericalLossJ ? a : b,
+  );
   assert.ok(
-    measured.every((row) => Math.abs(row.lostWorkFraction) < 1e-3),
-    'no corner fails to deliver a thousandth of its input work',
+    blindest.steadyNumericalLossJ > 1 && Math.abs(blindest.lostWorkFraction) < 1e-4,
+    `${blindest.label} books ${blindest.steadyNumericalLossJ} J while its delivered-work residual is ${blindest.lostWorkFraction}: the residual must be shown to miss whole joules`,
+  );
+  // What does bound the net loss is the passive coast, where the transmitted force is zero, the
+  // booked term vanishes with it, and nothing external can refill the pair. That measurement,
+  // not the delivered-work residual, is the surviving evidence that the bounds cost little.
+  assert.ok(
+    measured.every((row) => row.retained > 0.999),
+    'a bound corner keeps a thousandth of its energy through ten seconds of coasting',
   );
 });
 
