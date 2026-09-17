@@ -14,7 +14,7 @@ const gearHelp = () =>
     [
       'Attach each gear to its own supported shaft using either axle port. The other axle port can carry an output arm or wheel.',
       'Select Gear mesh, then Mesh with the aligned gear. Connecting does not move either gear or create a bearing. Disconnecting stops torque transfer through that mesh.',
-      'Change Teeth to change the ratio. With the shafts already bolted in place, keep the two tooth counts adding to the same total and the spacing still fits; otherwise the mesh row says check spacing, and Space to mesh there moves one gear on its mount.',
+      'Change Teeth to change the ratio. With the shafts already bolted in place, keep the two tooth counts adding to the same total and the spacing still fits; shrink the bigger gear first, or the discs touch on the way. Otherwise the mesh row says check spacing, and Space to mesh there moves one gear on its mount.',
       'Open Learn & examples → Lift with gears for an editable loaded mechanism. Predict which way the large gear turns before pressing Run.',
       'A mesh flexes slightly under load. This model does not include backlash or tooth breakage. Up to eight mesh edges are supported; closed mesh loops and moving shaft supports are rejected.',
     ],
