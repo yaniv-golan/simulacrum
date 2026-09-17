@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"1203afa462d5539010ecbdc710e87756179f1193e4af06ad8afb270c9595105e","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"424bcb026fb702b2132acc099dba128af42032e40768c1071878136dd310037f","disposition":"updated","rationale":"Updated: the spur-gear paragraph now states that the disc is drawn with cosmetic teeth cut inward from the collider radius and that two meshed gears therefore show a small visible gap, replacing the claim that painted radial marks depict body rotation without pretending to collide as teeth."} -->
+<!-- doc-review {"version":1,"fingerprint":"97ef90b0bfaec19e622cb9ccc9250bd3998dc397d9bf834177b8b844cf7c383b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a7391037f0c9400ee4103f81868ade850e16c04471085c1236367be9722c8928","disposition":"updated","rationale":"Updated: the spur-gear paragraph now says the teeth are involute, that the hub, recessed web and bore are equally cosmetic over a solid collider so nothing can be placed through the bore, and that the drawing takes resolved gear facts built at one catalog read site."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,8 +58,11 @@ canonicalizes empty contact records without changing explicit zero or mutating t
 
 The 12T and 24T spur gears use solid root cylinders for collision, inertia and
 material selection, with separate fixed pitch radii for transmission. The disc is drawn
-with cosmetic teeth cut inward from that collider radius, so it reads as a gear without
-pretending to collide as teeth; two meshed gears therefore show a small visible gap. The
+with cosmetic involute teeth cut inward from that collider radius, so it reads as a gear without
+pretending to collide as teeth; two meshed gears therefore show a small visible gap. Its hub,
+recessed web and bore are drawn inward too and are equally cosmetic: the collider stays a solid
+cylinder, so nothing can be placed through the bore. The drawing takes resolved gear facts (tooth count, module, pitch and collider radius,
+face width, shaft radius) built at one catalog read site, not the catalog itself. The
 [gear compiler](../../src/model/gear-mesh.mjs) admits explicit meshes only between
 independently revolute-supported rotors on one rigid carrier: a forest of at most
 eight edges. Limited bearings and extra non-revolute rotor supports reject. A mesh
@@ -634,7 +637,9 @@ the body geometry and follow completed body transforms. Preserve the [gear rende
 
 The shared [part builder](../../src/presentation/part-mesh.mjs#symbol=createPartMesh)
 creates each part's canonical solid envelope and owns their disposable finishes for the workbench, catalogue,
-help images, editing/placement and assembly previews. Family builders receive authored
+help images, editing/placement and assembly previews. A body drawn inward of that solid, as a gear's
+is, is declared by its builder and may fall short of the solid's bounding box but never exceed it;
+a builder may also supply a simpler selection silhouette, which must match the drawn body. Family builders receive authored
 dimensions and relevant parameters or ports; they never receive a controller or session.
 [Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
 distinguish measurement identities with static graphics and large top identification

@@ -28,6 +28,14 @@ export const RELEASE_NOTES = Object.freeze(
         'Every example is one row with its own button, and the instructions open inside the row. Project status now says what works today.',
     },
     {
+      id: '2026-09-16-gear-machined',
+      date: '2026-09-16',
+      name: 'Gears look machined',
+      summary:
+        'Gears now look machined: curved, chamfered teeth, a bore an axle fits through, and a recessed web on big gears. They turn the same.',
+      feature: 'gear24',
+    },
+    {
       id: '2026-09-16-favorite-from-the-tile',
       date: '2026-09-16',
       name: 'Save a favorite from the part itself',
