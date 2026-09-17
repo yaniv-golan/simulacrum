@@ -59,9 +59,10 @@ is disconnected, while opening a bypass can make B a measurable bridge.
 At tick zero there is no completed force interval: supported joint receipts are
 initializing, while sensor readings retain power, mounting and domain validity
 precedence. Restore validates receipt ages and topology without advancing physics.
-Session checkpoint and blueprint save versions remain 3.
+The session checkpoint version remains 3; the blueprint save version is 4. The two are
+independent, and a checkpoint still requires the exact admitted configuration it was taken on.
 
-Version 3 admits an optional `environment`: the unchanged legacy `flat` or
+Version 4 admits an optional `environment`: the unchanged legacy `flat` or
 `rounded-bump` string, or authored `{objects,ground}` scene data. Omission means
 flat. This is compatible admission within the current schema, not a historical
 reader or migration chain. Old preset descriptors remain unchanged for visual
@@ -509,7 +510,11 @@ no visual representation, and it is not wiring. Mechanical energy never increase
 undamped cord in the middle of the authored domain keeps swinging, so only the
 authored damper removes energy there; at the stiffest authored corner the implicit
 projection's own numerical loss settles the load without a damper, and that loss is
-reported through `ropeNumericalLossJ`, never as heat.
+reported through `ropeNumericalLossJ`, never as heat. That row ledger accounts for the
+cord rows alone: the remainder of a measured mechanical-energy drop leaves through the
+resolved spherical anchors and the appended node chain's own solve, which the distributed
+elastic rows neither measure nor claim, so the corner is evidenced by the rows' share of
+the drop rather than by closing the machine's books exactly.
 
 ## Completed contact observations (M3b)
 
