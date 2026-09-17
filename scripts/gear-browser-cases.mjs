@@ -161,6 +161,17 @@ async function verifyGearConstruction({ page, evidence, out }) {
     await input.fill(value);
     await input.press('Tab');
   };
+  // Reads the field back in the inspector the entry was typed into, without reselecting the part:
+  // a reselect rebuilds the control from the frame and would hide what the field itself shows.
+  const settingEntry = async (part, key, value) => {
+    await select(part);
+    if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
+      await page.locator('.part-settings > summary').click();
+    const input = page.getByLabel(key, { exact: true });
+    await input.fill(value);
+    await input.press('Tab');
+    return page.getByLabel(key, { exact: true }).inputValue();
+  };
   await setting(large, 'teeth', '24');
   evidence.assert('equal', [
     (await read()).metadata.blueprint.parts.at(-1).parameters.teeth,
@@ -253,12 +264,18 @@ async function verifyGearConstruction({ page, evidence, out }) {
     return port.locator('.port-peer').first().innerText();
   };
   // An off-menu tooth size never becomes a command: the field reports it and the authored value
-  // stands, so the player is not told about a refusal the control could have shown.
-  await setting(large, 'module', '0.007');
+  // stands, so the player is not told about a refusal the control could have shown. The field
+  // goes back to the authored value too, so the player never reads a number the gear does not have.
+  const offMenuShown = await settingEntry(large, 'module', '0.007');
   evidence.assert('deepEqual', [
     (await read()).metadata.blueprint,
     completed,
     'an off-menu tooth size is reported by the field and never authored',
+  ]);
+  evidence.assert('equal', [
+    offMenuShown,
+    '0.01',
+    'the field shows the authored tooth size again after an off-menu entry is reported',
   ]);
   await setting(large, 'module', '0.005');
   const mismatched = await read();

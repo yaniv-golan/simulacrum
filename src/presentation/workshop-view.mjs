@@ -2709,9 +2709,14 @@ export function createWorkshopView(
         const target = tabTarget;
         tabTarget = null;
         // An out-of-range or off-menu value never becomes a command: the field reports it and the
-        // authored value stands. Otherwise the refusal arrives from the generated schema, about a
-        // number the control itself could have refused.
-        if (!input.checkValidity()) return;
+        // authored value stands, in the control as well as in the blueprint, so the player is never
+        // left reading a number the part does not have. Otherwise the refusal arrives from the
+        // generated schema, about a number the control itself could have refused.
+        if (!input.checkValidity()) {
+          input.reportValidity();
+          input.value = String(part.parameters[key]);
+          return;
+        }
         // Send while the trusted change event is active. Only focus restoration
         // waits for the rebuilt inspector; native Tab still chooses its direction.
         await send({ type: 'parameter', id: part.id, key, value: Number(input.value) });
