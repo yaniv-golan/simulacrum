@@ -79,7 +79,16 @@ the authored topology alone; the two checks that move with the authored numbers 
 and a centre distance within a millimetre of the two pitch radii added -- are per-edge diagnostics
 stamped on the connection row, emit no joint and never refuse the parameter edit. A mesh
 neither snaps nor provides shaft support; ordinary Connect/Disconnect and history
-remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
+remain the editing owners. Because an admitted mesh needs one shared rigid carrier, both gears
+always belong to one mechanical group, so no pose edit of either gear can change the distance
+between them: the authored distance is the surface-mount offset that separates the two shafts.
+[meshSpacingRepair](../../src/model/gear-geometry.mjs#symbol=meshSpacingRepair) names the one
+mount that can express a correction and the offset it needs, and the mesh row sends it as an
+ordinary `surface-mount` command replacing that same connection, so mount admission --
+footprint, bounds and overlap -- refuses it in its own words. It returns nothing rather than a
+command that would leave the same diagnosis. The gear that moves is the one on the side of that
+mount which drives nothing, and otherwise the later-placed gear; neither rule reads a part name,
+a blueprint id or a role. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
 
 Release Coupler designates one mounting face with `releaseFace` in the catalog.

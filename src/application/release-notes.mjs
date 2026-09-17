@@ -21,6 +21,22 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-17-gear-tooth-settings',
+      date: '2026-09-17',
+      name: 'Gear settings sit beside the machine',
+      summary:
+        'Teeth and Tooth size are front settings on a selected gear, with its pitch circle, disc size and weight shown as you change them.',
+      feature: 'spurGears',
+    },
+    {
+      id: '2026-09-17-gear-space-to-mesh',
+      date: '2026-09-17',
+      name: 'Space to mesh',
+      summary:
+        'When a gear pair is the wrong distance apart, the mesh row offers one button that slides one gear until it drives again.',
+      feature: 'spurGears',
+    },
+    {
       id: '2026-09-17-gear-teeth-choice',
       date: '2026-09-17',
       name: 'Choose how many teeth a gear has',

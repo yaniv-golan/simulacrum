@@ -414,15 +414,30 @@ These examples extend construction possibilities, not evidence of player compreh
 or qualification outside their tested finite operating envelopes.
 
 
-Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
+Spur gears use the Motion catalog category and search, the selected inspector's primary setting,
+selected Connections and the existing part-help window.
 One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
-gear, so no numeric query names a part type. Tooth size is a two-value menu, and a parameter that
+gear, so no numeric query names a part type. Teeth is the gear's primary setting, in the same
+inspector block a beam's length and a ball's diameter own, so a growing disc previews against its
+neighbours and a count that would clip one is refused before it is committed; the pitch circle,
+solid disc width and weight that count implies are read back beside it, and the preview names the
+pitch circle of the count under the cursor. Tooth size sits directly beneath it rather than inside
+Engineering details, because the tooth-size diagnosis asks the player to change it. Tooth size is a
+two-value menu read in millimetres, and a parameter that
 declares a menu gives its control that menu's bounds and spacing, so an off-menu number is
-reported by the field and never sent as an edit. Gear mesh explicitly leaves parts in place and
+reported by the field and never sent as an edit. A field never reads `undefined` for a setting a
+save left out: the control falls back to the same catalog default the physics resolves.
+Gear mesh explicitly leaves parts in place and
 requires independently supported aligned shafts. Mismatched tooth sizes and a centre distance more
 than a millimetre from the two pitch radii added are reported on that mesh row, in its own words,
-and drive nothing; they never refuse the setting that caused them. The requested Learn & examples browser adds one editable gear-lift
-experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
+and drive nothing; they never refuse the setting that caused them. A mis-spaced row offers one
+action, Space to mesh, which moves the gear that drives nothing on its own mount until the centres
+are the two pitch radii apart, as one undoable edit refused by ordinary mount admission when the
+target is occupied. Where no single mount can express that correction the row says so and names the
+reachable repair instead: tooth counts that add to the spacing already built.
+The requested Learn & examples browser adds one editable gear-lift
+experiment: predict the slower rotor, run the loaded arm, then change the ratio at that fixed shaft
+spacing by keeping the two tooth counts adding to 36, or disconnect the mesh
 or reduce motor current and retry. Its prerequisite is motor/shaft authoring. This
 adds a distinct speed-versus-load experiment; the rolling-machine example teaches
 power and connection basics without a transmission load comparison. The need is a

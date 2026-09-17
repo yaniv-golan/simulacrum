@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import { CATALOG, assertDimensionDefaults } from '../src/model/catalog.mjs';
-import { gearFacts } from '../src/model/gear-geometry.mjs';
+import { gearFacts, meshSpacingRepair } from '../src/model/gear-geometry.mjs';
 import { partPrimitives } from '../src/model/geometry.mjs';
 import {
   CURRENT_SAVE_VERSION,
@@ -11,7 +11,7 @@ import {
   loadSave,
   validateBlueprint,
 } from '../src/model/blueprint.mjs';
-import { compileAssembly, snapConnection } from '../src/model/assembly.mjs';
+import { compileAssembly, proposeSurfaceMount, snapConnection } from '../src/model/assembly.mjs';
 import { mechanicalGroup } from '../src/model/connection-graph.mjs';
 
 const gear = (id, position, parameters = {}) => {
@@ -511,4 +511,91 @@ test('gear lift separates the arm plane from the gear faces with an ordinary axl
   assert.ok(arm.position[0] - gearPart.position[0] > 0.18);
   assert.equal(bp.parts.find((p) => p.id === 'arm-axle').type, 'steelAxle');
   compileAssembly(bp);
+});
+
+test('a mis-spaced mesh names the one mount that can restore its centre distance', () => {
+  // 12 and 26 pitch radii add to 190 mm; the shafts are bolted 180 mm apart, so the mesh is
+  // diagnosed. The repair is a mount offset, not a gear pose: an admitted mesh needs one shared
+  // rigid carrier, so both gears always sit in one mechanical group and moving either of them
+  // moves the other with it.
+  const bp = createGearLift();
+  bp.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  assert.ok(
+    mechanicalGroup(bp, 'input-gear').includes('output-gear'),
+    'a supported pair is one mechanical group, which is why no transform can space it',
+  );
+  assert.equal(
+    compileAssembly(bp).connections.find((row) => row.id === 'gear-mesh').reasonCode,
+    'GEAR_MISALIGNED',
+  );
+  const repair = meshSpacingRepair(bp, 'gear-mesh');
+  assert.equal(repair.moving, 'output-gear', 'the driven shaft is the datum the player built');
+  assert.equal(repair.connection, 'mount-bearing-spacer');
+  assert.equal(repair.part, 'bearing-spacer');
+  assert.equal(repair.targetPart, 'carrier');
+  assert.equal(repair.targetRegion, 'bottom');
+  assert.ok(Math.abs(repair.centreDistance - 0.19) < 1e-12);
+  // The mount slides 10 mm further along the axis the two shafts are separated on, and on no other.
+  assert.ok(Math.abs(repair.v - 0.1) < 1e-12, `v = ${repair.v}`);
+  assert.equal(repair.u, 0);
+  assert.equal(repair.twist, 0);
+  // Applying it restores the mesh, and the positive control is that nothing else was needed.
+  const spaced = proposeSurfaceMount(bp, {
+    ...repair,
+    id: repair.connection,
+    replaceConnection: repair.connection,
+  }).blueprint;
+  assert.equal(
+    compileAssembly(spaced).connections.find((row) => row.id === 'gear-mesh').reasonCode,
+    'OK',
+  );
+  // A repair that would drive the moved side into another part is refused by the same surface
+  // admission every mount edit passes through, not by a special case for gears.
+  const tight = createGearLift();
+  tight.parts.find((p) => p.id === 'output-gear').parameters.teeth = 18;
+  const closer = meshSpacingRepair(tight, 'gear-mesh');
+  assert.ok(Math.abs(closer.v - 0.06) < 1e-12);
+  assert.throws(
+    () =>
+      proposeSurfaceMount(tight, {
+        ...closer,
+        id: closer.connection,
+        replaceConnection: closer.connection,
+      }),
+    (error) => error.reasonCode === 'SURFACE_OVERLAP' && error.obstructingPartId === 'motor',
+  );
+  // Wrong traces: an already meshed pair has nothing to repair, and a tooth-size mismatch is a
+  // different diagnosis that spacing cannot fix.
+  assert.equal(meshSpacingRepair(createGearLift(), 'gear-mesh'), undefined);
+  const mismatched = createGearLift();
+  mismatched.parts.find((p) => p.id === 'output-gear').parameters.module = 0.005;
+  assert.equal(meshSpacingRepair(mismatched, 'gear-mesh'), undefined);
+  assert.equal(meshSpacingRepair(bp, 'power'), undefined, 'only a gear edge has a centre distance');
+});
+
+test('mesh spacing repair is offered only where a mount can express it, and never from identity', () => {
+  // No surface mount separates these rotors, so nothing is offered rather than a command that
+  // would move both gears together and leave the same diagnosis.
+  const bare = createEmptyBlueprint('mesh', 'Mesh');
+  bare.parts.push(gear('a', [0, 1, 0]), gear('b', [0, 1, 0.2], { teeth: 24 }));
+  bare.connections.push({
+    id: 'mesh',
+    kind: 'gear',
+    a: { part: 'a', port: 'mesh' },
+    b: { part: 'b', port: 'mesh' },
+  });
+  assert.equal(meshSpacingRepair(bare, 'mesh'), undefined);
+  // Identity may not choose the moving side: renaming every part and the blueprint leaves the
+  // same mount, the same offset and the same moving gear.
+  const renamed = createGearLift();
+  renamed.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  renamed.id = 'renamed';
+  for (const part of renamed.parts) part.name = `X-${part.name}`;
+  const plain = createGearLift();
+  plain.parts.find((p) => p.id === 'output-gear').parameters.teeth = 26;
+  assert.deepEqual(meshSpacingRepair(renamed, 'gear-mesh'), meshSpacingRepair(plain, 'gear-mesh'));
+  // And the wrong trace: the repair follows the authored teeth, not the mount it happens to find.
+  const coarser = createGearLift();
+  coarser.parts.find((p) => p.id === 'output-gear').parameters.teeth = 28;
+  assert.ok(Math.abs(meshSpacingRepair(coarser, 'gear-mesh').centreDistance - 0.2) < 1e-12);
 });

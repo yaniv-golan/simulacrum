@@ -1,5 +1,12 @@
 // @ts-check
 import { CATALOG } from './catalog.mjs';
+import { mechanicalGroup } from './connection-graph.mjs';
+import { surfaceRegions } from './surfaces.mjs';
+import { rotateVector } from './transforms.mjs';
+
+// The authoring tolerance a mesh is diagnosed beyond; gear-mesh.mjs owns the same number for
+// the diagnosis itself, and a repair must not offer to move a pair that already meshes.
+const SPACING_TOLERANCE = 1e-3;
 
 /** The one place a gear's authored tooth count and module become lengths.
  *
@@ -34,4 +41,96 @@ export function gearFacts(part) {
     stiffness: gear.stiffness,
     damping: gear.damping,
   };
+}
+
+const dot = (a, b) => a.reduce((sum, x, i) => sum + x * b[i], 0);
+
+/** The one mount whose offset restores a mis-spaced mesh, and the offset it needs.
+ *
+ * A mesh is admitted only when both rotors turn on bearings carried by one rigid support, so
+ * both gears always belong to one mechanical group and no pose edit of either gear can change
+ * the distance between them: the group moves whole. The distance a player actually authored is
+ * the surface-mount offset that separates the two shafts, so that is what a repair edits, as an
+ * ordinary `surface-mount` command replacing the same connection.
+ *
+ * The gear that moves is the one on the side of that mount which drives nothing: a motored
+ * shaft is the datum the machine was built around. With a motor on both sides or neither, the
+ * later-placed gear moves, because the earlier one is what the rest was built against. Neither
+ * rule reads a part name, a blueprint id or a role: the motor is found by catalog type and the
+ * order is the authored part order.
+ *
+ * Returns undefined when there is nothing to repair, when the two gears cannot mesh at any
+ * distance, or when no single mount can express the correction -- never a command that would
+ * leave the same diagnosis.
+ *
+ * @param {import('./generated/blueprint-types.js').Blueprint} blueprint
+ * @param {string} connectionId
+ */
+export function meshSpacingRepair(blueprint, connectionId) {
+  const edge = blueprint.connections.find((c) => c.id === connectionId && c.kind === 'gear');
+  if (!edge) return undefined;
+  const part = (id) => blueprint.parts.find((p) => p.id === id);
+  const a = part(edge.a.part),
+    b = part(edge.b.part);
+  const ga = a && gearFacts(a),
+    gb = b && gearFacts(b);
+  // Different tooth sizes are a different diagnosis: no centre distance makes that pair mesh.
+  if (!ga || !gb || ga.module !== gb.module) return undefined;
+  const centreDistance = ga.pitchRadius + gb.pitchRadius;
+  const delta = b.position.map((x, i) => x - a.position[i]),
+    distance = Math.hypot(...delta);
+  if (!(distance > 1e-9) || Math.abs(distance - centreDistance) <= SPACING_TOLERANCE)
+    return undefined;
+  const motored = (ids) => ids.some((id) => part(id)?.type === 'poweredMotor');
+  const later = blueprint.parts.indexOf(a) > blueprint.parts.indexOf(b) ? a : b;
+  let chosen;
+  for (const mount of blueprint.connections) {
+    if (!mount.a.surface || !mount.b.surface) continue;
+    const side = mechanicalGroup(blueprint, mount.b.part, { omitConnectionIds: [mount.id] });
+    const holdsA = side.includes(a.id),
+      holdsB = side.includes(b.id);
+    // The mount must separate the two gears, and the moving side is the mounted part's side.
+    if (holdsA === holdsB) continue;
+    const moving = holdsA ? a : b,
+      anchor = holdsA ? b : a;
+    const receiver = part(mount.a.part),
+      region = surfaceRegions(receiver).find((r) => r.id === mount.a.surface.region);
+    if (!region) continue;
+    // The offset moves the mounted side within the receiving face; a correction with any
+    // component out of that plane is not something this mount can author.
+    const axes = [
+      [0, 1, 0],
+      [0, 0, 1],
+    ].map((axis) => rotateVector(receiver.rotation, rotateVector(region.rotation, axis)));
+    const towards = moving.position.map((x, i) => (x - anchor.position[i]) / distance);
+    const correction = towards.map((x) => x * (centreDistance - distance));
+    const [du, dv] = axes.map((axis) => dot(correction, axis));
+    const residual = correction.map((x, i) => x - du * axes[0][i] - dv * axes[1][i]);
+    if (Math.hypot(...residual) > 1e-9) continue;
+    const candidate = {
+      connection: mount.id,
+      moving: moving.id,
+      part: mount.b.part,
+      sourceRegion: mount.b.surface.region,
+      targetPart: mount.a.part,
+      targetRegion: mount.a.surface.region,
+      u: mount.a.surface.u + du,
+      v: mount.a.surface.v + dv,
+      twist: mount.a.surface.twist,
+      centreDistance,
+      driven: motored(side),
+    };
+    // Prefer a side that drives nothing, then the later-placed gear, then authored order.
+    if (
+      !chosen ||
+      (chosen.driven && !candidate.driven) ||
+      (chosen.driven === candidate.driven &&
+        chosen.moving !== later.id &&
+        candidate.moving === later.id)
+    )
+      chosen = candidate;
+  }
+  if (!chosen) return undefined;
+  const { driven, ...repair } = chosen;
+  return repair;
 }

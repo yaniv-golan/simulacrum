@@ -41,9 +41,9 @@ const messages = {
   INVALID_GRAVITY: 'Gravity must contain three finite values.',
   INVALID_ENDPOINT: 'Choose an existing connector on each part.',
   GEAR_MISALIGNED:
-    'Align both shaft axes, then set the gear centres their two pitch radii apart. Connecting a gear mesh does not move parts.',
+    'Line up both shaft axes and both gear faces, then set the gear centres the two pitch radii apart. Space to mesh on the mesh row can do that spacing for you, or choose tooth counts that add to the spacing you already built. Connecting a gear mesh never moves parts.',
   GEAR_TOOTH_SIZE_MISMATCH:
-    'These gears have different tooth sizes and cannot mesh. Set the same tooth size on both gears, then they will drive each other.',
+    'These gears have different tooth sizes, so their teeth cannot mesh at any distance. Set the same Tooth size on both gears and they will drive each other.',
   UNSUPPORTED_GEAR_TOPOLOGY:
     'Mount each gear on its own rotating shaft, with both shafts attached to the same rigid support. Use at most eight meshes, without a closed loop.',
   MISALIGNED: 'These connectors are not aligned. Reconnect them to snap the parts together.',
