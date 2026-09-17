@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8bed0b14b1fa493948b3b8d9c8b822a715cf02cb146d158dd75e431207f8c825","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4fb743964225afa3747d7e8d1e88c8434ab3e327c0e1a4e446a4d099033e714b","disposition":"still accurate","rationale":"The policy prose is unchanged and it governed this candidate's decision: extend, one entry, recorded with the player need, the closest existing content and why it suffices. The gear-lift experiment's copy now teaches ratio at the fixed shaft spacing its two surface mounts already fix; no lesson, challenge or second fixture was added, and the tooth-size and spacing diagnoses remain error messages with reachable repairs rather than teaching."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed0896d7aba0738571b2417978444a2656ce2b0e68e65ef2cd74786f65517f0a","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"496c8f7f700512cfbbe32298467e143ff66a8b434dc7c7892d140233ea7187bf","disposition":"still accurate","rationale":"The policy prose is unchanged and it still governs the one extension. The gear-lift copy was corrected rather than expanded: it now names only the two tooth pairs measured to be authorable and the order that reaches them, because growing the input gear first passes through a pair whose discs do not clear the built shaft spacing. No lesson, challenge or second fixture was added."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"becb8f2da90909cd20e77a3cc9bc6b04acce3a224b288cd861e93ff83a76d590","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"367febc5f3670bcd54b5ea49633a34ff99655d1de48cdb24b59333928e00386e","disposition":"updated","rationale":"Recorded the gear's inspector surfaces: Teeth is the primary setting in the same block a beam's length owns, so growth previews and a clipping count is refused before commit; the pitch circle, solid disc and weight it implies are read back beside it and the preview names the pitch circle under the cursor; Tooth size sits directly beneath in millimetres because the mismatch message asks for it; a control falls back to the catalog default rather than reading undefined; and a mis-spaced mesh row offers Space to mesh, one undoable mount edit refused by ordinary mount admission, or names the reachable tooth-count repair when no mount can express it."} -->
+<!-- doc-review {"version":1,"fingerprint":"495ecf7332682ce5c72e4898d2d1c7245edc7e6ef2a2ae3ccc4aa6df9abd2b3e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"fdf3c848f309795e1097e2477cf0c9d782178fffe6634d13812e100f2066bbc1","disposition":"updated","rationale":"Recorded that the derived read-out carries the two lengths only and that mass is not repeated there, because Engineering details already owns it. The rest of the gear's surfaces, its primary tooth setting, the tooth-size row's home and the Space to mesh action, stand as recorded."} -->
 
 
 

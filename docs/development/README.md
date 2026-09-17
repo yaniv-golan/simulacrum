@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"a395f93792238bd0425d784dc80fd77d8b9f6a49e61988c0ae60101b1f715844","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"df765bc09e02933357df0ca708b2bc33d5255bbefa8cb364da7c53de72e44948","disposition":"still accurate","rationale":"The manifest changed only the supported-spur-transmission bar's guarantee sentence and its control list, plus the recorded browser review metadata consumer hashes. No milestone allocation, bar, rule or check ownership moved, so the status this section explains is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6dd685788bb5a8ec7835814a8650ab0aeeb377bbf0a913397361f3cd1e1dc2f9","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"9f8e9bb8346f8da3f90897b8aadd604b60507bf34a7b60fc4650067433c043fc","disposition":"still accurate","rationale":"The manifest changed only recorded browser review metadata hashes in this pass; the spur-transmission bar's guarantee and controls were already reviewed. No milestone allocation, bar, rule or check ownership moved."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"9db93ba01beb0d1993f0dbe22cb55243e946695246b372c7f73b19ab2548021b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d118c2807df2df7c446b9d88c842c2dcaf1f8802f20aa60fd7c500df745facc","disposition":"still accurate","rationale":"The manifest's browser review metadata rows were re-recorded at their new consumer source hashes and nothing else in the browser registry changed: no entrypoint, opaque read, witness list or timing fact moved. Scope derivation, phase scheduling and the measured-scope rule this section describes are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"c96fab4698bccab763e8f556eeeadce83dfb8c8fe16c16ac232333f4e9dd5e1a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d05cb68a665fc27f65b5e64baf2bcf0b298447fe25566a556cc5766eb0ceb4b7","disposition":"still accurate","rationale":"The gear helper now also exports the spacing tolerance the compiler imports, which adds no opaque read and no browser entrypoint; the sixteen metadata rows changed only their consumer source hash. Scope derivation, phase scheduling and the measured-scope rule are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"58f1e6f590b70827036786dcadff2572056f71f0f3e717675ffba4e302da5348","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"c4a6b0e56444d66bd001878494f77073f64faca8dc0b372191a79f8e06426063","disposition":"still accurate","rationale":"Only recorded metadata hashes and one bar's guarantee text changed in the manifest. Candidate tiers, attestation, stacking and landing admission are unchanged, and this candidate followed the prepare-then-review order this section prescribes."} -->
+<!-- doc-review {"version":1,"fingerprint":"d79f50de020593aaa02f8ef5e4123c76b4d6cdd13034b0f2ceede7e665f497ae","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8464594903014374fad59d7301f9fe39d9631de4b24ca7bcb151eae19a512cd8","disposition":"still accurate","rationale":"Nothing about candidate tiers, attestation, stacking or landing changed. The moved edges are the gear helper's exported tolerance and the re-recorded metadata hashes, both ordinary inputs to the selection this section already describes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

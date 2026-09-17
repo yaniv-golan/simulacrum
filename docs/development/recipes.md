@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"0078c7f516365163c0314f2283a8827c5dcd0515b0dfb6d488f9621f8a362b27","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f63435b4c2388235caad2b45c90bdf0ded92e3e554ce23e307838e62d23a67b1","disposition":"updated","rationale":"Recorded why a mis-spaced mesh cannot be repaired by moving a gear -- an admitted mesh shares one rigid carrier, so both gears are always in one mechanical group -- and that meshSpacingRepair therefore names the one bridging mount and its offset, sends it as an ordinary surface-mount command so mount admission refuses it in its own words, returns nothing rather than a useless command, and picks the moving gear by what that mount carries and by authored order rather than by identity."} -->
+<!-- doc-review {"version":1,"fingerprint":"7211ffc9f703cb6f6f5d7266b26cccf854b3b2cb6631d59c18cc69ca1dc71c9e","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a36edd2fd69a872e4af873d6ce0c4b1217fbdf259cee3ee06d97a67c7e6a36dc","disposition":"updated","rationale":"The section already records why a mis-spaced mesh is repaired by a mount edit; this pass makes the tolerance ownership explicit in the source it points at, with gear-geometry exporting the millimetre both the compiler's diagnosis and the repair's do-nothing guard read, so the two can never disagree."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -122,7 +122,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"cc4fe48ab04aa6547dfb90adcd9ed3550b36e0307a6702ffab94630e0b415001","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"571642b984378f80001929687cac77b2543b1d74d0bfd22573fd1f8470595aeb","disposition":"still accurate","rationale":"No command was added. The new inspector action reuses the surface-mount command this section already works through, including its replaceConnection form, so the single-transaction and explicit-rejection rules apply unchanged; the gear helper is a dependency only as a model operation the view reads before sending."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cf519c2f4e0d36c400b2feecfbd160d5be7a694146d160b0e973c592317fd0c","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"2df5f9fc56bd7fbe973d0497f66741fcc6150f7d5e7918c87c72daab1bc162d0","disposition":"still accurate","rationale":"No command was added; the mesh row still reuses surface-mount with replaceConnection, so the single-transaction and explicit-rejection rules apply unchanged. The gear modules appear here only as model operations the view reads before sending."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -151,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"25fcb5a74862aef9636532657d98ccd132c46a06babbc3cf483e248e043fa3fd","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"f77f8189963f2e2424a5dc04129eb4861dcf3fb9bee01a278a29db74e92ccb8b","disposition":"still accurate","rationale":"This candidate applied the policy the section points at and recorded the player task, owning region, visibility lifecycle and displaced surface. Preview and pointer ownership stayed in presentation, both new controls commit through existing core commands, and the messages and help copy that changed are the wording layer this section already assigns to presentation and the model message table."} -->
+<!-- doc-review {"version":1,"fingerprint":"93316cdf74bf5e59dbd1c4ba17c56ff74d8cb1dc4a0b3bb925cf11d0e58e6f72","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"20943b03c88c7fd33d00830ced1ee2e7f81694a031954c8db1d2faae73d32644","disposition":"still accurate","rationale":"The policy this section points at is what drove the change: the read-out lost the mass Engineering details already owns, and the model message stopped naming a control the view may not render, leaving the control name in presentation beside the button. Preview and pointer ownership stayed in presentation and both controls commit through existing core commands."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -200,7 +200,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"636c9345733792bfa6ecedb6883071db031df7010d0c7dbaa0e2ef5c6a571859","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3ae56dae682b7ad5cec2f288b031a87fef7be4516b779c44fa8ff3cf6a2436f4","disposition":"still accurate","rationale":"No diagnostic class was added; the two gear reason codes and the readiness line are unchanged. The new action repairs authored state only on an explicit player command, which is the opposite of the prohibition here on a diagnosis repairing state or inferring intent from a name -- the moving gear is chosen by what its mount carries and by authored order, never by a part name."} -->
+<!-- doc-review {"version":1,"fingerprint":"9034de7bddbe3f95e91da036691bac092a1777e1c13ee8a0a71ffcd87e145c0b","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9b297280ebf3a623886903c39dc465bb8bad7de5ce35e29014923ecf470dfa25","disposition":"still accurate","rationale":"No diagnostic class was added and the readiness line is unchanged. GEAR_MISALIGNED was reworded to name actions rather than a control, which is exactly this section's rule that the model returns an explanation and presentation owns wording layout and navigation."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"4378de6b0fde0ddf193b0b795856597aa814f1b4353ed7bf78e1362a738b35a4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4b5cc84a253cdb8f25bbe24b8c5a5ef7ad4f51852992b6db0d2780ac4475af21","disposition":"still accurate","rationale":"Nothing crossed the physics door. The manifest edit extended the spur-transmission guarantee to cover the authored mount repair and registered its two new controls; no law, integration step, tick order or compiled joint field changed, and the compiled mesh joint keys, radii and stiffness are exactly as before."} -->
+<!-- doc-review {"version":1,"fingerprint":"d4229084e7ba4d7b30f6b9c2b55c675c4db706ff10300bdc4feb7f4d275a22b7","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"df2ee70353fbee3247ff16ba229a06a9d318ac099e99d7d17013aa08f99b0f54","disposition":"still accurate","rationale":"Nothing crossed the physics door. No law, integration step, tick order or compiled joint field changed; the mesh compiler now imports the authoring tolerance instead of declaring its own copy of the same number, and the compiled joint keys, radii and stiffness are byte-identical. The rest of this closure is copy, tests, documentation and manifest rows."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -546,7 +546,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"b0e4c80ce5a9d614bd3d63dfe4b8af33276a9e192792e9c6b749e21ccf49ce5d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cb9cde24bef1c1f2abb7c3363cf986225cba7db39aad0ac5d386c7789d78e7df","disposition":"still accurate","rationale":"The new helper uses connection-graph exactly as this section prescribes: it asks mechanicalGroup for membership facts, including with omitConnectionIds to learn which mount separates the two gears, and the operation itself owns the decision to offer a repair or nothing. No classifier semantics, binding remap or capture rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"4fafa203d7ce98271230f7d9989a9d611f04b856cea70bc508d9714459fed318","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2955bd7eb3fc37411a434fe4eba7c7786204f2ef50c579a7473c0bed819722bb","disposition":"still accurate","rationale":"The repair still asks connection-graph for membership facts, including with omitConnectionIds to learn which mount separates the two gears, and still owns the decision to offer a repair or nothing. No classifier semantics, binding remap or capture rule changed."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -643,7 +643,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"c1e88fa56dd0e086d556604d695f6ef6e84a87c611221c20ab2ce2c8aa0df214","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"d6c89b227b8737ca8c24518cd3cc93d5e17d007e589bb778fcbc4a6ae69cb131","disposition":"still accurate","rationale":"No overlay producer or renderer changed: gear meshes still draw as dashed relationships with cosmetic teeth following completed body transforms, and the gear rendering controls are untouched. The gear helper appears in this closure only because the drawn profile reads the same resolved facts it always did."} -->
+<!-- doc-review {"version":1,"fingerprint":"210447d91baa91f502329bf4192f1b8bcc9dbac9870f65a111be2cea89b6e19b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1e5d9cb2b1090dee73510fb52259f1872161cc8084fc6006b9521c03e2a1c611","disposition":"still accurate","rationale":"No overlay producer or renderer changed: gear meshes still draw as dashed relationships with cosmetic teeth following completed body transforms, and the gear rendering controls are untouched."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
