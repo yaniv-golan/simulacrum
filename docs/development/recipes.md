@@ -127,7 +127,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"215542870314e13773d10aadfd78e57028ef5f416210c5af35d75d5e7d3cf6fc","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d68c6942ecc6402acba897f88aebad7f7b3ffb7834b9b2affc5962da3826c3a3","disposition":"still accurate","rationale":"Only gear help copy changed. No interaction, control, command, admission path or history behaviour described in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"6c52f004fd8022821507cf3fed14ce3dfbbed2f2e6221707466a0e72e7489017","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"8acdac92a9b9a1942b86a618f7d80cae75b39db82907fb78dc8012bbc4b32449","disposition":"still accurate","rationale":"Unchanged prose. Preview and pointer ownership stay in presentation, commitment still goes through the existing core command, cancellation still terminates the owned operation without committing, and the shared help-input containment still gives the placing row its own keys. This candidate adds the browser assertion that Enter on Cancel closes the row and commits nothing rather than changing any of that, and the surface panel now reads one more state word from the shared vocabulary instead of writing its own."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -215,7 +215,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"adb7c7f21bb0c5e9b9016cc914ff5e454d7a4d4446ac28395afab6f02d0b30c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"58caa06b6a220e9d03d397347a9f2b7ae4222b885b915990c1f758202187c1fc","disposition":"still accurate","rationale":"Unchanged prose within this section (the changed lines in recipes.md fall in add-or-extend-a-part and change-a-presentation-overlay). No law, simulation module or the physics door changed in either merged branch: the gear teeth are cosmetic geometry inside the existing collider and the favourite toggle is presentation state, so this recipe's owners, its narrow-door rule and its required checks all hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7beb98b5f868857670fab7cf3b663461985846485479925a72c754e0481f279","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"6e3800c2f896158035fdd12721746db55d1b91669f2b087879d143094df5b6aa","disposition":"still accurate","rationale":"Unchanged prose in this section. No law, simulation module or the physics door changed: this candidate edits presentation geometry and copy, one browser check and the manifest and documentation records, and the merged favourite star is presentation state. The recipe's owners, its narrow-door rule, the frozen contact controls and its required checks all hold."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

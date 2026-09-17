@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"66c58165136ad4d63f9d86ccb6492a2438aa532c523390840974abd0d2144ef3","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"71799964aedfc652756e512ffd73f8801d666ee657c436feab0dff8af250074d","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by reviewed scope digests, the controls.positive anchor registering this candidate's anti-retarget unit test under the existing parts-catalog-discovery invariant, and the merged gear-appearance registrations that arrived reviewed on c44f92de. No milestone, bar or rule allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"a41504ac6ce4015d88bf1d4e712005c3d008c7194730ef42f215b94d20d04bbb","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"b99c74f2d5e708af88b28e7bd13cced3fcd720474ccf3c2949c116d472f1223c","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json moved by reviewed scope digests, by the parts-catalog-discovery guarantee sentence that now records the placing row's reserved machine control band and drops a vocabulary claim the row never met, and by the merged favourite-star control anchor. No milestone, bar or rule allocation changed, so the M3b statement and the rule that the manifest owns allocation both hold."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f7575f3e8398022ef843d94d5fbae9aa0f71b1356062a455d8ab3aeec23c3f2a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d5b815b7cb86fa2bb14f0ce70326efa880d547e224255ed6b62ff8949f809f34","disposition":"still accurate","rationale":"reference.md regenerated only the registry rows that now list classifyRead and the read-classification module beside the existing owners; the documentation workflow this section describes (prepare, review, check and their ownership rules) is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"960a1a7ec376e711f65d76312412b9da4dc4c2589aed89082b763577d7db8950","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d7587c9943ed6fbc74e70ff51da70b6b55f64719426215496868db4bd675dcc2","disposition":"still accurate","rationale":"docs:prepare regenerated one generated row in reference.md: parts-catalog-discovery now lists placementPresentation beside its existing owners. The documentation workflow this section describes - prepare, review, check, their ownership rules and the marker/sidecar records - is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"08580f0267feeb3bb77bb1a7bfee2f2bf718b1931bb5a71bd57668be0f64f943","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"21cc489db285be409c367994284a9c99397d7e192588f080a0f40869e77fd00b","disposition":"still accurate","rationale":"Unchanged prose. This candidate registers, removes and re-scopes no browser check of its own; it edits two existing check scripts and adds one positive control anchor, and the gear registrations it merges were reviewed on their own tip. Selection, phase scheduling and platform rules are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"28a2445571addd29275b62c51bfb4bb1f3745c99e26dfe32b756d6115bf2c95b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"03587646795e902c153f2c32e917f87e6c6fce0005eec036ced2e059303311a0","disposition":"still accurate","rationale":"Unchanged prose. This candidate registers, removes and re-scopes no browser check: it adds assertions to the existing verify-parts-catalog script and a sentence to its manifest guarantee, and the eight local scope rows moved only by consumerSourceHash, each reviewed on this tip. Selection, phase scheduling, reaching-check and platform rules are untouched."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"28fc0e28ad4598e451fe31aa1d142417bd82f864c8a3ba2bcdbd6914163bac91","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d7d0da73ef6b71208305390b73747c34eca3bdab4e4455503b089f29ab572d30","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged. The manifest moved only by reviewed scope digests, a control anchor and the merged gear rows; none of those is completion evidence or a rule about how it is captured."} -->
+<!-- doc-review {"version":1,"fingerprint":"a374c22b951de94526df5d1373de21c4df8d61495b7523a52fa919f9910ed546","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f621801e75b8a77500a8aa89cace91eb8c7f9255eb5e8e9c70cea1209688e70a","disposition":"still accurate","rationale":"Unchanged prose. Candidate capture, the tier set, receipts and receipt reuse are unchanged. The manifest moved only by reviewed scope digests, one guarantee sentence and the merged favourite-star anchor; none of those is completion evidence or a rule about how it is captured."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
