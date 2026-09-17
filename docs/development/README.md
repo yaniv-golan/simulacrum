@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"9345ce9759a3bf9b1487563929beb1fe1ac4afb3ec42a742d8be43b6106be8e0","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"fa08af4867081841dacba7760261a2b10759d9ff382473f80e9d4a91db6f29b3","disposition":"still accurate","rationale":"Unchanged prose. The one changed dependency is scripts/manifest.json, and it moved only by this candidate's reviewed scope metadata: eight browserReviewMetadataScopes consumerSourceHash digests and one consumers entry on the src/model/messages.mjs local row, where test/surface-placement-feedback.test.mjs joined the list. The manifest's browserChecks set is byte-identical to main. No milestone, bar, rule or check allocation changed, so the M3b statement and the rule that the manifest owns allocation both still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"46dea11bd05bbfec96f2ddf1758a066168811a73a45ffac9c3cebeef033dc2f1","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"01dd3afeb64fe0982a7052673175b5b6d194c5d3b26980143363048815784c24","disposition":"still accurate","rationale":"The manifest milestone stays M3b and the candidate adds one invariant row; the contract amendment adds an M3b section without touching bars, gate rules or milestone allocation, so the status prose and the commands it names are unchanged."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"960a1a7ec376e711f65d76312412b9da4dc4c2589aed89082b763577d7db8950","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d7587c9943ed6fbc74e70ff51da70b6b55f64719426215496868db4bd675dcc2","disposition":"still accurate","rationale":"docs:prepare regenerated one generated row in reference.md: parts-catalog-discovery now lists placementPresentation beside its existing owners. The documentation workflow this section describes - prepare, review, check, their ownership rules and the marker/sidecar records - is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"dc722ab7f2e570f05ec19b2cf3d46bfab96e59cabded31f406a1cf65144c02cb","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a58aa47744589444bd15dcd00d0ebbf6f425880ff0e478577b3035ed568605f1","disposition":"still accurate","rationale":"The documentation workflow, its commands and its required dispositions are unchanged. reference.md moved only because docs:prepare regenerated its source-bound inventory to include the new cord model module."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"82118fad5002000aac1895f68fe9cb3ab15aa1745dea9f53d69bc22c841242f4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"967425c449a45f9c0ce1ddbd2d2001787cdc71651f5ea73312231dc613ef7e67","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json is the only changed dependency. This candidate registers, removes and re-scopes no browser check: it edits two existing check scripts (scripts/verify-surface-browser.mjs and scripts/verify-ui-lifecycle-browser.mjs) and adds none, and the merged placement-strip's check-script edits arrived reviewed on their own tip. Selection, phase scheduling, host profiles and platform rules are untouched; the manifest delta is scope digests and one consumers list."} -->
+<!-- doc-review {"version":1,"fingerprint":"5449d1ce97cbfc5a83c6f883d10be4ac1e20b2d7ec08f7d4aa38aeb6e4aa5797","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b2d528e05ccd46305a8635cdfdd7f584f98028e6d153bf8abcd4f2b53978b6fc","disposition":"still accurate","rationale":"The candidate registers no browser check and changes no host profile, phase, scope kind or witness rule. The sixteen refreshed metadata rows moved only in consumerSourceHash because the manifest they hash gained an invariant row, which is exactly the prepare/apply path this section documents."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"8b959268f56584271a6adb1452821ed1842af630c457f14a961a84894f09e377","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"76a4ea0ecf488311bdb32c562594a6d390a9381095d984079d1774c9e9a114c3","disposition":"still accurate","rationale":"Unchanged prose. scripts/manifest.json is the only changed dependency and it moved only by reviewed scope metadata, which is neither completion evidence nor a rule about how evidence is captured. Candidate capture, the tier set, receipts, receipt reuse and the stacking rule this candidate itself followed are all unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"17e6fd3ab515313d3fe87e4d274af64e74df63407dbf937b159896815cb3980e","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f3137b92c032a76d1665be6817cb302c1ba633ed75fd4f41c7ebc0b9a4b993de","disposition":"still accurate","rationale":"Candidate capture, tier selection, window ownership and landing admission are untouched. The changed dependencies are model modules and the manifest invariant list, which the documented commands read but whose procedure they do not define."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

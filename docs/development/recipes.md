@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"97ef90b0bfaec19e622cb9ccc9250bd3998dc397d9bf834177b8b844cf7c383b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a7391037f0c9400ee4103f81868ade850e16c04471085c1236367be9722c8928","disposition":"updated","rationale":"Updated: the spur-gear paragraph now says the teeth are involute, that the hub, recessed web and bore are equally cosmetic over a solid collider so nothing can be placed through the bore, and that the drawing takes resolved gear facts built at one catalog read site."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cfe9093213169bf4fab68f408db32eef03e53bc64a8cf64451336246ec4269d","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"26578fdc70fab69f0e01d241a3e9bf2d4db9f68c56d12588d5e6db2770ef2353","disposition":"still accurate","rationale":"The candidate adds a connection kind, not a catalog part: CATALOG, parameter definitions, primitives, surface regions and the milestone declaration for parts are untouched, so this recipe's owners, worked examples and required checks all still hold."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -101,7 +101,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"038f1d4dd431bba80ec25605483a0e69e70cd80de5fd5632c81a47bea4acca2a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"de3cac119a00f9bad9b1c5f3557152e06506cd6abd80605de82e1ec64b45e6bf","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/core/workshop.mjs and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"c7b702bb438782f65f7895858fa79ec971b5eaa31b6dde4d84a9f3ee75fe106e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"06c1465733814caad6bbf7fc5cae74711e0b042f7f2a5b2d1251da6133d16401","disposition":"updated","rationale":"Updated: the scene capacity sentence now counts distributed elastic-cord nodes alongside rope nodes, matching the body-budget rule the blueprint admission enforces. The command admission procedure is otherwise unchanged, and the new cord command follows the documented rope command shape exactly."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -130,7 +130,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"dd968a3c74b40a0acd053384cd83fcca67ef98de72b03073a9637a68ddb256b1","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"b04616f1c94d531cce57d2713410c0747680dbffb330d62819ade438a3ea7ae1","disposition":"still accurate","rationale":"Unchanged prose. The changed dependency is src/presentation/surface-controls.mjs, and the recipe's owners and rules hold: one nonmutating placement controller, the surface owner still providing mounting faces, precision and attachment, and one cursor-guarded surface-mount command on confirmation. This candidate adds drawing and a read-only landing probe; the strip's side relabels the confirming control from the shared vocabulary. No admission, command or cursor path moved."} -->
+<!-- doc-review {"version":1,"fingerprint":"1a64166239e5e2702c3e56977dbb27683e19d06819b4abdb1fc07e9684d93a0c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"44cd61610d5bb597aa46400ac492b9954e32f107ceb1fd1c32aa318085fece8a","disposition":"still accurate","rationale":"This candidate adds no presentation module, control or preview. messages.mjs gained three reason-code strings for Build-time and run-time refusals; no interaction owner, placement policy or rejected-draft explanation changed."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -179,7 +179,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"60d5ad6cf47249857ed9dff68612ad95e4e90885d14cdd287cf9ad97c2fe00ac","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"be836002ca45c6e5a5c8ecbdd81a688242aa7caa840fd833be4d7c9ba0373bfa","disposition":"still accurate","rationale":"Unchanged prose. The dependency digests moved because the pivot pin added a catalog part, the pivot connection kind and its browser check, touching src/model/boundaries.d.ts and its siblings; the mechanism this section explains is unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"e251a98cd68520d7f09e5c6f2cec9476405962b6dfe772dd7245d5a989848a33","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"67380fc9c3508957bb29bc66e636526aa13cdddd0717bbcd8cb7b24d28cb30a1","disposition":"still accurate","rationale":"No diagnostic, readout or motion explanation was added. The cord's bounded failures reuse the existing reason-code, failure-bundle and Build-repair path this section already describes, and its rows publish through the existing distributed elastic read model."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -218,7 +218,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"9216d0c66cc16a0d8eadc0ab75874ccc2f5803d70393ddb52e54244772c5c3b4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"e906a9c4902a5a15601fe499f1f4255f1d04b215beae1c9a6d25a0003e0a43b4","disposition":"still accurate","rationale":"Unchanged prose. Every changed dependency is presentation, documentation, release-note, browser-check, test or manifest content: docs/development/ui-ux.md, scripts/manifest.json, scripts/verify-surface-browser.mjs, scripts/verify-ui-lifecycle-browser.mjs, src/application/release-notes.mjs, src/presentation/surface-controls.mjs, src/presentation/workshop.css and test/surface-placement-feedback.test.mjs. No law, simulation module or the physics door changed. The landing probe is an ordinary presentation raycast against display meshes, drawn as an aid and never a placement decision, and the drop-line's floor height is read from the existing environment description rather than assumed. This recipe's owners, its narrow-door rule and its required checks all still hold."} -->
+<!-- doc-review {"version":1,"fingerprint":"409644f0932f6a60689645768aa8598ac04fe2bebd96357b92f8b0d74ddaed42","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"71fc75ffed9e0af532463b617bb518e85daffd2bad340e9edce81cc4ce15b8db","disposition":"updated","rationale":"Updated: the section now describes the elastic cord as a second connection compiled into the same distributed rows, its single authoring owner for stiffness and damping against material and diameter owning only mass, its deliberate reuse of the existing tensile law rather than a duplicate, its own physics-door domain and bounded CORD_MOTION_LIMIT, the authoring-time elastic budget it shares with guided springs, and the four control files to preserve."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -542,7 +542,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"fd0e5dbd1f30d83dc9686f870b4a67354b8c0194805f19195f9fcc79f3b4b670","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"9d06df0f8a9d2caa774150ac2e17940a0b5f5a0978b46304b888d936d0b9ff99","disposition":"still accurate","rationale":"The only changed dependency is scripts/catalog-browser-actions.mjs gained expandExample/expandExampleVariants, the idempotent helpers a journey uses to open one Learn row. Subassembly authoring, its owners and its invariants are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"40d562021f6493610baa60793e33926a2e1c2b74bc928c938696252bac0d099d","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"44071ce17dad811539abe94676ce847ddd86fd0f83517816b67092e1a66d107d","disposition":"still accurate","rationale":"The cord joins mechanical grouping, mirrored reference attachment and reusable capture through the same connection-kind lists this section already governs, and its authoring controls exercise them. No grouping, mirroring, capture or transform rule changed."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -639,7 +639,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"fc32bdd2e57f50c63360ea8288e298c328abf514356733e7ac53d9002237626f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"888cd74c1f935b94199495b0585276aaf943650523cdcd03099d569f21c10e19","disposition":"still accurate","rationale":"Re-recorded because the merge produced a sidecar matching neither parent; this merge changed no prose, it only carried the gear-look-v2 builder paragraph in unchanged. The dependencies this merge delta touched are src/presentation/part-mesh.mjs (the inward-drawn gear body and its declared selection silhouette, which the section now records) and test/presentation-resources.test.mjs. The overlay recipe's owning region, telemetry-only reads and verification order are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bad657bec7862f666d66378bd9ec197c06c52518bdfe8f3e98018ae64cc6b34b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e1f5674e95c65808711dbf6b81e1fce24e3877f59d96617658e5c161b88d137f","disposition":"still accurate","rationale":"Candidate 1 adds no overlay, view, renderer or selection behaviour. Cord rows publish through the existing distributed elastic read model, and no presentation module or its resource lifecycle changed."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
