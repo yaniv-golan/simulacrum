@@ -6,7 +6,7 @@
     "scripts/candidate-after.mjs": "954a519feec57a607e7a45b83a4c8a8c7d053bf7de8b76e720e98a440bf94aec",
     "scripts/land.mjs": "25da0a80b46a142c4843d72aa7fa8eb30b2ae7d5f6f1dd4ed54b87750a013255",
     "docs/development/playtesting.md#remote-setup": "f270196cb1baee785e0673ab24b8610fc094b2960a922915183cfdd34ed4def2",
-    "package.json": "abd4569b40f680250b0ebf5f9967584effb37fe4587cc5a96f48c7793cc882e9",
+    "package.json": "abe5f518859259418a83b94263ad428da5cf28d08d9c92d8ac39402abb58a28a",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",
