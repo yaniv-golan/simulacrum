@@ -3,22 +3,39 @@ import { compileAssembly } from '../../src/model/assembly.mjs';
 import { createSession } from '../../src/simulation/session.mjs';
 import { deterministicProjection, DT } from '../../src/model/tick.mjs';
 import { createHash } from 'node:crypto';
+// The second argument selects the mid-domain cord or the stiffest authored
+// corner, whose rows are the stiffest and whose nodes the lightest a player can
+// author; both must project identically across processes and clock drivers.
+const corner = process.argv[3] === 'corner';
 const bp = createEmptyBlueprint('clock', 'Clock');
-bp.parts = [createPart('beam', 'a', [0, 1, 0]), createPart('plate', 'b', [0, 0.6, 0])];
+bp.parts = [
+  createPart('beam', 'a', [0, 1, 0]),
+  createPart(corner ? 'beam' : 'plate', 'b', [0, corner ? 0.9 : 0.6, 0]),
+];
+if (corner) bp.parts[1].parameters.length = 0.1;
 bp.connections = [
   {
     id: 'c',
     kind: 'cord',
     a: { part: 'a', surface: { region: 'bottom', u: 0, v: 0, twist: 0 } },
     b: { part: 'b', surface: { region: 'top', u: 0, v: 0, twist: 0 } },
-    cord: {
-      restLength: 0.3,
-      stiffness: 300,
-      damping: 8,
-      diameter: 0.008,
-      segments: 4,
-      material: 'rubber',
-    },
+    cord: corner
+      ? {
+          restLength: 0.08,
+          stiffness: 300,
+          damping: 0,
+          diameter: 0.004,
+          segments: 8,
+          material: 'bungee',
+        }
+      : {
+          restLength: 0.3,
+          stiffness: 300,
+          damping: 8,
+          diameter: 0.008,
+          segments: 4,
+          material: 'rubber',
+        },
   },
 ];
 const c = compileAssembly(bp, { ground: null }).configuration;

@@ -6335,7 +6335,7 @@
       "id": "elastic-cord",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "An authored tension-only elastic cord connects two ordinary mounting faces on the rope's admission set, carries the distributed mass of the player's chosen material and diameter, and applies the authored end-to-end stiffness and damping through the one distributed unilateral elastic law. A slack cord applies nothing and leaves a hanging load in exact free fall; a loaded cord settles at the analytical extension of its authored stiffness; mechanical energy never increases, and only the authored damper removes it. Stiffness and mass have one authoring owner each, and identity perturbation leaves the compiled plant unchanged. Guided springs and cords share one machine-level elastic budget refused at authoring time, capacity and the linear elastic domain are bounded with preserved failure evidence, and cord rows continue deterministically across processes and both production clocks through the unchanged physics envelope.",
+      "guarantee": "An authored tension-only elastic cord connects two ordinary mounting faces on the rope's admission set, carries the distributed mass of the player's chosen material and diameter, and applies the authored end-to-end stiffness and damping through the one distributed unilateral elastic law. A slack cord applies nothing and leaves a hanging load in exact free fall; a loaded cord settles at the analytical extension of its authored stiffness; mechanical energy never increases, and only the authored damper removes it. Stiffness and mass have one authoring owner each, and identity perturbation leaves the compiled plant unchanged. Guided springs and cords share one machine-level elastic budget refused at authoring time, capacity and the linear elastic domain are bounded with preserved failure evidence, and the physics door refuses every row value outside its own domain. Both extremes of the authored domain, measured over 2400 ticks, converge without energy growth or jitter and continue exactly from a snapshot; cord rows project identically across processes and both production clocks through the unchanged physics envelope. Stability is claimed only for the measured authored domain, not for arbitrary row stiffness or node mass.",
       "owners": [
         {
           "path": "src/model/cord.mjs",
@@ -6402,6 +6402,22 @@
           {
             "path": "test/cord-determinism.test.mjs",
             "anchor": "cord projections match separate processes and both production clocks"
+          },
+          {
+            "path": "test/cord-determinism.test.mjs",
+            "anchor": "the stiffest authored corner projects identically across processes and clocks"
+          },
+          {
+            "path": "test/cord-door.test.mjs",
+            "anchor": "the physics door admits an ordinary cord row and refuses every value outside its domain"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "both extremes of the authored cord domain converge without growth or jitter"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "the stiffest authored corner is far outside the guided-spring budget and still converges"
           }
         ],
         "negative": [
@@ -6424,6 +6440,14 @@
           {
             "path": "test/cord-energy.test.mjs",
             "anchor": "an undamped cord keeps swinging while the damped control settles"
+          },
+          {
+            "path": "test/cord-door.test.mjs",
+            "anchor": "the physics door admits an ordinary cord row and refuses every value outside its domain"
+          },
+          {
+            "path": "test/cord-domain-corners.test.mjs",
+            "anchor": "the stiffest authored corner is far outside the guided-spring budget and still converges"
           }
         ]
       },
