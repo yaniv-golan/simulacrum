@@ -66,7 +66,8 @@ test('both extremes of the authored cord domain converge without growth or jitte
         m = CORD_MATERIALS[material];
       // The corner really is the corner: the lightest node is the analytic half
       // segment of the authored material, and the rows carry n times 300 N/m.
-      const half = (m.density * ((m.packing * Math.PI * diameter ** 2) / 4) * restLength) / segments / 2;
+      const half =
+        (m.density * ((m.packing * Math.PI * diameter ** 2) / 4) * restLength) / segments / 2;
       assert.ok(Math.abs(Math.min(...nodes) - half) < 1e-18, `${Math.min(...nodes)} vs ${half}`);
       assert.equal(rows.length, segments);
       assert.equal(rows[0].stiffness, segments * CORD_LIMITS.maxStiffness);
