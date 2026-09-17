@@ -118,7 +118,7 @@ const parameterLabels = {
 // A parameter the catalog stores in metres that a player reads in millimetres. Only the control
 // scales: the authored SI number keeps its single writing owner, the `parameter` command.
 const parameterDisplay = {
-  module: { label: 'Tooth size (mm)', unit: 'mm', scale: 1000 },
+  module: { label: 'Tooth size', aria: 'Tooth size (mm)', unit: 'mm', scale: 1000 },
 };
 // Read a scaled value back as the decimal it was authored in: multiplying an authored decimal
 // can land a few units in the last place away and then refuse the value it came from.
@@ -2771,7 +2771,7 @@ export function createWorkshopView(
       input.disabled = mode !== 'build';
       input.setAttribute(
         'aria-label',
-        display?.label ?? (key === 'defaultDuty' ? 'Drive setting' : key),
+        display?.aria ?? (key === 'defaultDuty' ? 'Drive setting' : key),
       );
       bindParameterInput(input, key, scale);
       label.append(input, element('span', 'unit', display?.unit ?? parameter.unit));
