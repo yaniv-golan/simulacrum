@@ -35,10 +35,12 @@ const configuration = (joint) => ({
 test('the physics door admits an ordinary cord row and refuses every value outside its domain', async () => {
   const ordinary = await createPhysicsWorld(configuration(row()));
   try {
-    const admitted = ordinary.configuration?.joints?.[0] ?? null;
-    assert.ok(ordinary.ropes().length === 1, 'one distributed elastic row');
-    assert.equal(ordinary.ropes()[0].restLength, 0.05);
-    if (admitted) assert.equal(admitted.kind, 'cord');
+    const reading = ordinary.ropes();
+    assert.equal(reading.length, 1, 'one distributed elastic row');
+    assert.equal(reading[0].restLength, 0.05);
+    // A cord row is numeric, so it must not become a native joint.
+    assert.equal(reading[0].appliedTension, 0);
+    assert.ok(Math.abs(reading[0].length - 0.05) < 1e-12, `${reading[0].length}`);
   } finally {
     ordinary.dispose();
   }

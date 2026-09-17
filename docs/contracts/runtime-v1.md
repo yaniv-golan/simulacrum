@@ -490,7 +490,11 @@ immobile pair spends nothing. Exceeding 0.09 rejects the authored machine in Bui
 before any run, and zero-stiffness guides spend nothing. A firm cord therefore
 requires heavier attached parts; this is a machine-level authoring budget in the
 measured domain, not a stability requirement, because the distributed rows are
-solved by an implicit convex projection rather than an explicit impulse.
+solved by an implicit convex projection rather than an explicit impulse. Cord rows
+are consequently admitted far outside that budget: both extremes of the authored
+domain are measured to converge without energy growth or jitter and to continue
+exactly from a snapshot. Convergence is claimed for the measured authored domain,
+not for arbitrary row stiffness or node mass.
 
 Beyond twice its rest length a cord has left the linear elastic model that was
 measured, so the run stops with preserved failure evidence and an explanation
@@ -501,8 +505,11 @@ cord-only machine requires no spring preparation and does not consume the
 eight-spring allowance. Completed frames publish cord rows in `ropes` with the same
 fields; `springs` is unchanged. No surface draws a cord yet: workshop rendering and
 the optical input both select rope connections, so a cord has completed geometry and
-no visual representation, and it is not wiring. An undamped cord keeps swinging: only the authored
-damper removes its energy.
+no visual representation, and it is not wiring. Mechanical energy never increases. An
+undamped cord in the middle of the authored domain keeps swinging, so only the
+authored damper removes energy there; at the stiffest authored corner the implicit
+projection's own numerical loss settles the load without a damper, and that loss is
+reported through `ropeNumericalLossJ`, never as heat.
 
 ## Completed contact observations (M3b)
 
