@@ -141,7 +141,7 @@ and the existing chronological history. The environment controls in
 geometry, authored scene identity, aggregate capacity, rejection and continuation.
 [Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
 nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
-Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
+Combined capacity includes machine bodies, every distributed rope and elastic-cord node, compiled scene solids and ground.
 [Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
 legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
 
@@ -479,6 +479,30 @@ energy fields before swapping native state. Preserve [independent ledger oracles
 [bounded capacity measurement](../../scripts/measure-ropes.mjs) for sustained ordinary
 support contact; this does not qualify arbitrary impacts, duration or hardware.
 
+An [elastic cord](../../src/model/cord.mjs) is a second connection compiled into the
+same distributed rows. It authors its own end-to-end stiffness and damping in the
+measured 1-300 N/m and 0-100 N s/m ranges, while material and diameter own only the
+distributed mass; each row takes N times the authored pair so N rows in series restore
+it. It adds no law: the tension-only Kelvin element it needs is the existing rope law,
+and duplicating it would put one law under two owners. Its rows are validated in the
+physics door against their own domain, reach twice their rest length before a bounded
+CORD_MOTION_LIMIT, and carry no material strength rating. Guided springs and cords
+share one machine-level elastic budget refused by
+[admitCordBudget](../../src/model/cord.mjs#symbol=admitCordBudget) during compilation,
+from authored masses over each elastic group; that budget keeps a machine inside the
+measured domain and is not a stability requirement, because the distributed rows are
+solved implicitly. The door's own cord domain has
+[direct counterexamples](../../test/cord-door.test.mjs) that bypass the compiler, and both
+extremes of the authored domain are [measured over 2400 ticks](../../test/cord-domain-corners.test.mjs):
+the stiffest corner puts 2400 N/m rows on 5.6e-5 kg nodes, about 66000 times the guided-spring
+island budget, and still converges without energy growth, jitter or a snapshot discontinuity.
+Convergence is claimed for that measured domain only; widening `CORD_LIMITS` requires a new
+measurement, not an argument. Preserve [authoring, budget and identity controls](../../test/cord-authoring.test.mjs),
+[slack, analytic and bounded-failure controls](../../test/cord-physics.test.mjs),
+[energy and damper controls](../../test/cord-energy.test.mjs) and
+[both clock drivers](../../test/cord-determinism.test.mjs), which cover the mid-domain cord and
+the stiffest corner.
+
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 [Sphere physics controls](../../test/ball-physics.test.mjs#source) cover analytical
@@ -652,7 +676,11 @@ connection overlay. The checked producer takes narrow display inputs; the checke
 The workshop view resolves endpoints from displayed meshes, including exploded offsets.
 The renderer never changes authored connectivity or sends a command. Visibility is an
 explicit required field. Normal electrical links use straight schematic lines; fixed/shaft mechanical
-geometry and exploded dashed styling retain their existing behavior. Gear meshes
+geometry and exploded dashed styling retain their existing behavior. Distributed elastic
+connections are not wiring: both rope and `cord` edges are excluded from the wiring
+overlay, and a cord is drawn in no surface yet — workshop rendering and the optical
+input both select rope connections — so it has completed geometry and no visual
+representation. The inspector still names it, through the shared connection labels. Gear meshes
 use dashed relationships without a solid supporting rod; their cosmetic teeth are part of
 the body geometry and follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 

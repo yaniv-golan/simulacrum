@@ -206,7 +206,8 @@ export async function createSession(
   let torques = [],
     receipts = [];
   const hasGears = () => config.joints.some((j) => j.kind === 'gear');
-  const hasRopes = () => config.joints.some((j) => j.kind === 'rope');
+  // Rope and elastic-cord rows are one distributed elastic read model and ledger.
+  const hasRopes = () => config.joints.some((j) => j.kind === 'rope' || j.kind === 'cord');
   const hasSprings = () => config.joints.some((j) => j.kind === 'spring');
   const emptyEnergy = (mechanical = world.mechanicalEnergy()) => ({
     ...mechanical,
@@ -860,7 +861,8 @@ export async function createSession(
         ...(cameraNodes(nextConfig).length ? { cameras: nextCameras.read() } : {}),
         receiverControl: nextReceiverControl.snapshot(),
       };
-      if (nextConfig.joints.some((j) => j.kind === 'rope')) nextFrame.ropes = candidate.ropes();
+      if (nextConfig.joints.some((j) => j.kind === 'rope' || j.kind === 'cord'))
+        nextFrame.ropes = candidate.ropes();
       else delete nextFrame.ropes;
       if (!cameraNodes(nextConfig).length) delete nextFrame.cameras;
       const nextAnchor = copy({
