@@ -93,7 +93,9 @@ try {
   );
   browserEvidence.assert('equal', [centered.u, 0]);
   browserEvidence.assert('equal', [centered.v, 0]);
-  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Align to the near edge along this face', exact: true })
+    .click();
   const beforeKeyboard = await read();
   await page.getByRole('button', { name: 'Center on surface', exact: true }).focus();
   await page.keyboard.press('Enter');
@@ -118,7 +120,9 @@ try {
     (await page.evaluate(() => window.workshopProbe.readInteractionState().surfacePlacement)).u,
     0,
   ]);
-  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Align to the near edge along this face', exact: true })
+    .click();
   const edgePreview = await page.evaluate(
     () => window.workshopProbe.readInteractionState().surfacePlacement,
   );
@@ -131,6 +135,51 @@ try {
     before,
     'alignment controls adjust only the labelled preview',
   ]);
+  // Placement feedback: the ghost's drop-line to the floor, and the chip naming what the pad
+  // is aimed at with the gap left. Both were computed by the scene and never said out loud.
+  const baseName = (await read()).parts.find((p) => p.id === 'base').name;
+  const feedback = await page.evaluate(
+    () => window.workshopProbe.readInteractionState().surfacePlacement,
+  );
+  browserEvidence.assert('ok', [
+    !!feedback.dropLine?.top && !!feedback.dropLine?.floor,
+    'the probe reports the drawn drop-line before anything dereferences it',
+  ]);
+  browserEvidence.assert('ok', [
+    Math.abs(feedback.dropLine.floor[1]) < 1e-6,
+    'the drop-line lands on the workshop floor',
+  ]);
+  browserEvidence.assert('ok', [
+    feedback.dropLine.top[1] > feedback.dropLine.floor[1],
+    'the drop-line runs down from the ghost to the floor',
+  ]);
+  browserEvidence.assert('ok', [
+    Math.abs(feedback.dropLine.top[0] - feedback.dropLine.floor[0]) < 1e-6 &&
+      Math.abs(feedback.dropLine.top[2] - feedback.dropLine.floor[2]) < 1e-6,
+    'the drop-line is vertical, so the landing mark is directly below the ghost',
+  ]);
+  browserEvidence.assert('equal', [
+    feedback.landing?.part,
+    'base',
+    'the landing read-out names the receiving part, never the part being moved',
+  ]);
+  const chip = page.locator('.surface-landing');
+  browserEvidence.assert('equal', [
+    await chip.isVisible(),
+    true,
+    'the gap read-out is on screen while a placement is live',
+  ]);
+  browserEvidence.assert('equal', [
+    (await chip.textContent()).trim(),
+    `${baseName} · ${(Math.round(feedback.landing.gap * 10000) / 10).toFixed(1)} mm`,
+    'the chip text agrees with the probe reading rather than a separate computation',
+  ]);
+  browserEvidence.assert('equal', [
+    await chip.evaluate((n) => getComputedStyle(n).pointerEvents),
+    'none',
+    'transient placement feedback never takes the pointer',
+  ]);
+  await page.screenshot({ path: `${out}/placement-feedback.png` });
   if (!(await page.locator('.surface-precise').evaluate((e) => e.open)))
     await page.locator('.surface-precise summary').click();
   await page.getByLabel('Along surface (mm)').fill('50');
@@ -382,6 +431,7 @@ try {
           'cancel',
           'underside attachment',
           'render agrees with physics',
+          'placement feedback: drop-line and gap read-out',
           'place without attachment',
         ],
         errors,

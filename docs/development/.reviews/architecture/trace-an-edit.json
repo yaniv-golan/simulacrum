@@ -69,7 +69,7 @@
     "src/application/clock.mjs": "4d572664bf6b489945343148da6c54d328335d318c51a210bf3bbf6a8b89498f",
     "src/application/render-submission.mjs": "fb2e0bc496f4999f0fc1bc55c436606290aec4b5ea9b0e71b4a7bf1982e69a27",
     "docs/contracts/runtime-v1.md#structural-failure-scope": "c6a7d2797f989ac5abd4545cc62bd526a4c13a169df574afffc5ac97e5660195",
-    "src/presentation/workbench-content.mjs": "ef56df1e188a065a99c709ebfeac5552f24c864f00d22ed39f4d677580b77f89",
+    "src/presentation/workbench-content.mjs": "5dc4140e8a1284cb039b819483621fab2f491079caac5e23e9a2fc730244320b",
     "src/application/feedback-context.mjs": "3597c60d3624670858128ec45bb385282e5ccbf96c3c2a8d43b49ed2ba2344db",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
     "src/presentation/assembly-library.mjs": "e7e9530d14961d74123f1df24cec718aa5057ae98c0a2cfcdbce45a9df8b95fa",

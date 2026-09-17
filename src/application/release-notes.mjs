@@ -29,6 +29,27 @@ export const RELEASE_NOTES = Object.freeze(
       feature: 'spurGears',
     },
     {
+      id: '2026-09-16-placement-feedback',
+      date: '2026-09-16',
+      name: 'See where a part will land',
+      summary:
+        'While you place a part, a line drops to the floor beneath it and a small read-out names what it will land on and the gap left.',
+    },
+    {
+      id: '2026-09-16-placement-strip',
+      date: '2026-09-16',
+      name: 'Placing a part: one tidy row',
+      summary:
+        'Picking a part now shows one row over the bench: the part, its state, exact coordinates, Place part and Cancel.',
+    },
+    {
+      id: '2026-09-16-lighter-dialogs',
+      date: '2026-09-16',
+      name: 'Learn & examples is a list you can scan',
+      summary:
+        'Every example is one row with its own button, and the instructions open inside the row. Project status now says what works today.',
+    },
+    {
       id: '2026-09-16-gear-machined',
       date: '2026-09-16',
       name: 'Gears look machined',

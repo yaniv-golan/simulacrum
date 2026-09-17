@@ -3701,7 +3701,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode. Learn & examples is a picker: one row per entry, grouped by readiness from its own copy table, nothing expanded on arrival and at most one row open. Each row keeps its launcher beside its name, its summary names what the player will do and the readiness its format line requires, and its format line, instruction paragraph and extra actions stay verbatim inside the row while remaining in the DOM when it is closed; a pending replacement keeps the row holding its trigger open so cancelling returns focus to the launcher that asked. The bounded browser scrolls its row list instead of the dialog that carries the header. Project status states what works today and what is still rough; the maintainer plan stays in recording setup's consent text and Give feedback keeps its single home in the footer.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -3781,6 +3781,14 @@
           {
             "path": "test/remote-playtest.test.mjs",
             "anchor": "setupClosed settles only once recording setup is dismissed"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "each Learn row keeps a short summary, its readiness clause and an honest claim"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "project status states the two facts while recording setup keeps its consent text"
           }
         ],
         "negative": [
@@ -3811,6 +3819,10 @@
           {
             "path": "test/workbench-content.test.mjs",
             "anchor": "first-run choice opens once per remembered device and never on a used bench"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "an unlisted Learn row is a rendering mistake rather than a blank line"
           }
         ]
       },
@@ -6025,8 +6037,12 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue. The placement strip over the bench is one row — the part, its state word, the coordinates chip and the two actions — and every control it relabels keeps its own accessible name; Enter belongs to the focused control except in a coordinate field. The row reserves the Sound band it shares the bench's bottom edge with, so a longer state sentence stays wholly readable inside the stage and never covers Sound, and the coordinates card goes away with the fields it edits. The strip and the surface panel read their state word and the name of their confirming control from one placement vocabulary, the surface panel its instruction sentence too, so the strip claims neither a face nor a rotation.",
       "owners": [
+        {
+          "path": "src/presentation/placement-lifecycle.mjs",
+          "anchor": "placementPresentation"
+        },
         {
           "path": "src/presentation/part-search.mjs",
           "anchor": "searchParts"
@@ -6061,6 +6077,14 @@
           {
             "path": "test/parts-browser.test.mjs",
             "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "the placement strip keeps every accessible name and leaves Enter to the focused control"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "one vocabulary names both homes of the same placement act"
           },
           {
             "path": "test/parts-browser.test.mjs",
@@ -7978,7 +8002,8 @@
         "test/gear-construction.test.mjs",
         "test/receiver-input-owner.test.mjs",
         "test/scene-editor.test.mjs",
-        "test/surface-pending.test.mjs"
+        "test/surface-pending.test.mjs",
+        "test/surface-placement-feedback.test.mjs"
       ],
       "reachingChecks": [
         "measure-cameras",
@@ -10423,7 +10448,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "6063f5ca43584f64db8accbbb94dd0275f5529a3651ca8a210c3ac404732a06a",
+      "sourceSha256": "46655dcb52c3a785dca4c19ab607215883d0a7f3b6fcc6073df82661032b1269",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",

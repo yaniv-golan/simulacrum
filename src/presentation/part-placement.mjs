@@ -2,9 +2,13 @@ import { CATALOG } from '../model/catalog.mjs';
 import { createPart } from '../model/blueprint.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { validatePlacementGeometry } from '../model/surfaces.mjs';
-import { createPlacementLifecycle } from './placement-lifecycle.mjs';
+import { createPlacementLifecycle, placementPresentation } from './placement-lifecycle.mjs';
+import { controlTitle } from './workbench-content.mjs';
 
 // This owner keeps a proposal only. The ordinary command path admits authored changes.
+// One row over the bench: the part, its state word, the coordinates chip and the two
+// actions. The state word and the confirming verb come from the shared placement
+// vocabulary, never from this panel, so the strip and the surface panel agree.
 export function createPartPlacement({
   getFrame,
   getCursor,
@@ -22,8 +26,13 @@ export function createPartPlacement({
   panel.dataset.partHelpInput = '';
   panel.setAttribute('aria-label', 'Place part');
   panel.hidden = true;
+  const lifecycle = createPlacementLifecycle();
+  // Empty-space placement: no face and no rotation, so the strip never says either word.
+  const words = () => placementPresentation(lifecycle.read(), { free: true });
   const title = document.createElement('strong');
+  title.className = 'placement-part';
   const status = document.createElement('p');
+  status.className = 'placement-state';
   status.setAttribute('role', 'status');
   const fields = document.createElement('div');
   fields.className = 'placement-coordinates';
@@ -44,18 +53,37 @@ export function createPartPlacement({
     return input;
   });
   const precise = document.createElement('details');
+  precise.className = 'placement-precise';
   const preciseLabel = document.createElement('summary');
+  // The words stay "Precise position" in both homes; the hover title says which numbers
+  // each one holds — world coordinates here, sliding and turning on a face there.
   preciseLabel.textContent = 'Precise position';
+  preciseLabel.title = controlTitle({
+    name: 'Precise position',
+    key: 'type exact X, Y and Z',
+  });
   precise.append(preciseLabel, fields);
   const confirm = document.createElement('button');
-  confirm.textContent = 'Place part';
+  confirm.className = 'primary';
+  confirm.textContent = words().control;
+  confirm.setAttribute('aria-label', 'Place part');
+  confirm.title = controlTitle({ name: 'Place part', key: 'Enter' });
   const cancelButton = document.createElement('button');
-  cancelButton.textContent = 'Cancel placement';
   const another = document.createElement('button');
+  another.className = 'primary';
   another.textContent = 'Place another';
+  another.setAttribute('aria-label', 'Place another');
+  another.title = 'Place another one of these';
   another.hidden = true;
+  // The accessible name is written on every control the strip relabels, so role and name
+  // locators keep matching whatever the row shows.
+  function endLabel(visible, name, key) {
+    cancelButton.textContent = visible;
+    cancelButton.setAttribute('aria-label', name);
+    cancelButton.title = controlTitle({ name, key });
+  }
+  endLabel('Cancel', 'Cancel placement', 'Esc');
   panel.append(title, status, precise, confirm, another, cancelButton);
-  const lifecycle = createPlacementLifecycle();
   let partType = null,
     identity = null,
     cursor = null,
@@ -75,8 +103,8 @@ export function createPartPlacement({
     precise.open = false;
     confirm.hidden = false;
     another.hidden = true;
-    title.textContent = `Place ${CATALOG[type].name}`;
-    cancelButton.textContent = 'Cancel placement';
+    title.textContent = CATALOG[type].name;
+    endLabel('Cancel', 'Cancel placement', 'Esc');
     try {
       move(palettePlacement(getFrame().metadata.blueprint, type, 'catalog-preview').position);
     } catch {
@@ -108,7 +136,7 @@ export function createPartPlacement({
     lifecycle.assess(valid ? part : null);
     confirm.disabled = !valid;
     status.textContent = valid
-      ? 'Preview · Click the workbench or Place part to confirm. Esc cancels.'
+      ? words().label
       : identity !== key()
         ? 'The machine changed. Cancel and choose the part again.'
         : finite
@@ -155,7 +183,7 @@ export function createPartPlacement({
       confirm.hidden = true;
       another.hidden = false;
       status.textContent = `${CATALOG[type].name} placed.`;
-      cancelButton.textContent = 'Done';
+      endLabel('Done', 'Done', 'Esc');
       another.focus();
     } else {
       status.textContent = result?.message || 'Placement was rejected. Move the preview or cancel.';
@@ -193,6 +221,9 @@ export function createPartPlacement({
       event.stopPropagation();
       cancel();
     } else if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+      // Only a coordinate field commits on Enter. Everywhere else in the strip Enter must
+      // keep its own default: it opens Precise position on the summary, cancels on Cancel
+      // and repeats on Place another. Outside the strip the window handler commits.
       event.preventDefault();
       commit();
     }

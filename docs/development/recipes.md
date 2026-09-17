@@ -791,7 +791,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"bdfff47728b51868b8381fec3fbcad56f9575e9e9241035042d7876eb850c539","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"07dabbee06a8c59af9db207125992a977652e450a16121f9c0486eac6367a260","disposition":"still accurate","rationale":"Unchanged prose. scripts/verify-spring-browser.mjs changed only in the steps that drive the reworked header controls; the adaptive graphics tiers, their quality transitions and the registered check that measures them are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"11ba32b6735cae361db96b20f5924a1116e393b0a42a9dce7893eba62899fa55","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"5f8cd7a8beb3eecccf4f1c59922b27caf8930f0290adcbb4941c57f6c582d338","disposition":"still accurate","rationale":"The only changed dependency is scripts/verify-spring-browser.mjs, which opens one Learn row through the shared helper instead of reading a long example screen. Its adaptive-graphics measurements, budgets and owners are unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

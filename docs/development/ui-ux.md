@@ -183,6 +183,32 @@ provides mounting faces, precision and attachment; empty-space placement uses th
 with optional coordinates under Precise position. Confirmation sends one ordinary
 cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
 commit, and pending placement disables duplicate submission and cancellation.
+Empty-space placement shows one row over the bench — the part, its state word, the
+Precise position chip and the two actions, with the confirming action carrying the
+primary weight. The row reserves the Sound band it shares the bench's bottom edge with,
+so a longer state sentence wraps inside the free bench instead of covering Sound; the coordinates open above the row rather than displacing it, and they go away
+with the fields they edit once the part is placed. Both homes of the act read their
+state word and the name of their confirming control from
+[one placement vocabulary](../../src/presentation/placement-lifecycle.mjs#source) — the
+surface panel takes its instruction sentence from there too, while the strip's
+`role=status` region carries the state word alone and leaves confirming and cancelling to
+its two named controls — so the strip and the surface panel cannot disagree while the
+player crosses a mounting face: the strip names neither a face nor a rotation, and the
+surface owner keeps both.
+The two Precise position disclosures keep the same words and say in their hover help
+which numbers they hold — exact coordinates over the bench, sliding and turning on a
+face. Every control the strip relabels keeps its own accessible name, and Enter belongs
+to the control that has focus except in a coordinate field, where it confirms. The
+choice of what a placement produces stays with the surface owner; a later control that
+offers it over empty space earns the strip a second band and a re-laid-out row, not a
+sixth item squeezed into this one.
+While a placement is live the ghost casts the key light's shadow and drops a dashed line from
+its lowest point to the floor, ending in a landing ring directly beneath it, and a transient
+chip at the aimed point names the part the mounting pad will land on and the gap left, to a
+tenth of a millimetre. The cues are a transient overlay over the canvas owned by the placement
+itself, displacing no existing surface. The chip never takes the pointer and leaves with the
+placement; the drop-line is drawn whether or not the quality level allows shadows, so contact
+stays readable without orbiting the camera.
 Escape first cancels an active pickup, including when search has focus, and restores
 the originating query, category, focus and scroll even after browsing changes, without
 re-summoning the overlay. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
@@ -352,8 +378,14 @@ actions such as Send feedback, Keep or Discard draft, Retry uploads, Save photo,
 photos and Stop tab recording remain text buttons, never collapsed into the ×. Backdrop
 dismissal remains a per-dialog choice. The nonmodal Part help window keeps its own
 titlebar pair (expand and close) as an adjacent, separately owned surface.
-Learn & examples opens a bounded browser. The top-right close control, Escape, or a
-click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
+Learn & examples opens a bounded browser whose row list scrolls beneath the fixed header.
+The top-right close control, Escape, or a click outside dismisses it; clicks within its
+content keep it open. Every entry is one row, grouped by readiness: the collapsed row keeps
+its name, its own launcher and a summary naming what the player will do and the readiness it
+needs, while the format line, the whole instruction and any extra actions open inside that
+row. Nothing is expanded on arrival, at most one row is open, a closed row keeps its actions
+in the page, and a pending replacement keeps the row holding its trigger open so cancelling
+returns focus to it. Starting a lesson moves its current step
 into the parts area; leaving removes it. The guided build says what to do next ("Next:
 Place Motor") and ticks a step from what the player built, not from who placed it: the
 k-th part of the step's type, or the k-th connection of its kind between the two types,
@@ -602,7 +634,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"475a40b192c3176724e08afe95c558ef7150dfc289862c7935bdd8e426994562","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3cc8cea836b8a687014281e65f7e66c2b4ee01aff3e2d93314b849c61d335a9f","disposition":"still accurate","rationale":"Unchanged prose. Its dependencies moved because verify-workbench-content.mjs and its unit test gained coverage of the reworked header and verify-authorable-scenes.mjs follows Choose scene into Tools; what this section requires a player-facing change to verify and record is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e225d838df4e5b1f3b1bd571bfa28bd0493017cff7bec4f95c9f478b6c8efd1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a90990019948858e9f47c3b14bde3fae285cc9e93c4c41d48112817eb72b04e7","disposition":"updated","rationale":"Updated: this section now records that the workbench-content browser journey checks the collapsed example rows with their launchers and instructions and the header x staying inside the dialog while its rows scroll in a short viewport. Its dependencies scripts/verify-workbench-content.mjs (the picker journey, the reopen-arrives-collapsed assertion and the dialog.scrollTop write), test/workbench-content.test.mjs, src/presentation/workbench-content.mjs and playtesting.md#remote-setup moved with that work."} -->
 
 
 
@@ -615,8 +647,8 @@ explanations. Unknown changes stay conservative. Registration is not execution.
 [Scope controls](../../test/workbench-content.test.mjs) cover meaningful and wrong
 states; the [browser journey](../../scripts/verify-workbench-content.mjs#source)
 checks requested learning/results, scope against changed parts, preserved operations,
-non-mutating help and the header × staying inside the dialog while examples overflow
-a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
+non-mutating help, the collapsed example rows with their launchers and instructions, and the
+header × staying inside the dialog while its example rows scroll in a short viewport. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
 checks the independent motor edit, Run and Undo, and a zero-damping comparison that
 preserves other spring tuning. It also checks cancellation of example replacement
 and the gear extension: construction from an empty workshop, palette insertion,
