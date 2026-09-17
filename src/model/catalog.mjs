@@ -139,10 +139,10 @@ export const CATALOG = freeze({
     mirrorAxis: 'x',
     mountingFaces: ['bottom', 'left', 'right', 'top', 'front', 'back'],
   },
-  gear12: {
+  spurGear: {
     ...component(
-      'gear12',
-      '12T spur gear',
+      'spurGear',
+      'Spur gear',
       [0.01, 0.05, 0.05],
       'steel',
       [
@@ -150,30 +150,36 @@ export const CATALOG = freeze({
         port('right', 'shaft', [0.01, 0, 0]),
         { ...port('mesh', 'gear', [0, 0, 0]), multiplicity: 'many' },
       ],
-      {},
+      // Optional, on the beam precedent: an absent tooth count or module is the canonical
+      // primitive, so a gear saved with no parameters is the 12-tooth disc the catalog draws.
+      // Teeth stop at 12 because a coarser tooth removes so much of the drawn radius that the
+      // disc reads as a saw; the module choices keep every centre distance a whole millimetre.
+      {
+        teeth: {
+          type: 'integer',
+          default: 12,
+          minimum: 12,
+          maximum: 36,
+          unit: 'teeth',
+          optional: true,
+        },
+        module: {
+          type: 'number',
+          default: 0.01,
+          minimum: 0.005,
+          maximum: 0.01,
+          unit: 'm',
+          enum: [0.005, 0.01],
+          optional: true,
+        },
+      },
       'cylinder',
     ),
     milestone: 'M3b',
     mountingFaces: [],
-    gear: { teeth: 12, module: 0.01, pitchRadius: 0.06, stiffness: 20000, damping: 20 },
-  },
-  gear24: {
-    ...component(
-      'gear24',
-      '24T spur gear',
-      [0.01, 0.11, 0.11],
-      'steel',
-      [
-        port('left', 'shaft', [-0.01, 0, 0]),
-        port('right', 'shaft', [0.01, 0, 0]),
-        { ...port('mesh', 'gear', [0, 0, 0]), multiplicity: 'many' },
-      ],
-      {},
-      'cylinder',
-    ),
-    milestone: 'M3b',
-    mountingFaces: [],
-    gear: { teeth: 24, module: 0.01, pitchRadius: 0.12, stiffness: 20000, damping: 20 },
+    // Teeth, module and every radius derived from them live in the authored parameters and are
+    // resolved by gearFacts; the mesh compliance is a property of the gear itself.
+    gear: { stiffness: 20000, damping: 20 },
   },
   ball: {
     type: 'ball',
@@ -650,12 +656,31 @@ export const CATALOG = freeze({
  * and "default" are the same geometry. Checked at load for every dimensioned definition.
  * Length is read from the first primitive only; a multi-primitive dimensioned part needs
  * the declarative dimension map deferred by the parametric-beam plan.
- * @param {Record<string, { parameterDefinitions?: Record<string, { default?: number }>, primitives: readonly { halfExtents: readonly number[] }[] }>} catalog */
+ * A row that declares the gear capability must author both defaults, because partPrimitives
+ * resolves its collider from them; a row that declared `gear` without them would fail as a
+ * TypeError inside the compiler instead of naming itself here.
+ * @param {Record<string, { gear?: object, parameterDefinitions?: Record<string, { default?: number }>, primitives: readonly { halfExtents: readonly number[] }[] }>} catalog */
 export function assertDimensionDefaults(catalog) {
   for (const [type, definition] of Object.entries(catalog)) {
     const length = definition.parameterDefinitions?.length;
     if (length && length.default !== 2 * definition.primitives[0].halfExtents[0])
       throw Error(`${type}: length default disagrees with its canonical primitive`);
+    // A gear's radius is derived, not authored, so its default teeth and module must reproduce
+    // the canonical primitive exactly. check-identity.mjs computes expected mass from that
+    // primitive while the compiler uses partPrimitives; a disagreement here fails every
+    // identity check for every material instead of naming the catalog row.
+    if (definition.gear) {
+      const teeth = definition.parameterDefinitions?.teeth,
+        module = definition.parameterDefinitions?.module;
+      if (typeof teeth?.default !== 'number' || typeof module?.default !== 'number')
+        throw Error(`${type}: a gear row must author default teeth and module`);
+      // Exactly the expression gearFacts resolves, so this rule guards the number the compiler
+      // actually uses rather than an algebraically equal one that rounds differently.
+      const radius = (module.default * (teeth.default - 2)) / 2;
+      for (const axis of [1, 2])
+        if (radius !== definition.primitives[0].halfExtents[axis])
+          throw Error(`${type}: default teeth and module disagree with its canonical primitive`);
+    }
   }
 }
 assertDimensionDefaults(CATALOG);

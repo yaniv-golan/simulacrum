@@ -7,7 +7,7 @@ actuators/constraints, environment/forces, integration/contacts, structure/failu
 thermal/ablation, telemetry. Controllers at tick t consume the completed sensor
 snapshot from t-1. Tick zero has a declared initial snapshot. When a configuration carries node thermal ratings, the thermal/ablation phase is the single writer of node temperatures, and a tick's temperatures are consumed by the next tick's power allocation.
 
-When an authored environment declares a replay-safe time scale, it is implemented strictly as N ticks per rendered frame: a rendered frame completes its N ticks or fewer and carries the remainder as tick debt under the P1 performance bar's declared overload policy (simulation debt is preserved; ticks are never dropped or stretched). Tick size 1/120 s and one integration per tick are unchanged for every environment; the scale is stored in saves and replay as compatible admission within version 3, so replay reproduces the recorded cadence and projection hashes are unaffected by it. The scale does not lift the 28,800-tick per-call bound or the qualification bound; qualification fixtures are sized in simulated ticks.
+When an authored environment declares a replay-safe time scale, it is implemented strictly as N ticks per rendered frame: a rendered frame completes its N ticks or fewer and carries the remainder as tick debt under the P1 performance bar's declared overload policy (simulation debt is preserved; ticks are never dropped or stretched). Tick size 1/120 s and one integration per tick are unchanged for every environment; the scale is stored in saves and replay as compatible admission within version 4, so replay reproduces the recorded cadence and projection hashes are unaffected by it. The scale does not lift the 28,800-tick per-call bound or the qualification bound; qualification fixtures are sized in simulated ticks.
 
 ## Structural failure scope
 
@@ -38,7 +38,7 @@ accepts at most 28,800 ticks; callers can continue interactively with further bo
 
 ## Saves and checkpoints
 
-A save envelope declares the single current format version (3). Load rejects
+A save envelope declares the single current format version (4). Load rejects
 other versions explicitly. This pre-release product carries no historical save
 readers or migration chain; bundled blueprints and tests use the current schema.
 Runtime readers validate that current schema before accepting authored data.
@@ -267,7 +267,7 @@ approximation is documented in the physics contact ADR.
 
 ### Surface mounting (M3b)
 
-Save version 3 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets; the surface-bound `rope` and `cord` connections also use `{part, surface:{region,u,v,twist}}` bindings, resolved the same way and granting no additional force or support. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
+Save version 4 represents every structural fixed connection with surface bindings `{part, surface:{region,u,v,twist}}`, and, when a catalog part declares a joint face (`jointFace: {region, joint, offset?}`), `pivot` and `spherical` mates with the same bindings. `{part,port}` bindings are only for power, signal, shaft, spring and gear sockets; the surface-bound `rope` and `cord` connections also use `{part, surface:{region,u,v,twist}}` bindings, resolved the same way and granting no additional force or support. There is no duplicate fixed mounting socket path. Surface regions are catalog-declared planar mounting
 faces. Their local X is the outward normal, Y is the u tangent, and Z is the v
 tangent. Coordinates use metres and radians. A surface connection's a endpoint
 is the receiving region and b is the centered source pad. Resolved normals oppose using the existing fixed-joint convention; a joint-face endpoint additionally carries its declared joint and sits at `u = v = 0`. The compiler emits an ordinary fixed joint for a `fixed` pair, a passive revolute about the mated normal for a `pivot` pair, and a passive spherical at the coincident anchors for a `spherical` pair; surface placement grants no special force, support or power. Joint faces on a release face or a Load Cell face reject.
@@ -381,7 +381,7 @@ Passive projection loss is separately reported as
 
 A `spring` connection joins a guide-side part that declares a slide descriptor — a Spring guide, a powered linear guide or a passive rail — to the carriage or slider whose slide port shares its family; other pairings reject. Its
 numeric physics joint permits axial translation and constrains the other five
-relative degrees of freedom. The guide-side part owns the connection start position and travel (m); an elastic guide also owns stiffness (N/m) and damping (N s/m), a powered linear guide owns neither (its drive is the motor law), and a passive rail owns drag (N s/m); edits are Build-only. The start position places a carriage when it is connected and does not reposition a connected one. Current save version 3
+relative degrees of freedom. The guide-side part owns the connection start position and travel (m); an elastic guide also owns stiffness (N/m) and damping (N s/m), a powered linear guide owns neither (its drive is the motor law), and a passive rail owns drag (N s/m); edits are Build-only. The start position places a carriage when it is connected and does not reposition a connected one. Current save version 4
 admits this additional connection and part vocabulary. Wrong pairings, invalid
 travel and misaligned loaded endpoints reject before authoring publication.
 Disconnecting removes both the guide constraint and elastic/damping interaction.
@@ -469,7 +469,7 @@ quantity is authored twice. Authored ranges are the measured elastic domain the
 guided spring's frequency and energy controls were taken on: rest length
 0.08-0.40 m, stiffness 1-300 N/m, damping 0-100 N s/m, with 2-8 segments, a
 4-20 mm diameter and at most two cords per machine. Edits are Build-only. Current
-save version 3 admits this additional connection vocabulary.
+save version 4 admits this additional connection vocabulary.
 
 An elastic cord is tension-only. It compiles to `n+1` appended nodes carrying the
 authored material's mass, `n` numeric unilateral elastic rows and two spherical
@@ -547,8 +547,8 @@ Opaque physics envelope version 9 binds the pinned f64 backend identity and requ
 `gearState`, `opened`, `ropeState`, `ropeWork` and `reactions`, including empty
 collections when a feature is absent. `ropeState` and `ropeWork` carry every
 distributed elastic row, rope and elastic cord alike, so admitting cords adds rows
-to those collections and no fields; envelope version 9 and save version 3 are both
-unchanged. Cord rows carry no material rating, so a restored applied tension is
+to those collections and no fields; envelope version 9 and save version 4 are both
+unchanged by cords. Cord rows carry no material rating, so a restored applied tension is
 admitted on finiteness and non-negativity rather than against a breaking load. The `opened` field is a strictly increasing
 list of authored fixed-joint indices; indices retain their original configuration
 meaning after removal. Extra or missing fields, unsupported versions and backend

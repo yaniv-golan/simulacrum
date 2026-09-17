@@ -262,7 +262,7 @@ try {
           new File(
             [
               JSON.stringify({
-                version: 3,
+                version: 4,
                 id: 'wrong-document',
                 name: 'Wrong document',
                 parts: [],

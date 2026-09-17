@@ -25,7 +25,7 @@ export async function assertComponentContract({
   const part = createPart(type, 'component', [0, 2, 0]);
   Object.assign(part.parameters, parameters);
   if (material) part.authoredMaterial.body = material;
-  const bp = { version: 3, id: 'ordinary', name: 'Ordinary', parts: [part], connections: [] };
+  const bp = { version: 4, id: 'ordinary', name: 'Ordinary', parts: [part], connections: [] };
   const loaded = loadSave(JSON.stringify(bp));
   assert.equal(loaded.ok, true, `${type}: save admits the authored fixture`);
   assert.deepEqual(

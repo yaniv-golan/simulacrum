@@ -65,6 +65,7 @@
     "src/model/controller-decision.mjs": "c5d94c29ae99ef34d248747b7c224f8c8abd07145b4b5b71a5eb2e1b75322c07",
     "src/application/controller-history.mjs": "1ee45dea49bff4d770cfe9ea4ea6dc41426b92c0722de49f23be751d84472e65",
     "src/model/motion-readout.mjs": "9d79f3e88b73e9ea7c705491771d44bc7e9baed9aa87304204d528674f4f4c42",
-    "src/presentation/motion-readout.mjs": "9f4a9211052abae99838812c74af432ebacecb3590075bee5cb6d5cbb19b3715"
+    "src/presentation/motion-readout.mjs": "9f4a9211052abae99838812c74af432ebacecb3590075bee5cb6d5cbb19b3715",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

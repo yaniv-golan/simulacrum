@@ -27,7 +27,7 @@
     "src/presentation/dialog-close.mjs": "a18dceaa4774e3e0e56eea5a57f0b00432aad05c0b4fb51e870ba363ef23d814",
     "src/application/workshop-app.mjs": "7072a10020ad4be935628e0b544cb4d521df77b86b51dc134898c85c9e88864c",
     "scripts/catalog-browser-actions.mjs": "6480fdef830b59129c7d67596af1839bc36b3b9da9840a6c1e218efa0ae9c9b8",
-    "scripts/gear-browser-cases.mjs": "e3bb495a78c60e48c43555e57379e71e1adcd1006c3426052c7fca02e87b6ebd",
+    "scripts/gear-browser-cases.mjs": "de73b8ea2081f9887557b4d197c0ab786f1f6e4a37879ce395792e17a411a1ed",
     "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
     "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
     "scripts/app-fingerprint.mjs": "4da04f4d1b19f78879582f27af01463ceb92b5e959117d467602d135d744f201",
@@ -43,6 +43,7 @@
     "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
     "src/presentation/whats-new.mjs": "96f39c8134c1bc653af9dbeda0f4567dafe9ee0b78e63e181202d8ea2b45a199",
     "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",
-    "src/presentation/motion-readout.mjs": "33dc9f01af53c86b50a9ab7ddce19bb89b36949f6b3c830dbe243306e31f31df"
+    "src/presentation/motion-readout.mjs": "33dc9f01af53c86b50a9ab7ddce19bb89b36949f6b3c830dbe243306e31f31df",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

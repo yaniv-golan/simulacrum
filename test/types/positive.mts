@@ -18,7 +18,7 @@ export const part = {
   parameters: { diameter: 0.3 },
 } satisfies Part;
 export const blueprint: Blueprint = {
-  version: 3,
+  version: 4,
   id: 'machine',
   name: 'Machine',
   parts: [part],

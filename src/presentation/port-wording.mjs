@@ -94,3 +94,15 @@ export function portPurpose(part, port) {
     return 'Attaches a wheel or axle and drives its rotation relative to the motor housing. Mount the motor housing separately.';
   return 'Connects an axle. A bearing lets the attached axle turn relative to its housing.';
 }
+
+// What a connection row says about a diagnosed connection. Each suffix names the thing the
+// player would change; "check alignment" is the fallback for a code with no wording of its own.
+const connectionSuffixes = {
+  GEAR_TOOTH_SIZE_MISMATCH: ' · different tooth sizes',
+  GEAR_MISALIGNED: ' · check spacing',
+};
+/** @param {string} reasonCode */
+export function connectionSuffix(reasonCode) {
+  if (reasonCode === 'OK') return '';
+  return connectionSuffixes[reasonCode] ?? ' · check alignment';
+}

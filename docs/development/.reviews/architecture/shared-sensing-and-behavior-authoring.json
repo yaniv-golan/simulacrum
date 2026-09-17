@@ -26,7 +26,7 @@
     "src/model/controller-decision.mjs": "c5d94c29ae99ef34d248747b7c224f8c8abd07145b4b5b71a5eb2e1b75322c07",
     "src/application/controller-history.mjs": "1ee45dea49bff4d770cfe9ea4ea6dc41426b92c0722de49f23be751d84472e65",
     "src/presentation/controller-history.mjs": "c84bceabcdcf4889349bf09d67fcee3323869a920e81e92a32702046df9acf0e",
-    "src/presentation/port-wording.mjs": "e74f60bf873a20b4d9bddedf8d0a6405a7d543c1335040bd291db4ade13d10ff",
+    "src/presentation/port-wording.mjs": "4f16bc1e196bf0593c1f37162d103b3f67f1b1dbec170c607dbfabb76ad431bf",
     "src/application/learning-workspace.mjs": "63904d44838e9829714c69ae5e83e636969cda40885dcd5a41e7f40b72abc098",
     "src/model/assembly.mjs": "bd889e3c65964fe4d12bfdc709bc9df902caef0ff3eb3f255de85914b61a612a",
     "src/model/blueprint.mjs": "54db4c299fb382d32a4038f242652e6e81c86d78db24a2aa7e0e6e6cd4ceba86",
@@ -43,6 +43,7 @@
     "src/model/learning-analysis.mjs": "6f562996b5abfd7b6c07bc0fd16e8542ba8e74e219a3dcd38544c0ff6539b6ce",
     "src/model/learning-evaluators.mjs": "9b48e571a03fe6a85a3d66f86c9f2b508f990854cfcf5790de6d9cb6c4f44521",
     "src/model/rope.mjs": "1d67607e3649112959167a0559e32f302be2e8b043903f7eca78b98065dd7e84",
-    "src/model/surfaces.mjs": "97bad14869f8cdff7c43a473aa97fb88fae64b07f59fbe9dcc7a4e7e593bf262"
+    "src/model/surfaces.mjs": "97bad14869f8cdff7c43a473aa97fb88fae64b07f59fbe9dcc7a4e7e593bf262",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

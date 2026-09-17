@@ -5057,8 +5057,12 @@
       "id": "supported-spur-transmission",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain.",
+      "guarantee": "Spur meshes transmit through independently supported rotors on a shared carrier, resolve their pitch radii from each gear's authored tooth count and module, preserve authored poses, solve coupled compliant impulses, and checkpoint mesh strain. Mesh admission depends on the authored topology alone; an unequal tooth size or a centre distance more than a millimetre from the two pitch radii is reported on that edge and emits no joint.",
       "owners": [
+        {
+          "path": "src/model/gear-geometry.mjs",
+          "anchor": "gearFacts"
+        },
         {
           "path": "src/model/gear-mesh.mjs",
           "anchor": "compileGearMeshes"
@@ -5093,6 +5097,22 @@
           {
             "path": "test/gear-capacity.test.mjs",
             "anchor": "maximum eight-mesh chain transmits through all rotors and replays a dense apparatus"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "a spur gear resolves its radii from the authored teeth and module, and nothing else"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "the physics door carries radii, masses and half extents, never a tooth count"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "editing the teeth of a meshed pair is accepted and diagnosed, never refused"
+          },
+          {
+            "path": "test/component-contract.test.mjs",
+            "anchor": "parametric spur gear uses authored teeth and module through save, compiler and physics"
           }
         ],
         "negative": [
@@ -5111,6 +5131,18 @@
           {
             "path": "test/gear-construction.test.mjs",
             "anchor": "ordinary grounded transmission runs at default motor current; dropped mesh stops honestly and Build permits repair"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "mis-spaced and mismatched gear meshes are per-edge diagnostics that emit no joint"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "gear admission refuses axial, axis, carrier, rigid-join and cycle errors"
+          },
+          {
+            "path": "test/gear-authoring.test.mjs",
+            "anchor": "a diagnosed mesh is stamped on its own connection row without disturbing the others"
           }
         ]
       },
@@ -8669,7 +8701,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "7b091ae6d37f0ab41d4391dae6c4aba5198364205242a0a0b3fdc490c58ec5ed",
+      "sourceSha256": "c4fad417c2fd3487f712af645102c621f488675af6375beca48d180cb622dae4",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",

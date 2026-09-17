@@ -6,11 +6,11 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
   steps,
   examples,
 });
-const gearHelp = (teeth, pitchRadius) =>
+const gearHelp = () =>
   help(
     'Trades rotation speed for available torque',
-    `A ${teeth}-tooth spur gear with a ${pitchRadius} mm pitch radius. A 12T gear driving a 24T gear gives roughly half the speed in the opposite direction and greater available torque. The teeth and bore you see are cosmetic and are cut inside the collision cylinder that supplies collision and mass, so nothing passes through the bore and two meshed gears show a small gap where the physics actually touches. The explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
-    'A motor or bearing for each shaft, fixed to the same rigid support. Gear centres must be 120 mm apart for 12T/12T, 180 mm for 12T/24T, or 240 mm for 24T/24T, with aligned axes and gear faces.',
+    `A spur gear with an authored tooth count. A 12-tooth gear driving a 24-tooth gear gives roughly half the speed in the opposite direction and greater available torque; a gear with more teeth is also larger and heavier, and aluminium is selectable. The teeth and bore you see are cosmetic and are cut inside the collision cylinder that supplies collision and mass, so nothing passes through the bore and two meshed gears show a small gap where the physics actually touches. The explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
+    'A motor or bearing for each shaft, fixed to the same rigid support. The gear centres must be the two pitch radii added, with aligned axes and gear faces. Both gears must use the same tooth size.',
     [
       'Attach each gear to its own supported shaft using either axle port. The other axle port can carry an output arm or wheel.',
       'Select Gear mesh, then Mesh with the aligned gear. Connecting does not move either gear or create a bearing. Disconnecting stops torque transfer through that mesh.',
@@ -50,8 +50,7 @@ export const PART_HELP = {
       'Wire a receiver output to Trigger. A controller can command that receiver; powered low then high takes one photo. Hold high does not repeat. Re-arm low after power or ownership changes.',
     ],
   ),
-  gear12: gearHelp(12, 60),
-  gear24: gearHelp(24, 120),
+  spurGear: gearHelp(),
   ball: help(
     'Rolls, falls and receives pushes',
     'A solid sphere. Diameter and material determine mass; the surface it hits also affects bounce. The stripe shows real rotation.',

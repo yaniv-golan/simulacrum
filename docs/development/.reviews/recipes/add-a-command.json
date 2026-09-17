@@ -8,7 +8,7 @@
     "src/model/blueprint.mjs": "54db4c299fb382d32a4038f242652e6e81c86d78db24a2aa7e0e6e6cd4ceba86",
     "src/model/boundaries.d.ts": "60c30e2e12b9e2d11334e57d4cd3cd9fddfe17240cd79d6dcd38489a4c127b44",
     "src/model/camera.mjs": "01c4d86bf0a41a3d7d2730dd49b1c74a5105b71d8f1d20301b035a88c051cd0c",
-    "src/model/catalog.mjs": "15f3395b3ee4e8ed2b9c72f214a6647c590bc6621ac142661c0e966271c4edd1",
+    "src/model/catalog.mjs": "7073ad4a6602f12aad9202bff8f2cf894b4bbe3b678c9beed4439ea868afd8b7",
     "src/model/compile-body.mjs": "890a315066c545be2f61c270c85d467f1b6c3463b212e716b8ae442174a07967",
     "src/model/connection-graph.mjs": "b473f4cd53a844e4a407762939775b3ddba0b71ac1cfc4b37026ab2a9cca38c1",
     "src/model/contact-properties.mjs": "19592491209b074cb7238822a733d81ae1daeb7b0989201c19085e68c7aff8e1",
@@ -61,6 +61,7 @@
     "test/editing-contracts.test.mjs": "70dfa87a16521d0ea9c8931264e76ba59e598a65e02013fee9668d19d8495cc4",
     "test/environment.test.mjs": "7e2fb38dcecb9769cab31e6626dd56a87334d7ae7d6cf29b3352b3390380b79c",
     "test/scene-capacity.test.mjs": "d38447c182332493a8545c8b05bde0d7c635a8a845b13591783b30958624e3de",
-    "test/scene-preservation.test.mjs": "6b2e4ec43022f09212ba7df56f562bfe19e9904daf7b7a5221829a662a5bf4c1"
+    "test/scene-preservation.test.mjs": "ca1db17322d88dd48c6442245af0bdf841ee5318ed2c283e25cead1e72258e99",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

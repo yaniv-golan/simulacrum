@@ -31,7 +31,8 @@ import {
   paletteKeyOpens,
 } from './workbench-content.mjs';
 import { icon } from './icons.mjs';
-import { portLabel, portPurpose } from './port-wording.mjs';
+import { portLabel, portPurpose, connectionSuffix } from './port-wording.mjs';
+import { parameterInputRange } from './parameter-input.mjs';
 import { createPartsBrowser } from './parts-browser.mjs';
 import { createPartPlacement } from './part-placement.mjs';
 import { createPartHelp } from './part-help.mjs';
@@ -110,6 +111,8 @@ const parameterLabels = {
   dampingGain: 'Damping (s/rad)',
   capacityJ: 'Stored energy',
   internalResistance: 'Cell resistance',
+  teeth: 'Teeth',
+  module: 'Tooth size',
 };
 const parameterHelp = {
   torqueConstant: 'More torque per amp helps turn a heavier load.',
@@ -2705,6 +2708,15 @@ export function createWorkshopView(
       input.addEventListener('change', async () => {
         const target = tabTarget;
         tabTarget = null;
+        // An out-of-range or off-menu value never becomes a command: the field reports it and the
+        // authored value stands, in the control as well as in the blueprint, so the player is never
+        // left reading a number the part does not have. Otherwise the refusal arrives from the
+        // generated schema, about a number the control itself could have refused.
+        if (!input.checkValidity()) {
+          input.reportValidity();
+          input.value = String(part.parameters[key]);
+          return;
+        }
         // Send while the trusted change event is active. Only focus restoration
         // waits for the rebuilt inspector; native Tab still chooses its direction.
         await send({ type: 'parameter', id: part.id, key, value: Number(input.value) });
@@ -3296,7 +3308,7 @@ export function createWorkshopView(
                     CATALOG[target.type].ports.find((p) => p.id === other.port),
                   )
                 : other.port
-            }${diagnostic && diagnostic.reasonCode !== 'OK' ? ' · check alignment' : ''}`,
+            }${diagnostic ? connectionSuffix(diagnostic.reasonCode) : ''}`,
           ),
         );
       }
@@ -3553,9 +3565,10 @@ export function createWorkshopView(
       const input = element('input');
       input.type = 'number';
       input.value = part.parameters[key];
-      input.min = parameter.minimum;
-      input.max = parameter.maximum;
-      input.step = parameter.type === 'integer' ? '1' : 'any';
+      const range = parameterInputRange(parameter);
+      input.min = range.min;
+      input.max = range.max;
+      input.step = range.step === null ? 'any' : String(range.step);
       input.disabled = mode !== 'build';
       input.setAttribute('aria-label', key === 'defaultDuty' ? 'Drive setting' : key);
       bindParameterInput(input, key);

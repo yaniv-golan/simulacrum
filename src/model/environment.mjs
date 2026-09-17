@@ -68,7 +68,8 @@ export function environmentObstacles(environment = 'flat') {
 export function validateScene(scene) {
   if (
     !validateSchema({
-      version: 3,
+      // The current save version, written out because blueprint.mjs reads this module.
+      version: 4,
       id: 'scene',
       name: 'Scene',
       parts: [],

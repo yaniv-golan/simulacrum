@@ -39,6 +39,7 @@
     "src/presentation/capture-review-model.mjs": "c1e9a394bfb8b6ceca52d411c249c93ab750185406e540092b911298b50f621a",
     "src/presentation/capture-review.mjs": "980784d68708b5713569e8c149ec7e5ae7e26b5dd5c155b1304e6613c1e82781",
     "src/presentation/feedback-review.mjs": "4012a32f494d0b55c424a63d95042145a954ec927d6dd443af2dec7c942dbbd7",
-    "src/presentation/primitive-geometry.mjs": "2dfe4e2f74784b7080e1f867cb7e15bb1956e665d9b1be7cdaf9ccfcbafc847c"
+    "src/presentation/primitive-geometry.mjs": "2dfe4e2f74784b7080e1f867cb7e15bb1956e665d9b1be7cdaf9ccfcbafc847c",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

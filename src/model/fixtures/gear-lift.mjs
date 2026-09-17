@@ -35,11 +35,13 @@ export function createGearLift({ reduction = true } = {}) {
   mount('bearing-spacer', 'bottom', 'carrier', 'bottom', 0, 0.09);
   part('passiveBearing', 'bearing');
   mount('bearing', 'left', 'bearing-spacer', 'top');
-  part(reduction ? 'gear12' : 'gear24', 'input-gear');
+  // Both gears are the same catalog row; the tooth count is the authored choice that makes the
+  // ratio, and 12 + 24 keeps the shaft spacing the two surface mounts above already fix.
+  part('spurGear', 'input-gear').parameters.teeth = reduction ? 12 : 24;
   shaft('input-shaft', 'motor', 'shaft', 'input-gear', 'left');
   part('steelAxle', 'output-axle');
   shaft('bearing-shaft', 'bearing', 'shaft', 'output-axle', 'left');
-  part(reduction ? 'gear24' : 'gear12', 'output-gear');
+  part('spurGear', 'output-gear').parameters.teeth = reduction ? 24 : 12;
   shaft('output-shaft', 'output-axle', 'right', 'output-gear', 'left');
   // Separate the arm plane from the gears so both faces remain inspectable
   // from the workshop camera; the extra axle is an ordinary authored part.

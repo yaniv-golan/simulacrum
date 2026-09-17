@@ -80,7 +80,8 @@
     "scripts/assembly-scenarios.mjs": "b42cdd927d1f748ad70c32bb4b4d269f1d44aebb687026cea2b746f358b771fb",
     "scripts/assembly-ux-cases.mjs": "2bf1863b6ea1a7252481c57025527bbf68d3b6550393366ec0de4b8a49d2b48e",
     "scripts/verify-assembly-ux-browser.mjs": "6139dbb003c2ecc3107274b07c218e6722b41ddf0a34e3c2ce1321328dcd03f2",
-    "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8",
-    "scripts/verify-assembly-library-browser.mjs": "0bac480d6f75c39fe850e21caddef40e89013c96373fac6d9293a78b2bfdc64f"
+    "test/fixtures/reusable-rover.json": "c1936396fc872de51a49ed7a4a03f189d91c7213ec6c4709c4d5f44d4f331ad6",
+    "scripts/verify-assembly-library-browser.mjs": "0bac480d6f75c39fe850e21caddef40e89013c96373fac6d9293a78b2bfdc64f",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

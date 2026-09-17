@@ -34,7 +34,7 @@ test('surface mounts seat on top, underside and side as ordinary fixed joints', 
       twist: 0,
       id: 'mount',
     });
-    assert.equal(out.blueprint.version, 3);
+    assert.equal(out.blueprint.version, 4);
     assert.deepEqual(out.blueprint.parts[0], bp.parts[0]);
     assert.equal(compileAssembly(out.blueprint).configuration.joints.length, 1);
     assert.equal(compileAssembly(out.blueprint).connections[0].reasonCode, 'OK');

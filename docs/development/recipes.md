@@ -56,16 +56,28 @@ The optional `authoredContact.body` fields retain material defaults when omitted
 reset removes an override rather than freezing the current material value. Admission
 canonicalizes empty contact records without changing explicit zero or mutating the input.
 
-The 12T and 24T spur gears use solid root cylinders for collision, inertia and
-material selection, with separate fixed pitch radii for transmission. The disc is drawn
+One Spur gear row serves every ratio: the tooth count (12-36) and the module are ordinary
+authored parameters, and [gearFacts](../../src/model/gear-geometry.mjs#source) is the only place
+they become a pitch radius or a collider radius. The gear branch in
+[partPrimitives](../../src/model/geometry.mjs#source) dispatches on whether that helper resolves,
+which is exactly when the catalog declares the `gear` capability and exactly as the `length` and
+`diameter` branches dispatch on a parameter name, so collider, mass and inertia follow the
+authored teeth through the compiler and the physics door unchanged. A row that declares the
+`gear` capability must author both defaults and they must reproduce its canonical primitive
+exactly; [assertDimensionDefaults](../../src/model/catalog.mjs#symbol=assertDimensionDefaults)
+refuses the row by name at load rather than letting the compiler fail on it. Gears use solid root
+cylinders for collision, inertia and material selection. The disc is drawn
 with cosmetic involute teeth cut inward from that collider radius, so it reads as a gear without
 pretending to collide as teeth; two meshed gears therefore show a small visible gap. Its hub,
 recessed web and bore are drawn inward too and are equally cosmetic: the collider stays a solid
 cylinder, so nothing can be placed through the bore. The drawing takes resolved gear facts (tooth count, module, pitch and collider radius,
-face width, shaft radius) built at one catalog read site, not the catalog itself. The
+face width, shaft radius) built at one site from that model helper, not from the catalog. The
 [gear compiler](../../src/model/gear-mesh.mjs) admits explicit meshes only between
 independently revolute-supported rotors on one rigid carrier: a forest of at most
-eight edges. Limited bearings and extra non-revolute rotor supports reject. A mesh
+eight edges. Limited bearings and extra non-revolute rotor supports reject. Admission depends on
+the authored topology alone; the two checks that move with the authored numbers -- equal tooth size
+and a centre distance within a millimetre of the two pitch radii added -- are per-edge diagnostics
+stamped on the connection row, emit no joint and never refuse the parameter edit. A mesh
 neither snaps nor provides shaft support; ordinary Connect/Disconnect and history
 remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
@@ -669,6 +681,10 @@ help images, editing/placement and assembly previews. A body drawn inward of tha
 is, is declared by its builder and may fall short of the solid's bounding box but never exceed it;
 a builder may also supply a simpler selection silhouette, which must match the drawn body. Family builders receive authored
 dimensions and relevant parameters or ports; they never receive a controller or session.
+A generic numeric setting takes its bounds and step from
+[parameterInputRange](../../src/presentation/parameter-input.mjs#source), which narrows both to a
+parameter's `enum` when it declares one, and no parameter edit is sent while the field reports the
+value invalid.
 [Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
 distinguish measurement identities with static graphics and large top identification
 emblems around the real power socket; contact pad ink occurs only on +Z. [Electronics coatings](../../src/presentation/part-visuals/electronics.mjs#symbol=createElectronicsDetails)

@@ -415,8 +415,13 @@ or qualification outside their tested finite operating envelopes.
 
 
 Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
-Gear mesh explicitly leaves parts in place and requires independently supported
-aligned shafts. The requested Learn & examples browser adds one editable gear-lift
+One catalog card covers every ratio: the tooth count and tooth size are authored settings on the
+gear, so no numeric query names a part type. Tooth size is a two-value menu, and a parameter that
+declares a menu gives its control that menu's bounds and spacing, so an off-menu number is
+reported by the field and never sent as an edit. Gear mesh explicitly leaves parts in place and
+requires independently supported aligned shafts. Mismatched tooth sizes and a centre distance more
+than a millimetre from the two pitch radii added are reported on that mesh row, in its own words,
+and drive nothing; they never refuse the setting that caused them. The requested Learn & examples browser adds one editable gear-lift
 experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
 or reduce motor current and retry. Its prerequisite is motor/shaft authoring. This
 adds a distinct speed-versus-load experiment; the rolling-machine example teaches

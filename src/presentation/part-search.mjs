@@ -30,8 +30,8 @@ export const PART_SEARCH = Object.freeze({
   poweredHinge: entry('Motion', 'hinge|joint', 'bend|steer|turn joint', 'rotation'),
   releaseCoupler: entry('Motion', 'latch|release coupling', 'release cargo|detach tool|drop load'),
   ball: entry('Motion', 'sphere', 'roll|drop|catch'),
-  gear12: entry('Motion', 'cog|teeth|gearing', 'transmit rotation|torque|speed ratio', 'spin'),
-  gear24: entry('Motion', 'cog|teeth|gearing', 'transmit rotation|torque|speed ratio', 'spin'),
+  // No tooth-count token: with the count authored per gear, "24T" no longer names a part.
+  spurGear: entry('Motion', 'cog|teeth|gearing', 'transmit rotation|torque|speed ratio', 'spin'),
   wheelHub: entry('Motion', 'hub', 'connect wheel', 'axle|shaft'),
   shaftMount: entry('Motion', 'shaft mount', 'mount arm|crank|adapt axle'),
   spacerBlock: entry('Structure', 'spacer', 'gap|offset|clearance'),

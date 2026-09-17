@@ -21,6 +21,14 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-17-gear-teeth-choice',
+      date: '2026-09-17',
+      name: 'Choose how many teeth a gear has',
+      summary:
+        'One Spur gear part now: set its tooth count from 12 to 36. More teeth means a bigger, heavier gear and a different ratio.',
+      feature: 'spurGears',
+    },
+    {
       id: '2026-09-16-placement-feedback',
       date: '2026-09-16',
       name: 'See where a part will land',
@@ -47,7 +55,7 @@ export const RELEASE_NOTES = Object.freeze(
       name: 'Gears look machined',
       summary:
         'Gears now look machined: curved, chamfered teeth, a bore an axle fits through, and a recessed web on big gears. They turn the same.',
-      feature: 'gear24',
+      feature: 'spurGears',
     },
     {
       id: '2026-09-16-favorite-from-the-tile',
@@ -62,7 +70,7 @@ export const RELEASE_NOTES = Object.freeze(
       name: 'Gears now have teeth',
       summary:
         'Spur gears are drawn as toothed discs instead of wheels with painted marks. The teeth are cosmetic and stay inside the collision shape.',
-      feature: 'gear12',
+      feature: 'spurGears',
     },
     {
       id: '2026-09-16-pivot-pin',

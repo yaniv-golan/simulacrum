@@ -69,12 +69,13 @@
     "src/presentation/part-help-input.mjs": "6f25719495c85a83be51360725ad52bf499c654c224f99dc61997b36f66d03ef",
     "src/presentation/vehicle-controls.mjs": "53a9330e22432e4a91792d6b4a5db8901360655b7786fa460c9ce43788430bc4",
     "src/presentation/connection-test.mjs": "d659cbc37cc82a1b5fb4f56de8170bc3c8535693d891554986548b4041680b36",
-    "src/presentation/part-help-content.mjs": "246896451809fecf704a0d2b1368d99e74a15f42cce778554d0dc694e350f5ee",
-    "src/presentation/part-search.mjs": "9f9ebd8e6f300442d799409d7121a77fa7a1f270806ca63ad1e80a300cec0930",
-    "src/presentation/port-wording.mjs": "e74f60bf873a20b4d9bddedf8d0a6405a7d543c1335040bd291db4ade13d10ff",
+    "src/presentation/part-help-content.mjs": "79f834eeabe41454fda1d12851078492db0e0f408af18bc83ebadfc9e68e9b3c",
+    "src/presentation/part-search.mjs": "141e0c661e2ab5187cbc2216b37a6bb14c049187348667e15294bf505ed05415",
+    "src/presentation/port-wording.mjs": "4f16bc1e196bf0593c1f37162d103b3f67f1b1dbec170c607dbfabb76ad431bf",
     "src/model/motion-readout.mjs": "9d79f3e88b73e9ea7c705491771d44bc7e9baed9aa87304204d528674f4f4c42",
     "src/presentation/motion-readout.mjs": "9f4a9211052abae99838812c74af432ebacecb3590075bee5cb6d5cbb19b3715",
     "src/model/motion-diagnostics.mjs": "5b73691e9b26ae9b0c3cbf92f8d2054b0271aa1b7dd8cb5e308caa5100c3b9c5",
-    "src/model/motor-shaft-speed.mjs": "130f9584f6b190a92a9db51bb92dbe5e894535f08b26a85b594764079cdbd9d7"
+    "src/model/motor-shaft-speed.mjs": "130f9584f6b190a92a9db51bb92dbe5e894535f08b26a85b594764079cdbd9d7",
+    "src/model/gear-geometry.mjs": "3da47f2bbb72375c657bdac157ae9af9a7c0abc824e4a7a795063f294ec6dc86"
   }
 }

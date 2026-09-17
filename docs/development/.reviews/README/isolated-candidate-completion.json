@@ -66,8 +66,9 @@
     "src/model/sensors.mjs": "e873492e9e9e78d20f0bc6efcf3ab0c734e6eef9b01119b307d2052eed96ab71",
     "src/model/surfaces.mjs": "97bad14869f8cdff7c43a473aa97fb88fae64b07f59fbe9dcc7a4e7e593bf262",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
-    "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8",
+    "test/fixtures/reusable-rover.json": "c1936396fc872de51a49ed7a4a03f189d91c7213ec6c4709c4d5f44d4f331ad6",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756",
-    "package.json#script=verify:merge:shadow": "25c57d9e013d11622c17839526fbb29dafc62c9fb4f9c05cedd2d10dca6a2c3a"
+    "package.json#script=verify:merge:shadow": "25c57d9e013d11622c17839526fbb29dafc62c9fb4f9c05cedd2d10dca6a2c3a",
+    "src/model/gear-geometry.mjs": "c7f34d88ed1b371dfbe89f16d19cb3df2c0d321a03f5d8874c249ca8819d94ed"
   }
 }

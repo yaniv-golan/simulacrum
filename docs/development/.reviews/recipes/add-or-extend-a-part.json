@@ -59,20 +59,21 @@
     "src/simulation/sensors.mjs": "8e3c60c7a37a5467668d3c8688cd2cbc0328eca554d00b831611e966e4e051a7",
     "src/simulation/session.mjs": "7546adf1a6ef13a17daf010996df182e2ce6a52fd8b167d4e953fb6673b925ed",
     "test/wheel-diameter.test.mjs": "4eff306b94d63d9065c8fb659c48db05b77ca79c25fe2008193c73cfb7945c62",
-    "test/assembly.test.mjs": "bfcee8479007f30f09405ed17eec18843fb5dc19d40363b6569d0dc871f90a5c",
+    "test/assembly.test.mjs": "728bf365668099a3b637c7f76b22dfac1f453b13785509364e1ebbe7aaa3ab34",
     "test/ball-launcher.test.mjs": "c973dcfa9476ed0f996af79db1e1c0cfd2b7448d03fb0641662d0bf8176c63cf",
     "test/ball-guide-retention.test.mjs": "eaa557fa716d521012eb337915558fa5f1d353f4adbcbac75e429b23ebab75c3",
     "test/ball-catcher-repair.test.mjs": "d28c0cc4e5194074a90a102c2a2d947c9b3b49adc51f14bea44861e912c73345",
     "test/ball.test.mjs": "2f1bc6622849415ed99e2de49430a22699bc0a33d7347facc1cfd6ec37a66935",
-    "src/model/fixtures/gear-lift.mjs": "0b3cf2d9f64333c7f75e34f690554c6d2d3c5dd688808e8c01f07bc291c8e65a",
+    "src/model/fixtures/gear-lift.mjs": "260a475230c61c7a3b27a3ee0090850bc362fd5ab933aa486cf285fe04b5f952",
     "test/contracts/editing.mjs": "7a0ceb94b3009b0a3144e30fd5d6ba4d1418d7d706a3b8fc3a8c89ce0b8b2122",
-    "test/gear-authoring.test.mjs": "11b5b0bb7a3728331a342f825f6732208d59860298c63417de2ab7d01e8b0e52",
+    "test/gear-authoring.test.mjs": "76f2ebd9b587d0478e14cb285b4cd1a153640474fb78e0854f1e5f1d59ace602",
     "test/release-authoring.test.mjs": "b6a014dd102bebcd7637af15247a5f2ea470ac6117f570e7036509dc2815fec7",
     "src/presentation/part-visuals/sensors.mjs": "5d205c685696965eba89ec715ad2e5be7561e075454424b78ddf3ac534b7d359",
-    "src/presentation/part-help-content.mjs": "246896451809fecf704a0d2b1368d99e74a15f42cce778554d0dc694e350f5ee",
-    "src/presentation/part-search.mjs": "9f9ebd8e6f300442d799409d7121a77fa7a1f270806ca63ad1e80a300cec0930",
+    "src/presentation/part-help-content.mjs": "79f834eeabe41454fda1d12851078492db0e0f408af18bc83ebadfc9e68e9b3c",
+    "src/presentation/part-search.mjs": "141e0c661e2ab5187cbc2216b37a6bb14c049187348667e15294bf505ed05415",
     "test/load-cell-authoring.test.mjs": "a62b4b99665596d0b52e712be568594f176d5c5eb7f67c7623f0a332ecd8fe14",
     "scripts/verify-load-cell-browser.mjs": "9e3ed0e19ab18787043e49154b32bf901bd04fc5e07688d132eec2847f14ab5f",
-    "test/camera-integration.test.mjs": "6f269eb1308fd48fcab4ffd0a72b1945293047cf2898c1b32e4bfffbb0211920"
+    "test/camera-integration.test.mjs": "6f269eb1308fd48fcab4ffd0a72b1945293047cf2898c1b32e4bfffbb0211920",
+    "src/model/gear-geometry.mjs": "bb68c328ee3000262edcd3b8d8ef9fe03ff48ee241db73078090d2939e706e3f"
   }
 }

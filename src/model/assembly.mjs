@@ -36,6 +36,7 @@ export const ASSEMBLY_REASON_CODES = Object.freeze([
   'UNSUPPORTED_SHAFT_TOPOLOGY',
   'UNSUPPORTED_GEAR_TOPOLOGY',
   'GEAR_MISALIGNED',
+  'GEAR_TOOTH_SIZE_MISMATCH',
 ]);
 function reject(reasonCode, path) {
   const error = new Error(reasonCode);
@@ -323,6 +324,8 @@ export function compileAssembly(
       continue;
     }
     if (connection.kind === 'gear' || connection.kind === 'rope' || connection.kind === 'cord') {
+      // A gear row's real reason code is only known once the meshes compile, below; the row is
+      // placed here so the published connections array keeps its authored order.
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
@@ -444,7 +447,13 @@ export function compileAssembly(
       });
     }
   }
-  joints.push(...compileGearMeshes(blueprint, joints));
+  const meshes = compileGearMeshes(blueprint, joints);
+  joints.push(...meshes.joints);
+  // Stamp each gear row in place, so a diagnosed mesh reads as its own reason rather than OK.
+  for (const diagnostic of meshes.diagnostics) {
+    const row = connections.find((c) => c.id === diagnostic.id);
+    if (row) row.reasonCode = diagnostic.reasonCode;
+  }
   for (const sensor of power.sensors)
     sensor.supply = { ...CATALOG[blueprint.parts[sensor.node].type].sensorSupply };
   // Channel bindings follow explicit endpoint names, never array positions or identity.
