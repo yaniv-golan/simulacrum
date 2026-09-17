@@ -28,6 +28,28 @@ export const RELEASE_NOTES = Object.freeze(
         'While you place a part, a line drops to the floor beneath it and a small read-out names what it will land on and the gap left.',
     },
     {
+      id: '2026-09-16-placement-strip',
+      date: '2026-09-16',
+      name: 'Placing a part: one tidy row',
+      summary:
+        'Picking a part now shows one row over the bench: the part, its state, exact coordinates, Place part and Cancel.',
+    },
+    {
+      id: '2026-09-16-lighter-dialogs',
+      date: '2026-09-16',
+      name: 'Learn & examples is a list you can scan',
+      summary:
+        'Every example is one row with its own button, and the instructions open inside the row. Project status now says what works today.',
+    },
+    {
+      id: '2026-09-16-gear-machined',
+      date: '2026-09-16',
+      name: 'Gears look machined',
+      summary:
+        'Gears now look machined: curved, chamfered teeth, a bore an axle fits through, and a recessed web on big gears. They turn the same.',
+      feature: 'gear24',
+    },
+    {
       id: '2026-09-16-favorite-from-the-tile',
       date: '2026-09-16',
       name: 'Save a favorite from the part itself',

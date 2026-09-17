@@ -5,7 +5,7 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
 import { createPart, createEmptyBlueprint } from '../src/model/blueprint.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { openTools } from './catalog-browser-actions.mjs';
+import { expandExample, openTools } from './catalog-browser-actions.mjs';
 const assertMinimumPixels = ({
   pixelRatio,
   devicePixelRatio,
@@ -412,10 +412,10 @@ try {
   const lifecycleFrame = await read();
   await page.screenshot({ path: `${out}/automatic-suspended.png` });
 
-  const openExamples = async () => {
+  // Each experiment keeps its launcher beside its name; only a row's own extras need opening.
+  const openExamples = async (expand = '') => {
     await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
-    if (!(await page.locator('.spring-experiments').evaluate((el) => el.open)))
-      await page.locator('.spring-experiments > summary').click();
+    if (expand) await expandExample(page, expand);
   };
   const openExample = async (name, id) => {
     await page.locator('[data-command=build]').click();
@@ -631,7 +631,7 @@ try {
   await page.locator('[data-command=build]').click();
   const beforeModules = (await read()).metadata.blueprint;
   for (const driven of [false, true]) {
-    await openExamples();
+    await openExamples('reusable-suspension');
     await page
       .getByRole('button', {
         name: driven ? 'Add driven suspension module' : 'Add passive suspension module',
@@ -654,7 +654,7 @@ try {
     ]);
     evidence.assert('ok', [group.ids.every((id) => !beforeModules.parts.some((p) => p.id === id))]);
   }
-  await openExamples();
+  await openExamples('reusable-suspension');
   await page.getByRole('button', { name: 'Add pin-ended strut', exact: true }).click();
   await page.waitForFunction(
     (count) =>
@@ -679,8 +679,6 @@ try {
 
   evidence.assert('equal', [(await read()).metadata.mode, 'build']);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
-  if (!(await page.locator('.spring-experiments').evaluate((el) => el.open)))
-    await page.locator('.spring-experiments > summary').click();
   await page.getByRole('button', { name: 'Try spring launcher', exact: true }).click();
   evidence.assert('equal', [(await read()).metadata.blueprint.id, modules.id]);
   await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();

@@ -5,6 +5,7 @@ import {
   millimetresToMetres,
 } from '../model/display-units.mjs';
 import { createPlacementLifecycle, placementPresentation } from './placement-lifecycle.mjs';
+import { controlTitle } from './workbench-content.mjs';
 import * as THREE from 'three';
 import { spreadSurfaceAnchors } from './surface-anchor-layout.mjs';
 import { explainFailure } from '../model/messages.mjs';
@@ -122,7 +123,15 @@ export function createSurfaceControls({
     angle = numeric('Turn (degrees)', '15');
   const precise = node('details');
   precise.className = 'surface-precise';
-  precise.append(node('summary', 'Precise position'));
+  // The strip over the bench uses the same words for world coordinates. Both keep the
+  // words and distinguish themselves by what they say they hold: this one slides along a
+  // face and turns on it, so it is the home of rotation.
+  const preciseSummary = node('summary', 'Precise position');
+  preciseSummary.title = controlTitle({
+    name: 'Precise position',
+    key: 'slide along this face and turn it',
+  });
+  precise.append(preciseSummary);
   const preciseFields = node('div');
   preciseFields.className = 'surface-fields';
   for (const input of [u, v, angle]) preciseFields.append(input.parentElement);
@@ -494,11 +503,7 @@ export function createSurfaceControls({
     refreshModeHelp();
     panel.hidden = false;
     title.textContent = replaceConnection ? 'Adjust mount' : 'Snap to surface';
-    apply.textContent = replaceConnection
-      ? 'Apply mount'
-      : placementMode.value === 'attach'
-        ? 'Attach'
-        : 'Place only';
+    apply.textContent = presentation().control;
     if (replaceConnection) {
       const edge = bp().connections.find((c) => c.id === replaceConnection),
         own = edge?.a.part === part ? edge.a : edge?.b,
@@ -570,7 +575,9 @@ export function createSurfaceControls({
     if (!state || placement.read().kind === 'committing') return;
     onInvalidate?.();
     placement.assess(null, !!state.target);
-    stateLabel.textContent = 'Preview · not attached';
+    // Every state word in this panel comes from the shared placement vocabulary, including
+    // the one that survives an assessment that throws; the panel never writes its own.
+    stateLabel.textContent = presentation().label;
     state.previewParts = [];
     // Cleared every pass: a throw below must not leave a stale gap reading or drop-line on
     // screen or in read().
@@ -579,7 +586,6 @@ export function createSurfaceControls({
     clearPreview();
     apply.disabled = true;
     if (!state.target) {
-      stateLabel.textContent = 'Choose a surface';
       status.textContent =
         'Choose the top, side or underside of a part. Drag empty space to orbit.';
       return;
@@ -1056,11 +1062,7 @@ export function createSurfaceControls({
   grid.addEventListener('change', update);
   placementMode.addEventListener('change', () => {
     refreshModeHelp();
-    apply.textContent = state?.replaceConnection
-      ? 'Apply mount'
-      : placementMode.value === 'attach'
-        ? 'Attach'
-        : 'Place only';
+    apply.textContent = presentation().control;
     update();
   });
   for (const f of [u, v, angle])

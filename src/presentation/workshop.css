@@ -915,7 +915,8 @@ button:not(.keyed) > .key-badge {
   line-height: 1.5;
   color: #b4ccc4;
 }
-.starter-guide button {
+/* The active guide is a column of full-width steps; the examples list is rows of actions. */
+.active-guide button {
   width: 100%;
   margin-top: 7px;
 }
@@ -1148,6 +1149,28 @@ button:not(.keyed) > .key-badge {
 }
 .playtest-dialog button {
   margin: 4px;
+}
+/* Project status states what works today; the maintainer plan stays out of the player's way. */
+.playtest-status .status-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3d3da;
+}
+.playtest-status ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.playtest-status li {
+  padding: 4px 12px;
+  border: 1px solid #58717e;
+  border-radius: 999px;
 }
 
 .manipulation-scope {
@@ -2869,9 +2892,95 @@ button:not(.keyed) > .key-badge {
   border-top: 1px solid #526873;
   padding: 12px 0;
 }
-.example-card h3,
 .example-card p {
   margin: 0 0 10px;
+}
+/* Learn & examples is a picker: one row per entry, its action always beside its name. */
+.examples-browser .starter-guide {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 0;
+}
+/* Instruction prose inside a row reads above the 12 px guide step; the summary line stays small. */
+.examples-browser .starter-guide p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #e5eff2;
+}
+.example-group {
+  margin: 18px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3d3da;
+}
+.example-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+/* Narrow: the same list-then-action stacking the assembly browser already uses. */
+@media (max-width: 700px) {
+  .example-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .example-head > button[data-command] {
+    justify-self: start;
+  }
+}
+.example-title {
+  min-width: 0;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.example-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.example-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.example-summary {
+  flex: 1;
+  min-width: 12ch;
+  font-size: 12px;
+  color: #c3d3da;
+}
+.example-toggle svg {
+  margin-left: auto;
+}
+.example-detail {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 8px 0 0;
+}
+.example-detail[hidden] {
+  display: none;
+}
+.example-detail p {
+  margin: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .example-toggle svg {
+    transition: transform 150ms ease;
+  }
+}
+.example-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 .build-info input {
   width: 100%;
@@ -2885,8 +2994,9 @@ button:not(.keyed) > .key-badge {
   max-width: 32ch;
 }
 
-/* Saved browsing is requested content; instance editing stays with selection. */
-.assembly-browser {
+/* Requested browsers share one bounded shell: the header stays put, the content scrolls. */
+.assembly-browser,
+.examples-browser {
   width: min(860px, calc(100vw - 32px));
   height: min(640px, calc(100dvh - 32px));
   max-width: none;
@@ -2899,12 +3009,14 @@ button:not(.keyed) > .key-badge {
   border-radius: 12px;
   overflow: hidden;
 }
-.assembly-browser[open] {
+.assembly-browser[open],
+.examples-browser[open] {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.assembly-browser::backdrop {
+.assembly-browser::backdrop,
+.examples-browser::backdrop {
   background: #071018a8;
 }
 .assembly-filters {
@@ -2912,7 +3024,8 @@ button:not(.keyed) > .key-badge {
   gap: 12px;
   align-items: center;
 }
-.assembly-browser h2 {
+.assembly-browser h2,
+.examples-browser h2 {
   font-size: 22px;
 }
 .assembly-filters input {
@@ -3816,30 +3929,94 @@ button:not(.keyed) > .key-badge {
   border-radius: 14px;
   box-shadow: 0 16px 50px #0008;
 }
+/* One row over the bench while a part is being placed: the part, its state word, the
+   coordinates chip and the two actions. It hugs its content and only wraps when a longer
+   state sentence needs the room. The row shares the bench's bottom edge with the machine
+   control band, so the left inset reserves the Sound band — the .machine-panels inset plus
+   the Sound button and its settings — and a long sentence wraps inside what is left instead
+   of growing over Sound. (A collapsed receiver card above Sound can still meet a two-line
+   row at narrow widths; that residual is follow-up work, not covered by this reservation.) The auto margins centre the row in
+   the free bench. The reservation is a measured layout fact, so the parts-catalog check
+   reads the band and the row at a narrow width and refuses an overlap. */
 .part-placement {
   position: absolute;
   z-index: 12;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(460px, calc(100% - 24px));
-  padding: 16px;
+  left: 148px;
+  right: 12px;
+  margin-inline: auto;
+  width: max-content;
+  max-width: calc(100% - 160px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+  padding: 9px 12px;
   border: 1px solid #7ba69e;
   border-radius: 12px;
   background: #192e35f5;
   box-shadow: 0 12px 30px #0006;
 }
-.part-placement p {
+.part-placement .placement-part {
   font-size: 13px;
-  margin: 8px 0;
+}
+.part-placement p {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  margin: 0;
+  color: #b9d4cd;
 }
 .part-placement button {
-  margin-right: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  white-space: nowrap;
 }
+.part-placement .placement-precise {
+  position: static;
+}
+.part-placement summary {
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 6px 11px;
+  border: 1px solid #4d6b73;
+  border-radius: 999px;
+  color: #cfe9e3;
+}
+.part-placement summary::-webkit-details-marker {
+  display: none;
+}
+.part-placement summary:hover,
+.part-placement details[open] summary {
+  background: #27454e;
+  border-color: #9db1b9;
+}
+/* The coordinates rise above the strip so the row keeps its single line either way. */
 .placement-coordinates {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  min-width: 320px;
   display: flex;
   gap: 8px;
-  margin: 10px 0;
+  margin: 0;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #7ba69e;
+  border-radius: 12px;
+  background: #192e35fa;
+  box-shadow: 0 12px 30px #0006;
+}
+/* Closed keeps the card out of the row. Hidden takes it away entirely once a part is
+   placed — the shared `.part-placement [hidden]` rule above already outranks the display
+   here, so the owner's hidden attribute is what removes it, and no rule of its own is
+   needed. */
+.part-placement details:not([open]) .placement-coordinates {
+  display: none;
 }
 .placement-coordinates label {
   flex: 1;

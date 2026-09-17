@@ -54,3 +54,56 @@ export function historyChord(platform = '') {
   const apple = /^(mac|iphone|ipad|ipod)/i.test(String(platform));
   return apple ? { undo: '⌘Z', redo: '⇧⌘Z' } : { undo: 'Ctrl+Z', redo: 'Ctrl+Shift+Z' };
 }
+/**
+ * Learn & examples rows, in the order a player meets them. Each row is one collapsed
+ * line: its name, its own action and this summary. The summary says what the player will
+ * do and repeats the readiness clause its format line carries, because both are needed
+ * while choosing; the format line and the whole instruction paragraph stay verbatim
+ * inside the row, one click away. A row that edits the current machine instead of
+ * replacing it says so in words, not by where it sits. Groups order rows by readiness,
+ * never by release date, and this table is the render order: the view refuses a row it
+ * does not list.
+ */
+export const LEARN_GROUPS = Object.freeze(
+  [
+    {
+      label: 'Start here',
+      rows: [
+        { id: 'rolling-machine', summary: 'Place parts, wire power, run' },
+        { id: 'drive-and-return', summary: 'Drive with W/S, turn with A/D' },
+      ],
+    },
+    {
+      label: 'Drive and lift',
+      rows: [
+        {
+          id: 'cargo-delivery',
+          summary: 'Drive it yourself, then train a controller · keyboard driving first',
+        },
+        { id: 'gear-lift', summary: 'Trade speed for force · motor and shaft connections first' },
+      ],
+    },
+    {
+      label: 'Spring experiments',
+      rows: [
+        { id: 'spring-settle', summary: 'Change damping, stop the bounce' },
+        { id: 'ball-drop', summary: 'A ball rolls and lands' },
+        { id: 'spring-launcher', summary: 'Store energy, fire the ball' },
+        { id: 'guided-suspension', summary: 'Sprung cart over a bump' },
+        { id: 'rigid-suspension', summary: 'Same cart, suspension bolted' },
+        { id: 'articulated-suspension', summary: 'Two real pivot pins' },
+        { id: 'active-suspension', summary: 'Powered length, manual or automatic' },
+        {
+          id: 'reusable-suspension',
+          summary: 'Adds a module to your machine · keeps what you built',
+          adds: true,
+        },
+      ],
+    },
+  ].map((group) => Object.freeze({ ...group, rows: Object.freeze(group.rows.map(Object.freeze)) })),
+);
+/** The row's collapsed copy, by id. An unknown id is a rendering mistake, not a blank row. */
+export function learnRow(id) {
+  for (const group of LEARN_GROUPS) for (const row of group.rows) if (row.id === id) return row;
+  throw Error(`Unknown Learn & examples row: ${id}`);
+}

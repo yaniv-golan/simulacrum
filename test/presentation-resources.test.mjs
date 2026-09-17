@@ -294,9 +294,16 @@ test('shared part mesh retains canonical solids, authored state and disposable r
       const primitive = partPrimitives(part)[0];
       mesh.geometry.computeBoundingBox();
       const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3()).toArray();
-      size.forEach((value, axis) =>
-        assert.ok(Math.abs(value - 2 * primitive.halfExtents[axis]) < 1e-7, type),
-      );
+      // Every part's drawn body stays within its canonical solid. A part that fills it (every part
+      // but one drawn inward, such as a gear, whose tips need not land on every axis) fills it
+      // exactly; the builder declares which. Collider, mass and picking never read this box.
+      size.forEach((value, axis) => {
+        const extent = 2 * primitive.halfExtents[axis];
+        if (mesh.userData.drawnInward) assert.ok(value <= extent + 1e-7, type + ' within solid');
+        else assert.ok(Math.abs(value - extent) < 1e-7, type + ' fills its solid');
+      });
+      // Only gears draw inward today; any other part opting out of exactness must be deliberate.
+      assert.equal(Boolean(mesh.userData.drawnInward), Boolean(CATALOG[type].gear), type);
       assert.deepEqual(part, before);
       assert.equal(mesh.userData.selectionOutline.visible, false);
       const disposed = new Map();

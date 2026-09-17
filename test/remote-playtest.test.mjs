@@ -503,6 +503,37 @@ test('every playtest dialog dismisses through one named top-right × and no embe
   assert.equal(new Set(labels).size, labels.length, 'accessible names identify each dialog');
   f.mount.dispose();
 });
+test('project status states the two facts while recording setup keeps its consent text', async (t) => {
+  const f = await fixture(t);
+  const dialogs = f.nodes.filter((n) => n.tag === 'dialog');
+  const setup = dialogs.find((n) => n.className === 'playtest-dialog' && n.open);
+  const project = dialogs.find((n) => n.className === 'playtest-dialog playtest-status');
+  assert.ok(project, 'project status is its own surface, not the shared consent string');
+  assert.match(project.innerHTML, /Works today/);
+  assert.match(project.innerHTML, /Save and load/, 'loading a machine is still claimed');
+  assert.match(
+    project.innerHTML,
+    /Your feedback decides whether this stage is ready/,
+    'the player keeps the fact that carries their job',
+  );
+  assert.doesNotMatch(
+    project.innerHTML,
+    /<details|Where the project goes next|Final goal/,
+    'the maintainer plan is not the player dialog',
+  );
+  assert.doesNotMatch(
+    project.innerHTML,
+    /data-feedback|Give feedback/,
+    'Give feedback keeps its one home in the footer',
+  );
+  assert.match(
+    setup.innerHTML,
+    /Where the project goes next/,
+    'consent still shows the status it always showed',
+  );
+  assert.match(setup.innerHTML, /Your project, programs, actions and sampled workshop state/);
+  f.mount.dispose();
+});
 test('setupClosed settles only once recording setup is dismissed', async (t) => {
   const f = await fixture(t);
   // Recording setup is the one dialog the mount opens by itself (the feedback client's own

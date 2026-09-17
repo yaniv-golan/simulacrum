@@ -1980,7 +1980,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves each part's canonical solid envelope — bounding box, collider and mass unchanged — with gear discs drawn toothed within that envelope and picking unchanged across it, and preserves material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves each part's canonical solid envelope — collider and mass unchanged, and a drawn bounding box that fills the solid or, for a part the builder declares drawn inward such as a gear, never exceeds it — with gear discs drawn toothed within that envelope and picking unchanged across it; a selection silhouette a builder supplies matches the drawn body; and it preserves material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis. Catalog thumbnail work yields between types and retains all supported part identities; completion, cancellation and errors release temporary resources without stale publication.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -2052,7 +2052,27 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "gear teeth are cut one per catalog tooth count, tipped at the canonical root radius"
+            "anchor": "gear teeth are cut one per tooth count, tipped at the collider radius"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear flanks are involute curves with rounded tips, not straight trapezoids"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "gear bodies have a keyed bore that clears the axle, a hub, a proportionally recessed web and chamfered tooth ends"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "a gear web deepens with its size instead of flipping at one tooth count"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "curved gear walls shade as one surface while faces and chamfers keep their own normal"
+          },
+          {
+            "path": "test/gear-appearance.test.mjs",
+            "anchor": "a selected gear is outlined by its tooth silhouette on both faces, not every crease of its body"
           }
         ],
         "negative": [
@@ -2098,7 +2118,7 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "gear teeth never leave the canonical root radius at any scale"
+            "anchor": "gear teeth never leave the collider radius at any scale"
           },
           {
             "path": "test/gear-appearance.test.mjs",
@@ -2106,7 +2126,7 @@
           },
           {
             "path": "test/gear-appearance.test.mjs",
-            "anchor": "a click in a tooth valley still picks the gear"
+            "anchor": "a click in a tooth valley, the bore or the recessed web still picks the gear"
           },
           {
             "path": "test/gear-appearance.test.mjs",
@@ -3681,7 +3701,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value. The guided build ticks a step from what the player built (the k-th part of the step's type, the k-th connection of its kind between the two types), never from who placed it, and its fallback action wires the player's own parts. The footer status line composes mode, part count, status message and the pending step, and shows no step when nothing is pending. The header keeps one Build | Run switch with Pause and Step only once the clock can run, and the occasional commands under one Tools menu that keeps their names and data-command ids. The first-run choice opens once per remembered device on an empty workshop, never without storage, never over an active guide, and on the hosted build only after recording setup closes; its close control and Escape both mean the empty bench. Parts are summoned by + Add part or P and put away by a pick, a drag, Escape or Run; Choose scene and Edit scene live under Tools, Undo, Redo and Pause are icons whose titles name the key or the reason they are off, and the header keeps one row at 1280 px in every mode. Learn & examples is a picker: one row per entry, grouped by readiness from its own copy table, nothing expanded on arrival and at most one row open. Each row keeps its launcher beside its name, its summary names what the player will do and the readiness its format line requires, and its format line, instruction paragraph and extra actions stay verbatim inside the row while remaining in the DOM when it is closed; a pending replacement keeps the row holding its trigger open so cancelling returns focus to the launcher that asked. The bounded browser scrolls its row list instead of the dialog that carries the header. Project status states what works today and what is still rough; the maintainer plan stays in recording setup's consent text and Give feedback keeps its single home in the footer.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -3761,6 +3781,14 @@
           {
             "path": "test/remote-playtest.test.mjs",
             "anchor": "setupClosed settles only once recording setup is dismissed"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "each Learn row keeps a short summary, its readiness clause and an honest claim"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "project status states the two facts while recording setup keeps its consent text"
           }
         ],
         "negative": [
@@ -3791,6 +3819,10 @@
           {
             "path": "test/workbench-content.test.mjs",
             "anchor": "first-run choice opens once per remembered device and never on a used bench"
+          },
+          {
+            "path": "test/workbench-content.test.mjs",
+            "anchor": "an unlisted Learn row is a rendering mistake rather than a blank line"
           }
         ]
       },
@@ -5973,8 +6005,12 @@
       "id": "parts-catalog-discovery",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue.",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. The parts are summoned by + Add part or P into a non-modal overlay with the search focused and put away by a pick, a drag, Escape (focus returning to the opener) or Run; cancellation restores the browse snapshot (search, category, scroll) for the next open and never re-summons the overlay; narrow layouts show no compact catalogue. The placement strip over the bench is one row — the part, its state word, the coordinates chip and the two actions — and every control it relabels keeps its own accessible name; Enter belongs to the focused control except in a coordinate field. The row reserves the Sound band it shares the bench's bottom edge with, so a longer state sentence stays wholly readable inside the stage and never covers Sound, and the coordinates card goes away with the fields it edits. The strip and the surface panel read their state word and the name of their confirming control from one placement vocabulary, the surface panel its instruction sentence too, so the strip claims neither a face nor a rotation.",
       "owners": [
+        {
+          "path": "src/presentation/placement-lifecycle.mjs",
+          "anchor": "placementPresentation"
+        },
         {
           "path": "src/presentation/part-search.mjs",
           "anchor": "searchParts"
@@ -6009,6 +6045,14 @@
           {
             "path": "test/parts-browser.test.mjs",
             "anchor": "entering Run puts the overlay away; Build alone does not bring it back"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "the placement strip keeps every accessible name and leaves Enter to the focused control"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "one vocabulary names both homes of the same placement act"
           },
           {
             "path": "test/parts-browser.test.mjs",
@@ -8493,7 +8537,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -8557,7 +8601,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
+      "consumerSourceHash": "0c01fdd507c2311a3160c9a7af028507c2b163738d5615b8a685990151dbd659",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -8728,7 +8772,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
+      "consumerSourceHash": "0c01fdd507c2311a3160c9a7af028507c2b163738d5615b8a685990151dbd659",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -8967,7 +9011,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "1544084ec82704f8602b98204c389fa39440e8a22b27425e8bea916f41374e8b",
+      "consumerSourceHash": "2c4b01b9266dd6fd844b3a5e3edf34070eae7ad83ca15677247e22159a48e6b5",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -9250,7 +9294,7 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "consumerSourceHash": "783afabcb72f97d1e047abfa2bb37a15789e84a30807d6e49e8a156fd0d567dc",
+      "consumerSourceHash": "1595556b613ebff0efd5c38416464b257b13f77ad1b91ea4ec40eeb0edd4dbb2",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -9284,7 +9328,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -9361,7 +9405,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -9432,7 +9476,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -9475,7 +9519,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -9630,7 +9674,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
+      "consumerSourceHash": "4ec8f0b472d0ed04eb8158c360a3c583f624a306dddb6ef0b979c0f557f12908",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -9783,7 +9827,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "67afbf8cb6081828af78861280cb708c9a710f93b3b9aba636d548a3319a7332",
+      "consumerSourceHash": "0c01fdd507c2311a3160c9a7af028507c2b163738d5615b8a685990151dbd659",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -10111,7 +10155,7 @@
           ]
         }
       ],
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -10196,7 +10240,7 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
+      "consumerSourceHash": "f6e79dd492896bab53cdb7a71c6b69a0fcc51b78b3f0035e838bb68491f755da",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10300,7 +10344,7 @@
         "test/fixtures/capture-store-memory.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "consumerSourceHash": "0ccfb861dc93a9897a54cfae87872ecfef89f785e968ae6b9802ff5143671705",
+      "consumerSourceHash": "f6e79dd492896bab53cdb7a71c6b69a0fcc51b78b3f0035e838bb68491f755da",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10371,7 +10415,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "6063f5ca43584f64db8accbbb94dd0275f5529a3651ca8a210c3ac404732a06a",
+      "sourceSha256": "46655dcb52c3a785dca4c19ab607215883d0a7f3b6fcc6073df82661032b1269",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -10454,7 +10498,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "59098a5c59a56a7474ebe9fc8f115ea33c911762eb536ed498221ad8875212d9",
+      "consumerSourceHash": "9bfe1ef17e80d8d1361a810de49fee41ee114f1113767fda3063e3ec88f12a65",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
@@ -10537,7 +10581,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "d5eca94a86644e68ea76e97a32578e6c07b23f79f8643432d139c119ee5f12dc",
+      "consumerSourceHash": "4ec8f0b472d0ed04eb8158c360a3c583f624a306dddb6ef0b979c0f557f12908",
       "reachingChecks": [
         "measure-cameras",
         "measure-gears",
