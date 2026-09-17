@@ -116,9 +116,28 @@ test('the stiffest authored corner is far outside the guided-spring budget and s
   assert.ok(trace < 1e5, `${trace}`);
   const w = await createPhysicsWorld(c);
   try {
-    for (let i = 0; i < 1200; i++) step(w);
+    const start = total(w);
+    let numericalJ = 0,
+      dampingJ = 0;
+    for (let i = 0; i < 1200; i++) {
+      step(w);
+      const ledger = w.ropeEnergy();
+      numericalJ += ledger.ropeNumericalLossJ;
+      dampingJ += ledger.ropeDampingWorkJ;
+    }
     assert.ok(w.read().every((b) => b.position.every(Number.isFinite)));
     assert.ok(w.ropes().every((r) => Number.isFinite(r.appliedTension) && r.appliedTension >= 0));
+    // With no authored damper the load still settles, and the ledger says why:
+    // the implicit projection's own loss, reported through ropeNumericalLossJ and
+    // never as damping work. Measured 2026-09-17: a 0.1148 J drop of which the
+    // rows account for 0.0919 J; the rest leaves through the spherical anchors and
+    // the node chain's own solve, which these rows do not claim to measure.
+    const dropJ = start - total(w);
+    assert.equal(dampingJ, 0, `an undamped cord reported ${dampingJ} J of damping work`);
+    assert.ok(numericalJ > 0, `${numericalJ}`);
+    assert.ok(dropJ >= numericalJ, `drop ${dropJ} is smaller than the rows' loss ${numericalJ}`);
+    assert.ok(numericalJ > 0.6 * dropJ, `numerical ${numericalJ} of drop ${dropJ}`);
+    assert.ok(Math.abs(w.read()[1].velocity[1]) < 0.01, 'the undamped corner settles the load');
   } finally {
     w.dispose();
   }
