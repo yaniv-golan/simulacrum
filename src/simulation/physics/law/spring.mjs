@@ -25,6 +25,34 @@ export function springImpulse({ extension, speed, stiffness, damping, inverseMas
   };
 }
 
+/** Symmetric positive-semidefinite mobility, then the averaged factor used by the solve.
+ * Duplicated from the gear island admission so this law stays numeric-only.
+ */
+function admitSpringMobility(mobility, n) {
+  const scale = Math.max(1, ...mobility.flat().map(Math.abs)),
+    tolerance = 1e-10 * scale;
+  if (mobility.some((row, i) => row.some((x, j) => Math.abs(x - mobility[j][i]) > tolerance)))
+    throw new RangeError('asymmetric spring mobility');
+  const m = mobility.map((r, i) => r.map((x, j) => (x + mobility[j][i]) / 2));
+  const positive = m.map((r) => [...r]);
+  for (let i = 0; i < n; i++) {
+    let pivot = i;
+    for (let j = i + 1; j < n; j++) if (positive[j][j] > positive[pivot][pivot]) pivot = j;
+    [positive[i], positive[pivot]] = [positive[pivot], positive[i]];
+    for (const row of positive) [row[i], row[pivot]] = [row[pivot], row[i]];
+    if (positive[i][i] < -tolerance) throw new RangeError('negative spring mobility');
+    if (positive[i][i] <= tolerance) {
+      if (positive.slice(i).some((r) => r.slice(i).some((x) => Math.abs(x) > tolerance)))
+        throw new RangeError('indefinite spring mobility');
+      break;
+    }
+    for (let j = i + 1; j < n; j++)
+      for (let k = i + 1; k < n; k++)
+        positive[j][k] -= (positive[j][i] * positive[i][k]) / positive[i][i];
+  }
+  return m;
+}
+
 /** Simultaneous implicit damping through the full symmetric island mobility.
  * (I + dt C W) J = -dt (K x + C v). At most eight rows in production.
  */
@@ -57,7 +85,8 @@ export function coupledSpringImpulses({ extensions, speeds, stiffnesses, damping
       dampingWorkJ: result.dampingWorkJ,
     };
   }
-  const matrix = mobility.map((row, i) => [
+  const admitted = admitSpringMobility(mobility, n);
+  const matrix = admitted.map((row, i) => [
     ...row.map((w, j) => (i === j ? 1 : 0) + dt * dampings[i] * w),
     -dt * (stiffnesses[i] * extensions[i] + dampings[i] * speeds[i]),
   ]);
@@ -76,7 +105,7 @@ export function coupledSpringImpulses({ extensions, speeds, stiffnesses, damping
       }
   }
   const impulses = matrix.map((row) => row[n]),
-    nextSpeeds = mobility.map(
+    nextSpeeds = admitted.map(
       (row, i) => speeds[i] + row.reduce((sum, w, j) => sum + w * impulses[j], 0),
     );
   return {

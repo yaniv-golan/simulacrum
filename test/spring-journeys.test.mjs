@@ -182,10 +182,13 @@ test('passive pin mating admits axial articulation while rejecting tilt and rigi
     bp = snapConnection(bp, a, b);
     bp.connections.push({ id: 'pin-joint', kind: 'shaft', a, b });
     bp.parts[1].rotation = [Math.sin(0.2), 0, 0, Math.cos(0.2)];
-    assert.equal(
-      compileAssembly(bp).connections[0].reasonCode,
-      type === 'passiveBearing' ? 'OK' : 'MISALIGNED',
-    );
+    if (type === 'passiveBearing')
+      assert.equal(compileAssembly(bp).connections[0].reasonCode, 'OK');
+    else
+      assert.throws(
+        () => compileAssembly(bp),
+        (e) => e.reasonCode === 'MISALIGNED',
+      );
     bp.parts[1].rotation = [0, Math.sin(0.02), 0, Math.cos(0.02)];
     assert.throws(() => compileAssembly(bp), /SURFACE_OVERLAP/);
   }

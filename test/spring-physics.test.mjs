@@ -276,11 +276,17 @@ test('excess spring frequency rejects before impulses and eight is the assembly 
   try {
     w.prepareConstraints();
     const unmodified = w.read();
-    assert.throws(() => w.prepareSprings(), /frequency/);
+    assert.throws(
+      () => w.prepareSprings(),
+      (error) => error.reasonCode === 'SPRING_FREQUENCY' && /frequency/.test(error.message),
+    );
     assert.deepEqual(w.read(), unmodified);
     w.applyPreparedConstraints();
     const before = w.read();
-    assert.throws(() => w.applySprings(), /frequency/);
+    assert.throws(
+      () => w.applySprings(),
+      (error) => error.reasonCode === 'SPRING_FREQUENCY' && /frequency/.test(error.message),
+    );
     assert.deepEqual(w.read(), before);
   } finally {
     w.dispose();

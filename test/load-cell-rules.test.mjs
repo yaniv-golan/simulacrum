@@ -80,7 +80,7 @@ test('cold-start Automatic latches Off until the completed sensor is valid and t
   try {
     arm(s);
     assert.equal(receiver(s).mode, 'off');
-    assert.equal(receiver(s).reason, 'INVALID_SENSOR');
+    assert.equal(receiver(s).reason, 'INVALID_CONTROLLER_OUTPUT');
     assert.equal(receiver(s).duty, 0);
     assert.equal(motor(s).torque, 0);
     s.step(5);
@@ -151,7 +151,7 @@ test('sensor supply depletion switches actual Automatic output Off and renewed s
       s.step();
       if (reading(s).load.status !== 'no-power') continue;
       assert.equal(receiver(s).mode, 'off');
-      assert.equal(receiver(s).reason, 'INVALID_SENSOR');
+      assert.equal(receiver(s).reason, 'INVALID_CONTROLLER_OUTPUT');
       assert.equal(motor(s).torque, 0);
       lost = true;
       break;

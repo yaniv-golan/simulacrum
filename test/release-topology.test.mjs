@@ -307,3 +307,30 @@ test('loaded rotating pair opens without linear angular momentum or energy injec
     w.dispose();
   }
 });
+test('opening a coupler that would activate a spring is reported as coupler spring activation', async () => {
+  const w = await createPhysicsWorld({
+    gravity: [0, 0, 0],
+    bodies: [body(0), body(0.2)],
+    joints: [
+      {
+        kind: 'spring',
+        a: 0,
+        b: 1,
+        anchorA: [0, 0, 0],
+        anchorB: [0, 0, 0],
+        axisA: [1, 0, 0],
+        axisB: [1, 0, 0],
+        stiffness: 100,
+        damping: 2,
+        restLength: 0.2,
+        limits: [0.08, 0.4],
+      },
+      fixed(0, 1, 0.2),
+    ],
+  });
+  try {
+    assert.deepEqual(w.planReleases([1]), [{ joint: 1, reasonCode: 'COUPLER_SPRING_ACTIVATION' }]);
+  } finally {
+    w.dispose();
+  }
+});

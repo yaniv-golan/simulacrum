@@ -121,10 +121,8 @@ export function sampleSensor(sensor, context) {
               add(a.velocity, cross(a.angularVelocity, ra)),
             ),
           );
-      if (length >= 0) {
-        set('length', length);
-        set('speed', speed);
-      }
+      set('length', length);
+      set('speed', speed);
     }
   }
   if (kind === 'range') {

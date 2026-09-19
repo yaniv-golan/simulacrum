@@ -499,10 +499,11 @@ export async function createPhysicsWorld(configuration) {
     // resolve that alternating solve without changing the temporal subdivision.
     world.integrationParameters.numInternalPgsIterations = 32;
     // Bound sphere sweep penetration to a tenth of its radius; old scenes retain native slop.
+    // Collision-excluded nodes are not contact participants and must not tighten world slop.
     world.integrationParameters.normalizedAllowedLinearError = Math.min(
       world.integrationParameters.normalizedAllowedLinearError,
       ...descriptions
-        .filter((body) => body.shape === 'sphere')
+        .filter((body) => body.shape === 'sphere' && body.collision !== false)
         .map((body) => body.halfExtents[0] / 10),
     );
     world.integrationParameters.maxCcdSubsteps = 1; // Contact diagnostics cover one physical interval.
@@ -516,7 +517,7 @@ export async function createPhysicsWorld(configuration) {
         .setCanSleep(false)
         // Native full sweeps ignore other full-sweep bodies. Reserve them for spheres
         // so a fast sphere can sweep against an ordinary moving plate or beam.
-        .setCcdEnabled(!body.fixed && body.shape === 'sphere');
+        .setCcdEnabled(!body.fixed && body.shape === 'sphere' && body.collision !== false);
       const rigidBody = world.createRigidBody(descriptor);
       let collider;
       if (body.shape === 'box')
@@ -1088,6 +1089,18 @@ export async function createPhysicsWorld(configuration) {
     for (const island of new Set(preparedTorqueIslands.values())) island.dispose();
     preparedTorqueIslands = new Map();
   }
+  function matchingTorqueIsland(a, b) {
+    const island = preparedTorqueIslands.get(a);
+    return island && island === preparedTorqueIslands.get(b) ? island : undefined;
+  }
+  function requireDriveIsland(j) {
+    const island = matchingTorqueIsland(j.a, j.b);
+    if (!island)
+      throw Object.assign(Error('prepare drive constraints first'), {
+        reasonCode: 'DRIVE_NOT_PREPARED',
+      });
+    return island;
+  }
   function springState(index, physics = world, mapping = handles) {
     const current = physics === world && mapping === handles;
     if (current) {
@@ -1145,8 +1158,9 @@ export async function createPhysicsWorld(configuration) {
     for (const [i, j] of joints.entries()) {
       if (j.kind !== 'spring') continue;
       const state = springState(i),
-        island = preparedTorqueIslands.get(j.a);
-      if (!island) throw new Error('spring island missing');
+        island = matchingTorqueIsland(j.a, j.b);
+      if (!island)
+        throw Object.assign(Error('spring island missing'), { reasonCode: 'SPRING_ISLAND' });
       const f = island.axialForce(j.a, j.b, state.axis, state.pointA, state.pointB),
         response = island.projection.response(f);
       if (!groups.has(island)) groups.set(island, []);
@@ -1162,8 +1176,11 @@ export async function createPhysicsWorld(configuration) {
         0,
       );
       if (trace > 0.09)
-        throw new RangeError(
-          'spring island exceeds validated frequency range; reduce stiffness or number of springs',
+        throw Object.assign(
+          new RangeError(
+            'spring island exceeds validated frequency range; reduce stiffness or number of springs',
+          ),
+          { reasonCode: 'SPRING_FREQUENCY' },
         );
       const receipt = coupledSpringImpulses({
         extensions: rows.map((r) => r.state.extension),
@@ -1424,7 +1441,9 @@ export async function createPhysicsWorld(configuration) {
       elastic.length !== activeElastic.size ||
       [...activeElastic].some((i) => !elastic.includes(joints[i]))
     )
-      throw new RangeError('release changes spring activation');
+      throw Object.assign(new RangeError('release changes spring activation'), {
+        reasonCode: 'COUPLER_SPRING_ACTIVATION',
+      });
     return new Set(input);
   }
   return Object.freeze({
@@ -1457,7 +1476,13 @@ export async function createPhysicsWorld(configuration) {
         } catch (error) {
           planned.delete(joint);
           islandIndices = null;
-          results.push({ joint, reasonCode: 'RELEASE_SUPPORT_BLOCKED' });
+          results.push({
+            joint,
+            reasonCode:
+              error.reasonCode === 'COUPLER_SPRING_ACTIVATION'
+                ? 'COUPLER_SPRING_ACTIVATION'
+                : 'RELEASE_SUPPORT_BLOCKED',
+          });
         } finally {
           clearPreparedTorqueIslands();
           preparedSprings = null;
@@ -1509,6 +1534,9 @@ export async function createPhysicsWorld(configuration) {
           const island = makeTorqueIsland(indices);
           for (const i of indices) preparedTorqueIslands.set(i, island);
         }
+      } catch (error) {
+        clearPreparedTorqueIslands();
+        throw error;
       } finally {
         responseWorld?.free();
         responseWorld = null;
@@ -1584,7 +1612,7 @@ export async function createPhysicsWorld(configuration) {
       // Direct shape queries include initial authored poses before broad-phase stepping.
       // Stable body order also makes equal-distance ties deterministic.
       for (let i = 0; i < handles.length; i++) {
-        if (i === body) continue;
+        if (i === body || descriptions[i].collision === false) continue;
         const distance = bodyAt(i).collider(0).castRay(ray, range, true);
         if (
           Number.isFinite(distance) &&
@@ -1717,7 +1745,7 @@ export async function createPhysicsWorld(configuration) {
           (sum, v, i) => sum + v * (array(bodyB.angvel())[i] - array(bodyA.angvel())[i]),
           0,
         );
-      const island = preparedTorqueIslands.get(a);
+      const island = matchingTorqueIsland(a, b);
       if (island && !constraintsApplied) throw new Error('passive constraints not applied');
       const before = island ? island.kinetic() : kinetic(bodyA) + kinetic(bodyB);
       // A torque inside one authored rigid assembly is internal stress. Native
@@ -1770,9 +1798,11 @@ export async function createPhysicsWorld(configuration) {
     driveResponse(target, source) {
       const row = (index) => {
         const j = joints[index];
-        if (!j || !['spring', 'revolute'].includes(j.kind)) throw TypeError('invalid drive joint');
-        const island = preparedTorqueIslands.get(j.a);
-        if (!island) throw Error('prepare drive constraints first');
+        if (!j || !['spring', 'revolute'].includes(j.kind))
+          throw Object.assign(TypeError('invalid drive joint'), {
+            reasonCode: 'DRIVE_NOT_PREPARED',
+          });
+        const island = requireDriveIsland(j);
         const axis = rotate(rotationArray(bodyAt(j.a).rotation()), j.axisA);
         const s = j.kind === 'spring' ? springState(index) : null;
         return {
@@ -1796,8 +1826,7 @@ export async function createPhysicsWorld(configuration) {
     linearDriveState(index) {
       const j = joints[index],
         s = springState(index),
-        island = preparedTorqueIslands.get(j.a);
-      if (!island) throw Error('prepare drive constraints first');
+        island = requireDriveIsland(j);
       const f = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
       const locked = topology.isRigidPair(j.a, j.b);
       const velocity = constraintsApplied
@@ -1815,13 +1844,16 @@ export async function createPhysicsWorld(configuration) {
     applyLinearDrive(index, forceN) {
       changedState();
       if (!constraintsApplied || !springsApplied)
-        throw Error('prepare passive sliding constraints first');
+        throw Object.assign(Error('prepare passive sliding constraints first'), {
+          reasonCode: 'DRIVE_NOT_PREPARED',
+        });
       if (!Number.isFinite(forceN) || !Number.isFinite(forceN * DT))
-        throw TypeError('invalid axial force');
+        throw Object.assign(TypeError('invalid axial force'), {
+          reasonCode: 'DRIVE_NOT_PREPARED',
+        });
       const j = joints[index],
         s = springState(index),
-        island = preparedTorqueIslands.get(j.a);
-      if (!island) throw Error('prepare drive constraints first');
+        island = requireDriveIsland(j);
       const before = island.kinetic(),
         prior = island.vector();
       const raw = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
@@ -1868,7 +1900,11 @@ export async function createPhysicsWorld(configuration) {
       const wa = array(a.angvel()),
         wb = array(b.angvel()),
         rawSpeed = axis.reduce((sum, value, i) => sum + value * (wb[i] - wa[i]), 0);
-      const plan = preparedTorqueIslands.get(config.a),
+      const islandA = preparedTorqueIslands.get(config.a),
+        islandB = preparedTorqueIslands.get(config.b);
+      if (islandA !== islandB)
+        throw Object.assign(Error('joint island mismatch'), { reasonCode: 'SPRING_ISLAND' });
+      const plan = islandA,
         speed =
           plan && !constraintsApplied
             ? plan
@@ -1888,11 +1924,10 @@ export async function createPhysicsWorld(configuration) {
         speed: locked ? 0 : speed,
         effectiveInverseInertia: locked
           ? 0
-          : preparedTorqueIslands.has(config.a)
+          : plan
             ? (() => {
-                const island = preparedTorqueIslands.get(config.a),
-                  f = island.force(config.a, config.b, axis),
-                  v = island.projection.response(f).velocity;
+                const f = plan.force(config.a, config.b, axis),
+                  v = plan.projection.response(f).velocity;
                 return f.reduce((sum, x, i) => sum + x * v[i], 0);
               })()
             : getAxisInverseInertia(config.a, axis) + getAxisInverseInertia(config.b, axis),

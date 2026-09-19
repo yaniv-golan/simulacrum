@@ -73,6 +73,31 @@ test('completed rope ledger separates dashpot, implicit geometry loss and signed
   }
 });
 
+test('collapsed after-length does not divide in the geometric term', () => {
+  const dt = 1 / 120;
+  for (const after of [
+    [0, 0, 0],
+    [1e-16, 0, 0],
+  ]) {
+    const r = ropeWorkLedger(
+      [
+        {
+          before: [1.1, 0, 0],
+          after,
+          impulse: [0.01, 0, 0],
+          restLength: 1,
+          stiffness: 100,
+          damping: 10,
+        },
+      ],
+      dt,
+    );
+    assert.ok(Object.values(r).every(Number.isFinite));
+    assert.ok(r.ropeDampingWorkJ >= 0);
+    assert.ok(r.ropeNumericalLossJ >= 0);
+  }
+});
+
 import { createSession } from '../src/simulation/session.mjs';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
 const body = (position, fixed = false, velocity = [0, 0, 0]) => ({

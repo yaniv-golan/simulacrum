@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { springImpulse } from '../src/simulation/physics/law/spring.mjs';
+import { springImpulse, coupledSpringImpulses } from '../src/simulation/physics/law/spring.mjs';
 test('spring matches independent semi-implicit solution and signed ledger', () => {
   const dt = 1 / 120,
     k = 100,
@@ -57,5 +57,52 @@ test('spring damping is relative and locked mobility is bounded', () => {
       inverseMass: 1,
       dt: 1 / 120,
     }),
+  );
+});
+test('coupled spring solve admits slightly asymmetric PSD mobility and rejects indefinite W', () => {
+  const input = {
+    extensions: [0.01, -0.02],
+    speeds: [0.3, -0.1],
+    stiffnesses: [0, 0],
+    dampings: [2, 5],
+    mobility: [
+      [1, -0.2],
+      [-0.2, 0.8],
+    ],
+    dt: 1 / 120,
+  };
+  const p = coupledSpringImpulses(input);
+  assert.equal(p.impulses.length, 2);
+  assert.ok(p.impulses.every(Number.isFinite));
+  assert.ok(p.dampingWorkJ >= 0);
+  const tilted = coupledSpringImpulses({
+    ...input,
+    mobility: [
+      [1, -0.2],
+      [-0.2 + 1e-16, 0.8],
+    ],
+  });
+  assert.ok(p.impulses.every((x, i) => Math.abs(x - tilted.impulses[i]) < 1e-12));
+  assert.throws(
+    () =>
+      coupledSpringImpulses({
+        ...input,
+        mobility: [
+          [1, 2],
+          [0, 1],
+        ],
+      }),
+    /asymmetric spring mobility/,
+  );
+  assert.throws(
+    () =>
+      coupledSpringImpulses({
+        ...input,
+        mobility: [
+          [1, 2],
+          [2, 1],
+        ],
+      }),
+    RangeError,
   );
 });

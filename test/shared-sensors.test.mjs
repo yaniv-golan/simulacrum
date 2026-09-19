@@ -150,6 +150,44 @@ test('physics range stops at the first physical occluder including before the fi
   }
 });
 
+test('range skips collision-excluded spheres and reports the first colliding occluder', async () => {
+  const { createPhysicsWorld } = await import('../src/simulation/physics/world.mjs');
+  const box = {
+    shape: 'box',
+    position: [0, 0, 0],
+    velocity: [0, 0, 0],
+    mass: 1,
+    halfExtents: [0.1, 0.1, 0.1],
+    fixed: true,
+    rotation: [0, 0, 0, 1],
+    friction: 0.5,
+    restitution: 0,
+  };
+  const world = await createPhysicsWorld({
+    gravity: [0, 0, 0],
+    joints: [],
+    bodies: [
+      box,
+      {
+        ...box,
+        shape: 'sphere',
+        position: [0, 0, 1],
+        halfExtents: [0.1, 0.1, 0.1],
+        collision: false,
+      },
+      { ...box, position: [0, 0, 3] },
+    ],
+  });
+  try {
+    assert.deepEqual(
+      world.rangeSample({ body: 0, origin: [0, 0, 0], axis: [0, 0, 1], range: 10 }),
+      { distance: 2.9, surface: 2 },
+    );
+  } finally {
+    world.dispose();
+  }
+});
+
 test('physical pad reports normal load on its exposed face and rejects back-face support', async () => {
   const { createPhysicsWorld } = await import('../src/simulation/physics/world.mjs');
   const body = {

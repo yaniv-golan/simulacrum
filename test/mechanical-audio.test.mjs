@@ -535,7 +535,7 @@ test('a browser activation promise that never settles returns to Sound off for r
 
 test('measured separation preserves a rapid bounce of the same impulse inside chatter grace', () => {
   const bp = createEmptyBlueprint('bounce', 'Bounce');
-  bp.parts = [createPart('ball', 'ball', [0, 0.04, 0])];
+  bp.parts = [createPart('ball', 'ball', [0, 0.05, 0])];
   const compiled = compileAssembly(bp),
     adapter = createMechanicalAudioAdapter(),
     events = createMechanicalEvents();

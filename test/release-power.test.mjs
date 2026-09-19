@@ -31,7 +31,7 @@ test('funded held release accumulates coil work, schedules once and accounts eve
   for (let i = 0; i < 10; i++) s = step(p);
   assert.equal(s.cells[0].energyJ, paid);
 });
-test('unwired and undervoltage controls never release; interrupted progress resets without refund', () => {
+test('unwired and undervoltage controls never release; interrupted progress holds without refund', () => {
   for (const c of [config(24, false), config(1)]) {
     const p = createPowerNetwork(c);
     let s;
@@ -43,7 +43,8 @@ test('unwired and undervoltage controls never release; interrupted progress rese
   const first = step(p);
   assert.ok(first.couplers[0].progressJ > 0);
   const interrupted = step(p, 0);
-  assert.equal(interrupted.couplers[0].progressJ, 0);
+  assert.equal(interrupted.couplers[0].progressJ, first.couplers[0].progressJ);
+  assert.equal(interrupted.couplers[0].reasonCode, 'OFF');
   assert.equal(interrupted.cells[0].energyJ, first.cells[0].energyJ);
   assert.equal(interrupted.couplers[0].heatJ, first.couplers[0].heatJ);
   const cp = p.snapshot();

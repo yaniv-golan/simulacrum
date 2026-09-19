@@ -275,7 +275,7 @@ export function ropeWorkLedger(segments, dt) {
         reference === 0
           ? 0
           : Math.max(0, restLength - l0) +
-            (l0 === 0
+            (l0 === 0 || !(l1 > 1e-15)
               ? 0
               : 0.5 * l0 * after.reduce((sum, v, i) => sum + (v / l1 - before[i] / l0) ** 2, 0)),
       N = 0.5 * k * de * de + reference * geometric;

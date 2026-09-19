@@ -82,23 +82,20 @@ test('a rejected rigid mount cannot be blamed for locking a turning wheel', asyn
     a: { part: 'frame', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
     b: { part: 'drive', surface: { region: 'right', u: 0, v: 0, twist: 0 } },
   });
-  const workshop = await createWorkshop(bp);
-  try {
-    await workshop.act({ type: 'run' });
-    workshop.step(240);
-    const frame = workshop.observe().frames[0];
-    assert.equal(
-      frame.metadata.connections.find((c) => c.id === 'misaligned-lock').reasonCode,
-      'MISALIGNED',
-    );
-    assert.ok(
-      !codes(frame).includes('RIGIDLY_LOCKED'),
-      'a non-admitted constraint does not lock the axle',
-    );
-    assert.ok(codes(frame).includes('MOUNT_ALIGNMENT'));
-  } finally {
-    workshop.dispose();
-  }
+  await assert.rejects(
+    () => createWorkshop(bp),
+    (error) => error.reasonCode === 'MISALIGNED',
+  );
+  const f = fixture();
+  f.metadata.mode = 'paused';
+  f.physics[3].angularVelocity = [2, 0, 0];
+  f.metadata.blueprint.connections.push(bp.connections.at(-1));
+  f.metadata.connections.push({ id: 'misaligned-lock', reasonCode: 'MISALIGNED' });
+  assert.ok(
+    !codes(f).includes('RIGIDLY_LOCKED'),
+    'a non-admitted constraint does not lock the axle',
+  );
+  assert.ok(codes(f).includes('MOUNT_ALIGNMENT'));
 });
 test('production telemetry distinguishes healthy, disconnected, stopped and depleted motors', async () => {
   const { createWorkshop } = await import('../src/core/workshop.mjs');

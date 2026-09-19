@@ -428,9 +428,15 @@ export function createPowerNetwork(configuration) {
             (c.progressJ !== 0 || c.ready || c.opened || c.reasonCode !== 'NO_LATCH')) ||
           c.progressJ > c.heatJ + ENERGY_ABSOLUTE_TOLERANCE + ENERGY_RELATIVE_TOLERANCE * c.heatJ ||
           (c.reasonCode === 'OPEN') !== c.opened ||
-          ['READY', 'RELEASE_SUPPORT_BLOCKED'].includes(c.reasonCode) !== c.ready ||
+          ['READY', 'RELEASE_SUPPORT_BLOCKED', 'COUPLER_SPRING_ACTIVATION'].includes(
+            c.reasonCode,
+          ) !== c.ready ||
           (c.reasonCode === 'NO_LATCH') !== d.joint < 0 ||
-          (c.reasonCode === 'ACTUATING') !== (c.progressJ > 0 && c.progressJ < d.energyJ) ||
+          (c.reasonCode === 'ACTUATING' &&
+            !(c.progressJ > 0 && c.progressJ < d.energyJ)) ||
+          (c.progressJ > 0 &&
+            c.progressJ < d.energyJ &&
+            !['ACTUATING', 'OFF', 'LOW_VOLTAGE', 'NO_POWER'].includes(c.reasonCode)) ||
           (c.opened &&
             c.heatJ + ENERGY_ABSOLUTE_TOLERANCE + ENERGY_RELATIVE_TOLERANCE * c.heatJ <
               d.energyJ) ||
@@ -454,6 +460,7 @@ export function createPowerNetwork(configuration) {
             'READY',
             'OPEN',
             'RELEASE_SUPPORT_BLOCKED',
+            'COUPLER_SPRING_ACTIVATION',
           ].includes(c.reasonCode)
         )
           fail('INVALID_POWER_CHECKPOINT');
@@ -774,7 +781,7 @@ export function createPowerNetwork(configuration) {
         if (
           !exact(r, 'joint,reasonCode') ||
           !c?.ready ||
-          !['OK', 'RELEASE_SUPPORT_BLOCKED'].includes(r.reasonCode)
+          !['OK', 'RELEASE_SUPPORT_BLOCKED', 'COUPLER_SPRING_ACTIVATION'].includes(r.reasonCode)
         )
           fail('INVALID_RELEASE_RESULT');
         if (r.reasonCode === 'OK') {
@@ -1021,7 +1028,7 @@ export function createPowerNetwork(configuration) {
           coupling,
           dt,
         );
-        if (!sharedResult) fail('ENERGY_INVARIANT');
+        if (!sharedResult) fail('POWER_STEP_MISSING');
         for (const [i, c] of config.cells.entries()) {
           next.cells[i].energyJ = Math.max(
             0,
@@ -1053,7 +1060,7 @@ export function createPowerNetwork(configuration) {
         const powered = latchActive[i] && r.voltage >= c.minVoltage && current > 0;
         r.progressJ = powered
           ? Math.min(c.energyJ, r.progressJ + current * current * c.resistance * dt)
-          : 0;
+          : r.progressJ;
         r.ready = r.progressJ === c.energyJ;
         r.reasonCode =
           c.joint < 0
@@ -1306,6 +1313,29 @@ export function createPowerNetwork(configuration) {
       state = next;
       pending = null;
       return clone(state);
+    },
+    applyCommands(commands) {
+      if (pending) fail('POWER_STEP_PENDING');
+      const next = clone(state);
+      const seen = new Set();
+      for (const command of commands) {
+        const source = next.sources.find((s) => s.node === command.node);
+        if (
+          !source ||
+          seen.has(command.node) ||
+          !exact(command, 'duty,node' + (Object.hasOwn(command, 'enabled') ? ',enabled' : '')) ||
+          (Object.hasOwn(command, 'enabled') && typeof command.enabled !== 'boolean') ||
+          !finite(command.duty) ||
+          Math.abs(command.duty) > 1
+        )
+          fail('INVALID_SIGNAL_COMMAND');
+        seen.add(command.node);
+        source.duty = command.duty;
+        if (command.enabled === false) source.enabled = false;
+        else delete source.enabled;
+      }
+      validateState(next, { trustedShape: true });
+      state = next;
     },
     read: () => immutableCopy(state),
     snapshot() {

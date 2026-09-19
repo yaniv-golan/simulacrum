@@ -13,7 +13,7 @@ export function createJointReactions(joints) {
     const removed = new Set(opened),
       neighbours = new Map();
     joints.forEach((j, i) => {
-      if (removed.has(i)) return;
+      if (removed.has(i) || ['rope', 'cord', 'gear', 'spring'].includes(j.kind)) return;
       for (const [a, b] of [
         [j.a, j.b],
         [j.b, j.a],

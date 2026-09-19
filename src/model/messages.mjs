@@ -51,6 +51,8 @@ const messages = {
     'These parts already belong to the same mechanism, and the mounts do not meet. Choose another mount or reposition the mechanism.',
   UNSUPPORTED_SHAFT_TOPOLOGY:
     'This shaft arrangement is not supported yet. Connect one motor to an axle or wheel.',
+  DUPLICATE_SIGNAL:
+    'These two parts already have this signal wire. Choose different connectors, or disconnect the extra wire.',
   INVALID_CONFIGURATION:
     'The machine configuration is invalid. Return to Build and check its connections.',
   ENERGY_INVARIANT:
@@ -79,6 +81,12 @@ const messages = {
     'Cord stretch or speed limit reached. Return to Build, increase cord length or stiffness, reduce the load or speed, then try again. The cord has not broken.',
   GEAR_MOTION_LIMIT:
     'Gear motion exceeded this model’s limits. Return to Build; check shaft supports, reduce motor current, or start with the machine resting on the floor.',
+  SPRING_FREQUENCY:
+    'This spring group is too stiff for the parts it connects. Return to Build, reduce stiffness or the number of springs sharing a support, then try again.',
+  SPRING_ISLAND:
+    'A spring could not be solved with the rest of this mechanism. Return to Build and check that both ends share a support.',
+  DRIVE_NOT_PREPARED:
+    'A motor or ram could not be prepared for this step. Return to Build; the last good machine is still here.',
   PHYSICS_FAILURE: 'The physics step failed. Return to Build; the failure record is available.',
   INVALID_PREDICATE: 'Choose a supported stopping condition.',
   INVALID_TICK_COUNT: 'Choose a whole number of ticks from 0 to 28,800.',
@@ -88,6 +96,10 @@ const messages = {
   NOTHING_TO_REDO: 'There are no undone edits to redo.',
   BUSY: 'The previous action is still finishing. Try again in a moment.',
   EDIT_REQUIRES_BUILD: 'Return to Build before changing parts.',
+  RETRY_PENDING: 'Wait for this retry to finish before sending another command.',
+  STEP_REQUIRES_PAUSE: 'Pause a running machine before stepping one tick.',
+  LEARNING_ATTEMPT_ACTIVE:
+    'Finish or discard the current teaching attempt before opening another machine.',
   CAMERA_LIMIT: 'This machine already has eight cameras. Remove one before adding another.',
   INVALID_POWER_CONFIGURATION:
     'The electrical configuration is invalid. Check the power connections.',
@@ -101,8 +113,14 @@ const messages = {
   INVALID_MOTOR_SAMPLE:
     'A motor reading is invalid. Return to Build; the failure record is available.',
   INVALID_MOTOR_INERTIA: 'The motor load could not be measured. Check the shaft connection.',
+  POWER_STEP_MISSING:
+    'The electrical solve did not finish. Return to Build; the last good machine is still here.',
+  COUPLER_SPRING_ACTIVATION:
+    'Opening this coupler would change which springs are active. Close it, or change the springs first.',
   INVALID_CONTROLLER_CONFIGURATION: 'Check the controller input and output wires.',
   INVALID_CONTROLLER_PROGRAM: 'This controller program cannot be run. Check its configuration.',
+  MISSING_CONTROLLER_EXECUTOR:
+    'A controller program could not be installed. Check its rules and source, then try again.',
   INVALID_CONTROLLER_SNAPSHOT: 'A controller reading is invalid. Return to Build to restart.',
   INVALID_CONTROLLER_OUTPUT:
     'The controller tried an invalid output. Check its receiver wiring and command range.',
