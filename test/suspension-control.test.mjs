@@ -71,7 +71,7 @@ test('ordinary bound sensing and automatic ownership survive replay while manual
   }
 });
 
-test('sensor binding follows a library copy and missing binding visibly disables automatic control', async () => {
+test('sensor binding follows a library copy and missing binding keeps Automatic with an unavailable reading', async () => {
   const bp = authoredControl();
   const copy = insertAssembly(createEmptyBlueprint('empty', 'Empty'), bp, [0, 2, 0], [0, 0, 0, 1]);
   const sensor = copy.blueprint.parts.find((p) => p.type === 'travelSensor');
@@ -90,8 +90,8 @@ test('sensor binding follows a library copy and missing binding visibly disables
     w.step();
     const f = w.observe().frames[0];
     assert.equal(f.sensors.readings[0].channels.length.status, 'unavailable');
-    assert.equal(f.receiverControl.receivers[0].mode, 'off');
-    assert.equal(f.power.sources[0].enabled, false);
+    assert.equal(f.receiverControl.receivers[0].mode, 'automatic');
+    assert.notEqual(f.power.sources[0].enabled, false);
   } finally {
     w.dispose();
   }
@@ -167,7 +167,7 @@ test('Off wins all event permutations and is a disabled drive, not a zero target
   }
 });
 
-test('stale, missing, invalid and suspended automatic sensing latch Off', () => {
+test('stale, missing and invalid automatic sensing hold last duty; suspend still latches Off', () => {
   for (const bad of [
     { tick: 0, readings: sample(1).readings },
     { tick: 1, readings: [] },
@@ -175,9 +175,10 @@ test('stale, missing, invalid and suspended automatic sensing latch Off', () => 
   ]) {
     const a = createReceiverArbiter(configuration());
     a.step(1, sample(1), [mode('automatic')]);
-    assert.equal(a.step(2, bad, [])[0].enabled, false);
-    assert.equal(a.step(3, sample(3), [])[0].mode, 'off');
-    assert.equal(a.step(4, sample(4), [mode('automatic')])[0].enabled, true);
+    const held = a.step(2, bad, [])[0];
+    assert.equal(held.mode, 'automatic');
+    assert.equal(held.enabled, true);
+    assert.equal(a.step(3, sample(3), [])[0].mode, 'automatic');
   }
   const a = createReceiverArbiter(configuration());
   a.step(1, sample(1), [mode('automatic')]);

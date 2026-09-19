@@ -11,6 +11,9 @@ import { createControllerDispatcher } from './controllers.mjs';
 import { createPowerNetwork } from './power.mjs';
 import { createReceiverArbiter, receiverControlConfiguration } from './receiver-arbiter.mjs';
 import { createPhysicsWorld } from './physics/world.mjs';
+import { isReasonCode } from '../model/reasons.mjs';
+const coded = (reasonCode, message = reasonCode) =>
+  Object.assign(Error(message), { reasonCode });
 let sessionSequence = 0;
 const PHASE_STATUS = immutableCopy(Object.fromEntries(PHASES.map((phase) => [phase, 'active'])));
 const physicalConfig = ({ gravity, bodies, joints }) => ({ gravity, bodies, joints });
@@ -174,35 +177,50 @@ export async function createSession(
   let { config, power } = admitConfiguration(configuration),
     world = await createPhysicsWorld(physicalConfig(config));
   identity = copy(identity);
-  let installedPrograms = await programFactory(config.power);
-  if (installedPrograms.length !== config.power.controllers.filter((c) => c.program).length)
-    throw Error('MISSING_CONTROLLER_EXECUTOR');
-  let dispatcher = createControllerDispatcher(config.power, [
-    ...hostPrograms,
-    ...installedPrograms,
-  ]);
+  let installedPrograms,
+    dispatcher,
+    cameraIds,
+    cameras,
+    receiverControl,
+    initial,
+    contactSample,
+    sensors;
   const cameraNodes = (c) => c.power.sensors.filter((s) => s.kind === 'camera').map((s) => s.node);
-  let cameraIds = cameraNodes(config);
-  let cameras = createCameraState(cameraIds);
-  let receiverControl = createReceiverArbiter(receiverControlConfiguration(config.power));
+  try {
+    installedPrograms = await programFactory(config.power);
+    if (installedPrograms.length !== config.power.controllers.filter((c) => c.program).length)
+      throw coded('MISSING_CONTROLLER_EXECUTOR');
+    dispatcher = createControllerDispatcher(config.power, [
+      ...hostPrograms,
+      ...installedPrograms,
+    ]);
+    cameraIds = cameraNodes(config);
+    cameras = createCameraState(cameraIds);
+    receiverControl = createReceiverArbiter(receiverControlConfiguration(config.power));
+    initial = world.read();
+    contactSample = world.contacts();
+    sensors = sampleSensors(
+      0,
+      copy(initial),
+      config.power,
+      config.joints,
+      world,
+      power.read(),
+      config.gravity,
+    );
+  } catch (error) {
+    world.dispose();
+    throw error;
+  }
   let tick = 0,
     accumulator = 0,
     sequence = 0,
     pending = [],
     history = [],
     status = 'ready',
-    failure = null;
-  let initial = world.read();
-  let contactSample = world.contacts();
-  let sensors = sampleSensors(
-    0,
-    copy(initial),
-    config.power,
-    config.joints,
-    world,
-    power.read(),
-    config.gravity,
-  );
+    failure = null,
+    replacing = false,
+    disposed = false;
   let torques = [],
     receipts = [];
   const hasGears = () => config.joints.some((j) => j.kind === 'gear');
@@ -316,6 +334,7 @@ export async function createSession(
   // Internal anchors retain native bytes compactly; exports preserve checkpoint v3.
   const exportAnchor = (value) => ({ ...copy(value), physics: Array.from(value.physics) });
   function checkpoint() {
+    if (disposed) throw coded('SESSION_DISPOSED');
     return exportAnchor(captureAnchor());
   }
   let anchor = captureAnchor(),
@@ -348,7 +367,11 @@ export async function createSession(
       return (
         keys === 'mode,node,type' &&
         config.power.receivers.some((r) => r.node === command.node) &&
-        ['manual', 'automatic', 'learned', 'off'].includes(command.mode)
+        ['manual', 'automatic', 'learned', 'off'].includes(command.mode) &&
+        (command.mode !== 'learned' ||
+          receiverControlConfiguration(config.power).some(
+            (c) => c.node === command.node && c.learning,
+          ))
       );
     if (command.type === 'regulator-target') {
       const c = receiverControlConfiguration(config.power).find(
@@ -383,6 +406,7 @@ export async function createSession(
   }
   function act(command) {
     const no = (reasonCode) => ({ ok: false, reasonCode, path: 'command' });
+    if (disposed) return no('SESSION_DISPOSED');
     if (status === 'failed') return no('SESSION_FAILED');
     if (!validCommand(command) || ['program-receiver', 'learned-receiver'].includes(command.type))
       return no('INVALID_COMMAND');
@@ -404,6 +428,14 @@ export async function createSession(
     const event = { tick: tick + 1, sequence: sequence++, command: copy(command) };
     pending.push(event);
     history.push(event);
+    if (suspension) {
+      const outputs = receiverControl.suspend();
+      power.applyCommands(
+        outputs.map(({ node, duty, enabled }) =>
+          enabled === false ? { node, duty, enabled } : { node, duty },
+        ),
+      );
+    }
     publish();
     return { ok: true, reasonCode: 'OK', path: '' };
   }
@@ -415,6 +447,7 @@ export async function createSession(
       tick + count > Number.MAX_SAFE_INTEGER
     )
       throw Error('INVALID_TICK_COUNT');
+    if (disposed) throw coded('SESSION_DISPOSED');
     if (status === 'failed') throw Error('SESSION_FAILED');
     for (let n = 0; n < count; n++) {
       const startedAt = performance.now(),
@@ -454,7 +487,7 @@ export async function createSession(
                 readings: sensors.readings,
               })) {
                 if (pending.filter((e) => e.command.type !== 'suspend-controls').length >= 64)
-                  throw Error('INPUT_LIMIT');
+                  break;
                 const event = { tick: next, sequence: sequence++, command };
                 pending.push(event);
                 history.push(event);
@@ -498,6 +531,7 @@ export async function createSession(
                     .map((r) => ({
                       node: r.node,
                       valid: r.channels.length.status === 'ok' && r.channels.speed.status === 'ok',
+                      status: r.channels.length.status,
                       length: r.channels.length.value ?? 0,
                       speed: r.channels.speed.value ?? 0,
                     })),
@@ -730,11 +764,9 @@ export async function createSession(
           anchor: exportAnchor(previousInterval?.anchor ?? anchor),
           inputs: [...(previousInterval?.inputs ?? []), ...history],
           failedTick: next,
-          reasonCode: ['GEAR_MOTION_LIMIT', 'ROPE_MOTION_LIMIT'].includes(error.reasonCode)
+          reasonCode: isReasonCode(error.reasonCode)
             ? error.reasonCode
-            : ['NON_FINITE_STATE', 'INVARIANT_VIOLATION', 'ENERGY_INVARIANT'].includes(
-                  error.message,
-                )
+            : isReasonCode(error.message)
               ? error.message
               : 'PHYSICS_FAILURE',
           completed: observations.observe().frames.at(-1),
@@ -750,6 +782,7 @@ export async function createSession(
     return observations.observe();
   }
   function advanceTime(milliseconds) {
+    if (disposed) throw coded('SESSION_DISPOSED');
     if (status === 'failed') throw Error('SESSION_FAILED');
     if (!Number.isFinite(milliseconds) || milliseconds < 0) throw Error('INVALID_ELAPSED_TIME');
     const total = accumulator + milliseconds;
@@ -787,6 +820,7 @@ export async function createSession(
           p.axis > 2))
     )
       throw Error('INVALID_PREDICATE');
+    if (disposed) throw coded('SESSION_DISPOSED');
     if (status === 'failed') throw Error('SESSION_FAILED');
     const matched = () => {
       const f = observations.observe().frames[0],
@@ -800,18 +834,17 @@ export async function createSession(
     }
     return { matched: matched(), ticks, observation: observations.observe() };
   }
-  let replacing = false,
-    disposed = false;
   function setMetadata(input) {
-    if (disposed) throw Error('SESSION_DISPOSED');
+    if (disposed) throw coded('SESSION_DISPOSED');
+    if (status === 'failed') throw coded('SESSION_FAILED');
     const nextMetadata = immutableCopy(input);
     observations.publish({ ...frame(world.read()), metadata: nextMetadata });
     metadata = nextMetadata;
     return observations.observe();
   }
   async function replaceConfiguration(configuration, inputMetadata) {
-    if (disposed) throw Error('SESSION_DISPOSED');
-    if (replacing) throw Error('REPLACEMENT_PENDING');
+    if (disposed) throw coded('SESSION_DISPOSED');
+    if (replacing) throw coded('REPLACEMENT_PENDING');
     const nextMetadata = immutableCopy(inputMetadata),
       admitted = admitConfiguration(configuration),
       nextConfig = admitted.config,
@@ -821,7 +854,7 @@ export async function createSession(
         nextPrograms.length === nextConfig.power.controllers.filter((c) => c.program).length
           ? nextPrograms
           : (() => {
-              throw Error('MISSING_CONTROLLER_EXECUTOR');
+              throw coded('MISSING_CONTROLLER_EXECUTOR');
             })(),
       nextDispatcher = createControllerDispatcher(nextConfig.power, [
         ...hostPrograms,
@@ -860,11 +893,13 @@ export async function createSession(
         power: nextPower.read(),
         ...(cameraNodes(nextConfig).length ? { cameras: nextCameras.read() } : {}),
         receiverControl: nextReceiverControl.snapshot(),
+        ...(admittedPrograms.length ? { programs: nextDispatcher.inspect() } : {}),
       };
       if (nextConfig.joints.some((j) => j.kind === 'rope' || j.kind === 'cord'))
         nextFrame.ropes = candidate.ropes();
       else delete nextFrame.ropes;
       if (!cameraNodes(nextConfig).length) delete nextFrame.cameras;
+      if (!admittedPrograms.length) delete nextFrame.programs;
       const nextAnchor = copy({
         version: 3,
         tick: 0,
@@ -872,6 +907,7 @@ export async function createSession(
         sequence: 0,
         pending: [],
         sensors: nextSensors,
+        ...(admittedPrograms.length ? { programs: nextDispatcher.snapshot() } : {}),
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.snapshot(),
         ...(cameraNodes(nextConfig).length ? { cameras: nextCameras.read() } : {}),
@@ -918,6 +954,7 @@ export async function createSession(
     }
   }
   function restore(input) {
+    if (disposed) throw coded('SESSION_DISPOSED');
     const invalid = () => {
       throw Error('INVALID_CHECKPOINT');
     };
@@ -1126,7 +1163,8 @@ export async function createSession(
         event.sequence !== cp.sequence - cp.pending.length + index ||
         event.sequence < 0 ||
         !validCommand(event.command) ||
-        event.command.type === 'learned-receiver'
+        event.command.type === 'learned-receiver' ||
+        event.command.type === 'program-receiver'
       )
         invalid();
     if (installedPrograms.length) {

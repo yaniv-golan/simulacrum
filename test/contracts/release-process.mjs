@@ -25,7 +25,7 @@ try {
   for (let i = 0; i < 2; i++) advance();
   s.act({ type: 'receiver', node: 3, duty: 0 });
   advance();
-  assert.equal(s.observe().frames.at(-1).power.couplers[0].progressJ, 0);
+  assert.ok(s.observe().frames.at(-1).power.couplers[0].progressJ > 0);
   s.act({ type: 'receiver', node: 3, duty: 1 });
   const cp = s.checkpoint();
   const continueRun = () => {

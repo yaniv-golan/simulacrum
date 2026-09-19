@@ -149,6 +149,19 @@ test('learned inference checkpoint continuation and failure replay regenerate id
     session.dispose();
   }
 });
+test('Learned mode is refused until a model is installed', async () => {
+  const workshop = await createWorkshop(learningFixture());
+  try {
+    assert.equal((await workshop.act({ type: 'run' })).ok, true);
+    const refused = await workshop.act({ type: 'control-mode', id: 'receiver', mode: 'learned' });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.reasonCode, 'INVALID_COMMAND');
+    assert.equal(workshop.observe().frames[0].receiverControl.receivers[0].mode, 'manual');
+    assert.equal(workshop.observe().frames[0].receiverControl.receivers[0].reason, 'OK');
+  } finally {
+    workshop.dispose();
+  }
+});
 test('copying paired sensors remaps internal targets and clears omitted targets', async () => {
   const { proposeMirroredAssembly } = await import('../src/model/mirror-assembly.mjs');
   const { captureAssembly, insertAssembly } = await import('../src/model/reusable-assemblies.mjs');

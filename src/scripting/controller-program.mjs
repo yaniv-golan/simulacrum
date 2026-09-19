@@ -1,6 +1,12 @@
 import { SENSOR_STATUSES } from '../model/sensors.mjs';
 import { immutableCopy } from '../model/observation.mjs';
-const LIMITS = Object.freeze({ source: 16384, nodes: 2048, state: 32, fuel: 4096 });
+import { CONTROLLER_SOURCE_LIMIT } from '../model/controller-authoring.mjs';
+const LIMITS = Object.freeze({
+  source: CONTROLLER_SOURCE_LIMIT,
+  nodes: 2048,
+  state: 32,
+  fuel: 4096,
+});
 const fail = (message) => {
   throw Error(message);
 };
@@ -339,7 +345,12 @@ function instantiateProgram(bytes, ir, bindings) {
   const invalid = () => fail('Sensor reading is unavailable.');
   const instance = new WebAssembly.Instance(new WebAssembly.Module(bytes), {
     sensor: {
-      read: (i) => (inputs[i]?.status === 'ok' ? inputs[i].value : invalid()),
+      read: (i) => {
+        const status = inputs[i]?.status;
+        if (status === 'ok') return inputs[i].value;
+        if (['no-return', 'initializing', 'unavailable'].includes(status)) return 0;
+        invalid();
+      },
       valid: (i) => (inputs[i]?.status === 'ok' ? 1 : 0),
       status: (i) => SENSOR_STATUSES.indexOf(inputs[i]?.status),
       write: (i, value) => {

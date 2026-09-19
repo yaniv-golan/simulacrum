@@ -12,7 +12,15 @@ const exact = (value, keys) =>
 const node = (n) => Number.isSafeInteger(n) && n >= 0;
 const ratio = (n) => Number.isFinite(n) && Math.abs(n) <= 1;
 const modes = ['manual', 'automatic', 'learned', 'off'];
-const reasons = ['OK', 'OPERATOR_OFF', 'SUSPENDED', 'INVALID_SENSOR', 'NO_REGULATOR'];
+const reasons = [
+  'OK',
+  'OPERATOR_OFF',
+  'SUSPENDED',
+  'INVALID_SENSOR',
+  'NO_REGULATOR',
+  'NO_LEARNER',
+  'INVALID_CONTROLLER_OUTPUT',
+];
 const clamp = (n, lower, upper) => Math.max(lower, Math.min(upper, n));
 
 /** Session-owned arbitration. Controller programs never receive this operator input path. */
@@ -130,13 +138,22 @@ export function createReceiverArbiter(input) {
       const readings = new Map();
       for (const r of sample.readings) {
         if (
-          !exact(r, 'node,valid,length,speed') ||
+          (!exact(r, 'length,node,speed,valid') &&
+            !exact(r, 'length,node,speed,status,valid')) ||
           !node(r.node) ||
           readings.has(r.node) ||
           typeof r.valid !== 'boolean' ||
           !Number.isFinite(r.length) ||
           !Number.isFinite(r.speed) ||
-          r.length < 0
+          (r.status !== undefined &&
+            ![
+              'ok',
+              'unavailable',
+              'no-power',
+              'disconnected',
+              'no-return',
+              'initializing',
+            ].includes(r.status))
         )
           fail();
         readings.set(r.node, r);
@@ -212,16 +229,20 @@ export function createReceiverArbiter(input) {
         if (requested) {
           r.mode = requested.mode;
           r.reason = 'OK';
+          if (requested.mode === 'manual' && !own.some((e) => ['manual', 'release'].includes(e.type)))
+            r.duty = 0;
         }
         if (r.mode === 'learned') {
           const learned = own.findLast((e) => e.type === 'learned');
-          if (!c.learning || !learned?.valid) off('INVALID_SENSOR');
+          if (!c.learning) off('NO_LEARNER');
+          else if (!learned?.valid) continue;
           else r.duty = learned.duty;
           continue;
         }
         if (r.mode === 'automatic' && c.program) {
           const program = own.findLast((e) => e.type === 'program');
-          if (!program || program.valid === false) off('INVALID_SENSOR');
+          if (!program) continue;
+          if (program.valid === false) off('INVALID_CONTROLLER_OUTPUT');
           else r.duty = program.duty;
           continue;
         }
@@ -237,7 +258,9 @@ export function createReceiverArbiter(input) {
           continue;
         }
         const reading = readings.get(controller.sensor);
-        if (sample.tick !== tick - 1 || !reading?.valid) {
+        if (sample.tick !== tick - 1) continue;
+        if (!reading || !reading.valid) continue;
+        if (['no-power', 'disconnected'].includes(reading.status)) {
           off('INVALID_SENSOR');
           continue;
         }
@@ -251,6 +274,19 @@ export function createReceiverArbiter(input) {
         );
         const delta = controller.maxRate * DT;
         r.duty = clamp(demand, Math.max(-1, r.duty - delta), Math.min(1, r.duty + delta));
+      }
+      validateState(next);
+      state = next;
+      return immutableCopy(state.receivers.map((r) => ({ ...r, enabled: r.mode !== 'off' })));
+    },
+    suspend() {
+      const next = structuredClone(state);
+      for (const r of next.receivers) {
+        if (r.mode === 'automatic' || r.mode === 'learned') {
+          r.mode = 'off';
+          r.duty = 0;
+          r.reason = 'SUSPENDED';
+        } else if (r.mode === 'manual') r.duty = 0;
       }
       validateState(next);
       state = next;

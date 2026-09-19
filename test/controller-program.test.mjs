@@ -106,3 +106,10 @@ test('numeric NaN is false in every conditional and logical form', async () => {
   );
   assert.deepEqual(p.run([{ status: 'ok', value: 0 }]), [-0.5]);
 });
+test('unguarded read holds a numeric zero on a healthy miss and faults only dead sensing', async () => {
+  const p = await compileController('function tick(){write("out1", read("input1"));}', bindings);
+  for (const status of ['no-return', 'initializing', 'unavailable'])
+    assert.deepEqual(p.run([{ status }]), [0], status);
+  assert.throws(() => p.run([{ status: 'no-power' }]), /unavailable/);
+  assert.throws(() => p.run([{ status: 'disconnected' }]), /unavailable/);
+});
