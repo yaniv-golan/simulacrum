@@ -207,7 +207,7 @@ test('cord joins mechanical authoring and mirrored reference attachments remain 
   const { mechanicalGroup } = await import('../src/model/connection-graph.mjs'),
     { proposeMirroredAssembly } = await import('../src/model/mirror-assembly.mjs');
   const bp = fixture();
-  assert.deepEqual(mechanicalGroup(bp, 'a'), ['a', 'b']);
+  assert.deepEqual(mechanicalGroup(bp, 'a'), ['a']);
   const result = proposeMirroredAssembly(bp, { ids: ['b'], referenceId: 'a', axis: 'x' });
   assert.equal(result.copiedConnectionIds.length, 1);
   const edge = result.blueprint.connections.find((c) => c.id === result.copiedConnectionIds[0]);

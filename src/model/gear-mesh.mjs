@@ -1,6 +1,6 @@
 import { gearFacts, SPACING_TOLERANCE } from './gear-geometry.mjs';
 import { mechanicalGroup } from './connection-graph.mjs';
-import { surfaceRegions } from './surfaces.mjs';
+import { assertMountFootprint, surfaceRegions } from './surfaces.mjs';
 import { rotateVector } from './transforms.mjs';
 
 const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
@@ -191,6 +191,19 @@ export function meshSpacingRepair(blueprint, connectionId) {
     const [du, dv] = axes.map((axis) => dot(correction, axis));
     const residual = correction.map((x, i) => x - du * axes[0][i] - dv * axes[1][i]);
     if (Math.hypot(...residual) > 1e-9) continue;
+    try {
+      assertMountFootprint(
+        receiver,
+        targetSurface.region,
+        part(mounted.part),
+        mountedSurface.region,
+        targetSurface.u + du,
+        targetSurface.v + dv,
+        targetSurface.twist,
+      );
+    } catch {
+      continue;
+    }
     const candidate = {
       connection: mount.id,
       moving: moving.id,

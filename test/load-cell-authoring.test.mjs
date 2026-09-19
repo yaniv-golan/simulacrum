@@ -11,6 +11,7 @@ import { compileAssembly, proposeSurfaceMount } from '../src/model/assembly.mjs'
 import { surfaceRegions } from '../src/model/surfaces.mjs';
 import { captureAssembly, insertAssembly } from '../src/model/reusable-assemblies.mjs';
 import { proposeMirroredAssembly } from '../src/model/mirror-assembly.mjs';
+import { emptyControllerProgram } from '../src/model/controller-authoring.mjs';
 
 function machine() {
   let b = createEmptyBlueprint('force-machine', 'Force machine');
@@ -175,13 +176,7 @@ test('independent assembly copies and mirrors bind their own B while partial cop
 test('existing Rules controller receives force channels with SI units', () => {
   const b = machine();
   const controller = createPart('logicController', 'rules', [0, 2, 2]);
-  controller.controllerProgram = {
-    version: 1,
-    mode: 'rules',
-    source: '',
-    rules: [],
-    savedCode: [],
-  };
+  controller.controllerProgram = emptyControllerProgram();
   b.parts.push(controller);
   for (const [i, channel] of ['axialForce', 'load'].entries())
     b.connections.push({

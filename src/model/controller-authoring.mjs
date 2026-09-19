@@ -1,4 +1,5 @@
 export const CONTROLLER_LIMITS = Object.freeze({ count: 8 });
+export const CONTROLLER_SOURCE_LIMIT = 16384;
 export const CONTROLLER_INPUT_PORTS = Object.freeze(
   Array.from({ length: 16 }, (_, i) => 'input' + (i + 1)),
 );
@@ -6,6 +7,18 @@ export const CONTROLLER_OUTPUT_PORTS = Object.freeze(
   Array.from({ length: 8 }, (_, i) => 'out' + (i + 1)),
 );
 import { immutableCopy } from './observation.mjs';
+const utf8Bytes = (s) => new TextEncoder().encode(s).length;
+function authoringFail(message = 'Invalid controller draft.') {
+  throw Object.assign(Error(message), { reasonCode: 'INVALID_CONTROLLER_PROGRAM' });
+}
+/** Legacy `signal`/`out` occupy and compile as input1/out1 on logic controllers. */
+export function logicalControllerPort(type, portId) {
+  if (type === 'logicController') {
+    if (portId === 'signal') return 'input1';
+    if (portId === 'out') return 'out1';
+  }
+  return portId;
+}
 export const RULE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -37,7 +50,8 @@ export const CONTROLLER_AUTHORING_SCHEMA = {
   },
 };
 export function generateRuleSource(rules) {
-  if (!Array.isArray(rules) || rules.length > 8) throw Error('At most eight rules are supported.');
+  if (!Array.isArray(rules) || rules.length > 8)
+    authoringFail('At most eight rules are supported.');
   const outputs = new Set(),
     lines = ['function tick() {'],
     mappings = [];
@@ -52,7 +66,7 @@ export function generateRuleSource(rules) {
       Math.abs(r.otherwise) > 1 ||
       outputs.has(r.output)
     )
-      throw Error('Invalid rule.');
+      authoringFail('Invalid rule.');
     outputs.add(r.output);
     const start = lines.join('\n').length + 1;
     const condition =
@@ -96,14 +110,16 @@ export function admitControllerAuthoring(input) {
     p.version !== 1 ||
     !['rules', 'code'].includes(p.mode) ||
     typeof p.source !== 'string' ||
-    p.source.length > 16384 ||
+    utf8Bytes(p.source) > CONTROLLER_SOURCE_LIMIT ||
+    !Array.isArray(p.rules) ||
+    new Set(p.rules.map((r) => r.output)).size !== p.rules.length ||
     !Array.isArray(p.savedCode) ||
     p.savedCode.length > 16 ||
-    !p.savedCode.every((s) => typeof s === 'string' && s.length <= 16384)
+    !p.savedCode.every((s) => typeof s === 'string' && utf8Bytes(s) <= CONTROLLER_SOURCE_LIMIT)
   )
-    throw Error('Invalid controller draft.');
+    authoringFail();
   const generated = generateRules(p.rules);
-  if (p.mode === 'rules' && p.source !== generated) throw Error('Rules and code differ.');
+  if (p.mode === 'rules' && p.source !== generated) authoringFail('Rules and code differ.');
   return p;
 }
 export const emptyControllerProgram = () =>
@@ -116,7 +132,7 @@ export function editControllerDraft(draft, action) {
     next.source = action.source;
   } else if (action.type === 'rules') {
     if (draft.mode !== 'rules')
-      throw Error(
+      authoringFail(
         'Rules are disabled because the code was edited. Restore rules to use them again.',
       );
     next.rules = action.rules;
@@ -124,12 +140,12 @@ export function editControllerDraft(draft, action) {
   } else if (action.type === 'restore-rules') {
     if (draft.mode === 'code') {
       if (draft.savedCode.length >= 16)
-        throw Error('Export a saved code version before restoring rules.');
+        authoringFail('Export a saved code version before restoring rules.');
       next.savedCode.push(draft.source);
     }
     next.mode = 'rules';
     next.source = generateRules(next.rules);
   }
-  if (next.source.length > 16384) throw Error('Program is too large.');
+  if (utf8Bytes(next.source) > CONTROLLER_SOURCE_LIMIT) authoringFail('Program is too large.');
   return admitControllerAuthoring(next);
 }

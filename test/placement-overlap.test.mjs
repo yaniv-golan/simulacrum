@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorkshop } from '../src/core/workshop.mjs';
 import { createEmptyBlueprint, createPart, loadSave } from '../src/model/blueprint.mjs';
+import { transformGroup } from '../src/model/editing.mjs';
 test('solid overlap cannot be committed by placement, transforms or loads; touching is allowed', async () => {
   const w = await createWorkshop();
   try {
@@ -45,6 +46,14 @@ test('solid overlap cannot be committed by placement, transforms or loads; touch
   } finally {
     w.dispose();
   }
+});
+
+test('transform preview can pose overlapping parts; only commit/load refuse occupancy', () => {
+  const bp = createEmptyBlueprint('preview', 'preview');
+  bp.parts = [createPart('chassis', 'a', [0, 1, 0]), createPart('poweredMotor', 'b', [0, 1.08, 0])];
+  const overlapping = transformGroup(bp, 'b', [0, 1, 0], [0, 0, 0, 1]);
+  assert.equal(overlapping.parts[1].position[1], 1);
+  assert.equal(loadSave(overlapping).reasonCode, 'SURFACE_OVERLAP');
 });
 
 test('wheel bounds corners are empty while real cylinder intersections are blocked', () => {

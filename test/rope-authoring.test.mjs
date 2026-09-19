@@ -56,15 +56,25 @@ test('capacity and invalid material reject while ordinary positive control admit
     assert.equal(validateBlueprint(bp).ok, false);
   }
   const bp = fixture();
+  bp.parts = Array.from({ length: 10 }, (_, i) => createPart('beam', 'p' + i, [i, 2, 0]));
   bp.connections = Array.from({ length: 5 }, (_, i) => ({
-    ...structuredClone(bp.connections[0]),
     id: 'rope-' + i,
+    kind: 'rope',
+    a: { part: 'p' + i * 2, surface: { region: 'right', u: 0, v: 0, twist: 0 } },
+    b: { part: 'p' + (i * 2 + 1), surface: { region: 'left', u: 0, v: 0, twist: 0 } },
+    rope: { restLength: 1.5, diameter: 0.02, segments: 8, material: 'nylon' },
   }));
-  assert.throws(() => compileAssembly(bp));
+  assert.throws(
+    () => compileAssembly(bp),
+    (error) => error.reasonCode === 'ROPE_DOMAIN_LIMIT',
+  );
   bp.connections.length = 4;
   assert.doesNotThrow(() => compileAssembly(bp));
   bp.connections.forEach((c) => (c.rope.segments = 9));
-  assert.throws(() => compileAssembly(bp));
+  assert.throws(
+    () => compileAssembly(bp),
+    (error) => error.reasonCode === 'ROPE_DOMAIN_LIMIT',
+  );
 });
 
 test('rope identity and copied reusable graphs preserve authored material and numeric plant', async () => {
@@ -92,7 +102,7 @@ test('rope joins mechanical authoring and mirrored reference attachments remain 
   const { mechanicalGroup } = await import('../src/model/connection-graph.mjs'),
     { proposeMirroredAssembly } = await import('../src/model/mirror-assembly.mjs');
   const bp = fixture();
-  assert.deepEqual(mechanicalGroup(bp, 'a'), ['a', 'b']);
+  assert.deepEqual(mechanicalGroup(bp, 'a'), ['a']);
   const result = proposeMirroredAssembly(bp, { ids: ['b'], referenceId: 'a', axis: 'x' });
   assert.equal(result.copiedConnectionIds.length, 1);
   const edge = result.blueprint.connections.find((c) => c.id === result.copiedConnectionIds[0]);
@@ -100,4 +110,17 @@ test('rope joins mechanical authoring and mirrored reference attachments remain 
   assert.equal(edge.a.part, 'a');
   assert.equal(edge.b.part, result.idMap.b);
   assert.doesNotThrow(() => compileAssembly(result.blueprint));
+});
+
+test('stacked rope anchors on the same face site occupy that site', () => {
+  const bp = fixture();
+  bp.parts.push(createPart('beam', 'c', [2, 2, 0]));
+  bp.connections.push({
+    id: 'stacked',
+    kind: 'rope',
+    a: { part: 'a', surface: { region: 'right', u: 0, v: 0, twist: 0 } },
+    b: { part: 'c', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
+    rope: { restLength: 1.5, diameter: 0.02, segments: 8, material: 'nylon' },
+  });
+  assert.equal(validateBlueprint(bp).reasonCode, 'PORT_OCCUPIED');
 });

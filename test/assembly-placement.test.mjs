@@ -109,18 +109,24 @@ test('an applied placement with a missing or failed reply reconciles against aut
 });
 
 test('an uncertain placement remains blocked until the exact result is observed', async () => {
-  for (const outcome of ['missing', 'session-error', 'thrown']) {
+  const x = setup(() => undefined);
+  await x.placement.commit();
+  assert.equal(x.placement.read().phase, 'committing');
+  x.change();
+  x.placement.revalidate();
+  await x.placement.commit();
+  assert.equal(x.placement.cancel(), false);
+  assert.equal(x.commands.length, 1);
+});
+test('a settled failed or thrown reply without a matching blueprint returns to preview', async () => {
+  for (const outcome of ['session-error', 'thrown']) {
     const x = setup(() => {
       if (outcome === 'thrown') throw new Error('Unknown outcome');
-      return outcome === 'session-error' ? { ok: false, reasonCode: 'SESSION_FAILED' } : undefined;
+      return { ok: false, reasonCode: 'SESSION_FAILED' };
     });
     await x.placement.commit();
-    assert.equal(x.placement.read().phase, 'committing', outcome);
-    x.change();
-    x.placement.revalidate();
-    await x.placement.commit();
-    assert.equal(x.placement.cancel(), false, outcome);
-    assert.equal(x.commands.length, 1, outcome);
+    assert.equal(x.placement.read().phase, 'preview', outcome);
+    assert.equal(x.placement.cancel(), true, outcome);
   }
 });
 

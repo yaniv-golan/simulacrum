@@ -114,7 +114,7 @@ function createLoadedPad() {
   const load = createPart('plate', 'load', [0, 0.06, 0]);
   load.name = 'Change my material';
   load.authoredMaterial.body = 'aluminium';
-  const cell = createPart('powerCell', 'cell', [0.5, 0.04, 0]);
+  const cell = createPart('powerCell', 'cell', [0.5, 0.05, 0]);
   cell.name = 'Sensor supply';
   bp.parts = [sensor, load, cell];
   const a = { part: 'load', surface: { region: 'bottom', u: 0, v: 0, twist: 0 } },

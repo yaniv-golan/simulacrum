@@ -4,6 +4,7 @@ import { compileAssembly, snapConnection } from './assembly.mjs';
 import { classifySelectionConnections, mechanicalGroup } from './connection-graph.mjs';
 import { transformPoseBetweenFrames } from './transforms.mjs';
 import { surfaceConnectionKind } from './surfaces.mjs';
+import { logicalControllerPort } from './controller-authoring.mjs';
 
 function reject(path) {
   throw Object.assign(Error('INVALID_COMMAND'), { reasonCode: 'INVALID_COMMAND', path });
@@ -58,6 +59,9 @@ export function captureAssembly(input, { name, ids, ports }) {
     { edges, selected } = selection(bp, ids);
   if ((bp.assemblies ?? []).filter((group) => group.ids.some((id) => selected.has(id))).length > 1)
     reject('ids');
+  const internalIds = new Set(
+    edges.filter((edge) => edge.classification === 'internal').map((edge) => edge.connection.id),
+  );
   const definition = {
     version: bp.version,
     id: 'definition',
@@ -67,6 +71,33 @@ export function captureAssembly(input, { name, ids, ports }) {
       .map((part) => {
         const copy = structuredClone(part);
         if (copy.targetBinding && !selected.has(copy.targetBinding)) delete copy.targetBinding;
+        if (copy.springBinding && !internalIds.has(copy.springBinding)) delete copy.springBinding;
+        if (copy.jointBinding && !internalIds.has(copy.jointBinding)) delete copy.jointBinding;
+        if (copy.learningModel) {
+          const remaining = edges
+            .filter(
+              (edge) => edge.classification === 'internal' && edge.connection.kind === 'signal',
+            )
+            .map((edge) => edge.connection)
+            .filter((connection) => connection.a.part === copy.id || connection.b.part === copy.id);
+          const modelIn = new Set(copy.learningModel.inputs.map((input) => input.port)),
+            modelOut = new Set(copy.learningModel.outputs.map((output) => output.port)),
+            inputPorts = new Set(),
+            outputPorts = new Set();
+          for (const wire of remaining) {
+            const own = wire.a.part === copy.id ? wire.a : wire.b,
+              port = logicalControllerPort(copy.type, own.port);
+            if (own.port.startsWith('input') || own.port === 'signal') inputPorts.add(port);
+            else outputPorts.add(port);
+          }
+          if (
+            modelIn.size !== inputPorts.size ||
+            modelOut.size !== outputPorts.size ||
+            [...modelIn].some((port) => !inputPorts.has(port)) ||
+            [...modelOut].some((port) => !outputPorts.has(port))
+          )
+            delete copy.learningModel;
+        }
         return copy;
       }),
     connections: edges
@@ -158,8 +189,8 @@ function groupById(bp, id) {
   if (!group) reject('id');
   return group;
 }
-function scope(bp, group) {
-  return new Set(group.ids.flatMap((id) => mechanicalGroup(bp, id)));
+function definitionIds(group) {
+  return new Set(group.ids);
 }
 export function transformAssembly(input, id, position, rotation) {
   const bp = admitted(input),
@@ -173,7 +204,7 @@ export function transformAssembly(input, id, position, rotation) {
     parts: [{ ...origin, ...frame }],
     connections: [],
   });
-  const moved = scope(bp, group);
+  const moved = definitionIds(group);
   const next = structuredClone(bp);
   for (const part of next.parts)
     if (moved.has(part.id)) Object.assign(part, transformPoseBetweenFrames(part, origin, frame));
@@ -197,7 +228,7 @@ export function connectAssembly(input, id, portName, target, connectionId) {
   let next = snapConnection(bp, target, binding);
   const after = next.parts.find((part) => part.id === binding.part);
   const moved = new Set(mechanicalGroup(bp, binding.part));
-  const all = scope(bp, group);
+  const all = definitionIds(group);
   if (all.has(target.part)) reject('target');
   for (const part of next.parts)
     if (all.has(part.id) && !moved.has(part.id))

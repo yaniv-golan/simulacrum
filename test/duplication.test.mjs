@@ -81,9 +81,9 @@ test('rotated geometry of both selected and obstructing parts controls clearance
   blueprint.parts[0].rotation = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
   blueprint.parts.push(createPart('beam', 'obstacle', [0, 2, 0.6]));
   blueprint.parts[1].rotation = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
-  // The rotated obstacle spans 0.4–0.8 m along Z; a 400 mm copy touches it up to a centre of 1.0
-  // (the overlap test is inclusive), so the first clear candidate is 1.025.
-  near(duplicatePart(blueprint, 'original', 'copy', [0, 0, 1]).position, [0, 2, 1.025]);
+  // The rotated obstacle spans 0.4–0.8 m along Z; a 400 mm copy at 1.0 m only
+  // touches it, and touching is legal, so that first candidate is accepted.
+  near(duplicatePart(blueprint, 'original', 'copy', [0, 0, 1]).position, [0, 2, 1]);
   blueprint.parts.forEach((part) => {
     part.rotation = [0, 0, 0, 1];
   });
@@ -128,4 +128,26 @@ test('long names still produce a valid authored copy and tiny finite directions 
   assert.equal(copy.name.length, 128);
   near(copy.position, [0.425, 2, 0]);
   assert.equal(validateBlueprint({ ...blueprint, parts: [...blueprint.parts, copy] }).ok, true);
+});
+
+test('a copy still finds a pose when the machine already has an assembly group', () => {
+  const blueprint = fixture();
+  blueprint.assemblies = [{ id: 'group', name: 'Group', ids: ['original'], ports: [] }];
+  const copy = duplicatePart(blueprint, 'original', 'copy', [1, 0, 0]);
+  assert.equal(copy.id, 'copy');
+  assert.notEqual(copy.position[0], blueprint.parts[0].position[0]);
+});
+
+test('duplicating a trained learning controller drops the inherited model', () => {
+  const blueprint = fixture('learningController');
+  blueprint.parts[0].learningModel = {
+    version: 1,
+    inputs: [{ port: 'input1', channel: 'distance', unit: 'm', scale: 4 }],
+    outputs: [{ port: 'out1', channel: 'duty', unit: 'ratio' }],
+    hidden: 6,
+    weights: Array(19).fill(0),
+    scaling: 'fixed-physical-no-clipping-v1',
+  };
+  const copy = duplicatePart(blueprint, 'original', 'copy', [1, 0, 0]);
+  assert.equal('learningModel' in copy, false);
 });

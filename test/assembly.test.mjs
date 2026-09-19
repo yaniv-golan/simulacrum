@@ -7,7 +7,7 @@ const part = (id, type = 'beam') => ({
   id,
   type,
   name: id,
-  position: [id === 'b' ? 1 : 0, 0, 0],
+  position: [id === 'b' ? 1 : 0, 2, 0],
   rotation: [0, 0, 0, 1],
   authoredMaterial: {},
   parameters: {},
@@ -44,16 +44,17 @@ test('snap authors mating port transforms and aligned connection compiles', () =
   bp.parts[0].position = [2, 3, 4];
   bp.parts[0].rotation = [0, Math.sin(0.3), 0, Math.cos(0.3)];
   const snapped = snapConnection(bp, a, b);
-  assert.deepEqual(bp.parts[1].position, [1, 0, 0]);
+  assert.deepEqual(bp.parts[1].position, [1, 2, 0]);
   snapped.connections.push({ id: 'joint', kind: 'fixed', a, b });
   const compiled = compileAssembly(snapped);
   assert.equal(compiled.configuration.joints.length, 1);
   assert.equal(compiled.configuration.joints[0].a, 0);
   assert.equal(compiled.configuration.joints[0].b, 1);
   snapped.parts[1].position[0] -= 0.003;
-  const misaligned = compileAssembly(snapped);
-  assert.equal(misaligned.configuration.joints.length, 0);
-  assert.deepEqual(misaligned.connections, [{ id: 'joint', reasonCode: 'MISALIGNED' }]);
+  assert.throws(
+    () => compileAssembly(snapped),
+    (e) => e.reasonCode === 'MISALIGNED',
+  );
 });
 test('duplicate occupancy and unknown endpoints reject with paths', () => {
   const bp = blueprint(),
@@ -94,7 +95,7 @@ test('renaming and rig placement never select material mass or contact propertie
           p.name = `Part ${seed}-${i}`;
           p.position = position.map((v, axis) => v + (axis === 0 ? i : 0));
         });
-        const after = compileAssembly(bp);
+        const after = compileAssembly(bp, { ground: null });
         assert.deepEqual(
           after.mapping.map((m) => m.materialHandle),
           before.mapping.map((m) => m.materialHandle),
@@ -147,9 +148,9 @@ test('ordinary power wire and shaft compile independently of connection geometry
   const { createEmptyBlueprint, createPart } = await import('../src/model/blueprint.mjs');
   let bp = createEmptyBlueprint('powered', 'Powered');
   bp.parts = [
-    createPart('powerCell', 'cell', [5, 0, 0]),
-    createPart('poweredMotor', 'motor', [0, 0, 0]),
-    createPart('gripWheel', 'wheel', [1, 0, 0]),
+    createPart('powerCell', 'cell', [5, 2, 0]),
+    createPart('poweredMotor', 'motor', [0, 2, 0]),
+    createPart('gripWheel', 'wheel', [1, 2, 0]),
   ];
   bp = snapConnection(bp, { part: 'motor', port: 'shaft' }, { part: 'wheel', port: 'axle' });
   bp.connections = [
@@ -173,10 +174,38 @@ test('ordinary power wire and shaft compile independently of connection geometry
   assert.equal(out.configuration.power.motors[0].joint, 0);
   assert.equal(out.configuration.power.motors[0].defaultDuty, 1);
   bp.parts[2].position[1] += 0.003;
-  const bad = compileAssembly(bp);
-  assert.equal(bad.configuration.joints.length, 0);
-  assert.equal(bad.configuration.power.motors[0].rotor, -1);
-  assert.equal(bad.connections[1].reasonCode, 'MISALIGNED');
+  assert.throws(
+    () => compileAssembly(bp),
+    (e) => e.reasonCode === 'MISALIGNED',
+  );
+});
+test('two cells on one bus fail compile and save, not only session admission', async () => {
+  const { createEmptyBlueprint, createPart, loadSave } = await import('../src/model/blueprint.mjs');
+  const bp = createEmptyBlueprint('bus', 'Bus');
+  bp.parts = [
+    createPart('powerCell', 'cell-a', [0, 2, 0]),
+    createPart('powerCell', 'cell-b', [3, 2, 0]),
+    createPart('poweredMotor', 'motor', [6, 2, 0]),
+  ];
+  bp.connections = [
+    {
+      id: 'wire-a',
+      kind: 'power',
+      a: { part: 'cell-a', port: 'power' },
+      b: { part: 'motor', port: 'power' },
+    },
+    {
+      id: 'wire-b',
+      kind: 'power',
+      a: { part: 'cell-b', port: 'power' },
+      b: { part: 'motor', port: 'power' },
+    },
+  ];
+  assert.throws(
+    () => compileAssembly(bp),
+    (e) => e.reasonCode === 'UNSUPPORTED_POWER_TOPOLOGY',
+  );
+  assert.equal(loadSave(bp).reasonCode, 'UNSUPPORTED_POWER_TOPOLOGY');
 });
 test('default workshop environment appends an unmapped fixed ground body', () => {
   const bp = blueprint(),
@@ -312,4 +341,48 @@ test('surface mounts face outward and snapping moves the complete mechanical gro
       ),
     (error) => error.reasonCode === 'INCOMPATIBLE_CONNECTION_LOOP',
   );
+});
+
+test('two signal wires between the same parts on different ports both compile', async () => {
+  const { createEmptyBlueprint, createPart } = await import('../src/model/blueprint.mjs');
+  const bp = createEmptyBlueprint('bus', 'Bus');
+  bp.parts = [
+    createPart('logicController', 'rules', [0, 2, 0]),
+    createPart('rangeSensor', 'sensor', [1, 2, 0]),
+  ];
+  bp.connections = [
+    {
+      id: 'distance',
+      kind: 'signal',
+      a: { part: 'sensor', port: 'distance' },
+      b: { part: 'rules', port: 'input1' },
+    },
+    {
+      id: 'speed',
+      kind: 'signal',
+      a: { part: 'sensor', port: 'closingSpeed' },
+      b: { part: 'rules', port: 'input2' },
+    },
+  ];
+  const compiled = compileAssembly(bp, { ground: null });
+  assert.equal(compiled.configuration.power.signalWires.length, 2);
+});
+
+test('a legacy signal alias compiles onto input1', async () => {
+  const { createEmptyBlueprint, createPart } = await import('../src/model/blueprint.mjs');
+  const { emptyControllerProgram } = await import('../src/model/controller-authoring.mjs');
+  const bp = createEmptyBlueprint('legacy', 'Legacy');
+  const controller = createPart('logicController', 'rules', [0, 2, 0]);
+  controller.controllerProgram = emptyControllerProgram();
+  bp.parts = [controller, createPart('rangeSensor', 'sensor', [1, 2, 0])];
+  bp.connections = [
+    {
+      id: 'wire',
+      kind: 'signal',
+      a: { part: 'sensor', port: 'distance' },
+      b: { part: 'rules', port: 'signal' },
+    },
+  ];
+  const compiled = compileAssembly(bp, { ground: null });
+  assert.deepEqual(compiled.configuration.power.controllers[0].program.inputs[0].port, 'input1');
 });

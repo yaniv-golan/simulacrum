@@ -1,6 +1,13 @@
 import { environmentObstacles } from './environment.mjs';
 import { LAMP_LIMIT } from './lamps.mjs';
 import {
+  CONTROLLER_LIMITS,
+  admitControllerAuthoring,
+  logicalControllerPort,
+} from './controller-authoring.mjs';
+import { SENSOR_LIMITS } from './sensors.mjs';
+import { CAMERA } from './camera.mjs';
+import {
   resolveSurfaceEndpoint,
   validateSurfacePair,
   validatePlacementGeometry,
@@ -8,6 +15,7 @@ import {
 import { admitLearningModel } from './learning-model.mjs';
 import validateSchema from './generated/blueprint-validator.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
+import { compileAssembly } from './assembly.mjs';
 export const BLUEPRINT_REASON_CODES = Object.freeze([
   'OK',
   'INVALID_BLUEPRINT',
@@ -100,6 +108,15 @@ export function validateBlueprint(blueprint) {
   }
   if (blueprint.parts.filter((p) => p.type === 'poweredLamp').length > LAMP_LIMIT)
     return result('INVALID_BLUEPRINT', '/parts');
+  if (
+    blueprint.parts.filter((p) => p.type === 'logicController' || p.type === 'learningController')
+      .length > CONTROLLER_LIMITS.count
+  )
+    return result('INVALID_BLUEPRINT', '/parts');
+  if (blueprint.parts.filter((p) => p.type === 'camera').length > CAMERA.maxParts)
+    return result('CAMERA_LIMIT', '/parts');
+  if (blueprint.parts.filter((p) => CATALOG[p.type]?.sensorSupply).length > SENSOR_LIMITS.count)
+    return result('INVALID_BLUEPRINT', '/parts');
   const parts = new Map();
   for (let index = 0; index < blueprint.parts.length; index++) {
     const part = blueprint.parts[index],
@@ -124,11 +141,30 @@ export function validateBlueprint(blueprint) {
         return result('INVALID_BLUEPRINT', `${path}/learningModel`);
       }
     }
+    if (part.controllerProgram) {
+      try {
+        admitControllerAuthoring(part.controllerProgram);
+      } catch {
+        return result('INVALID_CONTROLLER_PROGRAM', `${path}/controllerProgram`);
+      }
+    }
     if (
       part.targetBinding &&
       (part.targetBinding === part.id || !blueprint.parts.some((p) => p.id === part.targetBinding))
     )
       return result('UNKNOWN_PART', `${path}/targetBinding`);
+    if (
+      part.springBinding &&
+      !blueprint.connections.some((c) => c.id === part.springBinding && c.kind === 'spring')
+    )
+      return result('UNKNOWN_CONNECTION', `${path}/springBinding`);
+    if (
+      part.jointBinding &&
+      !blueprint.connections.some(
+        (c) => c.id === part.jointBinding && ['shaft', 'pivot'].includes(c.kind),
+      )
+    )
+      return result('UNKNOWN_CONNECTION', `${path}/jointBinding`);
     parts.set(part.id, part);
   }
   const groupIds = new Set(),
@@ -204,6 +240,14 @@ export function validateBlueprint(blueprint) {
         } catch (error) {
           return result(error.reasonCode ?? 'INVALID_ENDPOINT', path);
         }
+        const key = JSON.stringify([
+          endpoint.part,
+          endpoint.surface.region,
+          endpoint.surface.u,
+          endpoint.surface.v,
+        ]);
+        if (occupied.has(key)) return result('PORT_OCCUPIED', `${path}/${side}/port`);
+        occupied.add(key);
       }
       continue;
     }
@@ -275,14 +319,19 @@ export function validateBlueprint(blueprint) {
         return result('UNKNOWN_PORT', `${path}/${side}/port`);
       if (connection.kind === 'signal' && port.direction !== (side === 'a' ? 'output' : 'input'))
         return result('INCOMPATIBLE_PORT_DIRECTION', `${path}/${side}/port`);
-      const key = JSON.stringify([
-        endpoint.part,
-        endpoint.surface ? `surface:${endpoint.surface.region}` : endpoint.port,
-      ]);
-      if (
-        port.multiplicity === 'one' ||
-        (endpoint.surface && (side === 'b' || part.type === 'loadCellSensor'))
-      ) {
+      const key = JSON.stringify(
+        endpoint.surface
+          ? part.type === 'loadCellSensor'
+            ? [endpoint.part, endpoint.surface.region]
+            : [endpoint.part, endpoint.surface.region, endpoint.surface.u, endpoint.surface.v]
+          : [endpoint.part, logicalControllerPort(part.type, endpoint.port)],
+      );
+      const catalogPort = endpoint.surface
+        ? port
+        : CATALOG[part.type].ports.find(
+            (p) => p.id === logicalControllerPort(part.type, endpoint.port),
+          );
+      if (port.multiplicity === 'one' || endpoint.surface || catalogPort?.multiplicity === 'one') {
         if (occupied.has(key)) return result('PORT_OCCUPIED', `${path}/${side}/port`);
         occupied.add(key);
       }
@@ -314,6 +363,15 @@ export function loadSave(input) {
       return result(error.reasonCode, error.path ?? 'connections');
     }
   if (!validation.ok) return validation;
+  try {
+    compileAssembly(parsed);
+  } catch (error) {
+    const code = error?.reasonCode;
+    return result(
+      typeof code === 'string' && code !== 'OK' ? code : 'INVALID_BLUEPRINT',
+      error.path ?? '',
+    );
+  }
   const blueprint = structuredClone(parsed);
   canonicalizeContactOverrides(blueprint);
   return { ...validation, blueprint };

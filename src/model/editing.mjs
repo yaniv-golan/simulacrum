@@ -13,13 +13,13 @@ export function transformGroup(blueprint, id, position, rotation) {
     target = next.parts.find((part) => part.id === id);
   target.position = position;
   target.rotation = rotation;
-  const validation = validateBlueprint(next);
-  if (!validation.ok) reject(validation.reasonCode, validation.path);
   const group = new Set(mechanicalGroup(blueprint, id));
   for (const part of next.parts)
     if (part.id !== id && group.has(part.id)) {
       Object.assign(part, transformPoseBetweenFrames(part, original, { position, rotation }));
     }
+  const validation = validateBlueprint(next);
+  if (!validation.ok) reject(validation.reasonCode, validation.path);
   return next;
 }
 /** A dimension edit may not move a surface attachment of any connection kind: the peer

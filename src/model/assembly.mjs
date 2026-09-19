@@ -13,11 +13,14 @@ import {
   solidsOverlap,
   validatePlacementGeometry,
   assertMountFootprint,
+  placementObstacleSolids,
 } from './surfaces.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
 import { validateBlueprint } from './blueprint.mjs';
+import { admitCompiledPowerTopology } from './power.mjs';
 import { BUILD_ENVIRONMENT, environmentObstacles } from './environment.mjs';
 import { immutableCopy } from './observation.mjs';
+import { logicalControllerPort } from './controller-authoring.mjs';
 import {
   transformPoseBetweenFrames,
   normalizeQuaternion as normalize,
@@ -37,6 +40,7 @@ export const ASSEMBLY_REASON_CODES = Object.freeze([
   'UNSUPPORTED_GEAR_TOPOLOGY',
   'GEAR_MISALIGNED',
   'GEAR_TOOTH_SIZE_MISMATCH',
+  'DUPLICATE_SIGNAL',
 ]);
 function reject(reasonCode, path) {
   const error = new Error(reasonCode);
@@ -134,7 +138,6 @@ export function compileAssembly(
   } = {},
 ) {
   validate(blueprint);
-  validatePlacementGeometry(blueprint);
   try {
     gravity = immutableCopy(gravity);
   } catch {
@@ -163,6 +166,7 @@ export function compileAssembly(
       ground.restitution > 1)
   )
     reject('INVALID_GROUND', 'ground');
+  validatePlacementGeometry(blueprint, { ground });
   const mapping = [];
   const bodies = blueprint.parts.map((part) => {
     const primitive = partPrimitives(part)[0];
@@ -317,9 +321,16 @@ export function compileAssembly(
       continue;
     }
     if (connection.kind === 'signal') {
-      power.signalWires.push(
-        A.port.direction === 'output' ? [A.index, B.index] : [B.index, A.index],
-      );
+      const from = A.port.direction === 'output' ? A : B,
+        to = from === A ? B : A;
+      const pair = JSON.stringify([
+        from.part.id,
+        logicalControllerPort(from.part.type, from.port.id),
+        to.part.id,
+        logicalControllerPort(to.part.type, to.port.id),
+      ]);
+      if (power.signalWires.some((wire) => wire.pair === pair)) reject('DUPLICATE_SIGNAL', path);
+      power.signalWires.push({ pair, nodes: [from.index, to.index] });
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
@@ -376,10 +387,7 @@ export function compileAssembly(
     const dot = freePin(A, B)
       ? axisAgreement(expected, b.rotation)
       : Math.abs(expected.reduce((sum, v, j) => sum + v * b.rotation[j], 0));
-    if (distance > 1e-6 || 1 - Math.min(1, dot) > 1e-10) {
-      connections.push({ id: connection.id, reasonCode: 'MISALIGNED' });
-      continue;
-    }
+    if (distance > 1e-6 || 1 - Math.min(1, dot) > 1e-10) reject('MISALIGNED', path);
     connections.push({ id: connection.id, reasonCode: 'OK' });
     const motorA = power.motors.find((m) => m.node === A.index),
       motorB = power.motors.find((m) => m.node === B.index);
@@ -457,9 +465,7 @@ export function compileAssembly(
   for (const sensor of power.sensors)
     sensor.supply = { ...CATALOG[blueprint.parts[sensor.node].type].sensorSupply };
   // Channel bindings follow explicit endpoint names, never array positions or identity.
-  power.signalWires = power.signalWires.filter(
-    (w, i, all) => all.findIndex((v) => v[0] === w[0] && v[1] === w[1]) === i,
-  );
+  power.signalWires = power.signalWires.map((wire) => wire.nodes);
   for (const controller of power.controllers.filter((c) => c.learning || c.program)) {
     const part = blueprint.parts[controller.node],
       policy = controller.learning ?? controller.program;
@@ -471,6 +477,8 @@ export function compileAssembly(
         node = blueprint.parts.findIndex((p) => p.id === other.part),
         source = blueprint.parts[node];
       if (own.port.startsWith('input') || own.port === 'signal') {
+        const port = logicalControllerPort(part.type, own.port);
+        if (policy.inputs.some((i) => i.port === port)) reject('DUPLICATE_SIGNAL', 'connections');
         const channel = [
           'targetSensor',
           'rangeSensor',
@@ -494,7 +502,7 @@ export function compileAssembly(
           channel,
         );
         policy.inputs.push({
-          port: own.port === 'signal' ? 'input1' : own.port,
+          port,
           node,
           channel,
           unit,
@@ -523,8 +531,10 @@ export function compileAssembly(
       } else {
         if (source.type !== 'commandReceiver' || other.port !== 'command')
           reject('UNSUPPORTED_SIGNAL_TOPOLOGY', 'connections');
+        const port = logicalControllerPort(part.type, own.port);
+        if (policy.outputs.some((o) => o.port === port)) reject('DUPLICATE_SIGNAL', 'connections');
         policy.outputs.push({
-          port: own.port === 'out' ? 'out1' : own.port,
+          port,
           node,
           channel: 'duty',
           unit: 'ratio',
@@ -537,27 +547,29 @@ export function compileAssembly(
   // Environment bodies follow authored bodies so every part and network index stays stable.
   for (const sensor of power.sensors.filter((s) => s.kind === 'travel')) {
     const binding = blueprint.parts[sensor.node].springBinding;
+    if (!binding) continue;
     const edge = blueprint.connections.find((c) => c.id === binding && c.kind === 'spring');
-    if (edge) {
-      const a = blueprint.parts.findIndex((p) => p.id === edge.a.part);
-      const b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
-      sensor.joint = joints.findIndex(
-        (j) => j.kind === 'spring' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
-      );
-    }
+    if (!edge) reject('UNKNOWN_CONNECTION', 'springBinding');
+    const a = blueprint.parts.findIndex((p) => p.id === edge.a.part);
+    const b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
+    sensor.joint = joints.findIndex(
+      (j) => j.kind === 'spring' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
+    );
+    if (sensor.joint < 0) reject('UNKNOWN_CONNECTION', 'springBinding');
   }
   for (const sensor of power.sensors.filter((s) => s.kind === 'jointAngle')) {
     const binding = blueprint.parts[sensor.node].jointBinding;
+    if (!binding) continue;
     const edge = blueprint.connections.find(
       (c) => c.id === binding && ['shaft', 'pivot'].includes(c.kind),
     );
-    if (edge) {
-      const a = blueprint.parts.findIndex((p) => p.id === edge.a.part),
-        b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
-      sensor.joint = joints.findIndex(
-        (j) => j.kind === 'revolute' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
-      );
-    }
+    if (!edge) reject('UNKNOWN_CONNECTION', 'jointBinding');
+    const a = blueprint.parts.findIndex((p) => p.id === edge.a.part),
+      b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
+    sensor.joint = joints.findIndex(
+      (j) => j.kind === 'revolute' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
+    );
+    if (sensor.joint < 0) reject('UNKNOWN_CONNECTION', 'jointBinding');
   }
   for (const regulator of power.regulators ?? []) {
     const inputs = power.signalWires.filter((w) => w[1] === regulator.node);
@@ -584,6 +596,7 @@ export function compileAssembly(
   bodies.push(...structuredClone(environmentObstacles(blueprint.environment)));
   compileRopes(blueprint, bodies, joints, connections);
   compileCords(blueprint, bodies, joints, connections);
+  admitCompiledPowerTopology(power);
   return { configuration: { gravity: [...gravity], bodies, joints, power }, mapping, connections };
 }
 
@@ -701,7 +714,7 @@ function surfaceMountCandidate(
   } catch {
     reject('SURFACE_OUT_OF_BOUNDS', 'surface');
   }
-  for (const moved of next.parts.filter((p) => moving.has(p.id)))
+  for (const moved of next.parts.filter((p) => moving.has(p.id))) {
     for (const fixed of next.parts.filter((p) => !moving.has(p.id)))
       if (
         placementEnvelopes(moved).some((a) =>
@@ -713,6 +726,13 @@ function surfaceMountCandidate(
           path: fixed.id,
           obstructingPartId: fixed.id,
         });
+    for (const solid of placementObstacleSolids(next))
+      if (placementEnvelopes(moved).some((envelope) => solidsOverlap(envelope, solid)))
+        throw Object.assign(Error('SURFACE_OVERLAP'), {
+          reasonCode: 'SURFACE_OVERLAP',
+          path: 'surface',
+        });
+  }
   if (attach) next.connections.push({ id, kind, a, b });
   validate(next);
   return proposal;

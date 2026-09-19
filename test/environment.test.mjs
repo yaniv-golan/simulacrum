@@ -94,7 +94,7 @@ test('environment selection is an atomic Build edit with save, history and check
 });
 test('bump overlap rejects selection and loading without inventing contact at empty cylinder corners', async () => {
   const b = machine();
-  b.parts[0].position = [0.14, 0, -0.6];
+  b.parts[0].position = [0.14, 0.02, -0.6];
   const w = await createWorkshop(b);
   try {
     await assertRejectedEditUnchanged(w, {

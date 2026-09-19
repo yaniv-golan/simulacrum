@@ -140,8 +140,9 @@ test('renaming and rig placement never change a beam whose length and material a
           return { ...createEmptyBlueprint(id, name), parts: [part] };
         };
         const reference = compileAssembly(make('beam', 'Beam', [0, 1, 0])).configuration.bodies[0];
-        const perturbed = compileAssembly(make(`p-${seed}`, `Renamed ${seed}`, position))
-          .configuration.bodies[0];
+        const perturbed = compileAssembly(make(`p-${seed}`, `Renamed ${seed}`, position), {
+          ground: null,
+        }).configuration.bodies[0];
         assert.deepEqual(perturbed.halfExtents, reference.halfExtents);
         assert.equal(perturbed.mass, reference.mass);
         assert.equal(perturbed.friction, reference.friction);
@@ -239,7 +240,10 @@ test('a length change that would move a surface peer is rejected, then admitted 
     assert.equal((await w.act(shrink)).reasonCode, 'SURFACE_RESIZE_MOVES_MOUNT');
     const forced = structuredClone(w.observe().frames[0].metadata.blueprint);
     forced.parts.find((p) => p.id === 'beam').parameters.length = 0.3;
-    assert.equal(compileAssembly(forced).connections[0].reasonCode, 'MISALIGNED');
+    assert.throws(
+      () => compileAssembly(forced),
+      (e) => e.reasonCode === 'MISALIGNED',
+    );
     assert.equal((await w.act({ type: 'disconnect', id: 'end' })).ok, true);
     // Detached but still in the way: the ordinary overlap rule now owns the rejection.
     assert.equal(

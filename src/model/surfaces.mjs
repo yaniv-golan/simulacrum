@@ -1,6 +1,6 @@
 import { partPrimitives, CYLINDER_SEGMENTS, shaftSegments } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
-import { sceneObjectDescriptors } from './environment.mjs';
+import { BUILD_ENVIRONMENT, sceneObjectDescriptors } from './environment.mjs';
 import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
 export { multiplyQuaternion, rotateVector } from './transforms.mjs';
 // M3b planar mounting. Frames use X outward, Y along u, Z along v; SI metres/radians.
@@ -294,31 +294,44 @@ export function surfaceConnectionAligned(blueprint, edge) {
     1 - Math.min(1, Math.abs(expected.reduce((sum, v, i) => sum + v * b.rotation[i], 0))) <= 1e-10
   );
 }
-/** Admit solid placement. Aligned closed mechanisms are ordinary authored graphs. */
-export function validatePlacementGeometry(blueprint) {
-  for (const [index, obstacle] of sceneObjectDescriptors(blueprint.environment).entries()) {
-    const bounds = {
+/** Workshop floor and authored scene solids. Ground is omitted when compile uses ground:null. */
+export function placementObstacleSolids(blueprint, { ground = BUILD_ENVIRONMENT.ground } = {}) {
+  const solids = [];
+  if (ground)
+    solids.push({
+      position: [...ground.position],
+      rotation: [0, 0, 0, 1],
+      envelopeHalf: [...ground.halfExtents],
+      envelopeKind: 'box',
+    });
+  for (const obstacle of sceneObjectDescriptors(blueprint.environment))
+    solids.push({
       position: obstacle.position,
       rotation: obstacle.rotation,
       envelopeHalf: obstacle.halfExtents,
       envelopeKind: obstacle.shape,
-    };
+    });
+  return solids;
+}
+/** Admit solid placement. Aligned closed mechanisms are ordinary authored graphs. */
+export function validatePlacementGeometry(blueprint, { ground = BUILD_ENVIRONMENT.ground } = {}) {
+  const scene = sceneObjectDescriptors(blueprint.environment).map((obstacle) => ({
+    position: obstacle.position,
+    rotation: obstacle.rotation,
+    envelopeHalf: obstacle.halfExtents,
+    envelopeKind: obstacle.shape,
+  }));
+  const obstacles = placementObstacleSolids(blueprint, { ground });
+  for (const [index, bounds] of obstacles.entries())
     for (const [partIndex, part] of blueprint.parts.entries())
       if (placementEnvelopes(part).some((envelope) => solidsOverlap(envelope, bounds)))
         throw Object.assign(Error('SURFACE_OVERLAP'), {
           reasonCode: 'SURFACE_OVERLAP',
           path: `/parts/${partIndex}/environment/${index}`,
         });
-  }
-  const obstacles = sceneObjectDescriptors(blueprint.environment).map((o) => ({
-    position: o.position,
-    rotation: o.rotation,
-    envelopeHalf: o.halfExtents,
-    envelopeKind: o.shape,
-  }));
-  for (let i = 0; i < obstacles.length; i++)
-    for (let j = i + 1; j < obstacles.length; j++)
-      if (solidsOverlap(obstacles[i], obstacles[j]))
+  for (let i = 0; i < scene.length; i++)
+    for (let j = i + 1; j < scene.length; j++)
+      if (solidsOverlap(scene[i], scene[j]))
         throw Object.assign(Error('SURFACE_OVERLAP'), {
           reasonCode: 'SURFACE_OVERLAP',
           path: `/environment/objects/${j}`,

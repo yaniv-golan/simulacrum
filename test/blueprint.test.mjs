@@ -12,7 +12,7 @@ import {
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
 const valid = () => ({
   ...createEmptyBlueprint('machine', 'Workshop machine'),
-  parts: [createPart('beam', 'a', [0, 0, 0]), createPart('beam', 'b', [0.4, 0, 0])],
+  parts: [createPart('beam', 'a', [0, 2, 0]), createPart('beam', 'b', [0.4, 2, 0])],
   connections: [
     {
       id: 'join',
@@ -134,7 +134,7 @@ test('generated valid authoring data roundtrips and malformed variants shrink', 
       ),
       (id, name, type, material, position) => {
         const b = createEmptyBlueprint(id, name),
-          p = createPart(type, 'part', position);
+          p = createPart(type, 'part', [position[0], Math.abs(position[1]) + 2, position[2]]);
         p.authoredMaterial.body = material;
         b.parts.push(p);
         assert.equal(validateBlueprint(b).ok, true);
@@ -236,4 +236,122 @@ test('power ports permit fanout and signal ports enforce authored direction', ()
   assert.equal(validateBlueprint(b).ok, true);
   b.connections.at(-1).a = { part: 'm2', port: 'signal' };
   assert.equal(validateBlueprint(b).ok, false);
+});
+
+test('logic controller signal aliases occupy the numbered port', () => {
+  const b = createEmptyBlueprint('alias', 'Alias');
+  b.parts = [
+    createPart('logicController', 'rules', [0, 2, 0]),
+    createPart('rangeSensor', 's1', [1, 2, 0]),
+    createPart('rangeSensor', 's2', [2, 2, 0]),
+  ];
+  b.connections = [
+    {
+      id: 'one',
+      kind: 'signal',
+      a: { part: 's1', port: 'distance' },
+      b: { part: 'rules', port: 'signal' },
+    },
+    {
+      id: 'two',
+      kind: 'signal',
+      a: { part: 's2', port: 'distance' },
+      b: { part: 'rules', port: 'input1' },
+    },
+  ];
+  assert.equal(validateBlueprint(b).reasonCode, 'PORT_OCCUPIED');
+});
+
+test('springBinding and jointBinding must name a live matching connection', () => {
+  const b = createEmptyBlueprint('bind', 'Bind');
+  b.parts = [
+    createPart('travelSensor', 'travel', [0, 2, 0]),
+    createPart('jointAngleSensor', 'angle', [1, 2, 0]),
+    createPart('beam', 'a', [2, 2, 0]),
+    createPart('beam', 'c', [3, 2, 0]),
+  ];
+  b.parts[0].springBinding = 'missing';
+  assert.equal(validateBlueprint(b).reasonCode, 'UNKNOWN_CONNECTION');
+  b.parts[0].springBinding = undefined;
+  delete b.parts[0].springBinding;
+  b.parts[1].jointBinding = 'missing';
+  assert.equal(validateBlueprint(b).reasonCode, 'UNKNOWN_CONNECTION');
+  b.connections.push({
+    id: 'join',
+    kind: 'fixed',
+    a: { part: 'a', surface: { region: 'right', u: 0, v: 0, twist: 0 } },
+    b: { part: 'c', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
+  });
+  b.parts[0].springBinding = 'join';
+  assert.equal(validateBlueprint(b).reasonCode, 'UNKNOWN_CONNECTION');
+});
+
+test('controller, camera and sensor ceilings match the lamp-style save gate', () => {
+  const controllers = createEmptyBlueprint('c', 'C');
+  controllers.parts = Array.from({ length: 9 }, (_, i) =>
+    createPart('logicController', `c${i + 1}`, [i, 2, 0]),
+  );
+  assert.equal(validateBlueprint(controllers).reasonCode, 'INVALID_BLUEPRINT');
+  const cameras = createEmptyBlueprint('cam', 'Cam');
+  cameras.parts = Array.from({ length: 9 }, (_, i) =>
+    createPart('camera', `cam${i + 1}`, [i, 2, 0]),
+  );
+  assert.equal(validateBlueprint(cameras).reasonCode, 'CAMERA_LIMIT');
+  const sensors = createEmptyBlueprint('sense', 'Sense');
+  sensors.parts = Array.from({ length: 65 }, (_, i) =>
+    createPart('rangeSensor', `s${i + 1}`, [i, 2, 0]),
+  );
+  assert.equal(validateBlueprint(sensors).reasonCode, 'INVALID_BLUEPRINT');
+});
+
+test('a part sitting in the workshop floor fails save admission', () => {
+  const b = createEmptyBlueprint('floor', 'Floor');
+  b.parts = [createPart('spacerBlock', 'block', [0, 0, 0])];
+  assert.equal(loadSave(b).reasonCode, 'SURFACE_OVERLAP');
+});
+
+test('duplicate rule outputs refuse the saved program', () => {
+  const b = createEmptyBlueprint('dup-out', 'Dup out');
+  const controller = createPart('logicController', 'rules', [0, 2, 0]);
+  const rule = {
+    input: 'input1',
+    operator: '<',
+    threshold: 0,
+    output: 'out1',
+    duty: 0,
+    otherwise: 0,
+  };
+  controller.controllerProgram = {
+    version: 1,
+    mode: 'code',
+    source: 'function tick(){ write("out1", 0); }',
+    rules: [rule, { ...rule }],
+    savedCode: [],
+  };
+  b.parts = [controller];
+  assert.equal(validateBlueprint(b).reasonCode, 'INVALID_CONTROLLER_PROGRAM');
+});
+
+test('logic controller out aliases occupy the numbered output', () => {
+  const b = createEmptyBlueprint('out-alias', 'Out alias');
+  b.parts = [
+    createPart('logicController', 'rules', [0, 2, 0]),
+    createPart('commandReceiver', 'r1', [1, 2, 0]),
+    createPart('commandReceiver', 'r2', [2, 2, 0]),
+  ];
+  b.connections = [
+    {
+      id: 'one',
+      kind: 'signal',
+      a: { part: 'rules', port: 'out' },
+      b: { part: 'r1', port: 'command' },
+    },
+    {
+      id: 'two',
+      kind: 'signal',
+      a: { part: 'rules', port: 'out1' },
+      b: { part: 'r2', port: 'command' },
+    },
+  ];
+  assert.equal(validateBlueprint(b).reasonCode, 'PORT_OCCUPIED');
 });

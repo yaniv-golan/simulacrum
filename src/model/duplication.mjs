@@ -1,6 +1,6 @@
 import { partPrimitives } from './geometry.mjs';
-import { CATALOG } from './catalog.mjs';
 import { validateBlueprint, availablePartName } from './blueprint.mjs';
+import { placementEnvelopes, placementObstacleSolids, solidsOverlap } from './surfaces.mjs';
 
 function reject(reasonCode, path = '') {
   throw Object.assign(new TypeError(reasonCode), { reasonCode, path });
@@ -41,9 +41,13 @@ function bounds(part) {
     }
   return { min, max };
 }
-function overlaps(a, b) {
-  return a.min.every(
-    (value, axis) => value <= b.max[axis] + 1e-10 && a.max[axis] + 1e-10 >= b.min[axis],
+function copyBlocked(copy, blueprint) {
+  const envelopes = placementEnvelopes(copy);
+  for (const part of blueprint.parts)
+    if (envelopes.some((a) => placementEnvelopes(part).some((b) => solidsOverlap(a, b))))
+      return true;
+  return placementObstacleSolids(blueprint).some((solid) =>
+    envelopes.some((a) => solidsOverlap(a, solid)),
   );
 }
 
@@ -98,20 +102,28 @@ export function duplicatePart(
   delete copy.springBinding;
   delete copy.jointBinding;
   delete copy.targetBinding;
+  delete copy.learningModel;
   copy.id = newId;
   copy.name = availablePartName(blueprint.parts, original.name);
   validate({ ...blueprint, parts: [...blueprint.parts, copy] });
-  const occupied = blueprint.parts.map(bounds),
-    source = bounds(original),
+  const source = bounds(original),
     extent = source.max[axis] - source.min[axis],
     first = Math.ceil((extent + clearance - 1e-9) / grid);
   for (let step = 0; step < maxSteps; step++) {
     const distance = (first + step) * grid;
     copy.position = original.position.map((value, i) => value + unit[i] * distance);
-    // Use the authoritative schema's coordinate limits, not a second limit list.
-    if (!validateBlueprint({ ...blueprint, parts: [copy], connections: [] }).ok) continue;
-    const candidate = bounds(copy);
-    if (!occupied.some((other) => overlaps(candidate, other))) return copy;
+    // Pose admission must not carry assembly membership whose ids are not in [copy].
+    if (
+      !validateBlueprint({
+        version: blueprint.version,
+        id: blueprint.id,
+        name: blueprint.name,
+        parts: [copy],
+        connections: [],
+      }).ok
+    )
+      continue;
+    if (!copyBlocked(copy, blueprint)) return copy;
   }
   reject('INVALID_COMMAND', 'position');
 }

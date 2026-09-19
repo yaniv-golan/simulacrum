@@ -345,3 +345,41 @@ test('surface placement of a named assembly previews and commits all members at 
     workshop.dispose();
   }
 });
+
+test('capture drops a learning model whose remaining signal graph no longer matches', () => {
+  const bp = createEmptyBlueprint('learn', 'Learn');
+  const controller = createPart('learningController', 'brain', [0, 2, 0]);
+  controller.learningModel = {
+    version: 1,
+    inputs: [{ port: 'input1', channel: 'distance', unit: 'm', scale: 4 }],
+    outputs: [{ port: 'out1', channel: 'duty', unit: 'ratio' }],
+    hidden: 6,
+    weights: Array(19).fill(0),
+    scaling: 'fixed-physical-no-clipping-v1',
+  };
+  bp.parts.push(
+    controller,
+    createPart('rangeSensor', 'sensor', [1, 2, 0]),
+    createPart('commandReceiver', 'receiver', [2, 2, 0]),
+  );
+  bp.connections.push(
+    {
+      id: 'sense',
+      kind: 'signal',
+      a: { part: 'sensor', port: 'distance' },
+      b: { part: 'brain', port: 'input1' },
+    },
+    {
+      id: 'drive',
+      kind: 'signal',
+      a: { part: 'brain', port: 'out1' },
+      b: { part: 'receiver', port: 'command' },
+    },
+  );
+  const { definition } = captureAssembly(bp, {
+    name: 'Brain',
+    ids: ['brain', 'receiver'],
+    ports: [],
+  });
+  assert.equal('learningModel' in definition.parts.find((p) => p.id === 'brain'), false);
+});
