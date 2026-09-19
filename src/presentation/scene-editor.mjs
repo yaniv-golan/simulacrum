@@ -224,7 +224,7 @@ export function createSceneEditor({
           : (p.error?.message ??
             p.error?.reasonCode ??
             'Preview · no changes applied. Click the workbench to position the selected object.')
-      : 'Select an object or add one. Scene changes use the workshop Undo history.';
+      : 'Select an object or add one. Apply the preview to record a scene change.';
     apply.disabled = !p || p.phase !== 'preview' || p.stale || !p.valid;
     cancel.disabled = p?.phase === 'committing';
     revalidate.hidden = !p?.stale;
@@ -235,12 +235,25 @@ export function createSceneEditor({
     input.type = typeof value === 'number' ? 'number' : 'text';
     input.value = String(typeof value === 'number' ? Number(value.toFixed(6)) : value);
     input.setAttribute('aria-label', label);
+    let lastGood = input.value;
     if (input.type === 'number') {
       input.step = step;
       if (min !== undefined) input.min = String(min);
       if (max !== undefined) input.max = String(max);
     }
-    input.onchange = () => fn(input.type === 'number' ? Number(input.value) : input.value);
+    input.onchange = () => {
+      if (input.type !== 'number') {
+        fn(input.value);
+        return;
+      }
+      const next = Number(input.value);
+      if (!input.checkValidity() || !Number.isFinite(next)) {
+        input.value = lastGood;
+        return;
+      }
+      fn(next);
+      lastGood = input.value;
+    };
     input.disabled = proposal.read()?.stale || proposal.read()?.phase === 'committing';
     row.append(input);
     inspector.append(row);
@@ -466,7 +479,13 @@ export function createSceneEditor({
     ])
       list.append(btn(label, () => choose(label, sceneLayout(key))));
     try {
-      for (const item of library.list()) {
+      const snapshot = library.inspect?.() ?? {
+        items: library.list(),
+        quarantined: [],
+        unreadable: false,
+      };
+      if (snapshot.unreadable) throw Error(snapshot.error || 'Scene library is unreadable.');
+      for (const item of snapshot.items) {
         list.append(
           btn(item.name, () => choose(item.name, item.scene)),
           btn(`Remove saved ${item.name}`, () => {
@@ -480,8 +499,78 @@ export function createSceneEditor({
           }),
         );
       }
+      if (snapshot.quarantined?.length) {
+        list.append(
+          el(
+            'p',
+            `${snapshot.quarantined.length} saved scene(s) could not be read. Download the original file or reset the library.`,
+          ),
+        );
+      }
+      if (snapshot.unreadable || snapshot.quarantined?.length) {
+        list.append(
+          btn('Download original scene library', () => {
+            const raw = library.exportRaw?.();
+            if (raw == null) {
+              detail.textContent = 'No stored scene file to download.';
+              return;
+            }
+            const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+            const a = el('a');
+            a.href = url;
+            a.download = 'scenes-library.json';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          }),
+          btn('Reset saved scenes to empty', () => {
+            if (
+              !window.confirm(
+                'This deletes every saved scene in this browser. Download the original file first.',
+              )
+            )
+              return;
+            try {
+              library.reset();
+              dialog.close();
+              openBrowser();
+            } catch (e) {
+              detail.textContent = e.message;
+            }
+          }),
+        );
+      }
     } catch (e) {
       list.append(el('p', e.message));
+      list.append(
+        btn('Download original scene library', () => {
+          const raw = library.exportRaw?.();
+          if (raw == null) {
+            detail.textContent = 'No stored scene file to download.';
+            return;
+          }
+          const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+          const a = el('a');
+          a.href = url;
+          a.download = 'scenes-library.json';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }),
+        btn('Reset saved scenes to empty', () => {
+          if (
+            !window.confirm(
+              'This deletes every saved scene in this browser. Download the original file first.',
+            )
+          )
+            return;
+          try {
+            library.reset();
+            dialog.close();
+            openBrowser();
+          } catch (err) {
+            detail.textContent = err.message;
+          }
+        }),
+      );
     }
     const name = el('input');
     name.placeholder = 'Scene name';

@@ -911,9 +911,12 @@ export function createSurfaceControls({
       return true;
     }
     if (state === committedState) {
-      stateLabel.textContent = 'Not attached';
+      update();
+      if (placement.read().kind !== 'preview') {
+        stateLabel.textContent = 'Not attached';
+        footer.dataset.blocked = 'true';
+      }
       status.textContent = explainFailure(result ?? {});
-      footer.dataset.blocked = 'true';
       onInvalidate?.();
     }
     return false;
@@ -972,7 +975,8 @@ export function createSurfaceControls({
         update();
         return false;
       }
-      p = bp().parts.find((p) => p.id === hit.object.userData.partId);
+      if (!hit.face) return false;
+      p = bp().parts.find((p) => p.id === partIdOf(hit.object));
       if (!p) return false;
       const localNormal = hit.face.normal
         .clone()

@@ -74,6 +74,39 @@ export function createAssemblyBrowser({
   const fail = (e) => {
     status.textContent = e.message ?? String(e);
   };
+  function downloadRaw() {
+    const raw = library.exportRaw?.();
+    if (raw == null) {
+      fail(Error('No stored library file to download.'));
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+    const a = el('a');
+    a.href = url;
+    a.download = 'assemblies-library.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  function offerRepair() {
+    list.append(
+      button('Download original library file', downloadRaw),
+      button('Reset saved assemblies to empty', () => {
+        if (
+          !window.confirm(
+            'This deletes every saved assembly in this browser. Download the original file first.',
+          )
+        )
+          return;
+        try {
+          library.reset();
+          status.textContent = 'Saved assemblies were reset.';
+          draw();
+        } catch (e) {
+          fail(e);
+        }
+      }),
+    );
+  }
   function image(item) {
     const box = el('div');
     box.className = 'assembly-thumbnail';
@@ -177,7 +210,13 @@ export function createAssemblyBrowser({
     observer?.disconnect();
     list.replaceChildren();
     try {
-      const saved = library.list();
+      const snapshot = library.inspect?.() ?? {
+        items: library.list(),
+        quarantined: [],
+        unreadable: false,
+      };
+      if (snapshot.unreadable) throw Error(snapshot.error || 'Assembly library is unreadable.');
+      const saved = snapshot.items;
       const builtIns = builtInAssemblies.map((item) => ({ ...item, builtIn: true }));
       const all =
         collection.value === 'saved'
@@ -237,6 +276,10 @@ export function createAssemblyBrowser({
       }
       drawDetail(items.find((x) => x.id === selected));
       list.scrollTop = scroll;
+      if (snapshot.quarantined?.length) {
+        status.textContent = `${snapshot.quarantined.length} saved item(s) could not be read. Download the original file or reset the library.`;
+        offerRepair();
+      }
       const hydrate = (box) => {
         try {
           const item = items.find((x) => x.id === box.dataset.thumbnail);
@@ -255,6 +298,7 @@ export function createAssemblyBrowser({
       for (const box of body.querySelectorAll('[data-thumbnail]')) observer.observe(box);
     } catch (e) {
       fail(e);
+      offerRepair();
     }
   }
   list.onscroll = () => {

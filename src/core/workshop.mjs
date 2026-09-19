@@ -1,4 +1,7 @@
-import { createProgramExecutors } from '../scripting/controller-executors.mjs';
+import {
+  createProgramExecutors,
+  compileControllerAuthoring,
+} from '../scripting/controller-executors.mjs';
 import {
   groupAssembly,
   editAssembly,
@@ -19,6 +22,7 @@ import {
   availablePartName,
 } from '../model/blueprint.mjs';
 import { compileAssembly, snapConnection, proposeSurfaceMount } from '../model/assembly.mjs';
+import { admitControllerAuthoring } from '../model/controller-authoring.mjs';
 import { immutableCopy } from '../model/observation.mjs';
 import { isReasonCode } from '../model/reasons.mjs';
 import { createSession } from '../simulation/session.mjs';
@@ -29,12 +33,25 @@ function reject(reasonCode, path = '') {
 function commandFailure(error) {
   const own = error && typeof error === 'object' ? Object.getOwnPropertyDescriptors(error) : {};
   const candidate = own.reasonCode?.value ?? own.message?.value;
-  const reasonCode = candidate !== 'OK' && isReasonCode(candidate) ? candidate : 'INVALID_COMMAND';
+  const reasonCode = candidate !== 'OK' && isReasonCode(candidate) ? candidate : 'PHYSICS_FAILURE';
   return result(
     false,
     reasonCode,
     typeof own.path?.value === 'string' ? own.path.value : 'command',
   );
+}
+async function assertBlueprintPrograms(blueprint) {
+  for (const [index, part] of blueprint.parts.entries()) {
+    if (!part.controllerProgram) continue;
+    try {
+      await compileControllerAuthoring(part.controllerProgram);
+    } catch (error) {
+      throw Object.assign(error, {
+        reasonCode: error.reasonCode ?? 'INVALID_CONTROLLER_PROGRAM',
+        path: error.path ?? `/parts/${index}/controllerProgram`,
+      });
+    }
+  }
 }
 function sameData(a, b) {
   if (a === b) return true;
@@ -58,6 +75,7 @@ export async function createWorkshop(
 ) {
   const loaded = loadSave(input);
   if (!loaded.ok) reject(loaded.reasonCode, loaded.path);
+  await assertBlueprintPrograms(loaded.blueprint);
   const compiled = compileAssembly(loaded.blueprint);
   const session = await createSession(
     compiled.configuration,
@@ -73,7 +91,8 @@ export async function createWorkshop(
     createProgramExecutors,
   );
   let busy = false,
-    disposed = false;
+    disposed = false,
+    lastCheckpoint = session.checkpoint();
   const past = [],
     future = [],
     historyLimit = 50;
@@ -173,8 +192,9 @@ export async function createWorkshop(
         if (!from.length)
           return result(false, command.type === 'undo' ? 'NOTHING_TO_UNDO' : 'NOTHING_TO_REDO');
         const entry = from.at(-1),
-          blueprint = entry.blueprint,
-          candidate = compileAssembly(blueprint);
+          blueprint = entry.blueprint;
+        await assertBlueprintPrograms(blueprint);
+        const candidate = compileAssembly(blueprint);
         await session.replaceConfiguration(candidate.configuration, {
           blueprint,
           mapping: candidate.mapping,
@@ -327,7 +347,16 @@ export async function createWorkshop(
             (p) => p.id === command.id && p.type === 'logicController',
           );
           if (!controller) reject('UNKNOWN_PART');
-          controller.controllerProgram = command.program;
+          try {
+            controller.controllerProgram = admitControllerAuthoring(command.program);
+            await compileControllerAuthoring(controller.controllerProgram);
+          } catch (error) {
+            reject(
+              error?.reasonCode && isReasonCode(error.reasonCode)
+                ? error.reasonCode
+                : 'INVALID_CONTROLLER_PROGRAM',
+            );
+          }
           break;
         }
         case 'bind-joint-sensor': {
@@ -383,9 +412,20 @@ export async function createWorkshop(
           if (keys !== 'id,type') return result(false, 'INVALID_COMMAND', 'command');
           if (!next.parts.some((part) => part.id === command.id))
             return result(false, 'UNKNOWN_PART', 'id');
-          next.parts = next.parts.filter((part) => part.id !== command.id);
-          for (const part of next.parts)
-            if (part.targetBinding === command.id) delete part.targetBinding;
+          {
+            const removed = next.connections
+              .filter(
+                (connection) =>
+                  connection.a.part === command.id || connection.b.part === command.id,
+              )
+              .map((connection) => connection.id);
+            next.parts = next.parts.filter((part) => part.id !== command.id);
+            for (const part of next.parts) {
+              if (part.targetBinding === command.id) delete part.targetBinding;
+              if (removed.includes(part.springBinding)) delete part.springBinding;
+              if (removed.includes(part.jointBinding)) delete part.jointBinding;
+            }
+          }
           if (next.assemblies) {
             for (const group of next.assemblies) {
               group.ids = group.ids.filter((id) => id !== command.id);
@@ -514,6 +554,12 @@ export async function createWorkshop(
         }
         case 'connect': {
           if (keys !== 'a,b,id,type') return result(false, 'INVALID_COMMAND', 'command');
+          if (
+            next.parts.some(
+              (part) => part.springBinding === command.id || part.jointBinding === command.id,
+            )
+          )
+            return result(false, 'DUPLICATE_ID', 'id');
           const part = next.parts.find((p) => p.id === command.a?.part);
           const port =
             part &&
@@ -536,6 +582,10 @@ export async function createWorkshop(
           if (typeof command.id !== 'string') return result(false, 'INVALID_COMMAND', 'id');
           if (!next.connections.some((connection) => connection.id === command.id))
             return result(false, 'UNKNOWN_CONNECTION', 'id');
+          for (const part of next.parts) {
+            if (part.springBinding === command.id) delete part.springBinding;
+            if (part.jointBinding === command.id) delete part.jointBinding;
+          }
           next.connections = next.connections.filter((connection) => connection.id !== command.id);
           break;
         case 'bind-control': {
@@ -565,6 +615,7 @@ export async function createWorkshop(
           if (keys !== 'save,type') return result(false, 'INVALID_COMMAND', 'command');
           const loaded = loadSave(command.save);
           if (!loaded.ok) return loaded;
+          await assertBlueprintPrograms(loaded.blueprint);
           next = loaded.blueprint;
           break;
         }
@@ -587,6 +638,7 @@ export async function createWorkshop(
         future.length = 0;
         return result(true);
       }
+      await assertBlueprintPrograms(next);
       const nextCompiled = compileAssembly(next);
       canonicalizeContactOverrides(next);
       const editing = ['load', 'restore-build'].includes(command.type)
@@ -617,6 +669,13 @@ export async function createWorkshop(
       return commandFailure(error);
     } finally {
       busy = false;
+      if (!disposed) {
+        try {
+          lastCheckpoint = session.checkpoint();
+        } catch {
+          /* Keep the last completed restorable snapshot. */
+        }
+      }
     }
   }
   function available() {
@@ -665,6 +724,7 @@ export async function createWorkshop(
     past.length = 0;
     future.length = 0;
     session.setMetadata({ ...checkpoint.metadata, editing: { undoCount: 0, redoCount: 0 } });
+    lastCheckpoint = session.checkpoint();
     return session.observe();
   }
   return Object.freeze({
@@ -683,8 +743,10 @@ export async function createWorkshop(
       return session.runUntil(predicate, n);
     },
     checkpoint() {
-      available();
-      return session.checkpoint();
+      if (disposed) reject('SESSION_DISPOSED');
+      if (busy) return immutableCopy(lastCheckpoint);
+      lastCheckpoint = session.checkpoint();
+      return lastCheckpoint;
     },
     restore,
     save() {

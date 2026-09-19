@@ -207,7 +207,17 @@ export function createControllerEditor({ send }) {
               details.open = true;
               code.setSelectionRange(...generateRuleSource(draft.rules).rules[index].threshold);
             };
-            n.onchange = () => update(key, Number(n.value));
+            n.min = key === 'threshold' ? '-1e6' : '-1';
+            n.max = key === 'threshold' ? '1e6' : '1';
+            n.onchange = () => {
+              const value = Number(n.value);
+              const inRange = key === 'threshold' ? Math.abs(value) <= 1e6 : Math.abs(value) <= 1;
+              if (!n.checkValidity() || !Number.isFinite(value) || !inRange) {
+                n.value = rule[key];
+                return;
+              }
+              update(key, value);
+            };
             l.append(n);
             row.append(l);
           }

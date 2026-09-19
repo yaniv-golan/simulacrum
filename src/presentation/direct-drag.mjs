@@ -1,6 +1,16 @@
 import * as THREE from 'three';
 import { transformGroup } from '../model/editing.mjs';
-import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { findPlacementOverlap, validatePlacementGeometry } from '../model/surfaces.mjs';
+
+function placementOverlap(blueprint) {
+  try {
+    validatePlacementGeometry(blueprint);
+    return null;
+  } catch (error) {
+    if (error.reasonCode === 'SURFACE_OVERLAP') return error;
+    throw error;
+  }
+}
 
 /** Owns a canvas drag and its pointer capture; only sends ordinary edit commands. */
 export function createDirectDrag({
@@ -56,7 +66,7 @@ export function createDirectDrag({
     controls.enabled = true;
     if (renderer.domElement.hasPointerCapture(drag.pointerId))
       renderer.domElement.releasePointerCapture(drag.pointerId);
-    if (commit && drag.position && frame.metadata.mode === 'build')
+    if (commit && drag.position && !drag.blocked && frame.metadata.mode === 'build')
       send({
         type: 'transform',
         id: drag.part.id,
@@ -138,22 +148,26 @@ export function createDirectDrag({
         directDrag.position,
         directDrag.part.rotation,
       );
-      const overlap = findPlacementOverlap(next.parts);
+      const blocked = placementOverlap(next);
+      const overlap = blocked && findPlacementOverlap(next.parts);
+      directDrag.blocked = !!blocked;
       editing.showPreview(
         next.parts.filter(
           (part, i) => JSON.stringify(part) !== JSON.stringify(directDrag.blueprint.parts[i]),
         ),
-        { color: overlap ? 0xff836f : 0x8cf5cf },
+        { color: blocked ? 0xff836f : 0x8cf5cf },
       );
       renderer.domElement.style.cursor = 'grabbing';
       showPlacementCue(
         event,
         overlap
           ? `${overlap[0].name} overlaps ${overlap[1].name} · Move clear`
-          : 'Release to move · Esc cancels',
+          : blocked
+            ? 'Overlaps a scene object · Move clear'
+            : 'Release to move · Esc cancels',
       );
       setMessage(
-        overlap
+        blocked
           ? 'Placement blocked. Move clear or press Esc to cancel.'
           : 'Release to move the attached parts here. Esc cancels.',
       );

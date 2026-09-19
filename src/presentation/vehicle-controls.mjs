@@ -52,8 +52,13 @@ export function createVehicleControls({ send, select, container }) {
   const eligible = (id) =>
     receivers().some((part) => part.id === id) &&
     receiverAllowsManual(frame.metadata.blueprint, id);
+  let generation = 0,
+    suspendedHeld = false;
   const enqueue = (command) => {
+    const token = generation;
     sequence = sequence.then(() => {
+      if (token !== generation) return;
+      if (command.type === 'suspend-controls') return send(command);
       // A load or mode change may finish before an already queued key event.
       if (!eligible(command.id)) return;
       if (command.duty !== 0 && frame.metadata.mode !== 'run') return;
@@ -61,9 +66,9 @@ export function createVehicleControls({ send, select, container }) {
     });
     return sequence;
   };
-  function clear() {
+  function clear({ retainPressed = false } = {}) {
     overrides.clear();
-    pressed.clear();
+    if (!retainPressed) pressed.clear();
     states.clear();
     for (const [id, duty] of duties)
       if (duty !== 0) enqueue({ type: 'control-release', id, duty: 0 });
@@ -91,7 +96,8 @@ export function createVehicleControls({ send, select, container }) {
   function update(next) {
     const oldMode = frame?.metadata.mode;
     frame = next;
-    if (oldMode === 'run' && frame.metadata.mode !== 'run') clear();
+    if (oldMode === 'run' && frame.metadata.mode !== 'run')
+      clear({ retainPressed: true });
     for (const id of duties.keys())
       if (!eligible(id)) {
         duties.delete(id);
@@ -176,6 +182,7 @@ export function createVehicleControls({ send, select, container }) {
     event.stopImmediatePropagation();
     if (event.repeat || pressed.has(event.code)) return;
     pressed.add(event.code);
+    suspendedHeld = false;
     apply(false, event.code);
   }
   function keyup(event) {
@@ -184,29 +191,32 @@ export function createVehicleControls({ send, select, container }) {
     pressed.delete(event.code);
     apply(true);
   }
-  function focus(event) {
-    if (
-      ownsPartHelpInput(event.target) ||
-      event.target.closest?.('[data-sound-controls]') ||
-      event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog')
-    )
-      clear();
-  }
   function visibility() {
-    if (document.hidden) suspend();
+    if (document.hidden) suspend({ retainPressed: true });
+    else suspendedHeld = false;
   }
-  function suspend() {
-    if (frame?.metadata.mode === 'run') send({ type: 'suspend-controls' });
-    return clear();
+  function suspend({ retainPressed = false } = {}) {
+    if (retainPressed && suspendedHeld) return clear({ retainPressed: true });
+    generation++;
+    suspendedHeld = retainPressed;
+    if (frame?.metadata.mode === 'run') enqueue({ type: 'suspend-controls' });
+    return clear({ retainPressed });
+  }
+  function onWindowBlur() {
+    suspend({ retainPressed: true });
   }
   window.addEventListener('keydown', keydown, { capture: true });
   window.addEventListener('keyup', keyup, { capture: true });
-  window.addEventListener('blur', suspend);
-  document.addEventListener('focusin', focus);
+  window.addEventListener('blur', onWindowBlur);
   document.addEventListener('visibilitychange', visibility);
   return {
     update,
     clear,
+    reapplyHeld() {
+      suspendedHeld = false;
+      if (pressed.size) apply(false);
+      return sequence;
+    },
     canDrive: (id) => frame?.metadata.mode === 'run' && eligible(id),
     hold(id, duty) {
       if (frame?.metadata.mode !== 'run' || !eligible(id)) return;
@@ -363,8 +373,7 @@ export function createVehicleControls({ send, select, container }) {
     dispose() {
       window.removeEventListener('keydown', keydown, { capture: true });
       window.removeEventListener('keyup', keyup, { capture: true });
-      window.removeEventListener('blur', suspend);
-      document.removeEventListener('focusin', focus);
+      window.removeEventListener('blur', onWindowBlur);
       document.removeEventListener('visibilitychange', visibility);
       panel.remove();
     },

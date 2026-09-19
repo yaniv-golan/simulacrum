@@ -1,4 +1,4 @@
-import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { validatePlacementGeometry } from '../model/surfaces.mjs';
 import { partPrimitives } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
@@ -31,7 +31,8 @@ export function createEditingControls({
   let selected = null,
     tool = 'select',
     dragging = false,
-    dragOrigin = null;
+    dragOrigin = null,
+    previewBlocked = false;
   function clearPreview() {
     for (const mesh of [...preview.children]) {
       preview.remove(mesh);
@@ -90,6 +91,7 @@ export function createEditingControls({
     if (dragging) {
       const part = getPart(selected);
       dragOrigin = part && structuredClone(part);
+      previewBlocked = false;
     } else refresh();
   });
   gizmo.addEventListener('objectChange', () => {
@@ -102,9 +104,17 @@ export function createEditingControls({
           proxy.position.toArray(),
           proxy.quaternion.toArray(),
         );
+      let blocked = false;
+      try {
+        validatePlacementGeometry(next);
+      } catch (error) {
+        if (error.reasonCode !== 'SURFACE_OVERLAP') throw error;
+        blocked = true;
+      }
+      previewBlocked = blocked;
       showPreview(
         next.parts.filter((p, i) => JSON.stringify(p) !== JSON.stringify(before.parts[i])),
-        { color: findPlacementOverlap(next.parts) ? 0xff836f : 0x8cf5cf },
+        { color: blocked ? 0xff836f : 0x8cf5cf },
       );
     }
   });
@@ -116,10 +126,12 @@ export function createEditingControls({
       rotation = proxy.quaternion.toArray();
     clearPreview();
     if (
-      position.some((v, i) => Math.abs(v - origin.position[i]) > 1e-8) ||
-      rotation.some((v, i) => Math.abs(v - origin.rotation[i]) > 1e-8)
+      !previewBlocked &&
+      (position.some((v, i) => Math.abs(v - origin.position[i]) > 1e-8) ||
+        rotation.some((v, i) => Math.abs(v - origin.rotation[i]) > 1e-8))
     )
       await onCommit({ type: 'transform', id: origin.id, position, rotation });
+    previewBlocked = false;
     refresh();
   });
   function cancel() {

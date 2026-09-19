@@ -131,7 +131,7 @@ for (const reset of ['blur', 'pause']) {
   keyboard.update(frame);
   tester.update(frame);
 }
-// Reading help releases held keys and capture must not consume navigation keys.
+// Reading help must not release held keys; capture must not consume navigation keys.
 commands.length = 0;
 window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
 await flush();
@@ -142,7 +142,7 @@ document.dispatchEvent(event('focusin'));
 await flush();
 check(
   commands.map((c) => c.duty),
-  [1, 0],
+  [1],
 );
 const readingKey = event('keydown', { code: 'KeyW', key: 'w' });
 window.dispatchEvent(readingKey);
@@ -153,7 +153,7 @@ window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w', repeat: true }))
 await flush();
 check(
   commands.map((c) => c.duty),
-  [1, 0],
+  [1],
 );
 window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
 window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
@@ -162,6 +162,35 @@ check(
   commands.map((c) => c.duty),
   [1, 0, 1],
 );
+window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
+await flush();
+commands.length = 0;
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
+await flush();
+document.hidden = true;
+document.dispatchEvent(event('visibilitychange'));
+window.dispatchEvent(event('blur'));
+await flush();
+check(commands, [
+  { type: 'control', id: 'r', duty: 1 },
+  { type: 'suspend-controls' },
+  { type: 'control-release', id: 'r', duty: 0 },
+]);
+document.hidden = false;
+keyboard.reapplyHeld();
+await flush();
+check(commands.at(-1), { type: 'control', id: 'r', duty: 1 });
+window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
+await flush();
+commands.length = 0;
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
+await flush();
+keyboard.update({ ...frame, metadata: { ...frame.metadata, mode: 'build' } });
+await flush();
+keyboard.update(frame);
+keyboard.reapplyHeld();
+await flush();
+check(commands.at(-1), { type: 'control', id: 'r', duty: 1 });
 window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
 await flush();
 commands.length = 0;

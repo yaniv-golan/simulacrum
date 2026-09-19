@@ -170,3 +170,43 @@ test('the placement strip keeps every accessible name and leaves Enter to the fo
     globalThis.document = previous;
   }
 });
+test('a rejected Place restores confirm when the preview is still valid', async () => {
+  const previous = globalThis.document;
+  globalThis.document = { createElement: () => new Element() };
+  const frame = {
+    metadata: { mode: 'build', blueprint: createEmptyBlueprint('reject', 'Reject') },
+  };
+  const cursor = { sessionId: 'reject', epoch: 0, revision: 0, tick: 0 };
+  const commands = [];
+  let placement;
+  try {
+    placement = createPartPlacement({
+      getFrame: () => frame,
+      getCursor: () => cursor,
+      preview() {},
+      clear() {},
+      before() {},
+      finished() {},
+      cancelled() {},
+      placed() {},
+      send: (command) => {
+        commands.push(command);
+        return Promise.resolve({ ok: false, message: 'Placement was rejected.' });
+      },
+    });
+    placement.start('powerCell');
+    const confirm = placement.panel.children.find((node) => node.textContent === 'Place part');
+    assert.equal(confirm.disabled, false);
+    await placement.commit();
+    assert.equal(commands.length, 1);
+    assert.equal(placement.active(), true);
+    assert.equal(confirm.disabled, false);
+    assert.equal(placement.canCommit(), true);
+    confirm.disabled = true;
+    await placement.commit();
+    assert.equal(commands.length, 1, 'Enter/commit must no-op while confirm is disabled');
+  } finally {
+    placement?.dispose();
+    globalThis.document = previous;
+  }
+});

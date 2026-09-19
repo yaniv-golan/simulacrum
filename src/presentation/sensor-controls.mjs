@@ -1,4 +1,6 @@
 import { SENSOR_DEFINITIONS } from '../model/sensors.mjs';
+import { CATALOG } from '../model/catalog.mjs';
+import { surfaceRegions } from '../model/surfaces.mjs';
 const label = {
   ok: 'Ready',
   'no-power': 'Needs power',
@@ -12,7 +14,34 @@ const element = (tag, text = '') => {
   e.textContent = text;
   return e;
 };
-export function sensorInspector({ part, blueprint, right, editable, send }) {
+const endpointHasRevolute = (blueprint, endpoint) => {
+  const part = blueprint.parts.find((p) => p.id === endpoint.part);
+  if (!part) return false;
+  if (endpoint.surface) {
+    const region = surfaceRegions(part).find((r) => r.id === endpoint.surface.region);
+    return region?.joint === 'revolute';
+  }
+  if (
+    CATALOG[part.type]?.ports?.some(
+      (port) => port.id === endpoint.port && port.joint === 'revolute',
+    )
+  )
+    return true;
+  return ['poweredMotor', 'poweredHinge'].includes(part.type) && endpoint.port === 'shaft';
+};
+
+export function liveJointConnections(blueprint, diagnostics) {
+  return blueprint.connections.filter((edge) => {
+    if (!['shaft', 'pivot'].includes(edge.kind)) return false;
+    if (diagnostics) {
+      const row = diagnostics.find((d) => d.id === edge.id);
+      if (row && row.reasonCode !== 'OK') return false;
+    }
+    return endpointHasRevolute(blueprint, edge.a) || endpointHasRevolute(blueprint, edge.b);
+  });
+}
+
+export function sensorInspector({ part, blueprint, right, editable, send, diagnostics }) {
   const kind = part.type.endsWith('Sensor') ? part.type.slice(0, -6) : null;
   if (!SENSOR_DEFINITIONS[kind]) return;
   const box = element('section');
@@ -37,7 +66,7 @@ export function sensorInspector({ part, blueprint, right, editable, send }) {
     const none = element('option', 'Unbound');
     none.value = '';
     select.append(none);
-    for (const edge of blueprint.connections.filter((c) => ['shaft', 'pivot'].includes(c.kind))) {
+    for (const edge of liveJointConnections(blueprint, diagnostics)) {
       const o = element(
         'option',
         [edge.a.part, edge.b.part]
@@ -48,6 +77,16 @@ export function sensorInspector({ part, blueprint, right, editable, send }) {
       select.append(o);
     }
     select.value = part.jointBinding ?? '';
+    if (
+      part.jointBinding &&
+      !liveJointConnections(blueprint, diagnostics).some((edge) => edge.id === part.jointBinding)
+    ) {
+      const missing = element('option', 'Bound connection has no live joint');
+      missing.value = part.jointBinding;
+      missing.disabled = true;
+      select.append(missing);
+      select.value = part.jointBinding;
+    }
     select.onchange = () =>
       send({ type: 'bind-joint-sensor', id: part.id, connection: select.value || null });
     text.append(select);

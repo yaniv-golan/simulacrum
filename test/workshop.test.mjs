@@ -348,9 +348,128 @@ test('catalog placement accepts its current cursor and rejects stale proposals u
     };
     assert.equal((await workshop.act(command)).ok, true);
     const before = workshop.observe();
-    const rejected = await workshop.act({ ...command, id: 'catalog-b', position: [2, 2, 0] });
-    assert.equal(rejected.reasonCode, 'STALE_PROPOSAL');
+    assert.equal(
+      (await workshop.act({ ...command, id: 'catalog-b', position: [2, 2, 0] })).reasonCode,
+      'STALE_PROPOSAL',
+    );
     assert.deepEqual(workshop.observe(), before);
+  } finally {
+    workshop.dispose();
+  }
+});
+
+test('disconnect and delete clear surviving spring and joint bindings', async () => {
+  const workshop = await createWorkshop();
+  try {
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'place',
+          partType: 'poweredMotor',
+          id: 'motor',
+          position: [0, 2, 0],
+        })
+      ).ok,
+      true,
+    );
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'place',
+          partType: 'gripWheel',
+          id: 'wheel',
+          position: [1, 2, 0],
+        })
+      ).ok,
+      true,
+    );
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'connect',
+          id: 'axle',
+          a: { part: 'motor', port: 'shaft' },
+          b: { part: 'wheel', port: 'axle' },
+        })
+      ).ok,
+      true,
+    );
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'place',
+          partType: 'jointAngleSensor',
+          id: 'sensor',
+          position: [2, 2, 0],
+        })
+      ).ok,
+      true,
+    );
+    assert.equal(
+      (await workshop.act({ type: 'bind-joint-sensor', id: 'sensor', connection: 'axle' })).ok,
+      true,
+    );
+    assert.equal(workshop.save().parts.find((p) => p.id === 'sensor').jointBinding, 'axle');
+    assert.equal((await workshop.act({ type: 'disconnect', id: 'axle' })).ok, true);
+    assert.equal('jointBinding' in workshop.save().parts.find((p) => p.id === 'sensor'), false);
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'connect',
+          id: 'axle',
+          a: { part: 'motor', port: 'shaft' },
+          b: { part: 'wheel', port: 'axle' },
+        })
+      ).ok,
+      true,
+    );
+    assert.equal(
+      (await workshop.act({ type: 'bind-joint-sensor', id: 'sensor', connection: 'axle' })).ok,
+      true,
+    );
+    assert.equal(
+      (
+        await workshop.act({
+          type: 'connect',
+          id: 'axle',
+          a: { part: 'motor', port: 'shaft' },
+          b: { part: 'wheel', port: 'axle' },
+        })
+      ).reasonCode,
+      'DUPLICATE_ID',
+    );
+    assert.equal((await workshop.act({ type: 'delete', id: 'wheel' })).ok, true);
+    assert.equal('jointBinding' in workshop.save().parts.find((p) => p.id === 'sensor'), false);
+  } finally {
+    workshop.dispose();
+  }
+});
+
+test('checkpoint while an act is in flight returns a snapshot instead of throwing BUSY', async () => {
+  const workshop = await createWorkshop();
+  try {
+    assert.equal(
+      (await workshop.act({ type: 'place', partType: 'beam', id: 'a', position: [0, 2, 0] })).ok,
+      true,
+    );
+    const pending = workshop.act({
+      type: 'place',
+      partType: 'beam',
+      id: 'b',
+      position: [1, 2, 0],
+    });
+    const busySnap = workshop.checkpoint();
+    assert.equal(busySnap.version, 3);
+    assert.ok(busySnap.configuration);
+    assert.ok(Array.isArray(busySnap.physics));
+    assert.equal('frames' in busySnap, false);
+    assert.ok(busySnap.metadata.blueprint.parts.some((part) => part.id === 'a'));
+    assert.equal(
+      busySnap.metadata.blueprint.parts.some((part) => part.id === 'b'),
+      false,
+    );
+    await pending;
+    assert.ok(workshop.save().parts.some((part) => part.id === 'b'));
   } finally {
     workshop.dispose();
   }

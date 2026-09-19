@@ -79,6 +79,44 @@ export function createLearningControls(root, api, { inspectPart = () => {} } = {
     title.textContent = s.config
       ? `Teach ${s.config.blueprint.parts.find((p) => p.id === s.selected)?.name}`
       : 'Teach a controller';
+    if (s.storageUnreadable) {
+      body.append(
+        el(
+          'p',
+          s.notice ||
+            'Saved learning records could not be read. Download the original file, then reset to continue.',
+        ),
+      );
+      action('Download original stored records', () => {
+        const payload = api.export();
+        const url = URL.createObjectURL(
+          new Blob([typeof payload === 'string' ? payload : JSON.stringify(payload)], {
+            type: 'application/json',
+          }),
+        );
+        const a = el('a');
+        a.href = url;
+        a.download = 'learning-records.json';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      });
+      action('Reset learning records to empty', () => {
+        if (
+          !window.confirm(
+            'This replaces unreadable saved learning records with an empty store. Download the original file first.',
+          )
+        )
+          return;
+        return api.repairStorage();
+      });
+    }
+    if (s.storageUnwritable)
+      body.append(
+        el(
+          'p',
+          'Learning records could not be saved. Export your work; new progress stays in this tab until storage is available.',
+        ),
+      );
     const nav = el('nav');
     for (const [id, label] of [
       ['teach', 'Teach & try'],
@@ -125,7 +163,7 @@ export function createLearningControls(root, api, { inspectPart = () => {} } = {
         s.recording || !!s.training,
       );
       action('Stop teaching', () => api.stop(), !s.recording);
-      if (s.recording || s.captureBlocked)
+      if (s.recording || s.captureBlocked || s.storageUnwritable)
         action('Discard this unsaved recording', () => api.discardPending());
       action(
         'Train candidate',
@@ -478,14 +516,17 @@ ${d.nearby.map((n) => `${n.intervalId}, sample ${n.index + 1}: distance ${n.dist
         body.append(card);
       }
       action('Export all learning records', () => {
-        const url = URL.createObjectURL(
-            new Blob([JSON.stringify(api.export())], { type: 'application/json' }),
+        const payload = api.export(),
+          url = URL.createObjectURL(
+            new Blob([typeof payload === 'string' ? payload : JSON.stringify(payload)], {
+              type: 'application/json',
+            }),
           ),
           a = el('a');
         a.href = url;
         a.download = 'learning-records.json';
         a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
       });
       if (api.exportLegacy?.())
         action('Export original legacy records', () => {
@@ -496,7 +537,7 @@ ${d.nearby.map((n) => `${n.intervalId}, sample ${n.index + 1}: distance ${n.dist
           a.href = url;
           a.download = 'learning-records-legacy-original.json';
           a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         });
       const file = el('input');
       file.type = 'file';

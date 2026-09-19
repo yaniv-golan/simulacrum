@@ -41,6 +41,44 @@ test('scene proposal rejects stale approval, blocks repeated submission and reco
   proposal.refresh();
   assert.equal(proposal.read().phase, 'accepted');
 });
+test('failed apply returns to preview so Cancel stays available', async () => {
+  let frame = {
+    metadata: { blueprint: { id: 'source', parts: [] }, mode: 'build' },
+    cursor: { session: 'a', revision: 0 },
+  };
+  for (const reply of [
+    { ok: false, reasonCode: 'SESSION_FAILED' },
+    { ok: false, reasonCode: 'SESSION_DISPOSED' },
+  ]) {
+    const proposal = createDocumentProposal({
+      getFrame: () => frame,
+      evaluate: (value, bp) => ({ ...bp, environment: value }),
+      send: async () => reply,
+    });
+    proposal.start({ objects: [] });
+    const result = await proposal.commit();
+    assert.equal(proposal.read().phase, 'preview');
+    assert.equal(proposal.cancel(), true);
+    assert.equal(result.reasonCode, reply.reasonCode);
+  }
+});
+test('a thrown send returns to preview and does not stay committing', async () => {
+  let frame = {
+    metadata: { blueprint: { id: 'source', parts: [] }, mode: 'build' },
+    cursor: { session: 'a', revision: 0 },
+  };
+  const proposal = createDocumentProposal({
+    getFrame: () => frame,
+    evaluate: (value, bp) => ({ ...bp, environment: value }),
+    send: async () => {
+      throw Object.assign(Error('SESSION_FAILED'), { reasonCode: 'SESSION_FAILED' });
+    },
+  });
+  proposal.start({ objects: [] });
+  await proposal.commit();
+  assert.equal(proposal.read().phase, 'preview');
+  assert.equal(proposal.cancel(), true);
+});
 test('scene preview preserves draft on rejection and disallows editing after leaving Build', async () => {
   let frame = {
     metadata: { blueprint: { id: 'source', parts: [] }, mode: 'build' },

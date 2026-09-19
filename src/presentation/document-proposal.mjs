@@ -60,17 +60,27 @@ export function createDocumentProposal({ getFrame, evaluate, send }) {
       if (!state || state.phase !== 'preview' || state.stale || !state.valid) return null;
       state.phase = 'committing';
       state.replySettled = false;
+      let reply,
+        thrown = null;
       try {
-        const reply = await send(state.value, state.cursor);
-        state.replySettled = true;
-        if (reply && !['SESSION_FAILED', 'SESSION_DISPOSED'].includes(reply.reasonCode)) {
-          state.phase = reply.ok ? 'accepted' : 'preview';
-          state.error = reply.ok ? null : reply;
-        }
-      } catch {
-        state.replySettled = true;
+        reply = await send(state.value, state.cursor);
+      } catch (error) {
+        thrown = error;
       }
+      state.replySettled = true;
+      if (thrown) state.error = thrown;
+      else if (reply && !['SESSION_FAILED', 'SESSION_DISPOSED'].includes(reply.reasonCode)) {
+        state.phase = reply.ok ? 'accepted' : 'preview';
+        state.error = reply.ok ? null : reply;
+      } else if (reply) state.error = reply;
       this.refresh();
+      if (
+        state.phase === 'committing' &&
+        (thrown || ['SESSION_FAILED', 'SESSION_DISPOSED'].includes(reply?.reasonCode))
+      ) {
+        state.phase = 'preview';
+        state.error = thrown ?? reply;
+      }
       if (state.phase === 'committing')
         state.error = Error(
           'Outcome unresolved. Waiting for the workshop to confirm this exact edit.',

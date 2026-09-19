@@ -15,7 +15,6 @@ export function createCameraControls({
   root,
   stage,
   service,
-  clearControls,
   onViewing,
   onFrustumChange = () => {},
 }) {
@@ -114,7 +113,6 @@ export function createCameraControls({
   }
   list.onchange = choose;
   function openGallery() {
-    clearControls();
     if (!dialog.open) dialog.showModal();
     refresh();
   }

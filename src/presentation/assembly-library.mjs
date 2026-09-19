@@ -309,14 +309,20 @@ export function createAssemblyLibraryPanel({
       return field;
     });
     container.append(
-      button(actionLabel, () =>
-        apply(
-          fields.map((f, i) =>
-            f.value === String(Number(position[i].toPrecision(12))) ? position[i] : f.valueAsNumber,
-          ),
-          rotation,
-        ),
-      ),
+      button(actionLabel, () => {
+        const next = fields.map((f, i) => {
+          if (f.value === String(Number(position[i].toPrecision(12)))) return position[i];
+          if (!Number.isFinite(f.valueAsNumber)) return null;
+          return f.valueAsNumber;
+        });
+        if (next.some((value) => value === null)) {
+          fields.forEach((f, i) => {
+            f.value = String(Number(position[i].toPrecision(12)));
+          });
+          return;
+        }
+        apply(next, rotation);
+      }),
     );
     return fields;
   }

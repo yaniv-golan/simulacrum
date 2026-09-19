@@ -253,9 +253,20 @@ export function createWorkshopView(
   };
   for (const type of ['click', 'change']) root.addEventListener(type, captureInput, true);
   const send = async (command, assemblyAction = false) => {
-    if (sceneEditor?.pending() && command.type !== 'replace-scene')
+    if (sceneEditor?.pending() && command.type !== 'replace-scene') {
+      setMessage('Wait for the scene change to finish.');
       return { ok: false, reasonCode: 'BUSY' };
-    if (sceneEditor?.draft() && command.type === 'run') {
+    }
+    if (
+      sceneEditor?.draft() &&
+      (command.type === 'run' ||
+        command.type === 'undo' ||
+        command.type === 'redo' ||
+        command.type === 'load' ||
+        command.type === 'new' ||
+        command.replace === true ||
+        String(command.type).endsWith('-example'))
+    ) {
       setMessage('Finish or cancel the scene preview first.');
       return { ok: false, reasonCode: 'BUSY' };
     }
@@ -389,6 +400,11 @@ export function createWorkshopView(
   loadInput.addEventListener('change', async () => {
     const file = loadInput.files?.[0];
     if (!file) return;
+    if (sceneEditor?.draft()) {
+      setMessage('Finish or cancel the scene preview first.');
+      loadInput.value = '';
+      return;
+    }
     if (sceneEditor?.pending() || assemblies?.busy() || assemblyPlacement?.active()) {
       setMessage('Finish or cancel the assembly operation before loading a machine.');
       loadInput.value = '';
@@ -579,6 +595,12 @@ export function createWorkshopView(
     collapseExampleRows();
   });
   async function openExample(entry) {
+    if (sceneEditor?.draft()) {
+      const text = 'Finish or cancel the scene preview first.';
+      if (examples.open) exampleMessage.textContent = text;
+      else setMessage(text);
+      return;
+    }
     if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
@@ -600,6 +622,12 @@ export function createWorkshopView(
     partsHeading.focus();
   }
   function chooseExample(entry, trigger) {
+    if (sceneEditor?.draft()) {
+      const text = 'Finish or cancel the scene preview first.';
+      if (examples.open) exampleMessage.textContent = text;
+      else setMessage(text);
+      return;
+    }
     if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
@@ -1197,7 +1225,26 @@ export function createWorkshopView(
   });
   placeAnother.hidden = true;
   let assemblyStateKey = '';
+  function headerBusy() {
+    return !!(
+      assemblies?.busy() ||
+      assemblyPlacement?.active() ||
+      sceneEditor?.draft() ||
+      sceneEditor?.pending()
+    );
+  }
+  function refreshModeCommands() {
+    if (!frame) return;
+    const busy = headerBusy();
+    const mode = frame.metadata.mode;
+    run.disabled = busy || mode === 'run';
+    undo.disabled = busy || mode !== 'build' || !frame.metadata.editing?.undoCount;
+    redo.disabled = busy || mode !== 'build' || !frame.metadata.editing?.redoCount;
+    newButton.disabled = busy;
+    loadButton.disabled = busy;
+  }
   function refreshAssemblyState() {
+    refreshModeCommands();
     if (!frame || !assemblyPlacement) return;
     const busy = assemblies.busy() || assemblyPlacement.active();
     const nextKey = JSON.stringify([
@@ -1223,9 +1270,6 @@ export function createWorkshopView(
     savedLauncher.disabled = busy;
     placeAnother.hidden =
       busy || frame.metadata.mode !== 'build' || !assemblyPlacement.hasPrevious();
-    run.disabled = busy || frame.metadata.mode === 'run';
-    undo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
-    redo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
     for (const b of tools.querySelectorAll('[data-edit-tool]'))
       b.disabled = busy || !!assemblies.selected();
     partsBrowser.update(frame.metadata.mode, busy);
@@ -1998,6 +2042,7 @@ export function createWorkshopView(
     onBusy: (busy) => {
       filebar.inert = modebar.inert = busy;
       refreshHistoryTitles();
+      refreshModeCommands();
       chooseScene.disabled = editScene.disabled = busy || frame?.metadata.mode !== 'build';
     },
     onContext: (active) => {
@@ -2498,7 +2543,6 @@ export function createWorkshopView(
         root,
         stage,
         service: cameraSession,
-        clearControls: () => vehicleControls.clear(),
         onFrustumChange: () => invalidateScene(),
         onViewing: (active) => {
           if (active && !photoOrbit)
@@ -2533,6 +2577,17 @@ export function createWorkshopView(
       mirror?.active(),
     ]);
     if (nextKey === inspectorKey) return;
+    const keepDrafts =
+      right.dataset.partId === selected &&
+      inspectorKey &&
+      JSON.parse(inspectorKey)[0] === blueprintKey &&
+      JSON.parse(inspectorKey)[1] === selected;
+    const draftFields = keepDrafts
+      ? [...right.querySelectorAll('input, textarea, select')].flatMap((node) => {
+          const label = node.getAttribute('aria-label');
+          return label && 'value' in node ? [{ label, value: node.value }] : [];
+        })
+      : [];
     inspectorKey = nextKey;
     const focusLabel =
       right.dataset.partId === selected && right.contains(document.activeElement)
@@ -3029,16 +3084,24 @@ export function createWorkshopView(
         input.value = format(degrees(angle), 1);
         input.setAttribute('aria-label', 'Target angle (degrees)');
         input.onchange = () => {
-          if (input.checkValidity()) {
-            const radians = (Number(input.value) * Math.PI) / 180;
-            send({
-              type: 'parameter',
-              id: part.id,
-              key: 'defaultTarget',
-              value:
-                radians / (radians < 0 ? -part.parameters.lowerLimit : part.parameters.upperLimit),
-            });
+          const admitted = format(degrees(angle), 1);
+          if (
+            !input.checkValidity() ||
+            input.value === '' ||
+            !Number.isFinite(Number(input.value))
+          ) {
+            input.reportValidity();
+            input.value = admitted;
+            return;
           }
+          const radians = (Number(input.value) * Math.PI) / 180;
+          send({
+            type: 'parameter',
+            id: part.id,
+            key: 'defaultTarget',
+            value:
+              radians / (radians < 0 ? -part.parameters.lowerLimit : part.parameters.upperLimit),
+          });
         };
         input.onkeydown = (event) => {
           if (event.key === 'Escape') input.value = format(degrees(angle), 1);
@@ -3242,16 +3305,33 @@ export function createWorkshopView(
       inspectPart: select,
     });
     cameraControls?.inspector(part, right);
-    sensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
+    sensorInspector({
+      part,
+      blueprint: frame.metadata.blueprint,
+      right,
+      editable,
+      send,
+      diagnostics: frame.metadata.connections,
+    });
     updateSensorInspector(frame, right);
     updateControllerEditor(frame, right);
     if (part.type === 'commandReceiver') {
+      const incoming = frame.metadata.blueprint.connections.find(
+        (c) =>
+          c.kind === 'signal' && [c.a, c.b].some((e) => e.part === part.id && e.port === 'command'),
+      );
+      const commandPeer =
+        incoming &&
+        parts.find(
+          (p) => p.id === (incoming.a.part === part.id ? incoming.b.part : incoming.a.part),
+        );
+      const hasLearner = commandPeer?.type === 'learningController' && !!commandPeer.learningModel;
       const modeControls = element('div', 'drive-buttons');
       for (const value of ['manual', 'automatic', 'learned', 'off']) {
         const control = button(value[0].toUpperCase() + value.slice(1), () =>
           send({ type: 'control-mode', id: part.id, mode: value }),
         );
-        control.disabled = frame.metadata.mode !== 'run';
+        control.disabled = frame.metadata.mode !== 'run' || (value === 'learned' && !hasLearner);
         modeControls.append(control);
       }
       right.append(
@@ -3261,10 +3341,6 @@ export function createWorkshopView(
           'parameter-help',
           'Off removes active drive; it is not a brake. Manual input takes over until you choose Automatic again.',
         ),
-      );
-      const incoming = frame.metadata.blueprint.connections.find(
-        (c) =>
-          c.kind === 'signal' && [c.a, c.b].some((e) => e.part === part.id && e.port === 'command'),
       );
       const regulator =
         incoming &&
@@ -3288,16 +3364,27 @@ export function createWorkshopView(
         const status = element('span', 'parameter-help');
         status.setAttribute('role', 'status');
         input.onchange = async () => {
+          const admitted =
+            frame.receiverControl?.receivers.find(
+              (r) => r.node === parts.findIndex((p) => p.id === part.id),
+            )?.target ?? regulator.parameters.target;
+          if (
+            !input.checkValidity() ||
+            input.value === '' ||
+            !Number.isFinite(input.valueAsNumber)
+          ) {
+            input.reportValidity();
+            input.value = admitted;
+            status.textContent = `Kept ${input.value} m. Choose ${regulator.parameters.minTarget}–${regulator.parameters.maxTarget} m.`;
+            return;
+          }
           const result = await send({
             type: 'regulator-target',
             id: part.id,
-            target: Number(input.value),
+            target: input.valueAsNumber,
           });
           if (!result?.ok) {
-            input.value =
-              frame.receiverControl?.receivers.find(
-                (r) => r.node === parts.findIndex((p) => p.id === part.id),
-              )?.target ?? regulator.parameters.target;
+            input.value = admitted;
             status.textContent = `Kept ${input.value} m. Choose ${regulator.parameters.minTarget}–${regulator.parameters.maxTarget} m.`;
           } else status.textContent = '';
         };
@@ -3805,6 +3892,11 @@ export function createWorkshopView(
       input.disabled = mode !== 'build';
       input.setAttribute('aria-label', `Position ${['X', 'Y', 'Z'][axis]}`);
       input.addEventListener('change', () => {
+        if (!input.checkValidity() || !Number.isFinite(Number(input.value))) {
+          input.reportValidity();
+          input.value = part.position[axis];
+          return;
+        }
         const position = [...part.position];
         position[axis] = Number(input.value);
         send({ type: 'transform', id: part.id, position, rotation: part.rotation });
@@ -3835,6 +3927,12 @@ export function createWorkshopView(
         (node) => node.getAttribute('aria-label') === focusLabel,
       );
       replacement?.focus({ preventScroll: true });
+    }
+    for (const { label, value } of draftFields) {
+      const node = [...right.querySelectorAll('[aria-label]')].find(
+        (candidate) => candidate.getAttribute('aria-label') === label,
+      );
+      if (node && 'value' in node) node.value = value;
     }
     refreshLive();
     refreshSprings();
@@ -4045,6 +4143,8 @@ export function createWorkshopView(
         SUSPENDED: 'Suspended · choose Automatic to rearm',
         INVALID_SENSOR: 'Invalid travel reading · check the sensor binding',
         NO_REGULATOR: 'Connect and enable a position regulator',
+        NO_LEARNER: 'No trained learner on this wire · train a policy or choose Manual',
+        INVALID_CONTROLLER_OUTPUT: 'Controller output missing · check the program writes',
       }[control?.reason];
       target.textContent =
         frame.metadata.mode === 'build'
@@ -4092,6 +4192,7 @@ export function createWorkshopView(
         OPEN: 'Latch open · return to Build to reattach',
         RELEASE_SUPPORT_BLOCKED:
           'Stays latched · opening would invalidate gear or spring support. Repair the connections in Build.',
+        COUPLER_SPRING_ACTIVATION: 'Opening this would change which springs are active.',
       };
       target.textContent =
         frame.metadata.mode === 'build'
@@ -4536,8 +4637,7 @@ export function createWorkshopView(
     addPart.disabled = frame.metadata.mode !== 'build' || !!sceneEditor?.active();
     addPart.classList.toggle('keyed', !addPart.disabled);
     sceneEditor?.refresh();
-    undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
-    redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
+    refreshModeCommands();
     refreshGuide();
     updateConnections();
     refreshInspector();
@@ -4553,7 +4653,7 @@ export function createWorkshopView(
     retryButton.hidden = frame.metadata.mode === 'build';
     retryButton.disabled = !!retryCamera;
     const modeState = modeControlState(frame.metadata.mode);
-    run.disabled = frame.metadata.mode === 'run';
+    refreshModeCommands();
     run.setAttribute('aria-pressed', String(modeState.run));
     build.setAttribute('aria-pressed', String(modeState.build));
     // Reserved slots: invisible in Build, never removed, so the bar keeps its shape.
@@ -4664,9 +4764,9 @@ export function createWorkshopView(
       }
       if (event.key === 'Enter') {
         event.preventDefault();
-        partPlacement.commit();
+        if (partPlacement.canCommit()) partPlacement.commit();
+        return;
       }
-      return;
     }
     if (
       cameraControls?.active() &&
@@ -4677,7 +4777,19 @@ export function createWorkshopView(
       event.preventDefault();
       return;
     }
-    if (cameraControls?.active() && frame.metadata.mode === 'build' && event.key !== ' ') return;
+    const historyShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z';
+    const paletteShortcut =
+      event.key.toLowerCase() === 'p' && !event.metaKey && !event.ctrlKey && !event.altKey;
+    const helpShortcut = event.key === '?';
+    if (
+      cameraControls?.active() &&
+      frame.metadata.mode === 'build' &&
+      event.key !== ' ' &&
+      !historyShortcut &&
+      !paletteShortcut &&
+      !helpShortcut
+    )
+      return;
     if (ownsPartHelpInput(event.target)) return;
     if (event.key === 'Escape' && partHelp.dismissTooltip()) {
       event.preventDefault();
@@ -4687,7 +4799,6 @@ export function createWorkshopView(
     if (document.querySelector('dialog[open]')) return;
     if (sceneEditor?.active()) {
       sceneEditor.key(event);
-      const historyShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z';
       const runtimeShortcut =
         !event.metaKey &&
         !event.ctrlKey &&
@@ -4713,7 +4824,14 @@ export function createWorkshopView(
       mirror.cancel();
       return;
     }
-    if (mirror.active() && !['INPUT', 'SELECT', 'BUTTON'].includes(event.target.tagName)) return;
+    if (
+      mirror.active() &&
+      !['INPUT', 'SELECT', 'BUTTON'].includes(event.target.tagName) &&
+      !historyShortcut &&
+      !paletteShortcut &&
+      !helpShortcut
+    )
+      return;
     if (surface.active() && event.key === 'Escape') {
       event.preventDefault();
       cancelInteraction();
@@ -4763,17 +4881,7 @@ export function createWorkshopView(
     }
     if (
       exploded &&
-      [
-        'ArrowUp',
-        'ArrowDown',
-        'ArrowLeft',
-        'ArrowRight',
-        'PageUp',
-        'PageDown',
-        'Delete',
-        'x',
-        'c',
-      ].includes(event.key)
+      ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown'].includes(event.key)
     ) {
       event.preventDefault();
       setMessage('Return to machine to edit parts.');
@@ -5057,7 +5165,8 @@ export function createWorkshopView(
     refreshCameras: () => cameraControls?.refresh(),
     refreshLearning: () => learningControls?.refresh(),
     render,
-    clearControls: () => vehicleControls.clear(),
+    clearControls: (options) => vehicleControls.clear(options),
+    reapplyHeld: () => vehicleControls.reapplyHeld(),
     beginRetry() {
       retryCamera = { position: camera.position.clone(), target: controls.target.clone() };
       retryButton.disabled = true;

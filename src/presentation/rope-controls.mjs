@@ -1,5 +1,27 @@
 import { surfaceRegions } from '../model/surfaces.mjs';
 import { ROPE_MATERIALS, ROPE_LIMITS } from '../model/rope.mjs';
+
+/** First unoccupied (u, v) on a face, matching occupancy keys in validateBlueprint. */
+export function freeSurfaceAnchor(blueprint, partId, region) {
+  const occupied = new Set();
+  for (const connection of blueprint.connections ?? []) {
+    for (const side of ['a', 'b']) {
+      const endpoint = connection[side];
+      if (endpoint?.part !== partId || endpoint.surface?.region !== region) continue;
+      occupied.add(`${endpoint.surface.u},${endpoint.surface.v}`);
+    }
+  }
+  if (!occupied.has('0,0')) return { u: 0, v: 0 };
+  const part = blueprint.parts.find((p) => p.id === partId);
+  const face = part && surfaceRegions(part).find((r) => r.id === region);
+  const hu = face?.halfSize[0] ?? 0.02,
+    hv = face?.halfSize[1] ?? 0.02;
+  for (const u of [0, 0.25 * hu, -0.25 * hu, 0.5 * hu, -0.5 * hu])
+    for (const v of [0, 0.25 * hv, -0.25 * hv, 0.5 * hv, -0.5 * hv])
+      if (!occupied.has(`${u},${v}`)) return { u, v };
+  return { u: 0, v: 0 };
+}
+
 /** Selected-part controls submit one ordinary atomic connection edit. */
 export function ropeInspector({
   part,
@@ -100,7 +122,7 @@ export function ropeInspector({
     const engineering = element(
       'p',
       'parameter-help',
-      'Simplified nylon model; 0.25–4 m and up to 4 ropes. Surface centres are used for new attachments. Stretch, damping and load limits are model assumptions, not calibrated product ratings.',
+      'Simplified nylon model; 0.25–4 m and up to 4 ropes. New ends use a free point on the face. Stretch, damping and load limits are model assumptions, not calibrated product ratings.',
     );
     box.append(engineering);
     const notice = element('p', 'parameter-help');
@@ -122,7 +144,14 @@ export function ropeInspector({
       const endpoint = (control, face, old) =>
         old && old.part === control.value && old.surface.region === face.value
           ? structuredClone(old)
-          : { part: control.value, surface: { region: face.value, u: 0, v: 0, twist: 0 } };
+          : {
+              part: control.value,
+              surface: {
+                region: face.value,
+                ...freeSurfaceAnchor(blueprint, control.value, face.value),
+                twist: 0,
+              },
+            };
       let id = edge?.id;
       if (!id) {
         let i = 1;

@@ -150,6 +150,7 @@ export function createPartPlacement({
       refresh();
       return;
     }
+    if (confirm.disabled) return;
     const mounting = surface?.read()?.target;
     if (mounting) lifecycle.assess(surface.read().valid ? surface.read() : null);
     const token = lifecycle.commit();
@@ -161,20 +162,28 @@ export function createPartPlacement({
     });
     status.textContent = 'Placing…';
     const type = partType;
-    const result = mounting
-      ? { ok: await surface.commit() }
-      : await send({
-          type: 'place',
-          partType: type,
-          position: [...position],
-          expectedCursor: cursor,
-        });
-    cancelButton.disabled = false;
-    inputs.forEach((input) => {
-      input.disabled = false;
-    });
-    if (!lifecycle.settle(token, result?.ok === true)) return;
-    if (result?.ok) {
+    let result,
+      thrown = null;
+    try {
+      result = mounting
+        ? { ok: await surface.commit() }
+        : await send({
+            type: 'place',
+            partType: type,
+            position: [...position],
+            expectedCursor: cursor,
+          });
+    } catch (error) {
+      thrown = error;
+    } finally {
+      cancelButton.disabled = false;
+      inputs.forEach((input) => {
+        input.disabled = false;
+      });
+    }
+    const ok = !thrown && result?.ok === true;
+    if (!lifecycle.settle(token, ok)) return;
+    if (ok) {
       clear();
       panel.hidden = false;
       placed(type);
@@ -185,9 +194,14 @@ export function createPartPlacement({
       status.textContent = `${CATALOG[type].name} placed.`;
       endLabel('Done', 'Done', 'Esc');
       another.focus();
-    } else {
-      status.textContent = result?.message || 'Placement was rejected. Move the preview or cancel.';
-      confirm.disabled = true;
+    } else if (active()) {
+      move(position);
+      confirm.disabled = lifecycle.read().kind !== 'preview';
+      if (!confirm.disabled)
+        status.textContent =
+          thrown?.message ||
+          result?.message ||
+          'Placement was rejected. Move the preview or cancel.';
     }
   }
   function cancel({ restoreBrowser = true } = {}) {
@@ -236,6 +250,7 @@ export function createPartPlacement({
     cancel,
     refresh,
     active,
+    canCommit: () => !confirm.disabled && lifecycle.read().kind === 'preview',
     type: () => partType,
     mounting() {
       if (!active() || lifecycle.read().kind === 'committing') return;
