@@ -1,5 +1,6 @@
 import { createRenderSubmissionTracker, FIRST_TICK_METRIC } from './render-submission.mjs';
 import { assertRecordableObservation } from './recording-admission.mjs';
+import { redactCommandInput } from './recording-privacy.mjs';
 import { RELEASE_NOTES } from './release-notes.mjs';
 import { createSceneLibrary } from './scene-library.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
@@ -47,19 +48,49 @@ import { captureFeedbackContext } from './feedback-context.mjs';
 import { createClock } from './clock.mjs';
 import { createWorkshopView } from '../presentation/workshop-view.mjs';
 
+function createBrowserStorage() {
+  try {
+    const probe = '__simulacrum_storage_probe__';
+    localStorage.setItem(probe, '1');
+    localStorage.removeItem(probe);
+    return {
+      durable: true,
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+      removeItem: (key) => localStorage.removeItem(key),
+    };
+  } catch {
+    const values = new Map();
+    return {
+      durable: false,
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => {
+        values.set(key, String(value));
+      },
+      removeItem: (key) => {
+        values.delete(key);
+      },
+    };
+  }
+}
+function commandFailureCode(error) {
+  return error?.reasonCode ?? error?.message;
+}
+
 /** Browser composition only: the workshop remains the sole authored read model. */
 export async function mountWorkshopApp(root) {
   const buildId = document.querySelector('meta[name="build-id"]')?.content ?? 'unidentified';
   const workshop = await createWorkshop(createEmptyBlueprint('machine', 'My machine'), {
     build: buildId,
   });
+  const browserStorage = createBrowserStorage();
   const controllerHistory = createControllerHistory();
   let learningEvaluator = null;
   const learning = createLearningWorkspace({
     evaluateAttempt: (attempt, frame) => learningEvaluator?.(attempt, frame) ?? null,
     readFrame: () => frame(),
     send: (c) => onCommand(c),
-    storage: localStorage,
+    storage: browserStorage,
     buildId,
     changed: () => view?.refreshLearning?.(),
   });
@@ -95,12 +126,10 @@ export async function mountWorkshopApp(root) {
     now: () => performance.now(),
     wallNow: () => Date.now(),
     idFactory: () => crypto.randomUUID(),
-    storage: {
-      setItem: (key, value) => localStorage.setItem(key, value),
-      getItem: (key) => localStorage.getItem(key),
-    },
+    storage: browserStorage,
   });
   let lastCommandResult = null;
+  let lastFailureBundle = null;
   let commandResultSequence = 0;
   let lastRecordedInput = null,
     lastPointerSample = -Infinity;
@@ -182,7 +211,7 @@ export async function mountWorkshopApp(root) {
           x: Number.isFinite(event.clientX) ? event.clientX : null,
           y: Number.isFinite(event.clientY) ? event.clientY : null,
           buttons: event.buttons ?? null,
-          value: target.type === 'number' ? target.value : null,
+          value: null,
         };
         lastRecordedInput = logInteraction('input', data);
       }
@@ -225,6 +254,7 @@ export async function mountWorkshopApp(root) {
   function stopped(error) {
     clock?.pause();
     cancelRun('failure');
+    lastFailureBundle = workshop.failureBundle() ?? lastFailureBundle;
     view?.setMessage(
       explainFailure(normalizeFailure(error, 'SESSION_FAILED'), frame()?.metadata.blueprint),
     );
@@ -242,11 +272,12 @@ export async function mountWorkshopApp(root) {
       clock.pause();
       cancelRun('replaced');
       view.beginRetry();
-      await view.clearControls();
+      await view.clearControls({ retainPressed: true });
     },
     execute: (command) => executeCommand(command),
     finish: () => {
       view.endRetry();
+      view.reapplyHeld();
       render();
     },
   });
@@ -366,7 +397,7 @@ export async function mountWorkshopApp(root) {
   }
   async function onCommand(input, context) {
     const trigger = lastRecordedInput;
-    logInteraction('command-request', { input, trigger });
+    logInteraction('command-request', { input: redactCommandInput(input), trigger });
     const blocked =
       (retry.pending() && !['control-release', 'suspend-controls'].includes(input?.type)) ||
       (pendingLoads > 0 && input?.type === 'retry');
@@ -385,7 +416,7 @@ export async function mountWorkshopApp(root) {
       result,
       cursor: workshop.observe().cursor,
     });
-    logInteraction('command-result', { input, result, trigger });
+    logInteraction('command-result', { input: redactCommandInput(input), result, trigger });
     return result;
   }
   async function executeCommand(input, context) {
@@ -409,10 +440,15 @@ export async function mountWorkshopApp(root) {
       }
       if (command.type === 'step') {
         if (clock.running() || frame().metadata.mode !== 'paused') {
-          view.setMessage('Pause a running machine before stepping one tick.');
-          return { ok: false, reasonCode: 'EDIT_REQUIRES_BUILD', path: 'mode' };
+          return { ok: false, reasonCode: 'STEP_REQUIRES_PAUSE', path: 'mode' };
         }
-        workshop.step(1);
+        try {
+          workshop.step(1);
+        } catch (error) {
+          if (commandFailureCode(error) === 'BUSY')
+            return { ok: false, reasonCode: 'BUSY', path: 'mode' };
+          throw error;
+        }
         render();
         return { ok: true, reasonCode: 'OK', path: '' };
       }
@@ -455,9 +491,15 @@ export async function mountWorkshopApp(root) {
           'rigid-suspension-example',
           'articulated-suspension-example',
           'active-suspension-example',
+          'gear-lift-example',
+          'sensor-rule-example',
+          'learning-delivery-example',
         ].includes(command.type)
-      )
+      ) {
+        const blocked = learning.prepareDocumentReplacement();
+        if (!blocked.ok) return blocked;
         nextLearningEvaluator = null;
+      }
       const suspensionExample = {
         'guided-suspension-example': createSuspensionComparison,
         'rigid-suspension-example': () => createSuspensionComparison({ rigid: true }),
@@ -563,7 +605,7 @@ export async function mountWorkshopApp(root) {
       }
       if (command.type === 'undo') editMessage = 'Last edit undone. Choose Redo to apply it again.';
       if (command.type === 'redo') editMessage = 'Edit reapplied. Choose Undo to reverse it.';
-      logInteraction('command-execute', { command, trigger: lastRecordedInput });
+      logInteraction('command-execute', { command: redactCommandInput(command), trigger: lastRecordedInput });
       const resumeAfterRejectedRestore =
         command.type === 'restore-build' && frame().metadata.mode === 'run' && !document.hidden;
       if (command.type === 'restore-build') clock.pause();
@@ -591,6 +633,7 @@ export async function mountWorkshopApp(root) {
         } else clock.start();
       }
       render();
+      if (command.type === 'run' && !document.hidden) view.reapplyHeld();
       if (['load', 'restore-build'].includes(command.type)) view.clearMeasurements();
       if (command.type === 'restore-build') {
         clock.pause();
@@ -608,19 +651,21 @@ export async function mountWorkshopApp(root) {
       );
       return result;
     } catch (error) {
+      if (commandFailureCode(error) === 'BUSY') return { ok: false, reasonCode: 'BUSY', path: 'command' };
       stopped(error);
       render();
       return normalizeFailure(error, 'SESSION_FAILED');
     }
   }
   function downloadJSON(value, filename) {
-    const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }),
+    const body = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    const blob = new Blob([body], { type: 'application/json' }),
       url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   function onSave() {
     const blueprint = workshop.save();
@@ -631,11 +676,12 @@ export async function mountWorkshopApp(root) {
     view.setMessage('Machine download started. Check your browser downloads for the saved file.');
   }
   function onFailure() {
-    const bundle = workshop.failureBundle();
+    const bundle = workshop.failureBundle() ?? lastFailureBundle;
     if (!bundle) {
       view.setMessage('There is no failure record for this run.');
       return;
     }
+    lastFailureBundle = bundle;
     downloadJSON(bundle, 'machine-failure.json');
     view.setMessage('Failure record saved. It includes the inputs needed to replay this failure.');
   }
@@ -645,11 +691,18 @@ export async function mountWorkshopApp(root) {
     if (document.hidden) {
       silenceAudio();
       if (clock.running() || frame().metadata.mode === 'run') {
-        pausedForVisibility = true;
-        clock.pause();
-        cancelRun('hidden');
-        await workshop.act({ type: 'pause' });
-        render();
+        let paused = false;
+        for (let attempt = 0; attempt < 8 && !paused; attempt++) {
+          const result = await workshop.act({ type: 'pause' });
+          if (result.ok) paused = true;
+          else if (result.reasonCode !== 'BUSY') break;
+        }
+        if (paused) {
+          pausedForVisibility = true;
+          clock.pause();
+          cancelRun('hidden');
+          render();
+        }
       }
     } else if (pausedForVisibility) {
       pausedForVisibility = false;
@@ -672,6 +725,11 @@ export async function mountWorkshopApp(root) {
         } catch {}
         view.setMessage(explainFailure(loaded, candidate));
         return loaded;
+      }
+      const blocked = learning.prepareDocumentReplacement();
+      if (!blocked.ok) {
+        view.setMessage(explainFailure(blocked, frame().metadata.blueprint));
+        return blocked;
       }
       clock.pause();
       cancelRun('paused');
@@ -716,6 +774,15 @@ export async function mountWorkshopApp(root) {
           capturePolicy: {
             pointerSamplingMs: 100,
             textInputs: 'not captured',
+            numberInputs: 'not captured',
+            commandFields: {
+              rename: 'name omitted',
+              'install-controller-program': 'source omitted',
+              insert: 'part omitted',
+              'insert-assembly': 'definition omitted',
+              'create-assembly': 'name omitted',
+              'edit-assembly': 'name omitted',
+            },
             scope: 'this workshop only',
             maxEvents: 10000,
             maxBytes: 2000000,
@@ -735,6 +802,7 @@ export async function mountWorkshopApp(root) {
       try {
         clock?.frame(now);
       } catch (error) {
+        if (commandFailureCode(error) === 'BUSY') return;
         // Stop the failing clock, preserve recovery controls and report the error.
         stopped(error);
         throw error;
@@ -756,23 +824,25 @@ export async function mountWorkshopApp(root) {
     onInteraction: logInteraction,
     guideSteps: starterSteps(),
     builtInAssemblies: [{ id: 'builtin-spring-strut', definition: createSpringStrut() }],
-    sceneLibrary: createSceneLibrary({
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-    }),
+    sceneLibrary: createSceneLibrary(browserStorage),
     onExportScene: (value) => downloadJSON(value, 'workshop-scene.json'),
-    assemblyLibrary: createAssemblyLibrary({
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-    }),
+    assemblyLibrary: createAssemblyLibrary(browserStorage),
   });
   refreshRecording();
+  if (!browserStorage.durable)
+    view.setMessage('Saves stay in this tab only. This browser blocked lasting storage.');
   clock = createClock(
     {
       advanceTime(ms) {
         try {
           workshop.advanceTime(ms);
         } catch (error) {
+          const code = commandFailureCode(error);
+          if (code === 'BUSY') return;
+          if (code === 'REPLACEMENT_PENDING' || code === 'MISSING_CONTROLLER_EXECUTOR') {
+            clock.pause();
+            return;
+          }
           stopped(error);
         }
       },

@@ -7,6 +7,7 @@ import {
 import { compileAssembly } from '../model/assembly.mjs';
 import { loadSave } from '../model/blueprint.mjs';
 import { immutableCopy } from '../model/observation.mjs';
+import { explainFailure } from '../model/messages.mjs';
 import {
   learningIdentity,
   learningValues,
@@ -46,7 +47,8 @@ export function createLearningWorkspace({
     statusConfig = null,
     statusCandidate = null,
     statusSnapshot = null,
-    storageUnreadable = false;
+    storageUnreadable = false,
+    storageUnwritable = false;
   function checkedStore(input) {
     const next = immutableCopy(input);
     if (
@@ -215,7 +217,15 @@ export function createLearningWorkspace({
     const text = JSON.stringify(next);
     if (text.length > 4000000)
       throw Error('Learning storage is full. Export your work, then remove records explicitly.');
-    storage.setItem('simulacrum-learning-v2', text);
+    try {
+      storage.setItem('simulacrum-learning-v2', text);
+    } catch {
+      storageUnwritable = true;
+      throw Error(
+        'Could not save learning records. Storage full or unavailable. Existing records were kept.',
+      );
+    }
+    storageUnwritable = false;
     if (attempt) captureBytes += text.length - JSON.stringify(state).length;
     state = next;
     candidate = null;
@@ -253,7 +263,11 @@ export function createLearningWorkspace({
   }
   async function command(value) {
     const r = await send(value);
-    if (!r?.ok) throw Error(r?.reasonCode ?? 'Command failed');
+    if (!r?.ok) {
+      const error = Error(explainFailure(r));
+      error.reasonCode = r?.reasonCode;
+      throw error;
+    }
   }
   function trainingFor(model) {
     if (!model) return null;
@@ -367,7 +381,6 @@ export function createLearningWorkspace({
   }
   function finishInterval() {
     if (!recording) return;
-    captureBlocked = true;
     const next = copy(state),
       r = recording;
     if (r.samples.length) {
@@ -381,12 +394,10 @@ export function createLearningWorkspace({
       persist(next);
     }
     recording = null;
-    captureBlocked = false;
   }
   function finishAttempt() {
     pendingHandover = false;
     if (!attempt) return;
-    captureBlocked = true;
     if (attempt.samples.length || attempt.fault) {
       const next = copy(state);
       next.attempts.push({ ...attempt, complete: true });
@@ -394,7 +405,6 @@ export function createLearningWorkspace({
     }
     attempt = null;
     cue = null;
-    captureBlocked = false;
   }
   const api = {
     select(id) {
@@ -472,6 +482,8 @@ export function createLearningWorkspace({
           problem,
           recording: !!recording,
           captureBlocked,
+          storageUnreadable,
+          storageUnwritable,
           training: training ? { completed: training.completed, total: training.total } : null,
           cue,
           activeAttempt: attempt ? { samples: attempt.samples.length } : null,
@@ -488,27 +500,39 @@ export function createLearningWorkspace({
     async teach() {
       if (training) throw Error('Cancel training first.');
       if (captureBlocked) throw Error('Save, export or discard the pending recording first.');
+      if (storageUnwritable)
+        throw Error('Could not save learning records. Export your work, then retry.');
       const c = config();
       if (!c.inputs.length || !c.outputs.length)
         throw Error('Wire a sensor input and receiver output first.');
       if (state.intervals.length >= 64)
         throw Error('Example storage is full. Export or delete intervals first.');
       if (recording) return;
+      const startedAttempt = readFrame().metadata.mode === 'build' && !attempt;
       if (readFrame().metadata.mode === 'build') beginAttempt(c);
       else if (!attempt) throw Error('Return to Build before beginning a recorded attempt.');
-      for (const id of c.receiverIds) await command({ type: 'control', id, duty: 0 });
-      recording = {
-        owner: key(c),
-        id: `teach-${Date.now()}-${serial++}`,
-        attemptId: attempt.id,
-        capture: captureDefinition(c),
-        partition: 'train',
-        weight: 1,
-        inputs: definitions(c.inputs),
-        outputs: definitions(c.outputs),
-        samples: [],
-      };
-      await command({ type: 'run' });
+      try {
+        for (const id of c.receiverIds) await command({ type: 'control', id, duty: 0 });
+        recording = {
+          owner: key(c),
+          id: `teach-${Date.now()}-${serial++}`,
+          attemptId: attempt.id,
+          capture: captureDefinition(c),
+          partition: 'train',
+          weight: 1,
+          inputs: definitions(c.inputs),
+          outputs: definitions(c.outputs),
+          samples: [],
+        };
+        await command({ type: 'run' });
+      } catch (error) {
+        recording = null;
+        if (startedAttempt) {
+          attempt = null;
+          pendingHandover = false;
+        }
+        throw error;
+      }
       message('Teaching · your keys own the receiver. Stop teaching when you have shown enough.');
     },
     async stop() {
@@ -619,12 +643,21 @@ export function createLearningWorkspace({
     },
     async tryModel() {
       if (captureBlocked) throw Error('Save, export or discard the pending recording first.');
+      if (storageUnwritable)
+        throw Error('Could not save learning records. Export your work, then retry.');
       const c = config();
       if (!c.model || readFrame().metadata.mode !== 'build')
         throw Error('Install a model and return to Build first.');
+      const startedAttempt = !attempt;
       beginAttempt(c, true);
       pendingHandover = { stage: 'waiting', attemptId: attempt.id };
-      await command({ type: 'run' });
+      try {
+        await command({ type: 'run' });
+      } catch (error) {
+        pendingHandover = false;
+        if (startedAttempt) attempt = null;
+        throw error;
+      }
       message('Powering sensors before handover. Your driving keys remain available.');
     },
     async takeover() {
@@ -634,14 +667,13 @@ export function createLearningWorkspace({
       message('Manual control. Press Teach to record a correction interval.');
     },
     ingest(observation) {
-      if (captureBlocked || (!attempt && !recording)) return;
+      if (captureBlocked || storageUnwritable || (!attempt && !recording)) return;
       if (!observation.ok) {
         if (attempt) attempt.incompleteReason = observation.reasonCode;
         try {
           finishInterval();
           finishAttempt();
         } catch (error) {
-          captureBlocked = true;
           message(error.message, true);
           return;
         }
@@ -794,7 +826,6 @@ export function createLearningWorkspace({
         }
         changed();
       } catch (error) {
-        captureBlocked = true;
         message(error.message, true);
       }
     },
@@ -991,8 +1022,38 @@ export function createLearningWorkspace({
                 : []),
             ],
           }),
+    prepareDocumentReplacement() {
+      if (recording)
+        return { ok: false, reasonCode: 'LEARNING_ATTEMPT_ACTIVE', path: 'learning' };
+      if (attempt && (attempt.samples.length || attempt.fault))
+        return { ok: false, reasonCode: 'LEARNING_ATTEMPT_ACTIVE', path: 'learning' };
+      attempt = null;
+      pendingHandover = false;
+      cue = null;
+      return { ok: true, reasonCode: 'OK', path: '' };
+    },
+    repairStorage() {
+      const empty = { version: 2, intervals: [], attempts: [], versions: [] };
+      try {
+        storage.setItem('simulacrum-learning-v2', JSON.stringify(empty));
+      } catch {
+        throw Error(
+          'Could not reset learning records. Browser storage may be full or unavailable.',
+        );
+      }
+      state = empty;
+      storageUnreadable = false;
+      storageUnwritable = false;
+      candidate = null;
+      captureBlocked = false;
+      recording = null;
+      attempt = null;
+      cue = null;
+      message('Learning records were reset to empty. Download the original file first if you still need it.');
+    },
     async discardPending() {
       captureBlocked = false;
+      storageUnwritable = false;
       recording = null;
       attempt = null;
       cue = null;
@@ -1012,7 +1073,7 @@ export function createLearningWorkspace({
             'This dataset exceeds the training work limit. Exclude some intervals and train again.',
           NO_COMPLETE_TEACHING_EXAMPLES:
             'Record examples with all current sensor inputs before training.',
-        }[error.message] ?? error.message,
+        }[error.reasonCode ?? error.message] ?? error.message,
         true,
       ),
     dispose() {

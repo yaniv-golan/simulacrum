@@ -182,6 +182,7 @@ export async function mountRemotePlaytest({
     failed = '',
     pendingWrites = 0,
     captureError = '',
+    wroteSessionEnd = false,
     screenRecorder = null,
     screenStream = null,
     segment = null,
@@ -475,10 +476,11 @@ export async function mountRemotePlaytest({
   }
   function writeEvent(kind, data, receipt) {
     try {
+      const nextSeq = seq + 1;
       const event = encoder.encode(
         {
-          id: `event-${++seq}`,
-          seq,
+          id: `event-${nextSeq}`,
+          seq: nextSeq,
           timeMs: performance.now() - origin,
           at: new Date().toISOString(),
           kind,
@@ -498,8 +500,10 @@ export async function mountRemotePlaytest({
       )
         flushEvents();
       packet.push(event);
+      seq = nextSeq;
       packetBytes += bytes + 1;
       captureBytes += bytes + 256;
+      if (kind === 'session-end') wroteSessionEnd = true;
       if (receipt || kind === 'session-end' || kind === 'session-start') flushEvents(receipt);
       else if (!packetTimer) packetTimer = setTimeout(flushEvents, 1000);
       if (
@@ -513,6 +517,35 @@ export async function mountRemotePlaytest({
       status();
       return seq;
     } catch (error) {
+      if (kind !== 'session-end' && !wroteSessionEnd) {
+        try {
+          const endSeq = seq + 1;
+          let snapshot = null;
+          try {
+            snapshot = checkpoint();
+          } catch {
+            /* Best-effort terminal keyframe still needs a consecutive seq. */
+          }
+          const event = encoder.encode(
+            {
+              id: `event-${endSeq}`,
+              seq: endSeq,
+              timeMs: performance.now() - origin,
+              at: new Date().toISOString(),
+              kind: 'session-end',
+              data: { checkpoint: snapshot, captureError: error.message },
+              context: context(),
+            },
+            { keyframe: true },
+          );
+          seq = endSeq;
+          packet.push(event);
+          wroteSessionEnd = true;
+          flushEvents();
+        } catch {
+          /* Capture already failed; skip a second encode error. */
+        }
+      }
       captureError = `Capture stopped: ${error.message}`;
       stop();
     }
@@ -690,7 +723,11 @@ export async function mountRemotePlaytest({
     finalizeRecording = (async () => {
       try {
         await captureGate.stopCapture();
-        if (wasActive && !captureError) writeEvent('session-end', { checkpoint: checkpoint() });
+        if (wasActive && !wroteSessionEnd)
+          writeEvent('session-end', {
+            checkpoint: checkpoint(),
+            ...(captureError ? { captureError } : {}),
+          });
         flushEvents();
       } catch (error) {
         captureError = `Capture stopped: ${error.message}`;
@@ -761,6 +798,7 @@ export async function mountRemotePlaytest({
       if (disposed) return;
       session = created.sessionId;
       seq = 0;
+      wroteSessionEnd = false;
       packetSeq = 0;
       ((captureBytes = 0), (captureWireBytes = 0));
       completionReason = '';

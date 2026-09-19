@@ -85,11 +85,14 @@ test('epoch and deadline cancellation retain the one encoder reservation until i
   const second = g.capture(packet);
   await new Promise((r) => setTimeout(r, 15));
   assert.match(g.read().status, /deadline/);
-  assert.equal(g.read().pending, true);
-  assert.equal(await g.capture(packet), false);
-  assert.equal(calls, 2);
+  assert.equal(g.read().pending, false);
   finish(new Blob(['png'], { type: 'image/png' }));
   assert.equal(await second, false);
+  const retry = g.capture(packet);
+  assert.equal(g.read().pending, true);
+  assert.equal(calls, 3);
+  finish(new Blob(['png'], { type: 'image/png' }));
+  assert.equal(await retry, false);
   g.dispose();
 });
 

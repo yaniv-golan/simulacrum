@@ -25,7 +25,9 @@ export function createCameraSession({
     busyRejected = 0,
     seen = new Map(),
     busySeen = new Map(),
-    disposed = false;
+    disposed = false,
+    captureQueue = [],
+    drainingCaptures = false;
   const display = createCanvas();
   display.width = CAMERA.width;
   display.height = CAMERA.height;
@@ -42,12 +44,17 @@ export function createCameraSession({
         })),
       },
       ropes: (frame.metadata.blueprint.connections ?? [])
-        .filter((edge) => edge.kind === 'rope')
+        .filter((edge) => edge.kind === 'rope' || edge.kind === 'cord')
         .map((edge) => ({
-          diameter: edge.rope.diameter,
+          diameter: (edge.rope ?? edge.cord).diameter,
           points: (
-            frame.metadata.connections?.find((c) => c.id === edge.id)?.rope?.nodes ?? []
-          ).map((i) => frame.physics[i].position),
+            frame.metadata.connections?.find((c) => c.id === edge.id)?.[edge.kind]?.nodes ??
+            frame.metadata.connections?.find((c) => c.id === edge.id)?.rope?.nodes ??
+            []
+          ).flatMap((i) => {
+            const position = frame.physics[i]?.position;
+            return position ? [position] : [];
+          }),
         })),
       physics: frame.physics.map(({ position, rotation }) => ({ position, rotation })),
     });
@@ -61,31 +68,49 @@ export function createCameraSession({
   const show = (frame, node) => {
     display.getContext('2d').drawImage(renderer().render(opticalInput(frame), node), 0, 0);
   };
+  async function drainCaptures() {
+    if (drainingCaptures) return;
+    drainingCaptures = true;
+    try {
+      while (captureQueue.length && !disposed) {
+        const job = captureQueue.shift();
+        if (job.epoch !== epoch) continue;
+        await gallery.capture(job.packet);
+      }
+    } finally {
+      drainingCaptures = false;
+      if (captureQueue.length && !disposed) void drainCaptures();
+    }
+  }
   function capture(frame, node, cursor, id, source) {
     const part = frame.metadata.blueprint.parts[node];
-    return gallery.capture({
-      frame,
-      node,
-      metadata: {
-        version: CAMERA.version,
-        cameraId: part.id,
-        requestId: id,
-        source,
-        session: cursor.session,
-        epoch: cursor.epoch,
-        captureTick: frame.tick,
-        timeSeconds: frame.tick / 120,
-        width: CAMERA.width,
-        height: CAMERA.height,
-        horizontalFov: CAMERA.horizontalFov,
-        near: CAMERA.near,
-        far: CAMERA.far,
-        format: 'image/png',
-        build: buildId,
-        sourceIdentity: provenance,
-        status: 'ok',
+    captureQueue.push({
+      epoch,
+      packet: {
+        frame,
+        node,
+        metadata: {
+          version: CAMERA.version,
+          cameraId: part.id,
+          requestId: id,
+          source,
+          session: cursor.session,
+          epoch: cursor.epoch,
+          captureTick: frame.tick,
+          timeSeconds: frame.tick / 120,
+          width: CAMERA.width,
+          height: CAMERA.height,
+          horizontalFov: CAMERA.horizontalFov,
+          near: CAMERA.near,
+          far: CAMERA.far,
+          format: 'image/png',
+          build: buildId,
+          sourceIdentity: provenance,
+          status: 'ok',
+        },
       },
     });
+    return drainCaptures();
   }
   function ingest(observation) {
     if (disposed) return;

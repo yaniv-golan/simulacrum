@@ -217,3 +217,24 @@ test('optical input copies completed rope geometry without connection identity o
     f.session.dispose();
   }
 });
+
+test('camera ingest queues extra photos from one observation instead of dropping them', async () => {
+  const f = fixture();
+  try {
+    f.set({
+      ok: true,
+      cursor: { session: 's', epoch: 1 },
+      frames: [
+        observation(12, { serial: 1 }).frames[0],
+        observation(24, { serial: 2 }).frames[0],
+      ],
+    });
+    for (let i = 0; i < 8; i++) await new Promise((r) => setImmediate(r));
+    assert.equal(f.encoded.length, 2);
+    assert.equal(f.encoded[0].frame.tick, 12);
+    assert.equal(f.encoded[1].frame.tick, 24);
+    assert.doesNotMatch(f.session.read().gallery.status, /busy/i);
+  } finally {
+    f.session.dispose();
+  }
+});

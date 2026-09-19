@@ -16,6 +16,7 @@ const fresh = (node) => ({
 const integer = (n) => Number.isSafeInteger(n) && n >= 0;
 export function createCameraState(nodes) {
   let rows = nodes.map(fresh);
+  const deferredBusy = new Map();
   const api = {
     request(node, id) {
       const r = rows.find((r) => r.node === node);
@@ -34,10 +35,10 @@ export function createCameraState(nodes) {
           high = (input?.level ?? 0) > 0;
         if (!powered || owner !== r.owner) r.armed = false;
         if (powered && !high) r.armed = true;
-        if (powered && high && r.armed) {
+          if (powered && high && r.armed) {
           r.armed = false;
           if (!r.pending) r.pending = { id: 0, source: 'controller' };
-          else r.busySerial++;
+          else deferredBusy.set(r.node, (deferredBusy.get(r.node) ?? 0) + 1);
         }
         r.owner = owner;
         r.powered = powered;
@@ -47,6 +48,11 @@ export function createCameraState(nodes) {
           r.serial++;
           r.result = { ...r.pending, tick, status: powered ? 'ok' : 'no-power' };
           r.pending = null;
+          const extra = deferredBusy.get(r.node) ?? 0;
+          if (extra) {
+            r.busySerial += extra;
+            deferredBusy.delete(r.node);
+          }
         }
       }
     },
@@ -105,6 +111,7 @@ export function createCameraState(nodes) {
           throw Error('INVALID_CAMERA_CHECKPOINT');
       }
       rows = candidate;
+      deferredBusy.clear();
     },
   };
   return Object.freeze(api);

@@ -379,7 +379,8 @@ test('storage failure freezes capped capture and preserves an importable pending
     assert.ok(saved.attempts[0].samples.length > 0 && saved.attempts[0].samples.length <= 1200);
     assert.equal(saved.intervals[0].samples.length, saved.attempts[0].samples.length);
     assert.match(api.status().notice, /Storage full/);
-    assert.equal(api.status().captureBlocked, true);
+    assert.equal(api.status().captureBlocked, false);
+    assert.equal(api.status().storageUnwritable, true);
     const restored = createLearningWorkspace({
       readFrame: () => workshop.observe().frames[0],
       send: async () => ({ ok: true }),
@@ -390,6 +391,7 @@ test('storage failure freezes capped capture and preserves an importable pending
     restored.dispose();
     await api.discardPending();
     assert.equal(api.status().captureBlocked, false);
+    assert.equal(api.status().storageUnwritable, false);
   }));
 
 test('failed explicit stop freezes capture before its size limit', () =>
@@ -405,7 +407,8 @@ test('failed explicit stop freezes capture before its size limit', () =>
       api.export().attempts[0].samples.map((s) => s.tick),
       [2, 6],
     );
-    assert.equal(api.status().captureBlocked, true);
+    assert.equal(api.status().captureBlocked, false);
+    assert.equal(api.status().storageUnwritable, true);
   }));
 
 test('reusing another equal-weight controller never borrows the saved controllers provenance', () =>
@@ -444,4 +447,32 @@ test('reusing another equal-weight controller never borrows the saved controller
     await api.reuseModel(v.id, 'learner');
     await api.saveVersion('Reused A');
     assert.equal(api.export().versions.at(-1).training.id, v.training.id);
+  }));
+
+test('a refused Run aborts the teaching attempt started in that turn', async () => {
+  const workshop = await createWorkshop(createLearningDelivery());
+  const api = createLearningWorkspace({
+    readFrame: () => workshop.observe().frames[0],
+    send: async (c) =>
+      c.type === 'run' ? { ok: false, reasonCode: 'EDIT_REQUIRES_BUILD' } : { ok: true },
+    storage: { getItem: () => null, setItem: () => {} },
+  });
+  try {
+    api.select('learner');
+    await assert.rejects(api.teach(), /Return to Build before changing parts/);
+    assert.equal(api.status().activeAttempt, null);
+  } finally {
+    api.dispose();
+    workshop.dispose();
+  }
+});
+
+test('document replacement is refused while a live teaching attempt has samples', () =>
+  run(async ({ workshop, api, ingest }) => {
+    await api.teach();
+    workshop.step(12);
+    ingest();
+    const blocked = api.prepareDocumentReplacement();
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.reasonCode, 'LEARNING_ATTEMPT_ACTIVE');
   }));

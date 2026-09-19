@@ -47,6 +47,7 @@ export function createCameraGallery({
       const deadline = setTimeout(() => {
         if (!disposed && token === generation) {
           generation++;
+          pending = false;
           status =
             'Photo failed: encoder deadline exceeded. Existing photos are safe; wait for recovery or reload after saving them.';
           notify();

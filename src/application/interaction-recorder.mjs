@@ -113,7 +113,17 @@ export function createInteractionRecorder({
       error = String(cause?.message ?? cause);
       persisted = false;
       close('storage-failure');
-      return false;
+      try {
+        storage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(capture));
+        return false;
+      } catch {
+        try {
+          storage.removeItem?.(INTERACTION_STORAGE_KEY);
+        } catch {
+          /* Tombstone is best-effort; readLast refuses orphan recordings. */
+        }
+        return false;
+      }
     }
   };
   const fail = (why, cause) => {
@@ -227,7 +237,13 @@ export function createInteractionRecorder({
         )
           return null;
         if (value.status === 'recording') {
-          if (value.terminationReason !== null || value.endedAt !== null) return null;
+          if (
+            !recording() ||
+            capture?.id !== value.id ||
+            value.terminationReason !== null ||
+            value.endedAt !== null
+          )
+            return null;
         } else if (
           value.status !== 'stopped' ||
           !reasons.has(value.terminationReason) ||

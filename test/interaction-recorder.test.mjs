@@ -184,3 +184,15 @@ test('stop failure retains final context in the downloadable capture', () => {
   assert.equal(f.recorder.stop({ tick: 10 }), false);
   assert.deepEqual(f.recorder.snapshot().finalContext, { tick: 10 });
 });
+
+test('persist failure does not leave a continuable stored recording', () => {
+  const f = fixture();
+  assert.equal(f.recorder.start(), true);
+  f.storage.removeItem = (key) => f.entries.delete(key);
+  f.storage.setItem = () => {
+    throw new Error('quota');
+  };
+  assert.equal(f.recorder.record('key', { key: 'w' }), false);
+  const reloaded = createInteractionRecorder({ ...f.config, storage: f.storage });
+  assert.equal(reloaded.readLast(), null);
+});

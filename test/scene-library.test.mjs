@@ -20,18 +20,31 @@ test('scene library keeps independent snapshots and preserves bytes on quota or 
   assert.equal(library.list()[0].scene.objects[0].position[0], 1);
   const before = JSON.stringify([...values]);
   fail = true;
-  assert.throws(() => library.add('Second', scene), /quota/);
+  assert.throws(() => library.add('Second', scene), /full or unavailable/);
   assert.equal(JSON.stringify([...values]), before);
-  assert.throws(() => library.remove('scene-1'), /quota/);
+  assert.throws(() => library.remove('scene-1'), /full or unavailable/);
   assert.equal(JSON.stringify([...values]), before);
   fail = false;
   const result = library.list();
   result[0].scene.objects[0].position[0] = 8;
   assert.equal(library.list()[0].scene.objects[0].position[0], 1);
-  values.set('simulacrum.scenes.v1', 'broken');
-  assert.throws(() => library.add('Another', scene));
-  assert.equal(values.get('simulacrum.scenes.v1'), 'broken');
 });
+
+test('corrupt scene JSON keeps existing bytes and names a repairable unread state', () => {
+  const values = new Map();
+  const library = createSceneLibrary({
+    getItem: (k) => values.get(k) ?? null,
+    setItem: (k, v) => values.set(k, v),
+  });
+  library.add('Hill', sceneLayout('hill'));
+  values.set('simulacrum.scenes.v1', 'broken');
+  assert.equal(library.inspect().unreadable, true);
+  assert.throws(() => library.add('Another', sceneLayout('hill')), /unreadable/);
+  assert.equal(values.get('simulacrum.scenes.v1'), 'broken');
+  library.reset();
+  assert.deepEqual(library.list(), []);
+});
+
 
 test('recording subset rejects oversized machine observations before encoding', async () => {
   const { createCaptureEncoder } = await import('../src/application/capture-stream.mjs');

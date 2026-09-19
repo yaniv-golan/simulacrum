@@ -36,7 +36,12 @@ test('library persists independent validated definitions and preserves data on c
   assert.throws(() => corrupt.add(definition()));
   assert.equal(values.get(key), '{broken');
   values.set(key, JSON.stringify({ version: 1, items: [{ id: 'bad', definition: {} }] }));
-  assert.throws(() => createAssemblyLibrary(storage).list());
+  const mixed = createAssemblyLibrary(storage);
+  assert.deepEqual(mixed.list(), []);
+  assert.equal(mixed.inspect().quarantined.length, 1);
+  mixed.add(definition());
+  assert.equal(mixed.list().length, 1);
+  assert.equal(mixed.inspect().quarantined.length, 1);
 });
 
 test('saved revisions have distinct names and can be renamed without altering authored content', () => {

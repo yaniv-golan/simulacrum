@@ -42,13 +42,18 @@ test('controller edges during a reserved exposure report busy without replacing 
   c.step(1, [{ node: 0, powered: true, level: 0, owner: 'a' }]);
   c.request(0, 1);
   c.step(2, [{ node: 0, powered: true, level: 1, owner: 'a' }]);
-  assert.equal(c.read()[0].busySerial, 1);
+  assert.equal(c.read()[0].busySerial, 0);
+  c.step(3, [{ node: 0, powered: true, level: 0, owner: 'a' }]);
+  c.step(4, [{ node: 0, powered: true, level: 1, owner: 'a' }]);
+  assert.equal(c.read()[0].busySerial, 0);
   c.step(12, [{ node: 0, powered: true, level: 1, owner: 'a' }]);
   assert.equal(c.read()[0].result.source, 'manual');
   assert.equal(c.read()[0].serial, 1);
+  assert.equal(c.read()[0].busySerial, 2);
   const next = createCameraState([0]);
   next.restore(c.read(), 12);
-  assert.equal(next.read()[0].busySerial, 1);
+  assert.equal(next.read()[0].busySerial, 2);
+  assert.equal(next.read()[0].result.source, 'manual');
 });
 
 test('checkpoint rejects completed or superseded manual requests as pending without changing live state', () => {

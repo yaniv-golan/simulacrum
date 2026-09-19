@@ -339,8 +339,8 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   f.huge(false);
   assert.equal(f.mount.active(), false);
   assert.ok(
-    f.calls() <= initialCalls + 2,
-    'one rejected event and at most one segment-finalization sample',
+    f.calls() <= initialCalls + 3,
+    'one rejected event, a terminal keyframe, and at most one segment-finalization sample',
   );
   assert.equal(
     f.tracks.every((track) => track.readyState === 'ended'),
