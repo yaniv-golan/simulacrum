@@ -30,5 +30,9 @@ test('native normalization rebuilds different-length backend envelopes without d
     hashNativeState(checkpoint('0.20.0-simulacrum.spring.10.f64', [0, 254, 3, 127])),
   );
   assert.notEqual(hashNativeState(old), hashNativeState({ ...newer, sensorSnapshot: { tick: 2 } }));
-  assert.throws(() => hashNativeState(checkpoint('0.20.0-simulacrum.spring.11.f64')));
+  assert.equal(
+    hashNativeState(old),
+    hashNativeState(checkpoint('0.20.0-simulacrum.spring.11.f64')),
+  );
+  assert.throws(() => hashNativeState(checkpoint('0.20.0-simulacrum.spring.12.f64')));
 });

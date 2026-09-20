@@ -13,7 +13,7 @@ const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
 // values; no Rapier world, body, collider, vector or query object crosses it.
 import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import { DT } from '../../model/tick.mjs';
-const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.10.f64';
+const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.11.f64';
 let initialization;
 function record(value, keys) {
   if (

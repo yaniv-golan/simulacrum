@@ -12,7 +12,7 @@ export const hashNativeState = (x) => {
       view = new DataView(bytes.buffer),
       size = view.getUint32(4);
     const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(12, 12 + size)));
-    assert.match(meta.backend, /^0\.20\.0-simulacrum\.spring\.(?:[6789]|10)\.f64$/);
+    assert.match(meta.backend, /^0\.20\.0-simulacrum\.spring\.(?:[6789]|10|11)\.f64$/);
     meta.backend = '0.20.0-simulacrum.spring.6.f64';
     const encoded = new TextEncoder().encode(JSON.stringify(meta));
     const normalizedBytes = new Uint8Array(12 + encoded.length + bytes.length - 12 - size),

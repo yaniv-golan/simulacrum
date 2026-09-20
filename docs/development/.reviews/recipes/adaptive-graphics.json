@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "src/presentation/graphics-quality.mjs": "d86069138b74c79b143b409c0cc2d21132d05c7c4de3dcb2c91ea844ae56a24b",
-    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
-    "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
+    "package-lock.json": "588f1616e00a4cd1bc810e0945911ce5fdb6b054e6b3f25aaed5eebbb11e1e79",
+    "package.json": "96e803324ba7b2d6d60981b9299ef492b1a9e7b61e517e0ecd4b1886095de75d",
     "test/graphics-quality.test.mjs": "aaa8787d654185bc3bd8e961b7edfa7b7b6337e3b51853363bf3b0cf403bd15a",
     "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94",
     "scripts/verify-spring-browser.mjs": "965f22e4b40efa5665fe67610ccc71b634d1d14fd82ab7a8cd00d03db91b1f2e",

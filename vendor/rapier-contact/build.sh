@@ -112,6 +112,8 @@ export CARGO_TARGET_DIR="$contact_build_dir/target"
 export RUSTFLAGS="--remap-path-prefix=$contact_source_root=/rapier-source --remap-path-prefix=$contact_build_dir/parry3d-f64=/parry-source --remap-path-prefix=$contact_cargo_root/registry/src=/cargo-registry"
 rustc --edition=2021 --test "$contact_source_root/src/dynamics/solver/contact_constraint/friction_projection.rs" -o "$contact_build_dir/friction-tests"
 rustc --edition=2021 --test "$contact_source_root/src/dynamics/solver/staged_island_solver/residual_bound.rs" -o "$contact_build_dir/residual-tests"
+rustc --edition=2021 --test "$contact_source_root/src/dynamics/solver/staged_island_solver/scratch.rs" -o "$contact_build_dir/scratch-tests"
+"$contact_build_dir/scratch-tests"
 "$contact_build_dir/residual-tests"
 "$contact_build_dir/friction-tests"
 cargo build --lib --release --target wasm32-unknown-unknown --locked "${offline_flags[@]}"
@@ -121,7 +123,7 @@ mv "$contact_build_dir/wasm/optimized.wasm" "$contact_build_dir/wasm/rapier_wasm
 python3 - "$contact_build_dir/wasm/package.json" <<'PY'
 import json,sys
 from pathlib import Path
-Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.10.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
+Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.11.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
 PY
 cd ../../rapier-compat
 mkdir -p builds/3d-deterministic/wasm-build

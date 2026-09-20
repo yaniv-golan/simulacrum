@@ -171,7 +171,7 @@ test('native physical probe adapter disables only diagnostic collection for ever
   });
 });
 
-test('native input admission includes spring10 while retaining hash and version rejection', async () => {
+test('native input admission includes spring11 while retaining hash and version rejection', async () => {
   const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { tmpdir } = await import('node:os');
@@ -180,7 +180,7 @@ test('native input admission includes spring10 while retaining hash and version 
   try {
     const config = {};
     for (const role of ['baseline', 'candidate', 'staleFactor', 'staleRhs']) {
-      const row = { version: `0.20.0-simulacrum.spring.${role === 'candidate' ? 10 : 9}.f64` };
+      const row = { version: `0.20.0-simulacrum.spring.${role === 'candidate' ? 11 : 10}.f64` };
       for (const field of ['package', 'patch']) {
         const bytes = `${role}/${field}`;
         row[field] = join(root, `${role}.${field}`);
@@ -194,7 +194,7 @@ test('native input admission includes spring10 while retaining hash and version 
       () =>
         admitNativeInputs({
           ...config,
-          candidate: { ...config.candidate, version: '0.20.0-simulacrum.spring.11.f64' },
+          candidate: { ...config.candidate, version: '0.20.0-simulacrum.spring.12.f64' },
         }),
       /Missing native control/,
     );
@@ -307,6 +307,64 @@ test('historical native recipe omissions require reviewed bytes and preserve can
         'candidate',
         historical,
         row('0.20.0-simulacrum.spring.10.f64', historical),
+      ),
+    /candidate source/,
+  );
+});
+
+test('scratch qualification keeps candidate probes and omits only absent baseline scratch', async () => {
+  const { adaptHistoricalNativeRecipe } = await import('../scripts/native-qualification.mjs');
+  const { createHash } = await import('node:crypto');
+  const { readFileSync } = await import('node:fs');
+  const recipe = readFileSync('vendor/rapier-contact/build.sh', 'utf8');
+  const diagnostics =
+    '+++ b/src/dynamics/solver/staged_island_solver/residual_bound.rs\n+pub fn jointAppliedLinearImpulse(\n+pub fn projectWithJointImpulses(\n+pub fn responseWithJointImpulses(';
+  const baseline = Buffer.from(diagnostics);
+  const candidate = Buffer.from(
+    diagnostics + '\n+++ b/src/dynamics/solver/staged_island_solver/scratch.rs',
+  );
+  const row = (version, patch) => ({
+    version,
+    patchSha256: createHash('sha256').update(patch).digest('hex'),
+  });
+  const kept = adaptHistoricalNativeRecipe(
+    recipe,
+    'candidate',
+    candidate,
+    row('0.20.0-simulacrum.spring.11.f64', candidate),
+  );
+  assert.equal(kept.source, recipe);
+  const wrongRhs = adaptHistoricalNativeRecipe(
+    recipe,
+    'staleRhs',
+    candidate,
+    row('0.20.0-simulacrum.spring.11.f64', candidate),
+  );
+  assert.equal(wrongRhs.source, recipe);
+  assert.deepEqual(wrongRhs.omissions, []);
+  assert.deepEqual(kept.omissions, []);
+  const adapted = adaptHistoricalNativeRecipe(
+    recipe,
+    'baseline',
+    baseline,
+    row('0.20.0-simulacrum.spring.10.f64', baseline),
+  );
+  assert.ok(!adapted.source.includes('scratch-tests'));
+  assert.ok(
+    adapted.source.includes('node "$contact_build_dir/native-check/test-joint-reactions.mjs"'),
+  );
+  assert.ok(adapted.source.includes('"$contact_build_dir/residual-tests"'));
+  assert.deepEqual(
+    adapted.omissions.map((x) => x.check),
+    ['scratch-buffer-reset'],
+  );
+  assert.throws(
+    () =>
+      adaptHistoricalNativeRecipe(
+        recipe,
+        'candidate',
+        baseline,
+        row('0.20.0-simulacrum.spring.11.f64', baseline),
       ),
     /candidate source/,
   );

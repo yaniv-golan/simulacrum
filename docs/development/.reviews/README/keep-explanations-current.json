@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
-    "package.json": "80deb47d00768b9a96ae31d276718f1ae92d3e973eea8688e1d29b2a96498bd0",
+    "package-lock.json": "588f1616e00a4cd1bc810e0945911ce5fdb6b054e6b3f25aaed5eebbb11e1e79",
+    "package.json": "96e803324ba7b2d6d60981b9299ef492b1a9e7b61e517e0ecd4b1886095de75d",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/check-documentation.mjs": "adf1496351f13a8c3ab04810c2ad7a4a566fdd5deb15874aa17790382e138525",
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",

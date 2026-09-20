@@ -5,7 +5,7 @@ patch and rebuild recipe. The package uses uniform f64 physical arithmetic and
 Float64Array physical bindings. Debug colors remain Float32Array; index and handle
 encodings retain their original integer/opaque semantics.
 
-The application checks runtime version `0.20.0-simulacrum.spring.10.f64`. The physics
+The application checks runtime version `0.20.0-simulacrum.spring.11.f64`. The physics
 snapshot envelope records that backend identity and rejects incompatible
 backend envelopes before native deserialization. Authored configurations
 are unchanged; opaque checkpoints from earlier backend versions are incompatible.
@@ -33,6 +33,14 @@ checks the original residual, and applies limits in the original order. Prepared
 share that batch lifetime. Raw responses are reused only for an exactly equal RHS;
 residual checks and clamp/body updates still execute on every pass. Body-local
 response accumulation retains the original row/endpoint order and f64 arithmetic.
+Component-owned temporary arrays reuse capacity within that same batch. Every logical
+allocation still resets its full active range to positive zero, including refinement
+workspaces; raw RHS memo values remain detached from the working solution. Body-response
+and absolute-response sums may be reused only for a bit-identical delta vector in
+that fixed-pose batch. Every original residual and limit check still runs. Final
+body updates reuse the sum only when the post-clamp delta also matches bit for bit;
+otherwise they perform the original accumulation. Signed zeros are distinct keys. The
+standalone scratch reset control exercises dirty buffers and shrinking/growing ranges.
 The cache is discarded before integration; unbiased refreshes, later substeps and restored
 worlds start with fresh factors.
 
@@ -80,7 +88,7 @@ Run `build.sh` with Node 24.18.0, Rust 1.94.0 and its wasm32-unknown-unknown tar
 wasm-bindgen 0.2.128, wasm-opt 111, Python 3, npm and patch available on PATH.
 Install repository dependencies first; the recipe uses its pinned TypeScript 5.9.3.
 It verifies the pinned Rapier and Parry sources, applies both patches, runs the
-pure friction and residual-bound regression tests and builds only the
+pure friction, residual-bound, scratch-reset and bitwise memo-key regression tests and builds only the
 3D f64 package. It acquires `/tmp/simulacrum-rapier-contact-build-v2` exclusively as the physical
 compilation root so Cargo external dependency identities remain stable. Each run
 starts with fresh sources and targets. On normal success or failure, all files move
@@ -103,7 +111,7 @@ Provenance records the exact source, patch, toolchain, WASM and package hashes.
 clean rebuilds. This heavy native-change qualification is separate from CI. It
 does not qualify arbitrary assemblies or other platforms. Input roles are `baseline`,
 `candidate`, `staleFactor`, `staleRhs`; each supplies absolute `package`, `patch`,
-`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7, spring.8, spring.9 or spring.10 f64). Preserve
+`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7, spring.8, spring.9, spring.10 or spring.11 f64). Preserve
 the controlled source patches and build evidence with those artifacts. Each non-candidate role also requires `reviewedDifferenceSha256` (SHA256 of candidate
 patch bytes, a NUL byte, then control patch bytes) and `reviewRationale` describing the
 reviewed change. The runner freezes all inputs, rebuilds each role from its patch,
@@ -123,7 +131,11 @@ suppressing the new diagnostic reads. Envelope comparison normalizes the backend
 version and its length/checksum only. Exact replacement guards and source hashes
 record the adapter. This comparison proves bounded physical equivalence; the native
 reaction probes and independent application force tests separately check diagnostics.
-Historical packages lack the new diagnostic API, so their reviewed build recipes omit
-only its probe. The retained spring.8 controls also omit the spring.9 residual-bound
-unit probe whose source is absent. Candidate builds retain every current probe, and
+The spring.10 baseline retains all reaction and residual probes and omits only the
+scratch-reset probe absent from its source. Older historical packages lack the new
+diagnostic API, so their reviewed build recipes omit its probe. The retained
+spring.8 controls also omit the spring.9 residual-bound and spring.11 scratch
+unit probes whose sources are absent. Current-version stale-input controls retain
+every probe and must fail through native behavior; they receive no historical
+omissions. Candidate builds retain every current probe, and
 the report records historical omissions and each reviewed compound difference.

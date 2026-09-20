@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "package.json": "ab5ffab9062cf7c6ef668217ca591f6b668771078927c655e279625672bf0632",
+    "package.json": "959ea191fef3cf418de435672660be85f7785d3c37a06a1a5b150412380ba547",
     "scripts/process-inventory.mjs": "388dd4d4ce9d0f68727b0a46f5ae59309c6427842df9d5a71c51ca61510dc8a1",
     "scripts/run-check.mjs": "5024f0e92b6c747e0f26d1258ea2ef19bb5beebed5d5478c84396269c356197b",
     "scripts/runtime-preflight.mjs": "78305c473295bb6080e7054269b56f4d0b0d12f86ffcb380a42abae13f097480",

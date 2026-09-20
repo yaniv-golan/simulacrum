@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"5cc93696cedbf937100b3b575053be74cbf5e66acd8382d8385b53d96d221ea2","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"9938cc4c70a84fcddffc4eb3acc9f76bedc67ed174f8035a04eea020d67aef97","disposition":"still accurate","rationale":"No catalog part or milestone is added. The extracted validator preserves the public blueprint API, while assembly now enforces overlap, shaft and binding admission earlier. Existing geometry/material ownership, ordinary authoring, compile-before-publish and part-help admission guidance remain applicable; Release Coupler copy was corrected in its existing reference rather than adding a lesson."} -->
+<!-- doc-review {"version":1,"fingerprint":"2cbb5917a7475e34690ebb7b01cff86994bab556a91ea09b3c3dcf1d04496466","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f50e81f26e241c34f14b062841d5f24dfc967fa9d6388817c0b2a83eb4b2f97a","disposition":"still accurate","rationale":"The native package preserves catalog parameters, primitives, material and mass admission, mounting, gear topology, coupler faces and sensor bindings. Authored bodies and joints are retained."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -122,7 +122,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"ae580c40366da106242503be59cca56d8e4746e95f78daa762502e0573671fa1","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"ba3195df803efd177cd7b807104574106deba2dc25a6e00c83f205117e9b2d00","disposition":"still accurate","rationale":"Core still validates and compiles a candidate before one accepted history operation; the updated program preparation and load admission strengthen that transaction boundary. The camera exposure request still owns no authored history, and scene replacement still uses expectedCursor. The new failure reasons and restorable busy checkpoint do not change the command recipe."} -->
+<!-- doc-review {"version":1,"fingerprint":"0f8e835e9d35a33cf3d62d4fb92c5ebcf737bc6fa3d090e9a9da2bc9f60dc6d7","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"d1bcace9ebf364dfa6fa5c6fc111bc606ece3bcfabf9862c652592007c5b394e","disposition":"still accurate","rationale":"Native reuse introduces no command or alternate writer; schemas, cursor admission, compilation, atomic history, capacity and camera deduplication remain unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -151,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"95646e8d630484883b08d83a22245314b80e295ff2c435abfb0db7d13593db7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"46219a1d18680861d19586269a5d6cc7ff99bd9958f030a9af9402f13a452cac","disposition":"still accurate","rationale":"Part Help now tests the documented retained hold through focus entry, physical keyup release, and suppression of a fresh key press inside Help. This matches the existing interaction recipe without changing input ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d1ed9f04e7b11a04b0f532a1ccafa618ec0cc663da059ddcabf13b7426cd613","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"4bce3f6ed0243aa5100b03d116f2319398a20d9d789242f3ccf5f2334b24e03b","disposition":"still accurate","rationale":"No interaction owner changes. Pointer cancellation, ordinary command commitment, held-key release, help containment and browser verification remain as documented."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -200,7 +200,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"148bfe529143744da5203151a0fefa63c09ecf2537fb3403cc0b979906a4df12","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"fc31aed1c911b933b0df14d573d0bf4ff6cbb7761dfb4225b575a819c6460545","disposition":"still accurate","rationale":"Specific model/runtime failures now reach the existing reason formatter, but diagnoseMotion, readinessLine and measurement accumulator remain the same owners with unchanged completed-data inputs and thresholds. The changed fixture admission does not make readiness a physical qualification or turn historical fault rows into teaching data."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f6041ad7775e38d02c67fa843c831fab820d209ca49bdeaab1240bf56e29600","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"55f69c8c7cf9d7efbbe430fd77bf58f0be5d8127f89bb5583e89f9a1fce658bf","disposition":"still accurate","rationale":"Native reuse preserves completed values and impulse diagnostics without adding product diagnostics. Motion explanations, readiness caching, observation cursors and missing-data handling retain their owners."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"dbba76ac5684af4f9e445e3dea1407c8674fafc54e93b1fac03a3d4c4d98def3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"156b056046f5ebabbd8767fd60c19a92daddf1f7425bdbd4a30a8fa5c38e4d2c","disposition":"still accurate","rationale":"Witnesses now place and resize clear of the floor, retain funded coupler progress through OFF, preserve held controls through dialogs, and catch synchronous camera admission. Physical state preservation and numeric limits remain asserted. Gear integration still exceeds 2 ms on both measured sources; no physics or timing policy changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"0a1fb436381372f2dddf46a58491a286beb6cda49c42c7fd0b98d48823b411bb","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c73e93377852cfca15afa7917e24b17cbffeccf979f26bc603a9f1348c66a557","disposition":"updated","rationale":"Expanded guidance for component-owned workspace resets and bit-identical response sums within a fixed-pose biased batch, including signed-zero and post-clamp checks. Required residual, refinement, limits, exact diagnostic traces and cold restores remain explicit; the spring.11 recipe adds scratch controls."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -297,10 +297,14 @@ uses the existing 0.4 m rest-length limit after assembly at 0.175 m, storing
 across Ball and wheel variants. Preserve the independent spring-source allowance,
 quiet controls and catcher repair witnesses when changing that authored preload;
 also recheck the isolated roller impact speeds against the larger stored energy.
-Native factor reuse is limited to a fixed-pose biased iteration batch. Preserve
-fresh velocity/impulse right-hand sides, limit solving and residual refinement on
-every pass, and discard factors before integration or an unbiased refresh.
-Changing that lifetime requires exact cached/uncached state and cold-restore controls.
+Native factors, reusable workspaces and response-sum memos are component-owned and
+limited to one fixed-pose biased iteration batch. Reset every reused workspace's
+full active range. Reuse response sums only for a bit-identical impulse-delta vector,
+including signed zeros; recheck that identity after clamping before using a sum for
+body updates. Preserve fresh right-hand sides, all original residual checks and
+refinement, limit solving, and accumulation order. Discard cached values before
+integration or an unbiased refresh. Changes require exact physical and diagnostic
+trace comparison, cold restores, and controls that reject stale data.
 Tree and cyclic original-equation residual checks share a coefficient-weighted
 minimum-subnormal rounding allowance in addition to the existing relative bound.
 Preserve ordinary-scale inaccurate-residual and nonfinite rejection, plus actual
@@ -589,7 +593,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"1e4ab682a2e203fc6276c2c70a82cdabe80207f4ddc21127ca17d20b4b208977","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ac367e807503d5d66044232425101c05a8142a442850df3bbc6f2755ffa7f851","disposition":"updated","rationale":"Aligned mechanical membership with connection-graph: fixed, pivot, shaft and spring join the editing group; rope and cord do not. Binding remapping, independent copied values, proper rigid transforms and compile-before-publication remain the required policy. Quarantine preserves invalid stored entries rather than making them admissible assemblies."} -->
+<!-- doc-review {"version":1,"fingerprint":"408fa16f4e60f9cc8ac7c45f7b16b3dd8b6dc20dbf5a33d4024139c47ae2c4e2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d918cf33d3dc8ff8b506ca5045ae88f640962d9acfa8d221f205a36a798c3fa8","disposition":"still accurate","rationale":"The backend replacement does not change membership, groups, remapping, capture, insertion, mirrors, environment or admission. Native bodies and logical part identities remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/pivot/shaft/spring connectivity; rope and cord do not join this group.
@@ -687,7 +691,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6fe71b3d6c8c07f5ab390ed136ed5d849fadf81c70c6ff8416e2e00b60a73182","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"b3bcab965f972bf5589ec432773899e9036efe353482fd74fcf43e92353ff1f9","disposition":"updated","rationale":"Corrected the rendering distinction: workshop rope rendering still filters to rope, while camera-session exports rope and cord completed nodes and diameter to optical geometry. Neither family becomes electrical wiring. Connection overlay ownership, decoration bounds, no authored writes and resource-disposal guidance are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"00fd1fcbcfc2d6c282ac64fc156599ff8c3dce1751b9ae7a5048e93b2c4af9b6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8fc93d0adfb7122aeb1c933807085094da912f2eabb8a32db5b0131fd2ffc480","disposition":"still accurate","rationale":"Completed transforms, contacts and public observations are preserved. Cosmetic boundaries, GPU lifetimes and spring timing obligations remain unchanged; simulation gains do not rely on graphics degradation."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -847,7 +851,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"219f179541d5ce8564ce38e32e50dc46a89cca067c2ae9bcf373c10c7f3d9709","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"ae95e21510d0508c60b11629780dae574f16300d832d57d1a11b2481a1fe943c","disposition":"still accurate","rationale":"The spring browser verifier changed its Automatic missing-reading expectation and checks that invalid target entry emits no command while preserving target, mode and blueprint. It did not change the adaptive graphics probe, quality bounds, render budget, orbit-induced load, or the measured timing assertions described here."} -->
+<!-- doc-review {"version":1,"fingerprint":"6720228051e0a76656c49a859832d69026a17704b62ffc5706df445224babdd2","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"a9d62f689e4a0319fc3436feccd825a081c73217b79e260a2673fab753bbcaf2","disposition":"still accurate","rationale":"The native pin changes no quality thresholds, frame windows, renderer ownership or lamp budgets. Graphics still neither inspect nor modify simulation state, and hardware caveats remain binding."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

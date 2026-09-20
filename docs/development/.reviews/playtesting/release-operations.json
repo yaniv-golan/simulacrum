@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "scripts/playtest/release-policy.json": "d88a3074e0095b3fb3646064d55f3b8e260d1c88680f55d8f72fea0c048b9275",
-    "package-lock.json": "baa19b82ffd12106e23ae146641da1ab1848925118c4e6892543e34f108f075f",
-    "package.json": "365fd3deea23ae0ae89dceadd61a8e557a5c2f51908953e1e20ad25908ed08d0",
+    "package-lock.json": "588f1616e00a4cd1bc810e0945911ce5fdb6b054e6b3f25aaed5eebbb11e1e79",
+    "package.json": "e4f3347fe40d9d37c9d0873749b8b984c1e37d3ba68e0636b3f8bcd12014c2f4",
     "scripts/candidate-after.mjs": "954a519feec57a607e7a45b83a4c8a8c7d053bf7de8b76e720e98a440bf94aec",
     "scripts/candidate-attempt.mjs": "21096751ddc0e774ff78e0489978be26367a438a992bb1d1ecca3bac1f553e70",
     "scripts/candidate-resume.mjs": "e536334f74a1942293ee48566dd85a9b69052e9697a83424230b01c992dcc79a",

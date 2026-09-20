@@ -50,6 +50,7 @@ export function adaptHistoricalNativeRecipe(source, role, patch, row) {
       'pub fn responseWithJointImpulses(',
     ],
     diagnosticCount = diagnosticMarkers.filter((marker) => text.includes(marker)).length,
+    hasScratch = text.includes('+++ b/src/dynamics/solver/staged_island_solver/scratch.rs'),
     omissions = [],
     diagnosticCommand = 'node "$contact_build_dir/native-check/test-joint-reactions.mjs"',
     residualCompile =
@@ -58,11 +59,52 @@ export function adaptHistoricalNativeRecipe(source, role, patch, row) {
   for (const command of [diagnosticCommand, residualCompile, residualRun])
     if (source.split('\n').filter((line) => line === command).length !== 1)
       throw Error('Historical native recipe needs review');
-  if (role === 'candidate') {
-    if (!hasResidual || diagnosticCount !== diagnosticMarkers.length)
+  const scratchCommands = [
+    'rustc --edition=2021 --test "$contact_source_root/src/dynamics/solver/staged_island_solver/scratch.rs" -o "$contact_build_dir/scratch-tests"',
+    '"$contact_build_dir/scratch-tests"',
+  ];
+  const scratchCommandCounts = scratchCommands.map(
+    (command) => source.split('\n').filter((line) => line === command).length,
+  );
+  if (
+    scratchCommandCounts.some((count) => count !== 0) &&
+    scratchCommandCounts.some((count) => count !== 1)
+  )
+    throw Error('Historical native recipe needs review');
+  if (
+    role === 'candidate' ||
+    (['staleFactor', 'staleRhs'].includes(role) &&
+      row.version === '0.20.0-simulacrum.spring.11.f64')
+  ) {
+    if (
+      !hasResidual ||
+      diagnosticCount !== diagnosticMarkers.length ||
+      (row.version === '0.20.0-simulacrum.spring.11.f64' &&
+        (!hasScratch || scratchCommandCounts.some((count) => count !== 1)))
+    )
       throw Error('Incomplete candidate source; required checks cannot be omitted');
     return { source, omissions };
   }
+  if (!hasScratch && scratchCommandCounts.every((count) => count === 1)) {
+    source = source
+      .split('\n')
+      .filter((line) => !scratchCommands.includes(line))
+      .join('\n');
+    omissions.push({
+      check: 'scratch-buffer-reset',
+      reason:
+        'Reviewed historical source predates scratch storage; candidate retains the reset probe.',
+      patchSha256: row.patchSha256,
+    });
+  }
+  if (
+    role === 'baseline' &&
+    row.version === '0.20.0-simulacrum.spring.10.f64' &&
+    hasResidual &&
+    diagnosticCount === diagnosticMarkers.length &&
+    !hasScratch
+  )
+    return { source, omissions };
   if (
     !['baseline', 'staleFactor', 'staleRhs'].includes(role) ||
     !/^0\.20\.0-simulacrum\.spring\.[6789]\.f64$/.test(row.version) ||
@@ -101,7 +143,7 @@ export function admitNativeInputs(config) {
     const row = config[role];
     if (
       !row ||
-      !/^0\.20\.0-simulacrum\.spring\.(?:[6789]|10)\.f64$/.test(row.version) ||
+      !/^0\.20\.0-simulacrum\.spring\.(?:[6789]|10|11)\.f64$/.test(row.version) ||
       !row.package ||
       !row.patch
     )

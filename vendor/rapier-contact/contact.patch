@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/src/dynamics/bilateral_response.rs
-@@ -0,0 +1,346 @@
+@@ -0,0 +1,370 @@
 +use super::solver::{
 +    joint_constraint::{AngularLimitParams, JointConstraint, JointSolverBody, WritebackId},
 +    solver_body::SolverBodies,
@@ -28,6 +28,8 @@
 +    blocks: Vec<[[f64; 6]; 6]>,
 +    q: Vec<[[f64; 6]; 2]>,
 +    endpoints: Vec<[usize; 2]>,
++    row_joints: Vec<usize>,
++    joint_count: usize,
 +    factor: Option<super::solver::SpringFactor>,
 +}
 +impl BilateralResponse {
@@ -50,6 +52,12 @@
 +    }
 +    /// Return copied correction impulses and velocity changes for a velocity sample.
 +    pub fn project(&self, v: &[f64]) -> Result<Vec<f64>, &'static str> {
++        self.project_impl(v, false)
++    }
++    pub fn project_with_joint_impulses(&self, v: &[f64]) -> Result<Vec<f64>, &'static str> {
++        self.project_impl(v, true)
++    }
++    fn project_impl(&self, v: &[f64], with_joints: bool) -> Result<Vec<f64>, &'static str> {
 +        self.admit(v)?;
 +        let rhs: Vec<f64> = self
 +            .q
@@ -66,7 +74,11 @@
 +            None => vec![0.0; rhs.len()],
 +        };
 +        let mut impulse = vec![0.0; v.len()];
-+        for ((row, ends), l) in self.q.iter().zip(&self.endpoints).zip(lambda) {
++        let mut joint_impulses = if with_joints { vec![0.0; self.joint_count * 3] } else { Vec::new() };
++        for (i, ((row, ends), l)) in self.q.iter().zip(&self.endpoints).zip(lambda).enumerate() {
++            if with_joints {
++                for k in 0..3 { joint_impulses[self.row_joints[i] * 3 + k] -= row[0][k] * l; }
++            }
 +            for slot in 0..2 {
 +                for k in 0..6 {
 +                    impulse[ends[slot] * 6 + k] -= row[slot][k] * l;
@@ -75,6 +87,7 @@
 +        }
 +        let velocity = self.multiply(&impulse);
 +        impulse.extend(velocity);
++        impulse.extend(joint_impulses);
 +        if impulse.iter().any(|x| !x.is_finite()) {
 +            return Err("nonfinite projected response");
 +        }
@@ -82,9 +95,15 @@
 +    }
 +    /// Return copied constrained impulses and velocity changes for a force sample.
 +    pub fn response(&self, force: &[f64]) -> Result<Vec<f64>, &'static str> {
++        self.response_impl(force, false)
++    }
++    pub fn response_with_joint_impulses(&self, force: &[f64]) -> Result<Vec<f64>, &'static str> {
++        self.response_impl(force, true)
++    }
++    fn response_impl(&self, force: &[f64], with_joints: bool) -> Result<Vec<f64>, &'static str> {
 +        self.admit(force)?;
 +        let free = self.multiply(force);
-+        let mut out = self.project(&free)?;
++        let mut out = self.project_impl(&free, with_joints)?;
 +        for i in 0..force.len() {
 +            out[i] += force[i];
 +            out[force.len() + i] += free[i];
@@ -200,6 +219,7 @@
 +        node_ids.push(node);
 +    }
 +    let mut q = Vec::new();
++    let mut row_joints = Vec::new();
 +    let mut response = Vec::new();
 +    let mut cfm = Vec::new();
 +    let mut row_bodies = Vec::new();
@@ -207,7 +227,7 @@
 +    let mut edges = Vec::new();
 +    let mut params = *base;
 +    params.dt /= base.num_solver_iterations as f64;
-+    for id in joint_ids {
++    for (joint_index, id) in joint_ids.iter().enumerate() {
 +        let joint = joints.get(*id).unwrap();
 +        // The native active-joint solver emits no rows between two fixed bodies.
 +        if bodies[joint.body1].is_fixed() && bodies[joint.body2].is_fixed() {
@@ -247,6 +267,7 @@
 +            solver_vel2: [0],
 +            joint_id: [0],
 +            impulse: 0.0,
++            applied_linear_impulse: Vector::ZERO,
 +            impulse_bounds: [0.0; 2],
 +            lin_jac: Vector::ZERO,
 +            ang_jac1: Vector::ZERO,
@@ -306,6 +327,7 @@
 +                return Err("nonfinite response");
 +            }
 +            q.push(row);
++            row_joints.push(joint_index);
 +            response.push(r);
 +            cfm.push(c.cfm_gain);
 +            endpoints.push([a, b]);
@@ -344,6 +366,8 @@
 +        blocks,
 +        q,
 +        endpoints,
++        row_joints,
++        joint_count: joint_ids.len(),
 +        factor,
 +    })
 +}
@@ -370,7 +394,7 @@
 +    /// EPSILON regularization bounds the otherwise singular undamped row.
 +    SymplecticSpring,
  }
- 
+
  impl MotorModel {
 @@ -41,6 +45,14 @@
          damping: Real,
@@ -429,7 +453,7 @@
 @@ -138,25 +143,28 @@
                  + self.torque_dir2[1].gdot(solver_vel2.angular)
                  + self.rhs[1];
- 
+
 -            // Exact coupled 2×2 central-friction solve: `Δλ = -K⁻¹·dvel` with
 -            // `K` the tangent effective-mass matrix. A 1D solve along `dvel` leaves an
 -            // orthogonal residual when `K` is anisotropic; iterating it rotates energy between
@@ -471,7 +495,7 @@
 +                new_impulse[0].replace(lane, projected[0] as crate::math::Real);
 +                new_impulse[1].replace(lane, projected[1] as crate::math::Real);
 +            }
- 
+
              let dlambda = new_impulse - self.impulse;
              self.impulse = new_impulse;
 @@ -184,6 +192,7 @@
@@ -505,11 +529,11 @@
 +    pub diagnostic_impulse_accumulator: TangentImpulse<N>,
      pub r: [N; 3],
  }
- 
+
 @@ -671,23 +683,28 @@
              + torque_dir2_1.gdot(solver_vel2.angular)
              + self.rhs[1];
- 
+
 -        // Exact coupled 2×2 solve — see `ContactConstraintTangentPart::solve`
 -        // for why the directional approximation must not be used here.
 -        let k11 = self.r[0];
@@ -549,7 +573,7 @@
 +            new_impulse[0].replace(lane, projected[0] as crate::math::Real);
 +            new_impulse[1].replace(lane, projected[1] as crate::math::Real);
 +        }
- 
+
          let dlambda = new_impulse - self.impulse;
          self.impulse = new_impulse;
 @@ -708,6 +725,7 @@
@@ -559,7 +583,7 @@
 +    pub diagnostic_impulse_accumulator: N,
      pub r: N,
  }
- 
+
 --- a/src/dynamics/solver/contact_constraint/contact_with_coulomb_friction.rs
 +++ b/src/dynamics/solver/contact_constraint/contact_with_coulomb_friction.rs
 @@ -247,6 +247,7 @@
@@ -575,7 +599,7 @@
              // See the normal part: explicit zero, the buffers are not zeroed.
              out_constraint.tangent_part[k].impulse_accumulator = na::zero();
 +            out_constraint.tangent_part[k].diagnostic_impulse_accumulator = na::zero();
- 
+
              for j in 0..DIM - 1 {
                  let torque_dir1 = dp1.gcross(tangents1[j]);
 @@ -430,12 +432,16 @@
@@ -587,14 +611,14 @@
                  normal_part.impulse_accumulator += normal_part.impulse;
                  normal_part.impulse *= warmstart_coeff;
              }
- 
+
              // tangent parts.
              {
 +                tangent_part.diagnostic_impulse_accumulator += tangent_part.impulse.map(|x| x.select(
 +                    solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero()));
                  tangent_part.impulse_accumulator += tangent_part.impulse;
                  tangent_part.impulse *= warmstart_coeff;
- 
+
 @@ -701,6 +707,14 @@
                  warmstart_tangent_world.y.into(),
                  warmstart_tangent_world.z.into(),
@@ -635,7 +659,7 @@
 +                out_constraint.normal_part[k].diagnostic_impulse_accumulator = SimdReal::zero();
                  out_constraint.normal_part[k].r = projected_mass.select(active, SimdReal::zero());
              }
- 
+
 @@ -299,12 +300,14 @@
           */
          out_constraint.tangent_part.impulse = tangent_warmstart;
@@ -648,7 +672,7 @@
              twist_warmstart.select(counts_simd.simd_gt(SimdReal::splat(1.0)), SimdReal::zero());
          out_constraint.twist_part.impulse_accumulator = SimdReal::zero();
 +        out_constraint.twist_part.diagnostic_impulse_accumulator = SimdReal::zero();
- 
+
          out_builder.local_friction_center1 = poses1.inverse_transform_point(friction_center);
          out_builder.local_friction_center2 = poses2.inverse_transform_point(friction_center2);
 @@ -492,6 +495,8 @@
@@ -682,7 +706,7 @@
 +        let twist_world = utils::canonicalize_zero(self.dir1 * (self.twist_part.diagnostic_impulse_accumulator + self.twist_part.impulse));
          let warmstart_twist_impulses: [_; SIMD_WIDTH] =
              utils::canonicalize_zero(self.twist_part.impulse).into();
- 
+
          for k in 0..self.num_contacts as usize {
              let warmstart_impulses: [_; SIMD_WIDTH] =
                  utils::canonicalize_zero(self.normal_part[k].impulse).into();
@@ -691,7 +715,7 @@
 +            ).into();
              let impulses: [_; SIMD_WIDTH] =
                  utils::canonicalize_zero(self.normal_part[k].total_impulse()).into();
- 
+
 @@ -807,6 +822,16 @@
                      let manifold = unsafe { manifolds_all.get_mut(self.manifold_id[ii]) };
                      let active_contact = &mut manifold.points[contact_id as usize];
@@ -917,7 +941,7 @@
                      r,
                      #[cfg(feature = "block-solver")]
 @@ -246,6 +247,7 @@
- 
+
              // Tangent parts.
              {
 +                out_constraint.tangent_part[k].diagnostic_impulse_accumulator = na::zero();
@@ -925,7 +949,7 @@
                  // current tangent basis (see `ContactData::warmstart_tangent_world`).
                  #[cfg(feature = "dim3")]
 @@ -469,12 +471,16 @@
- 
+
                  normal_part.rhs_wo_bias = rhs_wo_bias;
                  normal_part.rhs = new_rhs;
 +                if solved_dt != 0.0 {
@@ -934,13 +958,13 @@
                  normal_part.impulse_accumulator += normal_part.impulse;
                  normal_part.impulse *= params.warmstart_coefficient;
              }
- 
+
              // Tangent part.
              {
 +                if solved_dt != 0.0 { tangent_part.diagnostic_impulse_accumulator += tangent_part.impulse; }
                  tangent_part.impulse_accumulator += tangent_part.impulse;
                  tangent_part.impulse *= params.warmstart_coefficient;
- 
+
 @@ -714,6 +720,16 @@
                  active_contact.data.warmstart_tangent_world =
                      utils::canonicalize_zero(self.tangent1 * imp.x + tangent2 * imp.y);
@@ -973,7 +997,7 @@
 @@ -283,11 +283,62 @@
                  solver_vels,
              ) + self.rhs[1];
- 
+
 -            let new_impulse = na::Vector2::new(
 -                self.impulse[0] - self.r[0] * dvel_0,
 -                self.impulse[1] - self.r[1] * dvel_1,
@@ -1035,7 +1059,7 @@
 +            let projected =
 +                super::contact_constraint_element::friction_projection::project(k, b, limit);
 +            let new_impulse = na::Vector2::new(projected[0], projected[1]);
- 
+
              let dlambda = new_impulse - self.impulse;
              self.impulse = new_impulse;
 @@ -582,3 +633,65 @@
@@ -1112,10 +1136,31 @@
  use crate::prelude::RigidBodySet;
 +#[cfg(feature = "dim2")]
 +use crate::na::SimdPartialOrd;
- 
+
  use {
      crate::dynamics::SpringCoefficients,
-@@ -421,13 +423,25 @@
+@@ -112,6 +114,10 @@
+         // across the row rebuild (the row layout only depends on the static joint
+         // configuration, so it is stable across the substeps of a step).
+         const MAX_ROWS: usize = 4 * SPATIAL_DIM;
++        let mut prev_applied = [crate::math::Vector::ZERO; MAX_ROWS];
++        if substep_id > 0 {
++            for (prev, row) in prev_applied.iter_mut().zip(out_rows.iter()) { *prev = row.applied_linear_impulse; }
++        }
+         let mut prev_impulses = [0.0; MAX_ROWS];
+         if warmstart.is_some() && substep_id > 0 {
+             let count = joint_data_num_constraints(&self.joint).min(MAX_ROWS);
+@@ -132,6 +138,9 @@
+             out_rows,
+         );
+
++        for (row, prev) in out_rows[..len].iter_mut().zip(prev_applied.iter()) {
++            row.applied_linear_impulse = *prev;
++        }
+         if let Some(coeff) = warmstart {
+             if substep_id == 0 {
+                 // Seed from the impulses written back at the end of the previous step.
+@@ -421,13 +430,25 @@
              use crate::dynamics::MotorModel;
              let dt = SimdReal::splat(params.dt);
              let zero = SimdReal::splat(0.0);
@@ -1146,6 +1191,27 @@
              };
              MotorParameters {
                  erp_inv_dt,
+@@ -445,6 +466,10 @@
+         // The SIMD builder emits at most one motor row, one row per locked axis and one per
+         // (uncoupled) limited axis; the masks are disjoint.
+         const MAX_WIDE_ROWS: usize = SPATIAL_DIM + 1;
++        let mut prev_applied = [<SimdReal as crate::utils::ScalarType>::Vector::default(); MAX_WIDE_ROWS];
++        if substep_id > 0 {
++            for (prev, row) in prev_applied.iter_mut().zip(out_rows.iter()) { *prev = row.applied_linear_impulse; }
++        }
+         let mut prev_impulses = [SimdReal::splat(0.0); MAX_WIDE_ROWS];
+         if warmstart.is_some() && substep_id > 0 {
+             let count = ((self.locked_axes | self.limit_axes).count_ones() as usize
+@@ -471,6 +496,9 @@
+             out_rows,
+         );
+
++        for (row, prev) in out_rows[..len].iter_mut().zip(prev_applied.iter()) {
++            row.applied_linear_impulse = *prev;
++        }
+         if let Some(coeff) = warmstart {
+             let coeff = SimdReal::splat(coeff);
+             if substep_id == 0 {
 --- a/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
 +++ b/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
 @@ -97,27 +97,16 @@
@@ -1158,7 +1224,7 @@
          let mut frame1 = *frame1;
          let basis = frame1.rotation().to_mat();
          let lin_err = frame2.translation() - frame1.translation();
- 
+
 -        // Adjust the point of application of the force for the first body,
 -        // by snapping free axes to the second frame's center (to account for
 -        // the allowed relative movement).
@@ -1178,9 +1244,65 @@
 +        // moment arm. Equal/opposite linear reactions therefore share frame 2's
 +        // point, including when a locked coordinate has positional error.
 +        frame1.set_translation(frame2.translation());
- 
+
          let r1 = frame1.translation() - *world_com1;
          let r2 = frame2.translation() - *world_com2;
+@@ -261,6 +250,7 @@
+         let impulse_bounds = [N::zero(), N::splat(Real::INFINITY)];
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -387,6 +377,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac2);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -436,6 +427,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac2);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -542,6 +534,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -604,6 +597,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -651,6 +645,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
+@@ -767,6 +762,7 @@
+         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
+
+         JointConstraint {
++            applied_linear_impulse: Default::default(),
+             joint_id,
+             solver_vel1: body1.solver_vel,
+             solver_vel2: body2.solver_vel,
 --- a/src/dynamics/solver/joint_constraint/mod.rs
 +++ b/src/dynamics/solver/joint_constraint/mod.rs
 @@ -18,3 +18,5 @@
@@ -1238,17 +1360,17 @@
 +        current.update_world_mass_properties(rb.body_type(), &position);
 +        pose.ii = current.effective_world_inv_inertia;
      }
- 
+
      #[inline]
 --- a/src/dynamics/solver/staged_island_solver/joints.rs
 +++ b/src/dynamics/solver/staged_island_solver/joints.rs
 @@ -14,7 +14,7 @@
  };
  use parry::math::SIMD_WIDTH;
- 
+
 -use super::{GroupJointRanges, JOINT_BATCH, LAYOUT_REF_WORKERS, StagedIslandSolver};
 +use super::{GroupJointRanges, StagedIslandSolver, JOINT_BATCH, LAYOUT_REF_WORKERS};
- 
+
  impl StagedIslandSolver {
      /// Staged joint init: joints are colored (same-color = body-disjoint); within each parallel
 @@ -34,6 +34,14 @@
@@ -1313,18 +1435,18 @@
 +pub(crate) mod solve;
  mod sync;
  mod worker;
- 
+
 --- a/src/dynamics/solver/staged_island_solver/solve.rs
 +++ b/src/dynamics/solver/staged_island_solver/solve.rs
-@@ -1,11 +1,88 @@
+@@ -1,11 +1,104 @@
  //! One solve pass of a substep: joint colors, worker-0 joint overflow, contact
  //! colors, then the worker-0 contact overflow (all completion-gated stages).
- 
+
 +use crate::alloc_prelude::*;
  use crate::dynamics::IntegrationParameters;
  use crate::dynamics::solver::JointConstraintsSet;
  use crate::math::Real;
- 
+
  use super::{GroupLayout, SharedCtx, stage_batch};
 +
 +// Owned by one worker and one fixed-pose biased iteration batch. No cached
@@ -1348,6 +1470,22 @@
 +    prepared: Option<BilateralRows>,
 +    tree_rhs: Option<BilateralTreeRhs>,
 +    admission: Option<BilateralAdmission>,
++    scratch: BilateralScratch,
++}
++
++// Workspaces reset at use; cached response sums require an exact delta-bit key.
++#[cfg(feature = "dim3")]
++#[derive(Default)]
++struct BilateralScratch {
++    rhs: Vec<f64>,
++    force: Vec<[f64; 6]>,
++    edge_target: Vec<[f64; 6]>,
++    velocity: Vec<[f64; 6]>,
++    response_sum: Vec<[f64; 6]>,
++    absolute_sum: Vec<[f64; 6]>,
++    residual: Vec<f64>,
++    velocity_delta: Vec<[f64; 6]>,
++    response_delta: Option<Vec<f64>>,
 +}
 +
 +// Successful admission and ordered row lists share the existing fixed-pose
@@ -1402,10 +1540,10 @@
 +    },
 +    Cyclic(spring_cycles::SpringFactor),
 +}
- 
+
  /// One solve pass: joints (colored, then overflow + generic on worker 0) then
  /// contact colors (parallel). Returns the caller's updated stage ordinal.
-@@ -18,6 +95,7 @@
+@@ -18,6 +111,7 @@
      warmstart_joints: bool,
      params: &IntegrationParameters,
      solved_dt: Real,
@@ -1413,7 +1551,7 @@
  ) -> usize {
      let sync = ctx.sync;
      // Optionally, friction can be solved only in the unbiased pass
-@@ -129,8 +207,17 @@
+@@ -129,8 +223,17 @@
      // wait at the barrier). Skipped entirely when empty (the jointless case).
      if !group.joint_overflow.is_empty() || has_generic_joints {
          if worker_id == 0 {
@@ -1431,9 +1569,9 @@
 +                    solve_joint(joint_id);
 +                }
              }
- 
+
              if has_generic_joints {
-@@ -207,3 +294,1031 @@
+@@ -207,3 +310,1052 @@
      }
      sync.sync(stage, 1)
  }
@@ -1918,6 +2056,7 @@
 +            order,
 +        });
 +    }
++    let mut scratch = core::mem::take(&mut component.scratch);
 +    let rows = component.prepared.as_ref().unwrap();
 +    let bodies = &rows.bodies;
 +    let q = &rows.q;
@@ -1926,9 +2065,9 @@
 +    let ground = rows.ground;
 +    let edges = &rows.edges;
 +    let nodes = node_ids.len();
-+    let mut rhs = vec![0.0f64; n];
++    let rhs = scratch::zeroed(&mut scratch.rhs, n, 0.0f64);
 +    for (((&id, rhs_value), row_bodies), row_q) in unlimited.iter()
-+        .zip(&mut rhs).zip(&bodies[..n]).zip(&q[..n])
++        .zip(rhs.iter_mut()).zip(&bodies[..n]).zip(&q[..n])
 +    {
 +        let c = &mut joints.velocity_constraints[id];
 +        if wo_bias {
@@ -2130,12 +2269,12 @@
 +                && memo
 +                    .rhs
 +                    .iter()
-+                    .zip(&rhs)
++                    .zip(rhs.iter())
 +                    .all(|(a, b)| a.to_bits() == b.to_bits())
 +        });
-+        let mut force = vec![[0.0f64; 6]; nodes];
-+        let mut edge_target = force.clone();
-+        let mut velocity = vec![[0.0f64; 6]; nodes];
++        let force = scratch::zeroed(&mut scratch.force, nodes, [0.0f64; 6]);
++        let edge_target = scratch::zeroed(&mut scratch.edge_target, nodes, [0.0f64; 6]);
++        let velocity = scratch::zeroed(&mut scratch.velocity, nodes, [0.0f64; 6]);
 +        let mut delta = memo.map_or_else(|| vec![0.0f64; n], |memo| memo.delta.clone());
 +        if memo.is_none() {
 +            for &child in order.iter().rev() {
@@ -2204,8 +2343,15 @@
 +        let roundoff = 1024.0 * n as f64 * f64::EPSILON;
 +        let tolerance = roundoff / (1.0 - roundoff);
 +        for refinement in 0..=3 {
-+            let mut response_sum = vec![[0.0f64; 6]; vs.solver_bodies.len()];
-+            let mut absolute_sum = response_sum.clone();
++            // Geometry is fixed for this batch. Reuse only the identical input
++            // vector; every original-equation residual is still checked below.
++            let response_current = scratch.response_delta.as_ref()
++                .is_some_and(|previous| scratch::same_bits(previous, &delta));
++            let response_sum = &mut scratch.response_sum;
++            let absolute_sum = &mut scratch.absolute_sum;
++            if !response_current {
++                scratch::zeroed(response_sum, vs.solver_bodies.len(), [0.0f64; 6]);
++                scratch::zeroed(absolute_sum, vs.solver_bodies.len(), [0.0f64; 6]);
 +            for (body, offsets) in rows.body_response_offsets.windows(2).enumerate() {
 +                let mut s0 = 0.0f64;
 +                let mut s1 = 0.0f64;
@@ -2243,7 +2389,9 @@
 +                response_sum[body] = [s0, s1, s2, s3, s4, s5];
 +                absolute_sum[body] = [a0, a1, a2, a3, a4, a5];
 +            }
-+            let mut residual = vec![0.0; n];
++                scratch.response_delta = Some(delta.clone());
++            }
++            let residual = scratch::zeroed(&mut scratch.residual, n, 0.0f64);
 +            let mut accurate = true;
 +            for (i, (row_bodies, row_q)) in bodies[..n].iter().zip(&q[..n]).enumerate() {
 +                let mut actual = cfm[i] * delta[i];
@@ -2342,8 +2490,13 @@
 +            .clamp(c.impulse_bounds[0] as f64, c.impulse_bounds[1] as f64);
 +        delta[i] = total - c.impulse as f64;
 +        c.impulse = total as Real;
++        c.applied_linear_impulse += c.lin_jac * delta[i] as Real;
 +    }
-+    let mut velocity_delta = vec![[0.0f64; 6]; vs.solver_bodies.len()];
++    let velocity_delta = scratch::zeroed(&mut scratch.velocity_delta, vs.solver_bodies.len(), [0.0f64; 6]);
++    // Clamp subtraction can change delta bits even without hitting a bound.
++    if scratch.response_delta.as_ref().is_some_and(|previous| scratch::same_bits(previous, &delta)) {
++        velocity_delta.copy_from_slice(&scratch.response_sum);
++    } else {
 +    for (body, offsets) in rows.body_response_offsets.windows(2).enumerate() {
 +        let mut s0 = 0.0f64;
 +        let mut s1 = 0.0f64;
@@ -2368,6 +2521,7 @@
 +        }
 +        velocity_delta[body] = [s0, s1, s2, s3, s4, s5];
 +    }
++    }
 +    for (body, change) in velocity_delta.iter().enumerate() {
 +        let vel = &mut vs.solver_bodies.vels[body];
 +        for k in 0..3 {
@@ -2391,6 +2545,7 @@
 +            cfm: cfm.to_vec(),
 +        });
 +    }
++    component.scratch = scratch;
 +    true
 +}
 +
@@ -2465,6 +2620,10 @@
 +#[cfg(feature = "dim3")]
 +#[path = "residual_bound.rs"]
 +mod residual_bound;
++
++#[cfg(feature = "dim3")]
++#[path = "scratch.rs"]
++mod scratch;
 --- /dev/null
 +++ b/src/dynamics/solver/staged_island_solver/spring_cycles.rs
 @@ -0,0 +1,507 @@
@@ -2980,11 +3139,11 @@
 @@ -18,7 +18,7 @@
  use crate::math::Real;
  use parry::math::SIMD_WIDTH;
- 
+
 -use super::solve::solve_pass;
 +use super::solve::{BilateralBatchCache, solve_pass};
  use super::{BODY_BATCH, SharedCtx, chunk_at, stage_batch};
- 
+
  /// Per-full-step angular rotation cap (0.25π ≈ 45°): bodies without
 @@ -541,6 +541,7 @@
              /*
@@ -3004,7 +3163,7 @@
              }
 +
 +            drop(bilateral_cache);
- 
+
              /*
               * Stage: integrate positions (parallel over claimed body slots).
 @@ -613,6 +617,22 @@
@@ -3071,7 +3230,7 @@
 +++ b/src/geometry/narrow_phase/queries.rs
 @@ -9,6 +9,18 @@
  use parry::query::PersistentQueryDispatcher;
- 
+
  impl NarrowPhase {
 +    pub(crate) fn clear_contact_diagnostics(&mut self) {
 +        for edge in &mut self.contact_graph.graph.edges {
@@ -3101,7 +3260,7 @@
 @@ -565,6 +566,12 @@
              }
          }
- 
+
 +        // This diagnostic does not collect contacts destroyed between CCD slices.
 +        // Fail closed instead of publishing only the final slice as a full-step impulse.
 +        if integration_parameters.max_ccd_substeps > 1 {
@@ -3138,7 +3297,7 @@
 +            ),
 +        )
      }
- 
+
      #[inline]
 --- /dev/null
 +++ b/typescript/Cargo.lock
@@ -3227,7 +3386,7 @@
 +
 +[[package]]
 +name = "dimforge_rapier3d-deterministic"
-+version = "0.20.0-simulacrum.spring.9.f64"
++version = "0.20.0-simulacrum.spring.11.f64"
 +dependencies = [
 + "bincode",
 + "js-sys",
@@ -3982,11 +4141,11 @@
 -members = ["builds/*"]
 +members = ["builds/rapier3d-deterministic"]
  resolver = "2"
- 
+
  [profile.release]
 @@ -9,6 +9,7 @@
  strip = true # Workaround for https://github.com/bevyengine/bevy/issues/16030 (the bug only happens in 2D)
- 
+
  [patch.crates-io]
 +parry3d-f64 = { path = "../../parry3d-f64" }
  # Build the JS/Wasm bindings against the rapier crates in this repository rather
@@ -3997,7 +4156,7 @@
 @@ -0,0 +1,62 @@
 +[package]
 +name = "dimforge_rapier3d-deterministic" # Can't be named rapier3d which conflicts with the dependency.
-+version = "0.20.0-simulacrum.spring.9.f64"
++version = "0.20.0-simulacrum.spring.11.f64"
 +authors = ["Sébastien Crozet <developer@crozet.re>"]
 +description = "3-dimensional physics engine in Rust - official JS bindings."
 +documentation = "https://rapier.rs/rustdoc/rapier3d/index.html"
@@ -4524,13 +4683,13 @@
 @@ -27,9 +27,7 @@
  find gen2d/ -type f -name '*.bak' | xargs rm
  find gen3d/ -type f -name '*.bak' | xargs rm
- 
+
 -for features_set in \
 -"2" "2 deterministic" "2 simd" \
 -"3" "3 deterministic" "3 simd"
 +for features_set in "3 deterministic"
  do
- 
+
    set -- $features_set # Convert the "tuple" into the param args $1 $2...
 --- a/typescript/rapier-compat/rollup.config.js
 +++ b/typescript/rapier-compat/rollup.config.js
@@ -4545,7 +4704,7 @@
  import copy from "rollup-plugin-copy";
 -import filesize from "rollup-plugin-filesize";
 +
- 
+
  const config = (dim, features_postfix) => {
      const pkgDir = `builds/${features_postfix}/pkg`;
      const distDir = `${pkgDir}/dist`;
@@ -4573,7 +4732,7 @@
          ],
      };
  };
- 
+
 -export default [
 -    config("2d", "2d"),
 -    config("2d", "2d-deterministic"),
@@ -4611,7 +4770,7 @@
      ForceBased,
 +    SymplecticSpring,
  }
- 
+
  /**
 @@ -294,6 +295,10 @@
       * Controls whether contacts are computed between colliders attached
@@ -4634,7 +4793,7 @@
 +    public vertices(): Float64Array {
          return this.colliderSet.raw.coVertices(this.handle);
      }
- 
+
 @@ -933,7 +933,7 @@
       * the heightfield.
       * In 3D, the returned height matrix is provided in column-major order.
@@ -4643,7 +4802,7 @@
 +    public heightfieldHeights(): Float64Array {
          return this.colliderSet.raw.coHeightfieldHeights(this.handle);
      }
- 
+
 @@ -1510,7 +1510,7 @@
       *    the vertices are assumed to describe a line strip.
       */
@@ -4783,7 +4942,7 @@
 @@ -202,6 +202,21 @@
          return this.raw.contact_fid2(i);
      }
- 
+
 +    public contactAppliedFrictionImpulse(i: number): Vector | undefined {
 +        const raw = this.raw.contact_applied_friction_impulse(i);
 +        return raw ? VectorOps.fromRaw(raw) : undefined;
@@ -4806,7 +4965,7 @@
 +++ b/typescript/src.ts/geometry/shape.ts
 @@ -28,7 +28,7 @@
          }
- 
+
          let borderRadius: number;
 -        let vs: Float32Array;
 +        let vs: Float64Array;
@@ -4814,7 +4973,7 @@
          let halfHeight: number;
          let radius: number;
 @@ -229,7 +229,7 @@
- 
+
          let extents: Vector;
          let borderRadius: number;
 -        let vs: Float32Array;
@@ -4828,7 +4987,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * The indices of the segments.
 @@ -1255,7 +1255,7 @@
@@ -4846,7 +5005,7 @@
       */
 -    data: Float32Array | Int32Array;
 +    data: Float64Array | Int32Array;
- 
+
      /**
       * The dimensions of each voxel.
 @@ -1288,13 +1288,13 @@
@@ -4867,7 +5026,7 @@
          this.voxelSize = voxelSize;
 @@ -1406,27 +1406,27 @@
          const rawShapes = this.shapes.map((s) => s.intoRaw());
- 
+
          // #if DIM2
 -        const positions = new Float32Array(this.positions.length * 2);
 +        const positions = new Float64Array(this.positions.length * 2);
@@ -4875,14 +5034,14 @@
              positions[i * 2] = pos.x;
              positions[i * 2 + 1] = pos.y;
          });
- 
+
 -        const rotations = new Float32Array(this.rotations.length);
 +        const rotations = new Float64Array(this.rotations.length);
          this.rotations.forEach((rot, i) => {
              rotations[i] = rot;
          });
          // #endif
- 
+
          // #if DIM3
 -        const positions = new Float32Array(this.positions.length * 3);
 +        const positions = new Float64Array(this.positions.length * 3);
@@ -4891,7 +5050,7 @@
              positions[i * 3 + 1] = pos.y;
              positions[i * 3 + 2] = pos.z;
          });
- 
+
 -        const rotations = new Float32Array(this.rotations.length * 4);
 +        const rotations = new Float64Array(this.rotations.length * 4);
          this.rotations.forEach((rot, i) => {
@@ -4903,7 +5062,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * The indices of the triangles.
 @@ -1467,7 +1467,7 @@
@@ -4921,7 +5080,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * Do we want to assume the vertices already form a convex hull?
 @@ -1507,7 +1507,7 @@
@@ -4939,7 +5098,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * Do we want to assume the vertices already form a convex hull?
 @@ -1553,7 +1553,7 @@
@@ -4957,7 +5116,7 @@
       */
 -    heights: Float32Array;
 +    heights: Float64Array;
- 
+
      /**
       * The heightfield's length along its local `x` axis.
 @@ -1597,7 +1597,7 @@
@@ -4975,7 +5134,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * The indices of the convex polygon.
 @@ -1639,7 +1639,7 @@
@@ -4993,7 +5152,7 @@
       */
 -    vertices: Float32Array;
 +    vertices: Float64Array;
- 
+
      /**
       * The indices of the convex polygon.
 @@ -1686,7 +1686,7 @@
@@ -5011,7 +5170,7 @@
       */
 -    heights: Float32Array;
 +    heights: Float64Array;
- 
+
      /**
       * The dimensions of the heightfield's local `x,z` plane.
 @@ -1753,7 +1753,7 @@
@@ -5026,7 +5185,7 @@
 --- a/typescript/src.ts/geometry/toi.ts
 +++ b/typescript/src.ts/geometry/toi.ts
 @@ -46,7 +46,7 @@
- 
+
      public static fromBuffer(
          collider: Collider,
 -        buffer: Float32Array,
@@ -5035,7 +5194,7 @@
      ): ShapeCastHit {
          if (!buffer) return null;
 @@ -114,7 +114,7 @@
- 
+
      public static fromBuffer(
          collider: Collider,
 -        buffer: Float32Array,
@@ -5047,34 +5206,34 @@
 +++ b/typescript/src.ts/math.ts
 @@ -4,7 +4,7 @@
  // #endif
- 
+
  // scratchBuffer should be as big as the biggest index Rust tries to set on it.
 -export const scratchBuffer = new Float32Array(16);
 +export const scratchBuffer = new Float64Array(16);
- 
+
  // #if DIM2
  export interface Vector {
 @@ -34,7 +34,7 @@
          return VectorOps.new(0.0, 0.0);
      }
- 
+
 -    public static fromBuffer(buffer: Float32Array, target?: Vector): Vector {
 +    public static fromBuffer(buffer: Float64Array, target?: Vector): Vector {
          if (!buffer) return null;
- 
+
          target ??= VectorOps.zeros();
 @@ -122,7 +122,7 @@
          return VectorOps.new(0.0, 0.0, 0.0);
      }
- 
+
 -    public static fromBuffer(buffer: Float32Array, target?: Vector): Vector {
 +    public static fromBuffer(buffer: Float64Array, target?: Vector): Vector {
          if (!buffer) return null;
- 
+
          target ??= VectorOps.zeros();
 @@ -178,7 +178,7 @@
      }
- 
+
      public static fromBuffer(
 -        buffer: Float32Array,
 +        buffer: Float64Array,
@@ -5087,19 +5246,19 @@
       */
 -    elements: Float32Array;
 +    elements: Float64Array;
- 
+
      /**
       * Matrix element at row 1, column 1.
 @@ -283,14 +283,14 @@
          return this.elements[5];
      }
- 
+
 -    constructor(elements: Float32Array) {
 +    constructor(elements: Float64Array) {
          this.elements = elements;
      }
  }
- 
+
  export class SdpMatrix3Ops {
      public static fromBuffer(
 -        buffer: Float32Array,
@@ -5120,7 +5279,7 @@
       * has four consecutive components (in RGBA format).
       */
      public colors: Float32Array;
- 
+
 -    constructor(vertices: Float32Array, colors: Float32Array) {
 +    constructor(vertices: Float64Array, colors: Float32Array) {
          this.vertices = vertices;
@@ -5133,13 +5292,13 @@
 -    public vertices: Float32Array;
 +    public vertices: Float64Array;
      public colors: Float32Array;
- 
+
      /**
 --- a/typescript/src/control/character_controller.rs
 +++ b/typescript/src/control/character_controller.rs
 @@ -212,14 +212,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn computedMovement(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn computedMovement(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5147,7 +5306,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn computedMovement(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn computedMovement(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5156,7 +5315,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -271,14 +271,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn translationDeltaApplied(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn translationDeltaApplied(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5164,7 +5323,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn translationDeltaApplied(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn translationDeltaApplied(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5173,7 +5332,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -286,14 +286,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn translationDeltaRemaining(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn translationDeltaRemaining(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5181,7 +5340,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn translationDeltaRemaining(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn translationDeltaRemaining(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5190,7 +5349,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -305,14 +305,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn worldWitness1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldWitness1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5198,7 +5357,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn worldWitness1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldWitness1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5207,7 +5366,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -320,14 +320,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn worldWitness2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldWitness2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5215,7 +5374,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn worldWitness2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldWitness2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5224,7 +5383,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -335,14 +335,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn worldNormal1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldNormal1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5232,7 +5391,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn worldNormal1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldNormal1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5241,7 +5400,7 @@
          scratch_buffer.set_index(1, u.y);
 @@ -350,14 +350,14 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn worldNormal2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldNormal2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5249,7 +5408,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn worldNormal2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn worldNormal2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -5270,7 +5429,7 @@
 @@ -29,7 +29,7 @@
          Self { controller }
      }
- 
+
 -    pub fn set_kp(&mut self, kp: f32, axes: u8) {
 +    pub fn set_kp(&mut self, kp: f64, axes: u8) {
          let axes = AxesMask::from_bits(axes).unwrap_or(AxesMask::all());
@@ -5279,7 +5438,7 @@
 @@ -61,7 +61,7 @@
          }
      }
- 
+
 -    pub fn set_ki(&mut self, ki: f32, axes: u8) {
 +    pub fn set_ki(&mut self, ki: f64, axes: u8) {
          let axes = AxesMask::from_bits(axes).unwrap_or(AxesMask::all());
@@ -5288,14 +5447,14 @@
 @@ -93,7 +93,7 @@
          }
      }
- 
+
 -    pub fn set_kd(&mut self, kd: f32, axes: u8) {
 +    pub fn set_kd(&mut self, kd: f64, axes: u8) {
          let axes = AxesMask::from_bits(axes).unwrap_or(AxesMask::all());
          if axes.contains(AxesMask::LIN_X) {
              self.controller.pd.lin_kd.x = kd;
 @@ -137,7 +137,7 @@
- 
+
      pub fn apply_linear_correction(
          &mut self,
 -        dt: f32,
@@ -5328,7 +5487,7 @@
          rb_handle: FlatHandle,
          target_rotation: &RawRotation,
 @@ -205,12 +205,12 @@
- 
+
      pub fn linear_correction(
          &mut self,
 -        dt: f32,
@@ -5396,7 +5555,7 @@
              let u = w.chassis_connection_point_cs;
 @@ -249,7 +249,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn wheel_direction_cs(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_direction_cs(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5405,7 +5564,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -259,7 +259,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn wheel_direction_cs(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_direction_cs(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5414,7 +5573,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -276,7 +276,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn wheel_axle_cs(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_axle_cs(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5423,7 +5582,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -286,7 +286,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn wheel_axle_cs(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_axle_cs(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5433,7 +5592,7 @@
 @@ -311,14 +311,14 @@
          }
      }
- 
+
 -    pub fn wheel_side_friction_stiffness(&self, i: usize) -> Option<f32> {
 +    pub fn wheel_side_friction_stiffness(&self, i: usize) -> Option<f64> {
          self.controller
@@ -5441,7 +5600,7 @@
              .get(i)
              .map(|w| w.side_friction_stiffness)
      }
- 
+
 -    pub fn set_wheel_side_friction_stiffness(&mut self, i: usize, stiffness: f32) {
 +    pub fn set_wheel_side_friction_stiffness(&mut self, i: usize, stiffness: f64) {
          if let Some(wheel) = self.controller.wheels_mut().get_mut(i) {
@@ -5449,7 +5608,7 @@
          }
 @@ -347,7 +347,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn wheel_contact_normal_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_contact_normal_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5458,7 +5617,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -357,7 +357,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn wheel_contact_normal_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_contact_normal_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5467,7 +5626,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -368,7 +368,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn wheel_contact_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_contact_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5476,7 +5635,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -378,7 +378,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn wheel_contact_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_contact_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5485,7 +5644,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -396,7 +396,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn wheel_hard_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_hard_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5494,7 +5653,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -406,7 +406,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn wheel_hard_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn wheel_hard_point_ws(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -5504,7 +5663,7 @@
 --- a/typescript/src/dynamics/impulse_joint.rs
 +++ b/typescript/src/dynamics/impulse_joint.rs
 @@ -24,7 +24,7 @@
- 
+
      /// The angular part of the joint’s local frame relative to the first rigid-body it is attached to.
      #[cfg(feature = "dim3")]
 -    pub fn jointFrameX1(&self, handle: FlatHandle, scratch_buffer: &js_sys::Float32Array) {
@@ -5513,7 +5672,7 @@
              let u = j.data.local_frame1.rotation;
              scratch_buffer.set_index(0, u.x);
 @@ -36,7 +36,7 @@
- 
+
      /// The angular part of the joint’s local frame relative to the second rigid-body it is attached to.
      #[cfg(feature = "dim3")]
 -    pub fn jointFrameX2(&self, handle: FlatHandle, scratch_buffer: &js_sys::Float32Array) {
@@ -5560,7 +5719,7 @@
 @@ -164,6 +164,24 @@
          });
      }
- 
+
 +    /// Copied immutable motor settings, excluding accumulated impulse history.
 +    pub fn jointMotorConfiguration(&self, handle: FlatHandle) -> Vec<f64> {
 +        self.map(handle, |j| {
@@ -5584,19 +5743,19 @@
          self.map(handle, |j| {
 @@ -172,17 +190,17 @@
      }
- 
+
      /// Return the lower limit along the given joint axis.
 -    pub fn jointLimitsMin(&self, handle: FlatHandle, axis: RawJointAxis) -> f32 {
 +    pub fn jointLimitsMin(&self, handle: FlatHandle, axis: RawJointAxis) -> f64 {
          self.map(handle, |j| j.data.limits[axis as usize].min)
      }
- 
+
      /// If this is a prismatic joint, returns its upper limit.
 -    pub fn jointLimitsMax(&self, handle: FlatHandle, axis: RawJointAxis) -> f32 {
 +    pub fn jointLimitsMax(&self, handle: FlatHandle, axis: RawJointAxis) -> f64 {
          self.map(handle, |j| j.data.limits[axis as usize].max)
      }
- 
+
      /// Enables and sets the joint limits
 -    pub fn jointSetLimits(&mut self, handle: FlatHandle, axis: RawJointAxis, min: f32, max: f32) {
 +    pub fn jointSetLimits(&mut self, handle: FlatHandle, axis: RawJointAxis, min: f64, max: f64) {
@@ -5606,7 +5765,7 @@
 @@ -199,7 +217,7 @@
          })
      }
- 
+
 -    pub fn jointSetMotorMaxForce(&mut self, handle: FlatHandle, axis: RawJointAxis, maxForce: f32) {
 +    pub fn jointSetMotorMaxForce(&mut self, handle: FlatHandle, axis: RawJointAxis, maxForce: f64) {
          self.map_mut(handle, |j| {
@@ -5626,7 +5785,7 @@
 +        factor: f64,
      ) {
          let targetVel = Vector3::new(vx, vy, vz);
- 
+
 @@ -227,12 +245,12 @@
      pub fn jointConfigureBallMotorPosition(
          &mut self,
@@ -5645,7 +5804,7 @@
 +        damping: f64,
      ) {
          let quat = Quaternion::new(qw, qx, qy, qz);
- 
+
 @@ -250,15 +268,15 @@
      pub fn jointConfigureBallMotor(
          &mut self,
@@ -5712,10 +5871,16 @@
              j.data
 --- a/typescript/src/dynamics/impulse_joint_set.rs
 +++ b/typescript/src/dynamics/impulse_joint_set.rs
-@@ -60,6 +60,30 @@
+@@ -60,6 +60,36 @@
          self.0.remove(handle, wakeUp);
      }
- 
+
++    /// Copied full-step linear impulse on native body1, or absent without a completed solve.
++    pub fn jointAppliedLinearImpulse(&self, handle: FlatHandle) -> Option<Vec<f64>> {
++        self.0.get(utils::impulse_joint_handle(handle))?
++            .applied_linear_impulse.map(|v| vec![v.x, v.y, v.z])
++    }
++
 +    pub fn prepareBilateralResponse(
 +        &self,
 +        bodies: &crate::dynamics::RawRigidBodySet,
@@ -5743,7 +5908,7 @@
      pub fn len(&self) -> usize {
          self.0.len()
      }
-@@ -90,3 +114,16 @@
+@@ -90,3 +120,22 @@
          }
      }
  }
@@ -5753,6 +5918,12 @@
 +pub struct RawBilateralResponse(rapier::dynamics::BilateralResponse);
 +#[wasm_bindgen]
 +impl RawBilateralResponse {
++    pub fn projectWithJointImpulses(&self, velocity: Vec<f64>) -> Result<Vec<f64>, JsValue> {
++        self.0.project_with_joint_impulses(&velocity).map_err(JsValue::from_str)
++    }
++    pub fn responseWithJointImpulses(&self, force: Vec<f64>) -> Result<Vec<f64>, JsValue> {
++        self.0.response_with_joint_impulses(&force).map_err(JsValue::from_str)
++    }
 +    pub fn project(&self, velocity: Vec<f64>) -> Result<Vec<f64>, JsValue> {
 +        self.0.project(&velocity).map_err(JsValue::from_str)
 +    }
@@ -5764,67 +5935,67 @@
 +++ b/typescript/src/dynamics/integration_parameters.rs
 @@ -12,22 +12,22 @@
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn dt(&self) -> f32 {
 +    pub fn dt(&self) -> f64 {
          self.0.dt
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn contact_erp(&self) -> f32 {
 +    pub fn contact_erp(&self) -> f64 {
          self.0.contact_softness.erp(self.0.dt)
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn normalizedAllowedLinearError(&self) -> f32 {
 +    pub fn normalizedAllowedLinearError(&self) -> f64 {
          self.0.normalized_allowed_linear_error
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn normalizedPredictionDistance(&self) -> f32 {
 +    pub fn normalizedPredictionDistance(&self) -> f64 {
          self.0.normalized_prediction_distance
      }
- 
+
 @@ -47,27 +47,27 @@
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn lengthUnit(&self) -> f32 {
 +    pub fn lengthUnit(&self) -> f64 {
          self.0.length_unit
      }
- 
+
      #[wasm_bindgen(setter)]
 -    pub fn set_dt(&mut self, value: f32) {
 +    pub fn set_dt(&mut self, value: f64) {
          self.0.dt = value;
      }
- 
+
      #[wasm_bindgen(setter)]
 -    pub fn set_contact_natural_frequency(&mut self, value: f32) {
 +    pub fn set_contact_natural_frequency(&mut self, value: f64) {
          self.0.contact_softness.natural_frequency = value
      }
- 
+
      #[wasm_bindgen(setter)]
 -    pub fn set_normalizedAllowedLinearError(&mut self, value: f32) {
 +    pub fn set_normalizedAllowedLinearError(&mut self, value: f64) {
          self.0.normalized_allowed_linear_error = value
      }
- 
+
      #[wasm_bindgen(setter)]
 -    pub fn set_normalizedPredictionDistance(&mut self, value: f32) {
 +    pub fn set_normalizedPredictionDistance(&mut self, value: f64) {
          self.0.normalized_prediction_distance = value
      }
- 
+
 @@ -86,7 +86,7 @@
      }
- 
+
      #[wasm_bindgen(setter)]
 -    pub fn set_lengthUnit(&mut self, value: f32) {
 +    pub fn set_lengthUnit(&mut self, value: f64) {
@@ -5839,7 +6010,7 @@
      ForceBased,
 +    SymplecticSpring,
  }
- 
+
  impl From<RawMotorModel> for MotorModel {
 @@ -98,6 +99,7 @@
          match model {
@@ -5851,7 +6022,7 @@
  }
 @@ -167,9 +169,9 @@
      }
- 
+
      pub fn spring(
 -        rest_length: f32,
 -        stiffness: f32,
@@ -5865,7 +6036,7 @@
 @@ -181,7 +183,7 @@
          )
      }
- 
+
 -    pub fn rope(length: f32, anchor1: &RawVector, anchor2: &RawVector) -> Self {
 +    pub fn rope(length: f64, anchor1: &RawVector, anchor2: &RawVector) -> Self {
          Self(
@@ -5897,19 +6068,19 @@
 +++ b/typescript/src/dynamics/multibody_joint.rs
 @@ -67,12 +67,12 @@
      }
- 
+
      /// Return the lower limit along the given joint axis.
 -    pub fn jointLimitsMin(&self, handle: FlatHandle, axis: RawJointAxis) -> f32 {
 +    pub fn jointLimitsMin(&self, handle: FlatHandle, axis: RawJointAxis) -> f64 {
          self.map(handle, |j| j.data.limits[axis as usize].min)
      }
- 
+
      /// If this is a prismatic joint, returns its upper limit.
 -    pub fn jointLimitsMax(&self, handle: FlatHandle, axis: RawJointAxis) -> f32 {
 +    pub fn jointLimitsMax(&self, handle: FlatHandle, axis: RawJointAxis) -> f64 {
          self.map(handle, |j| j.data.limits[axis as usize].max)
      }
- 
+
 @@ -92,10 +92,10 @@
      pub fn jointConfigureBallMotorVelocity(
          &mut self,
@@ -5924,7 +6095,7 @@
 +        factor: f64,
      ) {
          let targetVel = Vector3::new(vx, vy, vz);
- 
+
 @@ -109,12 +109,12 @@
      pub fn jointConfigureBallMotorPosition(
          &mut self,
@@ -5943,7 +6114,7 @@
 +        damping: f64,
      ) {
          let quat = Quaternion::new(qw, qx, qy, qz);
- 
+
 @@ -132,15 +132,15 @@
      pub fn jointConfigureBallMotor(
          &mut self,
@@ -6029,14 +6200,14 @@
              let u = rb.position().translation;
              scratch_buffer.set_index(0, u.x);
 @@ -39,7 +39,7 @@
- 
+
      /// The world-space orientation of this rigid-body.
      #[cfg(feature = "dim2")]
 -    pub fn rbRotation(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbRotation(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.position().rotation.angle())
      }
- 
+
 @@ -48,7 +48,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6072,7 +6243,7 @@
 +    pub fn rbNextRotation(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.next_position().rotation.angle())
      }
- 
+
 @@ -127,7 +127,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6123,9 +6294,9 @@
 +    pub fn rbSetRotation(&mut self, handle: FlatHandle, angle: f64, wakeUp: bool) {
          self.map_mut(handle, |rb| rb.set_rotation(Rotation::new(angle), wakeUp))
      }
- 
+
 @@ -214,7 +214,7 @@
- 
+
      /// Sets the angular velocity of this rigid-body.
      #[cfg(feature = "dim2")]
 -    pub fn rbSetAngvel(&mut self, handle: FlatHandle, angvel: f32, wakeUp: bool) {
@@ -6178,7 +6349,7 @@
 @@ -323,7 +323,7 @@
          })
      }
- 
+
 -    pub fn rbSetAdditionalMass(&mut self, handle: FlatHandle, mass: f32, wake_up: bool) {
 +    pub fn rbSetAdditionalMass(&mut self, handle: FlatHandle, mass: f64, wake_up: bool) {
          self.map_mut(handle, |rb| {
@@ -6224,14 +6395,14 @@
              let u = rb.linvel();
              scratch_buffer.set_index(0, u.x);
 @@ -394,7 +394,7 @@
- 
+
      /// The angular velocity of this rigid-body.
      #[cfg(feature = "dim2")]
 -    pub fn rbAngvel(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbAngvel(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.angvel())
      }
- 
+
 @@ -403,7 +403,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6262,18 +6433,18 @@
 @@ -510,19 +510,19 @@
          self.map_mut(handle, |rb| rb.enable_ccd(enabled))
      }
- 
+
 -    pub fn rbSetSoftCcdPrediction(&mut self, handle: FlatHandle, prediction: f32) {
 +    pub fn rbSetSoftCcdPrediction(&mut self, handle: FlatHandle, prediction: f64) {
          self.map_mut(handle, |rb| rb.set_soft_ccd_prediction(prediction))
      }
- 
+
      /// The mass of this rigid-body.
 -    pub fn rbMass(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbMass(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.mass())
      }
- 
+
      /// The inverse of the mass of a rigid-body.
      ///
      /// If this is zero, the rigid-body is assumed to have infinite mass.
@@ -6281,7 +6452,7 @@
 +    pub fn rbInvMass(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.mass_properties().local_mprops.inv_mass)
      }
- 
+
 @@ -531,7 +531,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6364,7 +6535,7 @@
          self.map(handle, |rb| {
              let u = rb
 @@ -657,7 +657,7 @@
- 
+
      /// The angular inertia along the principal inertia axes of the rigid-body.
      #[cfg(feature = "dim2")]
 -    pub fn rbPrincipalInertia(&self, handle: FlatHandle) -> f32 {
@@ -6425,46 +6596,46 @@
 +    pub fn rbSoftCcdPrediction(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.soft_ccd_prediction())
      }
- 
+
 @@ -798,20 +798,20 @@
      }
- 
+
      /// The linear damping coefficient of this rigid-body.
 -    pub fn rbLinearDamping(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbLinearDamping(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.linear_damping())
      }
- 
+
      /// The angular damping coefficient of this rigid-body.
 -    pub fn rbAngularDamping(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbAngularDamping(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.angular_damping())
      }
- 
+
 -    pub fn rbSetLinearDamping(&mut self, handle: FlatHandle, factor: f32) {
 +    pub fn rbSetLinearDamping(&mut self, handle: FlatHandle, factor: f64) {
          self.map_mut(handle, |rb| rb.set_linear_damping(factor));
      }
- 
+
 -    pub fn rbSetAngularDamping(&mut self, handle: FlatHandle, factor: f32) {
 +    pub fn rbSetAngularDamping(&mut self, handle: FlatHandle, factor: f64) {
          self.map_mut(handle, |rb| rb.set_angular_damping(factor));
      }
- 
+
 @@ -823,11 +823,11 @@
          self.map(handle, |rb| rb.is_enabled())
      }
- 
+
 -    pub fn rbGravityScale(&self, handle: FlatHandle) -> f32 {
 +    pub fn rbGravityScale(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.gravity_scale())
      }
- 
+
 -    pub fn rbSetGravityScale(&mut self, handle: FlatHandle, factor: f32, wakeUp: bool) {
 +    pub fn rbSetGravityScale(&mut self, handle: FlatHandle, factor: f64, wakeUp: bool) {
          self.map_mut(handle, |rb| rb.set_gravity_scale(factor, wakeUp));
      }
- 
+
 @@ -873,7 +873,7 @@
      /// - `torque`: the torque to apply on the rigid-body.
      /// - `wakeUp`: should the rigid-body be automatically woken-up?
@@ -6509,7 +6680,7 @@
 +    pub fn rbUserTorque(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |rb| rb.user_torque())
      }
- 
+
 @@ -1023,7 +1023,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6609,7 +6780,7 @@
          filter_flags: u32,
 @@ -229,7 +229,7 @@
              );
- 
+
              query_pipeline
 -                .project_point(point.0, f32::MAX, solid)
 +                .project_point(point.0, f64::MAX, solid)
@@ -6618,7 +6789,7 @@
                      proj,
 @@ -268,7 +268,7 @@
              );
- 
+
              query_pipeline
 -                .project_point_and_get_feature(point.0, f32::MAX)
 +                .project_point_and_get_feature(point.0, f64::MAX)
@@ -6662,14 +6833,14 @@
              let u = co.position().translation;
              scratch_buffer.set_index(0, u.x);
 @@ -45,7 +46,7 @@
- 
+
      /// The world-space orientation of this collider.
      #[cfg(feature = "dim2")]
 -    pub fn coRotation(&self, handle: FlatHandle) -> f32 {
 +    pub fn coRotation(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.position().rotation.angle())
      }
- 
+
 @@ -54,7 +55,7 @@
      /// # Parameters
      /// - `scratch_buffer`: The array to be populated.
@@ -6709,7 +6880,7 @@
 +                .map_or(f64::NAN, |pose| pose.rotation.angle())
          })
      }
- 
+
 @@ -127,7 +128,7 @@
      pub fn coRotationWrtParent(
          &self,
@@ -6738,7 +6909,7 @@
              co.set_translation(Vector::new(x, y));
          })
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn coSetTranslationWrtParent(&mut self, handle: FlatHandle, x: f32, y: f32, z: f32) {
 +    pub fn coSetTranslationWrtParent(&mut self, handle: FlatHandle, x: f64, y: f64, z: f64) {
@@ -6746,7 +6917,7 @@
              co.set_translation_wrt_parent(Vector::new(x, y, z));
          })
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn coSetTranslationWrtParent(&mut self, handle: FlatHandle, x: f32, y: f32) {
 +    pub fn coSetTranslationWrtParent(&mut self, handle: FlatHandle, x: f64, y: f64) {
@@ -6770,7 +6941,7 @@
 +    pub fn coSetRotation(&mut self, handle: FlatHandle, angle: f64) {
          self.map_mut(handle, |co| co.set_rotation(Rotation::new(angle)))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn coSetRotationWrtParent(&mut self, handle: FlatHandle, x: f32, y: f32, z: f32, w: f32) {
 +    pub fn coSetRotationWrtParent(&mut self, handle: FlatHandle, x: f64, y: f64, z: f64, w: f64) {
@@ -6779,13 +6950,13 @@
              let q = q.normalize();
 @@ -225,7 +226,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn coSetRotationWrtParent(&mut self, handle: FlatHandle, angle: f32) {
 +    pub fn coSetRotationWrtParent(&mut self, handle: FlatHandle, angle: f64) {
          self.map_mut(handle, |co| co.set_rotation_wrt_parent(angle))
      }
- 
+
 @@ -281,7 +282,7 @@
      pub fn coHalfspaceNormal(
          &self,
@@ -6824,7 +6995,7 @@
                  || {
 @@ -387,7 +388,7 @@
      }
- 
+
      /// The radius of this collider if it is a ball, capsule, cylinder, or cone shape.
 -    pub fn coRadius(&self, handle: FlatHandle) -> Option<f32> {
 +    pub fn coRadius(&self, handle: FlatHandle) -> Option<f64> {
@@ -6833,7 +7004,7 @@
              ShapeType::Capsule => co.shape().as_capsule().map(|b| b.radius),
 @@ -435,7 +436,7 @@
      }
- 
+
      /// The half height of this collider if it is a capsule, cylinder, or cone shape.
 -    pub fn coHalfHeight(&self, handle: FlatHandle) -> Option<f32> {
 +    pub fn coHalfHeight(&self, handle: FlatHandle) -> Option<f64> {
@@ -6842,7 +7013,7 @@
              #[cfg(feature = "dim3")]
 @@ -491,7 +492,7 @@
      }
- 
+
      /// The radius of the round edges of this collider.
 -    pub fn coRoundRadius(&self, handle: FlatHandle) -> Option<f32> {
 +    pub fn coRoundRadius(&self, handle: FlatHandle) -> Option<f64> {
@@ -6898,7 +7069,7 @@
              ShapeType::TriMesh => co.shape().as_trimesh().map(|t| flatten(t.vertices())),
 @@ -766,7 +767,7 @@
      }
- 
+
      /// The height of this heightfield if it is one.
 -    pub fn coHeightfieldHeights(&self, handle: FlatHandle) -> Option<Vec<f32>> {
 +    pub fn coHeightfieldHeights(&self, handle: FlatHandle) -> Option<Vec<f64>> {
@@ -6926,17 +7097,17 @@
 @@ -856,35 +857,35 @@
          self.map(handle, |co| co.is_enabled())
      }
- 
+
 -    pub fn coSetContactSkin(&mut self, handle: FlatHandle, contact_skin: f32) {
 +    pub fn coSetContactSkin(&mut self, handle: FlatHandle, contact_skin: f64) {
          self.map_mut(handle, |co| co.set_contact_skin(contact_skin))
      }
- 
+
 -    pub fn coContactSkin(&self, handle: FlatHandle) -> f32 {
 +    pub fn coContactSkin(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.contact_skin())
      }
- 
+
      /// The friction coefficient of this collider.
 -    pub fn coFriction(&self, handle: FlatHandle) -> f32 {
 +    pub fn coFriction(&self, handle: FlatHandle) -> f64 {
@@ -6947,34 +7118,34 @@
 +    pub fn coRestitution(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.material().restitution)
      }
- 
+
      /// The density of this collider.
 -    pub fn coDensity(&self, handle: FlatHandle) -> f32 {
 +    pub fn coDensity(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.density())
      }
- 
+
      /// The mass of this collider.
 -    pub fn coMass(&self, handle: FlatHandle) -> f32 {
 +    pub fn coMass(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.mass())
      }
- 
+
      /// The volume of this collider.
 -    pub fn coVolume(&self, handle: FlatHandle) -> f32 {
 +    pub fn coVolume(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.volume())
      }
- 
+
 @@ -918,7 +919,7 @@
      }
- 
+
      /// The total force magnitude beyond which a contact force event can be emitted.
 -    pub fn coContactForceEventThreshold(&self, handle: FlatHandle) -> f32 {
 +    pub fn coContactForceEventThreshold(&self, handle: FlatHandle) -> f64 {
          self.map(handle, |co| co.contact_force_event_threshold())
      }
- 
+
 @@ -937,8 +938,8 @@
          shape2Pos: &RawVector,
          shape2Rot: &RawRotation,
@@ -7005,7 +7176,7 @@
 +        prediction: f64,
      ) -> Option<RawShapeContact> {
          let pos2 = Pose::from_parts(shapePos2.0.into(), shapeRot2.0);
- 
+
 @@ -1034,7 +1035,7 @@
          &self,
          handle: FlatHandle,
@@ -7048,36 +7219,36 @@
 @@ -1126,11 +1127,11 @@
          self.map_mut(handle, |co| co.set_sensor(is_sensor))
      }
- 
+
 -    pub fn coSetRestitution(&mut self, handle: FlatHandle, restitution: f32) {
 +    pub fn coSetRestitution(&mut self, handle: FlatHandle, restitution: f64) {
          self.map_mut(handle, |co| co.set_restitution(restitution))
      }
- 
+
 -    pub fn coSetFriction(&mut self, handle: FlatHandle, friction: f32) {
 +    pub fn coSetFriction(&mut self, handle: FlatHandle, friction: f64) {
          self.map_mut(handle, |co| co.set_friction(friction))
      }
- 
+
 @@ -1181,15 +1182,15 @@
          self.map_mut(handle, |co| co.set_shape(shape.0.clone()));
      }
- 
+
 -    pub fn coSetContactForceEventThreshold(&mut self, handle: FlatHandle, threshold: f32) {
 +    pub fn coSetContactForceEventThreshold(&mut self, handle: FlatHandle, threshold: f64) {
          self.map_mut(handle, |co| co.set_contact_force_event_threshold(threshold))
      }
- 
+
 -    pub fn coSetDensity(&mut self, handle: FlatHandle, density: f32) {
 +    pub fn coSetDensity(&mut self, handle: FlatHandle, density: f64) {
          self.map_mut(handle, |co| co.set_density(density))
      }
- 
+
 -    pub fn coSetMass(&mut self, handle: FlatHandle, mass: f32) {
 +    pub fn coSetMass(&mut self, handle: FlatHandle, mass: f64) {
          self.map_mut(handle, |co| co.set_mass(mass))
      }
- 
+
 @@ -1197,7 +1198,7 @@
      pub fn coSetMassProperties(
          &mut self,
@@ -7223,7 +7394,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -103,7 +103,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn normal(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn normal(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -7232,7 +7403,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -117,7 +117,7 @@
      // }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn local_n1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn local_n1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -7241,7 +7412,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -126,7 +126,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn local_n1(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn local_n1(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -7250,7 +7421,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -136,7 +136,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn local_n2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn local_n2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -7259,7 +7430,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -145,7 +145,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn local_n2(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn local_n2(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -7268,7 +7439,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -167,7 +167,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn contact_local_p1(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn contact_local_p1(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -7277,7 +7448,7 @@
                  let u = c.local_p1;
 @@ -179,7 +179,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn contact_local_p1(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn contact_local_p1(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -7286,7 +7457,7 @@
                  let u = c.local_p1;
 @@ -192,7 +192,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn contact_local_p2(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn contact_local_p2(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -7295,7 +7466,7 @@
                  let u = c.local_p2;
 @@ -204,7 +204,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn contact_local_p2(&self, i: usize, scratch_buffer: &js_sys::Float32Array) -> bool {
 +    pub fn contact_local_p2(&self, i: usize, scratch_buffer: &js_sys::Float64Array) -> bool {
@@ -7303,7 +7474,7 @@
              (&(*self.0).points).get(i).map_or(false, |c| {
                  let u = c.local_p2;
 @@ -226,6 +226,19 @@
- 
+
      pub fn contact_fid2(&self, i: usize) -> u32 {
          unsafe { (&(*self.0).points).get(i).map(|c| c.fid2.0).unwrap_or(0) }
 +    }
@@ -7320,7 +7491,7 @@
 +    pub fn contact_applied_normal_impulse(&self, i: usize) -> Option<Real> {
 +        unsafe { (&(*self.0).points).get(i).and_then(|c| c.data.applied_normal_impulse) }
      }
- 
+
      pub fn contact_impulse(&self, i: usize) -> Real {
 @@ -279,7 +292,7 @@
          &self,
@@ -7342,7 +7513,7 @@
              let data = &(*self.0).data;
 @@ -334,7 +347,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn solver_contact_tangent_velocity(&self, i: usize, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn solver_contact_tangent_velocity(&self, i: usize, scratch_buffer: &js_sys::Float64Array) {
@@ -7351,7 +7522,7 @@
              scratch_buffer.set_index(0, u.x);
 @@ -343,7 +356,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn solver_contact_tangent_velocity(&self, i: usize, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn solver_contact_tangent_velocity(&self, i: usize, scratch_buffer: &js_sys::Float64Array) {
@@ -7370,7 +7541,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
 @@ -22,7 +22,7 @@
- 
+
      /// Writes the projected point components into the given scratch buffer.
      #[cfg(feature = "dim3")]
 -    pub fn point(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7379,7 +7550,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
 @@ -49,7 +49,7 @@
- 
+
      /// Writes the projected point components into the given scratch buffer.
      #[cfg(feature = "dim2")]
 -    pub fn point(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7388,7 +7559,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
 @@ -57,7 +57,7 @@
- 
+
      /// Writes the projected point components into the given scratch buffer.
      #[cfg(feature = "dim3")]
 -    pub fn point(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7408,7 +7579,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
 @@ -19,14 +19,14 @@
- 
+
      /// Writes the hit normal components into the given scratch buffer.
      #[cfg(feature = "dim3")]
 -    pub fn normal(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7418,14 +7589,14 @@
          scratch_buffer.set_index(1, u.y);
          scratch_buffer.set_index(2, u.z);
      }
- 
+
 -    pub fn time_of_impact(&self) -> f32 {
 +    pub fn time_of_impact(&self) -> f64 {
          self.0.time_of_impact
      }
- 
+
 @@ -53,7 +53,7 @@
- 
+
      /// Writes the hit normal components into the given scratch buffer.
      #[cfg(feature = "dim2")]
 -    pub fn normal(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7434,7 +7605,7 @@
          scratch_buffer.set_index(0, u.x);
          scratch_buffer.set_index(1, u.y);
 @@ -61,14 +61,14 @@
- 
+
      /// Writes the hit normal components into the given scratch buffer.
      #[cfg(feature = "dim3")]
 -    pub fn normal(&self, scratch_buffer: &js_sys::Float32Array) {
@@ -7444,12 +7615,12 @@
          scratch_buffer.set_index(1, u.y);
          scratch_buffer.set_index(2, u.z);
      }
- 
+
 -    pub fn time_of_impact(&self) -> f32 {
 +    pub fn time_of_impact(&self) -> f64 {
          self.inter.time_of_impact
      }
- 
+
 @@ -84,7 +84,7 @@
  #[wasm_bindgen]
  pub struct RawRayColliderHit {
@@ -7457,12 +7628,12 @@
 -    pub(crate) timeOfImpact: f32,
 +    pub(crate) timeOfImpact: f64,
  }
- 
+
  #[wasm_bindgen]
 @@ -93,7 +93,7 @@
          utils::flat_handle(self.handle.0)
      }
- 
+
 -    pub fn timeOfImpact(&self) -> f32 {
 +    pub fn timeOfImpact(&self) -> f64 {
          self.timeOfImpact
@@ -7485,7 +7656,7 @@
 +        maxToi: f64,
          stop_at_penetration: bool,
      ) -> Option<RawShapeCastHit>;
- 
+
 @@ -29,30 +30,30 @@
          shapePos1: &Pose,
          shape2: &dyn Shape,
@@ -7493,14 +7664,14 @@
 -        prediction: f32,
 +        prediction: f64,
      ) -> Option<RawShapeContact>;
- 
+
      fn containsPoint(&self, shapePos: &Pose, point: &Vector) -> bool;
- 
+
      fn projectPoint(&self, shapePos: &Pose, point: &Vector, solid: bool) -> RawPointProjection;
- 
+
 -    fn intersectsRay(&self, shapePos: &Pose, rayOrig: Vector, rayDir: Vector, maxToi: f32) -> bool;
 +    fn intersectsRay(&self, shapePos: &Pose, rayOrig: Vector, rayDir: Vector, maxToi: f64) -> bool;
- 
+
      fn castRay(
          &self,
          shapePos: &Pose,
@@ -7511,7 +7682,7 @@
          solid: bool,
 -    ) -> f32;
 +    ) -> f64;
- 
+
      fn castRayAndGetNormal(
          &self,
          shapePos: &Pose,
@@ -7545,7 +7716,7 @@
 @@ -128,7 +129,7 @@
          RawPointProjection(self.as_ref().project_point(shapePos, *point, solid))
      }
- 
+
 -    fn intersectsRay(&self, shapePos: &Pose, rayOrig: Vector, rayDir: Vector, maxToi: f32) -> bool {
 +    fn intersectsRay(&self, shapePos: &Pose, rayOrig: Vector, rayDir: Vector, maxToi: f64) -> bool {
          self.as_ref()
@@ -7574,7 +7745,7 @@
          self.as_ref()
 @@ -216,29 +217,29 @@
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn alpha(&self) -> f32 {
 +    pub fn alpha(&self) -> f64 {
@@ -7585,7 +7756,7 @@
 +    pub fn set_alpha(&mut self, val: f64) {
          self.0.alpha = val.clamp(0.0, 1.0);
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn beta(&self) -> f32 {
 +    pub fn beta(&self) -> f64 {
@@ -7596,7 +7767,7 @@
 +    pub fn set_beta(&mut self, val: f64) {
          self.0.beta = val.clamp(0.0, 1.0);
      }
- 
+
      #[wasm_bindgen(getter)]
 -    pub fn concavity(&self) -> f32 {
 +    pub fn concavity(&self) -> f64 {
@@ -7607,7 +7778,7 @@
 +    pub fn set_concavity(&mut self, val: f64) {
          self.0.concavity = val.clamp(0.0, 1.0);
      }
- 
+
 @@ -292,7 +293,7 @@
  #[cfg(feature = "dim3")]
  #[wasm_bindgen(getter_with_clone)]
@@ -7616,11 +7787,11 @@
 +    pub vertices: Vec<f64>,
      pub indices: Vec<u32>,
  }
- 
+
 @@ -355,7 +356,7 @@
              })
      }
- 
+
 -    pub fn radius(&self) -> Option<f32> {
 +    pub fn radius(&self) -> Option<f64> {
          match self.0.shape_type() {
@@ -7629,7 +7800,7 @@
 @@ -380,7 +381,7 @@
          }
      }
- 
+
 -    pub fn halfHeight(&self) -> Option<f32> {
 +    pub fn halfHeight(&self) -> Option<f64> {
          match self.0.shape_type() {
@@ -7638,7 +7809,7 @@
 @@ -405,7 +406,7 @@
          }
      }
- 
+
 -    pub fn roundRadius(&self) -> Option<f32> {
 +    pub fn roundRadius(&self) -> Option<f64> {
          match self.0.shape_type() {
@@ -7661,11 +7832,11 @@
 +    pub fn vertices(&self) -> Option<Vec<f64>> {
          let flatten =
              |vertices: &[Vector]| vertices.iter().flat_map(|point| point.to_array()).collect();
- 
+
 @@ -586,7 +587,7 @@
              .map(|heightfield| heightfield.flags().bits() as u32)
      }
- 
+
 -    pub fn heightfieldHeights(&self) -> Option<Vec<f32>> {
 +    pub fn heightfieldHeights(&self) -> Option<Vec<f64>> {
          match self.0.shape_type() {
@@ -7673,53 +7844,53 @@
                  self.0.as_heightfield().map(|heightfield| {
 @@ -662,26 +663,26 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn cuboid(hx: f32, hy: f32) -> Self {
 +    pub fn cuboid(hx: f64, hy: f64) -> Self {
          Self(SharedShape::cuboid(hx, hy))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn cuboid(hx: f32, hy: f32, hz: f32) -> Self {
 +    pub fn cuboid(hx: f64, hy: f64, hz: f64) -> Self {
          Self(SharedShape::cuboid(hx, hy, hz))
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn roundCuboid(hx: f32, hy: f32, borderRadius: f32) -> Self {
 +    pub fn roundCuboid(hx: f64, hy: f64, borderRadius: f64) -> Self {
          Self(SharedShape::round_cuboid(hx, hy, borderRadius))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn roundCuboid(hx: f32, hy: f32, hz: f32, borderRadius: f32) -> Self {
 +    pub fn roundCuboid(hx: f64, hy: f64, hz: f64, borderRadius: f64) -> Self {
          Self(SharedShape::round_cuboid(hx, hy, hz, borderRadius))
      }
- 
+
 -    pub fn ball(radius: f32) -> Self {
 +    pub fn ball(radius: f64) -> Self {
          Self(SharedShape::ball(radius))
      }
- 
+
 @@ -689,19 +690,19 @@
          Self(SharedShape::halfspace(normal.0.normalize()))
      }
- 
+
 -    pub fn capsule(halfHeight: f32, radius: f32) -> Self {
 +    pub fn capsule(halfHeight: f64, radius: f64) -> Self {
          let p2 = Vector::Y * halfHeight;
          let p1 = -p2;
          Self(SharedShape::capsule(p1, p2, radius))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn cylinder(halfHeight: f32, radius: f32) -> Self {
 +    pub fn cylinder(halfHeight: f64, radius: f64) -> Self {
          Self(SharedShape::cylinder(halfHeight, radius))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn roundCylinder(halfHeight: f32, radius: f32, borderRadius: f32) -> Self {
 +    pub fn roundCylinder(halfHeight: f64, radius: f64, borderRadius: f64) -> Self {
@@ -7728,19 +7899,19 @@
              radius,
 @@ -710,29 +711,29 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn cone(halfHeight: f32, radius: f32) -> Self {
 +    pub fn cone(halfHeight: f64, radius: f64) -> Self {
          Self(SharedShape::cone(halfHeight, radius))
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn roundCone(halfHeight: f32, radius: f32, borderRadius: f32) -> Self {
 +    pub fn roundCone(halfHeight: f64, radius: f64, borderRadius: f64) -> Self {
          Self(SharedShape::round_cone(halfHeight, radius, borderRadius))
      }
- 
+
      pub fn voxels(voxel_size: &RawVector, grid_coords: Vec<i32>) -> Self {
          let grid_coords: Vec<_> = grid_coords
              .chunks_exact(DIM)
@@ -7749,13 +7920,13 @@
              .collect();
          Self(SharedShape::voxels(voxel_size.0, &grid_coords))
      }
- 
+
 -    pub fn voxelsFromPoints(voxel_size: &RawVector, points: Vec<f32>) -> Self {
 +    pub fn voxelsFromPoints(voxel_size: &RawVector, points: Vec<f64>) -> Self {
          let points: Vec<_> = points.chunks_exact(DIM).map(Vector::from_slice).collect();
          Self(SharedShape::voxels_from_points(voxel_size.0, &points))
      }
- 
+
 -    pub fn polyline(vertices: Vec<f32>, indices: Vec<u32>) -> Self {
 +    pub fn polyline(vertices: Vec<f64>, indices: Vec<u32>) -> Self {
          let vertices = vertices
@@ -7764,7 +7935,7 @@
 @@ -745,7 +746,7 @@
          }
      }
- 
+
 -    pub fn trimesh(vertices: Vec<f32>, indices: Vec<u32>, flags: u32) -> Option<RawShape> {
 +    pub fn trimesh(vertices: Vec<f64>, indices: Vec<u32>, flags: u32) -> Option<RawShape> {
          let flags = TriMeshFlags::from_bits(flags as u16).unwrap_or_default();
@@ -7772,13 +7943,13 @@
              .chunks(DIM)
 @@ -758,7 +759,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn heightfield(heights: Vec<f32>, scale: &RawVector) -> Self {
 +    pub fn heightfield(heights: Vec<f64>, scale: &RawVector) -> Self {
          Self(SharedShape::heightfield(heights, scale.0))
      }
- 
+
 @@ -766,7 +767,7 @@
      pub fn heightfield(
          nrows: u32,
@@ -7800,19 +7971,19 @@
 @@ -798,18 +799,18 @@
          ))
      }
- 
+
 -    pub fn convexHull(points: Vec<f32>) -> Option<RawShape> {
 +    pub fn convexHull(points: Vec<f64>) -> Option<RawShape> {
          let points: Vec<_> = points.chunks(DIM).map(|v| Vector::from_slice(v)).collect();
          SharedShape::convex_hull(&points).map(|s| Self(s))
      }
- 
+
 -    pub fn roundConvexHull(points: Vec<f32>, borderRadius: f32) -> Option<RawShape> {
 +    pub fn roundConvexHull(points: Vec<f64>, borderRadius: f64) -> Option<RawShape> {
          let points: Vec<_> = points.chunks(DIM).map(|v| Vector::from_slice(v)).collect();
          SharedShape::round_convex_hull(&points, borderRadius).map(|s| Self(s))
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn convexPolyline(vertices: Vec<f32>) -> Option<RawShape> {
 +    pub fn convexPolyline(vertices: Vec<f64>) -> Option<RawShape> {
@@ -7821,7 +7992,7 @@
              .map(|v| Vector::from_slice(v))
 @@ -818,7 +819,7 @@
      }
- 
+
      #[cfg(feature = "dim2")]
 -    pub fn roundConvexPolyline(vertices: Vec<f32>, borderRadius: f32) -> Option<RawShape> {
 +    pub fn roundConvexPolyline(vertices: Vec<f64>, borderRadius: f64) -> Option<RawShape> {
@@ -7830,7 +8001,7 @@
              .map(|v| Vector::from_slice(v))
 @@ -827,7 +828,7 @@
      }
- 
+
      #[cfg(feature = "dim3")]
 -    pub fn convexMesh(vertices: Vec<f32>, indices: Vec<u32>) -> Option<RawShape> {
 +    pub fn convexMesh(vertices: Vec<f64>, indices: Vec<u32>) -> Option<RawShape> {
@@ -7838,7 +8009,7 @@
              .chunks(DIM)
              .map(|v| Vector::from_slice(v))
 @@ -838,9 +839,9 @@
- 
+
      #[cfg(feature = "dim3")]
      pub fn roundConvexMesh(
 -        vertices: Vec<f32>,
@@ -7852,21 +8023,21 @@
 @@ -850,7 +851,7 @@
          SharedShape::round_convex_mesh(vertices, &indices, borderRadius).map(|s| Self(s))
      }
- 
+
 -    pub fn compound(shapes: Vec<RawShape>, positions: Vec<f32>, rotations: Vec<f32>) -> RawShape {
 +    pub fn compound(shapes: Vec<RawShape>, positions: Vec<f64>, rotations: Vec<f64>) -> RawShape {
          let mut compound_parts = Vec::new();
          let num_shapes = shapes.len();
- 
+
 @@ -906,12 +907,12 @@
          Self(SharedShape::compound(compound_parts))
      }
- 
+
 -    pub fn convexDecomposition(vertices: Vec<f32>, indices: Vec<u32>) -> Option<RawShape> {
 +    pub fn convexDecomposition(vertices: Vec<f64>, indices: Vec<u32>) -> Option<RawShape> {
          Self::convexDecompositionWithParams(vertices, indices, &RawVHACDParameters::new())
      }
- 
+
      pub fn convexDecompositionWithParams(
 -        vertices: Vec<f32>,
 +        vertices: Vec<f64>,
@@ -7901,7 +8072,7 @@
 +        maxToi: f64,
      ) -> bool {
          let pos = Pose::from_parts(shapePos.0.into(), shapeRot.0);
- 
+
 @@ -1052,9 +1053,9 @@
          shapeRot: &RawRotation,
          rayOrig: &RawVector,
@@ -7912,7 +8083,7 @@
 -    ) -> f32 {
 +    ) -> f64 {
          let pos = Pose::from_parts(shapePos.0.into(), shapeRot.0);
- 
+
          self.0
 @@ -1067,7 +1068,7 @@
          shapeRot: &RawRotation,
@@ -7965,7 +8136,7 @@
 +++ b/typescript/src/math.rs
 @@ -1,7 +1,7 @@
  //! Linear algebra primitives.
- 
+
  #[cfg(feature = "dim3")]
 -use js_sys::Float32Array;
 +use js_sys::Float64Array;
@@ -7974,27 +8145,27 @@
  use rapier::math::{Rotation, Vector};
 @@ -31,25 +31,25 @@
      }
- 
+
      /// The rotation with thegiven angle.
 -    pub fn fromAngle(angle: f32) -> Self {
 +    pub fn fromAngle(angle: f64) -> Self {
          Self(Rotation::new(angle))
      }
- 
+
      /// The imaginary part of this complex number.
      #[wasm_bindgen(getter)]
 -    pub fn im(&self) -> f32 {
 +    pub fn im(&self) -> f64 {
          self.0.im
      }
- 
+
      /// The real part of this complex number.
      #[wasm_bindgen(getter)]
 -    pub fn re(&self) -> f32 {
 +    pub fn re(&self) -> f64 {
          self.0.re
      }
- 
+
      /// The rotation angle in radians.
      #[wasm_bindgen(getter)]
 -    pub fn angle(&self) -> f32 {
@@ -8010,30 +8181,30 @@
 +    pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
          RawRotation(Rotation::from_xyzw(x, y, z, w))
      }
- 
+
 @@ -70,25 +70,25 @@
- 
+
      /// The `x` component of this quaternion.
      #[wasm_bindgen(getter)]
 -    pub fn x(&self) -> f32 {
 +    pub fn x(&self) -> f64 {
          self.0.x
      }
- 
+
      /// The `y` component of this quaternion.
      #[wasm_bindgen(getter)]
 -    pub fn y(&self) -> f32 {
 +    pub fn y(&self) -> f64 {
          self.0.y
      }
- 
+
      /// The `z` component of this quaternion.
      #[wasm_bindgen(getter)]
 -    pub fn z(&self) -> f32 {
 +    pub fn z(&self) -> f64 {
          self.0.z
      }
- 
+
      /// The `w` component of this quaternion.
      #[wasm_bindgen(getter)]
 -    pub fn w(&self) -> f32 {
@@ -8049,7 +8220,7 @@
 +    pub fn new(x: f64, y: f64) -> Self {
          Self(Vector::new(x, y))
      }
- 
+
 @@ -131,45 +131,45 @@
      /// - `z`: the `z` component of this 3D vector.
      #[cfg(feature = "dim3")]
@@ -8058,35 +8229,35 @@
 +    pub fn new(x: f64, y: f64, z: f64) -> Self {
          Self(Vector::new(x, y, z))
      }
- 
+
      /// The `x` component of this vector.
      #[wasm_bindgen(getter)]
 -    pub fn x(&self) -> f32 {
 +    pub fn x(&self) -> f64 {
          self.0.x
      }
- 
+
      /// Sets the `x` component of this vector.
      #[wasm_bindgen(setter)]
 -    pub fn set_x(&mut self, x: f32) {
 +    pub fn set_x(&mut self, x: f64) {
          self.0.x = x
      }
- 
+
      /// The `y` component of this vector.
      #[wasm_bindgen(getter)]
 -    pub fn y(&self) -> f32 {
 +    pub fn y(&self) -> f64 {
          self.0.y
      }
- 
+
      /// Sets the `y` component of this vector.
      #[wasm_bindgen(setter)]
 -    pub fn set_y(&mut self, y: f32) {
 +    pub fn set_y(&mut self, y: f64) {
          self.0.y = y
      }
- 
+
      /// The `z` component of this vector.
      #[cfg(feature = "dim3")]
      #[wasm_bindgen(getter)]
@@ -8094,7 +8265,7 @@
 +    pub fn z(&self) -> f64 {
          self.0.z
      }
- 
+
      /// Sets the `z` component of this vector.
      #[cfg(feature = "dim3")]
      #[wasm_bindgen(setter)]
@@ -8102,7 +8273,7 @@
 +    pub fn set_z(&mut self, z: f64) {
          self.0.z = z
      }
- 
+
 @@ -242,9 +242,9 @@
  #[cfg(feature = "dim3")]
  impl RawSdpMatrix3 {
@@ -8133,11 +8304,11 @@
 +    vertices: Vec<f64>,
      colors: Vec<f32>,
  }
- 
+
 @@ -29,8 +29,8 @@
          }
      }
- 
+
 -    pub fn vertices(&self) -> Float32Array {
 -        let output = Float32Array::new_with_length(self.vertices.len() as u32);
 +    pub fn vertices(&self) -> Float64Array {
@@ -8153,12 +8324,12 @@
 +    vertices: &'a mut Vec<f64>,
      colors: &'a mut Vec<f32>,
  }
- 
+
 --- a/typescript/src/pipeline/event_queue.rs
 +++ b/typescript/src/pipeline/event_queue.rs
 @@ -31,7 +31,7 @@
      }
- 
+
      /// The sum of all the forces between the two colliders.
 -    pub fn total_force(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn total_force(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -8173,7 +8344,7 @@
 +    pub fn total_force_magnitude(&self) -> f64 {
          self.0.total_force_magnitude
      }
- 
+
      /// The world-space (unit) direction of the force with strongest magnitude.
 -    pub fn max_force_direction(&self, scratch_buffer: &js_sys::Float32Array) {
 +    pub fn max_force_direction(&self, scratch_buffer: &js_sys::Float64Array) {
@@ -8182,14 +8353,13 @@
          scratch_buffer.set_index(1, u.y);
 @@ -58,7 +58,7 @@
      }
- 
+
      /// The magnitude of the largest force at a contact point of this contact pair.
 -    pub fn max_force_magnitude(&self) -> f32 {
 +    pub fn max_force_magnitude(&self) -> f64 {
          self.0.max_force_magnitude
      }
  }
-
 --- /dev/null
 +++ b/src/dynamics/solver/staged_island_solver/residual_bound.rs
 @@ -0,0 +1,63 @@
@@ -8256,110 +8426,6 @@
 +        assert!(!residual_accurate(10,f64::MAX,&Q,1.0,0.0,2.0));
 +    }
 +}
---- a/src/dynamics/bilateral_response.rs
-+++ b/src/dynamics/bilateral_response.rs
-@@ -25,6 +25,8 @@
-     blocks: Vec<[[f64; 6]; 6]>,
-     q: Vec<[[f64; 6]; 2]>,
-     endpoints: Vec<[usize; 2]>,
-+    row_joints: Vec<usize>,
-+    joint_count: usize,
-     factor: Option<super::solver::SpringFactor>,
- }
- impl BilateralResponse {
-@@ -47,6 +49,12 @@
-     }
-     /// Return copied correction impulses and velocity changes for a velocity sample.
-     pub fn project(&self, v: &[f64]) -> Result<Vec<f64>, &'static str> {
-+        self.project_impl(v, false)
-+    }
-+    pub fn project_with_joint_impulses(&self, v: &[f64]) -> Result<Vec<f64>, &'static str> {
-+        self.project_impl(v, true)
-+    }
-+    fn project_impl(&self, v: &[f64], with_joints: bool) -> Result<Vec<f64>, &'static str> {
-         self.admit(v)?;
-         let rhs: Vec<f64> = self
-             .q
-@@ -63,7 +71,11 @@
-             None => vec![0.0; rhs.len()],
-         };
-         let mut impulse = vec![0.0; v.len()];
--        for ((row, ends), l) in self.q.iter().zip(&self.endpoints).zip(lambda) {
-+        let mut joint_impulses = if with_joints { vec![0.0; self.joint_count * 3] } else { Vec::new() };
-+        for (i, ((row, ends), l)) in self.q.iter().zip(&self.endpoints).zip(lambda).enumerate() {
-+            if with_joints {
-+                for k in 0..3 { joint_impulses[self.row_joints[i] * 3 + k] -= row[0][k] * l; }
-+            }
-             for slot in 0..2 {
-                 for k in 0..6 {
-                     impulse[ends[slot] * 6 + k] -= row[slot][k] * l;
-@@ -72,6 +84,7 @@
-         }
-         let velocity = self.multiply(&impulse);
-         impulse.extend(velocity);
-+        impulse.extend(joint_impulses);
-         if impulse.iter().any(|x| !x.is_finite()) {
-             return Err("nonfinite projected response");
-         }
-@@ -79,9 +92,15 @@
-     }
-     /// Return copied constrained impulses and velocity changes for a force sample.
-     pub fn response(&self, force: &[f64]) -> Result<Vec<f64>, &'static str> {
-+        self.response_impl(force, false)
-+    }
-+    pub fn response_with_joint_impulses(&self, force: &[f64]) -> Result<Vec<f64>, &'static str> {
-+        self.response_impl(force, true)
-+    }
-+    fn response_impl(&self, force: &[f64], with_joints: bool) -> Result<Vec<f64>, &'static str> {
-         self.admit(force)?;
-         let free = self.multiply(force);
--        let mut out = self.project(&free)?;
-+        let mut out = self.project_impl(&free, with_joints)?;
-         for i in 0..force.len() {
-             out[i] += force[i];
-             out[force.len() + i] += free[i];
-@@ -197,6 +216,7 @@
-         node_ids.push(node);
-     }
-     let mut q = Vec::new();
-+    let mut row_joints = Vec::new();
-     let mut response = Vec::new();
-     let mut cfm = Vec::new();
-     let mut row_bodies = Vec::new();
-@@ -204,7 +224,7 @@
-     let mut edges = Vec::new();
-     let mut params = *base;
-     params.dt /= base.num_solver_iterations as f64;
--    for id in joint_ids {
-+    for (joint_index, id) in joint_ids.iter().enumerate() {
-         let joint = joints.get(*id).unwrap();
-         // The native active-joint solver emits no rows between two fixed bodies.
-         if bodies[joint.body1].is_fixed() && bodies[joint.body2].is_fixed() {
-@@ -244,6 +264,7 @@
-             solver_vel2: [0],
-             joint_id: [0],
-             impulse: 0.0,
-+            applied_linear_impulse: Vector::ZERO,
-             impulse_bounds: [0.0; 2],
-             lin_jac: Vector::ZERO,
-             ang_jac1: Vector::ZERO,
-@@ -303,6 +324,7 @@
-                 return Err("nonfinite response");
-             }
-             q.push(row);
-+            row_joints.push(joint_index);
-             response.push(r);
-             cfm.push(c.cfm_gain);
-             endpoints.push([a, b]);
-@@ -341,6 +363,8 @@
-         blocks,
-         q,
-         endpoints,
-+        row_joints,
-+        joint_count: joint_ids.len(),
-         factor,
-     })
- }
 --- a/src/dynamics/joint/impulse_joint/impulse_joint.rs
 +++ b/src/dynamics/joint/impulse_joint/impulse_joint.rs
 @@ -21,6 +21,10 @@
@@ -8383,108 +8449,6 @@
              handle: ImpulseJointHandle(handle),
              solver_body_ids: [u32::MAX; 2],
              solver_color: crate::geometry::contact_pair::SOLVER_COLOR_UNCOLORED,
---- a/src/dynamics/solver/joint_constraint/joint_constraint_builder.rs
-+++ b/src/dynamics/solver/joint_constraint/joint_constraint_builder.rs
-@@ -114,6 +114,10 @@
-         // across the row rebuild (the row layout only depends on the static joint
-         // configuration, so it is stable across the substeps of a step).
-         const MAX_ROWS: usize = 4 * SPATIAL_DIM;
-+        let mut prev_applied = [crate::math::Vector::ZERO; MAX_ROWS];
-+        if substep_id > 0 {
-+            for (prev, row) in prev_applied.iter_mut().zip(out_rows.iter()) { *prev = row.applied_linear_impulse; }
-+        }
-         let mut prev_impulses = [0.0; MAX_ROWS];
-         if warmstart.is_some() && substep_id > 0 {
-             let count = joint_data_num_constraints(&self.joint).min(MAX_ROWS);
-@@ -134,6 +138,9 @@
-             out_rows,
-         );
-
-+        for (row, prev) in out_rows[..len].iter_mut().zip(prev_applied.iter()) {
-+            row.applied_linear_impulse = *prev;
-+        }
-         if let Some(coeff) = warmstart {
-             if substep_id == 0 {
-                 // Seed from the impulses written back at the end of the previous step.
-@@ -459,6 +466,10 @@
-         // The SIMD builder emits at most one motor row, one row per locked axis and one per
-         // (uncoupled) limited axis; the masks are disjoint.
-         const MAX_WIDE_ROWS: usize = SPATIAL_DIM + 1;
-+        let mut prev_applied = [<SimdReal as crate::utils::ScalarType>::Vector::default(); MAX_WIDE_ROWS];
-+        if substep_id > 0 {
-+            for (prev, row) in prev_applied.iter_mut().zip(out_rows.iter()) { *prev = row.applied_linear_impulse; }
-+        }
-         let mut prev_impulses = [SimdReal::splat(0.0); MAX_WIDE_ROWS];
-         if warmstart.is_some() && substep_id > 0 {
-             let count = ((self.locked_axes | self.limit_axes).count_ones() as usize
-@@ -485,6 +496,9 @@
-             out_rows,
-         );
-
-+        for (row, prev) in out_rows[..len].iter_mut().zip(prev_applied.iter()) {
-+            row.applied_linear_impulse = *prev;
-+        }
-         if let Some(coeff) = warmstart {
-             let coeff = SimdReal::splat(coeff);
-             if substep_id == 0 {
---- a/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
-+++ b/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
-@@ -250,6 +250,7 @@
-         let impulse_bounds = [N::zero(), N::splat(Real::INFINITY)];
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -376,6 +377,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac2);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -425,6 +427,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac2);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -531,6 +534,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -593,6 +597,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -640,6 +645,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
-@@ -756,6 +762,7 @@
-         let ii_ang_jac2 = body2.ii.transform_vector(ang_jac);
-
-         JointConstraint {
-+            applied_linear_impulse: Default::default(),
-             joint_id,
-             solver_vel1: body1.solver_vel,
-             solver_vel2: body2.solver_vel,
 --- a/src/dynamics/solver/joint_constraint/joint_velocity_constraint.rs
 +++ b/src/dynamics/solver/joint_constraint/joint_velocity_constraint.rs
 @@ -72,6 +72,8 @@
@@ -8532,16 +8496,6 @@
              match self.writeback_id {
                  WritebackId::Dof(i) => joint.impulses[i] = impulses[ii],
                  WritebackId::Limit(i) => joint.data.limits[i].impulse = impulses[ii],
---- a/src/dynamics/solver/staged_island_solver/solve.rs
-+++ b/src/dynamics/solver/staged_island_solver/solve.rs
-@@ -1199,6 +1199,7 @@
-             .clamp(c.impulse_bounds[0] as f64, c.impulse_bounds[1] as f64);
-         delta[i] = total - c.impulse as f64;
-         c.impulse = total as Real;
-+        c.applied_linear_impulse += c.lin_jac * delta[i] as Real;
-     }
-     let mut velocity_delta = vec![[0.0f64; 6]; vs.solver_bodies.len()];
-     for (body, offsets) in rows.body_response_offsets.windows(2).enumerate() {
 --- a/src/pipeline/physics_pipeline/mod.rs
 +++ b/src/pipeline/physics_pipeline/mod.rs
 @@ -208,6 +208,10 @@
@@ -8555,52 +8509,58 @@
          // With a dedicated pool configured, run the whole step inside it.
          #[cfg(all(feature = "parallel", not(feature = "unsync-callbacks")))]
          if let Some(pool) = self.thread_pool.clone() {
---- a/typescript/Cargo.lock
-+++ b/typescript/Cargo.lock
-@@ -82,7 +82,7 @@
-
- [[package]]
- name = "dimforge_rapier3d-deterministic"
--version = "0.20.0-simulacrum.spring.9.f64"
-+version = "0.20.0-simulacrum.spring.10.f64"
- dependencies = [
-  "bincode",
-  "js-sys",
---- a/typescript/builds/rapier3d-deterministic/Cargo.toml
-+++ b/typescript/builds/rapier3d-deterministic/Cargo.toml
-@@ -1,6 +1,6 @@
- [package]
- name = "dimforge_rapier3d-deterministic" # Can't be named rapier3d which conflicts with the dependency.
--version = "0.20.0-simulacrum.spring.9.f64"
-+version = "0.20.0-simulacrum.spring.10.f64"
- authors = ["Sébastien Crozet <developer@crozet.re>"]
- description = "3-dimensional physics engine in Rust - official JS bindings."
- documentation = "https://rapier.rs/rustdoc/rapier3d/index.html"
---- a/typescript/src/dynamics/impulse_joint_set.rs
-+++ b/typescript/src/dynamics/impulse_joint_set.rs
-@@ -60,6 +60,12 @@
-         self.0.remove(handle, wakeUp);
-     }
-
-+    /// Copied full-step linear impulse on native body1, or absent without a completed solve.
-+    pub fn jointAppliedLinearImpulse(&self, handle: FlatHandle) -> Option<Vec<f64>> {
-+        self.0.get(utils::impulse_joint_handle(handle))?
-+            .applied_linear_impulse.map(|v| vec![v.x, v.y, v.z])
-+    }
+--- /dev/null
++++ b/src/dynamics/solver/staged_island_solver/scratch.rs
+@@ -0,0 +1,52 @@
++#[cfg(not(test))]
++use crate::alloc_prelude::*;
 +
-     pub fn prepareBilateralResponse(
-         &self,
-         bodies: &crate::dynamics::RawRigidBodySet,
-@@ -120,6 +126,12 @@
- pub struct RawBilateralResponse(rapier::dynamics::BilateralResponse);
- #[wasm_bindgen]
- impl RawBilateralResponse {
-+    pub fn projectWithJointImpulses(&self, velocity: Vec<f64>) -> Result<Vec<f64>, JsValue> {
-+        self.0.project_with_joint_impulses(&velocity).map_err(JsValue::from_str)
++// Allocation reuse only. Every logical allocation still starts with positive zero.
++pub(crate) fn zeroed<T: Clone>(buffer: &mut Vec<T>, len: usize, zero: T) -> &mut Vec<T> {
++    buffer.resize(len, zero.clone());
++    buffer.fill(zero);
++    buffer
++}
++
++#[cfg(test)]
++mod tests {
++    use super::zeroed;
++    #[test]
++    fn reused_rhs_and_body_workspaces_do_not_retain_previous_solve() {
++        let mut rhs = vec![f64::NAN, -0.0, 7.0, -2.0];
++        let pointer = rhs.as_ptr();
++        let capacity = rhs.capacity();
++        for len in [4, 2, 4] {
++            let values = zeroed(&mut rhs, len, 0.0f64);
++            assert!(values.iter().all(|v| v.to_bits() == 0));
++            assert_eq!(values.as_ptr(), pointer);
++            assert_eq!(values.capacity(), capacity);
++            values.fill(9.0);
++        }
++        let mut bodies = vec![[f64::NAN; 6]; 3];
++        for len in [3, 1, 5, 2] {
++            let values = zeroed(&mut bodies, len, [0.0f64; 6]);
++            assert_eq!(values.len(), len);
++            assert!(values.iter().flatten().all(|v| v.to_bits() == 0));
++            values.fill([-1.0; 6]);
++        }
 +    }
-+    pub fn responseWithJointImpulses(&self, force: Vec<f64>) -> Result<Vec<f64>, JsValue> {
-+        self.0.response_with_joint_impulses(&force).map_err(JsValue::from_str)
++}
++
++
++// Exact floating-point inputs only; signed zeros are different cache keys.
++pub(crate) fn same_bits(a: &[f64], b: &[f64]) -> bool {
++    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
++}
++
++#[cfg(test)]
++mod key_tests {
++    use super::same_bits;
++    #[test]
++    fn repeated_response_requires_identical_bits_and_length() {
++        assert!(same_bits(&[1.0, 0.0], &[1.0, 0.0]));
++        assert!(!same_bits(&[1.0, 0.0], &[1.0, -0.0]));
++        assert!(!same_bits(&[1.0], &[1.0, 0.0]));
++        assert!(!same_bits(&[1.0], &[f64::from_bits(1.0f64.to_bits() + 1)]));
 +    }
-     pub fn project(&self, velocity: Vec<f64>) -> Result<Vec<f64>, JsValue> {
-         self.0.project(&velocity).map_err(JsValue::from_str)
-     }
++}

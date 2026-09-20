@@ -291,6 +291,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     report.endurance = await measureGearEndurance();
     report.bounds = await measureGearBounds();
+    report.environment.performanceLoadAverage = loadavg();
     report.performance = await measureGearPerformance();
     const failures = report.performance.flatMap((row) => {
       const label = `trial${row.trial}/${row.bodies}bodies/${row.meshes}meshes`;
@@ -310,12 +311,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         .map((row) => `${row.label} costPerTickUs ${row.costPerTickUs} exceeds ${TICK_BUDGET_US}`),
     );
     assert.equal(failures.length, 0, failures.join('; '));
-    report.environment.loadAverageAfter = loadavg();
     report.status = 'passed';
   } catch (error) {
     report.failure = error.message;
     process.exitCode = 1;
   }
+  report.environment.loadAverageAfter = loadavg();
   const output = process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT ?? 'artifacts/gears';
   mkdirSync(output, { recursive: true });
   writeFileSync(join(output, 'capacity.json'), JSON.stringify(report, null, 2));

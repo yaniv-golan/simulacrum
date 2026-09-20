@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"509fc98f149e066d52308be69eb5028d977f761bafbd7fcd39a9c04fc8bfae6b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"47271a8fea3802b383b7efb684b2a387469fa2d7d818f0300bac389442260592","disposition":"still accurate","rationale":"The coupler witness now proves retained partial funding, unchanged heat while off, resumed opening and reset on Retry. Existing surfaces, selection lifecycle and contextual Help remain accurate; no UI was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"3bf7da5892b6ed1a586cea420ee4800859f92cd94ebabf7d40fb28799ebafd6d","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b9111fdcc2e9a8a61b84cedc7f1e75c8347c4a0cc0dd7208fc1f02db61fdb162","disposition":"still accurate","rationale":"Native scratch storage adds no player control, teaching entry, panel or interaction transition. Existing settings, help, recording consent, feedback, measurements and part UI lifecycles remain unchanged."} -->
 
 
 

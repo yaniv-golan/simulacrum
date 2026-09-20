@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"4a3c1d434f5cd2108813f13a6d24ee444454ca1966cc1db8474dc158abd92704","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"a93a26f01b26d77db0b94d5d7d37b857461116dfdd82f2c67bdcdd4f126667b8","disposition":"still accurate","rationale":"The five audited metadata digests change no milestone allocation, bar or qualification. Browser witness repairs and a failed gear budget do not establish release or F1 acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"0399e000245a639fa8b72eaa45aaae3434f3b3df44d7513a179da7828d433b97","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"91e8f55b3c0b6ecbd1b6e98c63bc34851545fbb2eaf5967f264c6b65881a7a95","disposition":"still accurate","rationale":"Manifest updates refresh reviewed consumer hashes only; milestone allocations and qualification bars are unchanged. Native execution optimization adds no player capability or human evidence."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -116,7 +116,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"3c3cfd3f0214b99c6c90f05817fc76d1ea948fcee110d09a139dfe856b6520ef","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8daed3b4c9b1ce5fae29981fca7360ca6b3ee42accd54d12d19452f675a30b19","disposition":"still accurate","rationale":"The remote-setup edit documents consecutive capture sequence admission and one best-effort terminal record. It does not change the local, merge, final or experimental-release commands, evidence scope, private storage requirements or human-acceptance distinction referenced here."} -->
+<!-- doc-review {"version":1,"fingerprint":"d91b76336bd59e02659ee91d39e7c7ab3f093cd16baed037c91759321d6d82b4","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"484736e38beab310609624576cb6434afc956fce576dfe70f1b752b987f97a3d","disposition":"still accurate","rationale":"Only the pinned native package and lock integrity change. Tier commands, selection, landing admission, Node requirements and qualification distinctions remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -209,7 +209,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"c6c0eee7f7c9ffcc7ee6a36e79aeae9bb07cda94d7517a7aaae2448209c1133c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a235bae4f0ab546ae0a662a0cf44897edb2e268e8cbe7e42239e6636b6abbf93","disposition":"still accurate","rationale":"The only changed dependency is the regenerated docs/development/reference.md, which this section describes as generated output rather than quoting; its spur-transmission row now lists the repair under gear-mesh.mjs because the manifest owner moved. The prepare, review and check workflow this section prescribes is the one this closure followed, including re-running prepare after the source moved again rather than reusing the first pass."} -->
+<!-- doc-review {"version":1,"fingerprint":"0c64c9c23c81ddfb0ac6c890b2aaafac0eba203a1ed504ba14b7c66c16c0eca6","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"00fff903f56ec310b50729bc4b2a32023fb9759132473ad0b81321f8e9a15bf5","disposition":"still accurate","rationale":"The changed native dependency correctly invalidates dependency-bound explanations; discovery, semantic review, sidecar hashing and source-closure procedures remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"4d33f152bb20f91a7d2fd8eab57ea159c96b50c47b4770cb6f7b06cc8f069d4e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5565d81f0aaacf92b183c8f2c5cce51b3cce88ff3d2a43197545b4d58c723e27","disposition":"still accurate","rationale":"Reviewed four consumer digests and the workbench source digest; fixture and identity read domains, imports, exclusions and reaching checks remain unchanged. Applied the five-row proposal with passing invariant controls; scheduling and selection policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b682ab7e956879ab2dd202beac2fad02eb907fc02417124ed8455168da9dbebb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"bacf23ba670b2752ecdb6a7746c2cde05cf665b849f8cb75c3e66d1c8c784ba8","disposition":"still accurate","rationale":"Package and manifest fingerprints change without changing selector algorithms, consumer membership, required browser IDs, lanes or receipt rules. The shared runtime still selects conservative coverage."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -653,7 +653,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"c1b98d8d8defb22fdd22ea36a6dcc2995732bbcbcec47d956c3f47692def200a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"777a559d5c16cf03b4ef81d8dcb00804b1fcf6a78e18afac49c47b4bdbe61e1f","disposition":"still accurate","rationale":"Unchanged prose. Only package.json's version field moved, 0.4.0 to 0.5.0; no file under scripts/verification-window.mjs, scripts/when-quiet.mjs or scripts/verify-host.mjs changed. The lease, the owner PID and declared-intent notice, the per-tier wait maxima, the nested-command inheritance, the abandonment and recovery semantics, the verify:host readiness probe and the --when-quiet pre-capture poll this section documents are all independent of the package version."} -->
+<!-- doc-review {"version":1,"fingerprint":"6a9bf9b8eec6d62b5543e793dece39473c3eb2aea4964d0e9b25f072c503c556","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"b1ae80f1d873ca2512b26f08b3a3f915bead4fd395fd72fbc67b2c0c1a45fe99","disposition":"still accurate","rationale":"The package delta changes only the native dependency; window ownership, priority, admission, wait limits and recovery rules remain unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"8e6f858657394e8b1cd3d1b2d180c8f0969dedd67e6676db7592edff6cfed167","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7acfdf67375dedc6ea14775fde103c6c2e1731f2befd2f50bb794414b3102d3e","disposition":"still accurate","rationale":"Only test witness behavior and audited metadata changed. Capture, attestation, exact-tip landing and destination drift requirements are unchanged. The failed full candidate remains failed and cannot authorize landing."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f93da7da003b4c18f1cd3cab9bcd0024740abd9edfa01bb06369f1b47ce8756","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"570967ec98413c6033899b33779d9fa33cd37f129a0ac9633c30313f1967406d","disposition":"still accurate","rationale":"The dependency replacement leaves capture, dependency validation, source identity, resume and landing rules unchanged. Its changed bytes require fresh candidate evidence."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
