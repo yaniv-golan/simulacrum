@@ -85,7 +85,7 @@
     "src/presentation/vehicle-controls.mjs": "05097bdd1b2d80916383781e08477201d8d2021da985f2ea4cd7a7bc5ff4a5df",
     "src/presentation/part-help-content.mjs": "10b9f89022c595ba6a8ba0b3b4d4beb51c78bec66a42112586e3cf34132cbb2d",
     "src/presentation/part-search.mjs": "9a244743d2b024bf89dac8ff67db45cd41a8da0e198d2d25a268e80b58d7ecb9",
-    "scripts/part-help-cases.mjs": "3396f60e2bb5c81a8b30731054331a269de3ede3625817242e84ba8a0b54b039",
+    "scripts/part-help-cases.mjs": "40c632d9752f73241d47cc9cbabfb4ceefb71d4c559cdb38be1e4c748e00fa5e",
     "scripts/verify-part-help-browser.mjs": "7ba98fdea3555811bd86c22aae4f541192f9b5e241c6b1065d30b5c3637c2b53",
     "scripts/verify-part-help-inspectors.mjs": "6da10ccff8aadf19498e30d8e4d89da037fe9335a182100f0167c6b844af90e7",
     "scripts/verify-part-help-window.mjs": "ae8a2e1fcbab43013f26f0ba1de3e0c012f02787914f666863ba3d4e894d515d",

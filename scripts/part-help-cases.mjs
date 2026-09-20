@@ -226,17 +226,17 @@ export async function runPartHelpCases(partition, evidence, browser) {
       await p.keyboard.down('ArrowUp');
       await duty(1);
       await p.getByRole('button', { name: 'About Powered Motor', exact: true }).click();
+      await duty(1); // Reading Help preserves an already held drive key.
+      await p.keyboard.up('ArrowUp');
       await duty(0);
       await p.keyboard.down('ArrowUp');
-      await duty(0);
+      await duty(0); // A fresh reading key in Help must not start the receiver.
+      await p.keyboard.up('ArrowUp');
       equal((await observed()).metadata.mode, 'run');
       await p
         .locator('canvas')
         .first()
         .click({ position: { x: 16, y: 250 } });
-      await p.keyboard.down('ArrowUp');
-      await duty(0);
-      await p.keyboard.up('ArrowUp');
       await p.keyboard.down('ArrowUp');
       await duty(1);
       await p.keyboard.up('ArrowUp');

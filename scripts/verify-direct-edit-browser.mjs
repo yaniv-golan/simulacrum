@@ -83,7 +83,8 @@ try {
   await page.mouse.move(px, py);
   await page.mouse.down();
   await page.mouse.move(px + 60, py + 10, { steps: 8 });
-  await page.keyboard.press('Alt+ArrowUp');
+  // Yaw keeps this floor-level motor clear while testing an intervening accepted edit.
+  await page.keyboard.press('Alt+ArrowLeft');
   await page.waitForFunction(
     () =>
       Math.abs(window.workshopProbe.observe().frames[0].metadata.blueprint.parts[0].rotation[3]) <
@@ -138,7 +139,8 @@ try {
   browserEvidence.assert('ok', [
     lowered.position.every((v, i) => Math.abs(v - moved.position[i]) < 1e-9),
   ]);
-  await page.keyboard.press('Alt+ArrowUp');
+  // Yaw keeps this floor-level motor clear while testing an intervening accepted edit.
+  await page.keyboard.press('Alt+ArrowLeft');
   const rotated = (await frame()).metadata.blueprint.parts[0];
   // Rotation copies the position verbatim: bit-exact against the lowered pose.
   browserEvidence.assert('deepEqual', [rotated.position, lowered.position]);

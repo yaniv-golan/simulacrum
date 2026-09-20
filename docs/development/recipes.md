@@ -151,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"3ca707557f1b6aa27604c3e5c58afd465f625af9c326fcdaf4a277512010291a","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cda5006883cdf6c9c077b446496519430a06a1945bda0c9e7abe3a0ac507a50d","disposition":"updated","rationale":"Replaced the obsolete focus-entry release instruction with actual vehicle-controls behavior: Help owns reading keys, existing drive holds persist and keyup releases them. Scene Undo/Redo can stale a preview while replacement remains blocked; the scene journey verifies revalidation and preservation. The mirror witness now names occupied connectors while retaining refusal and unchanged-state checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"95646e8d630484883b08d83a22245314b80e295ff2c435abfb0db7d13593db7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"46219a1d18680861d19586269a5d6cc7ff99bd9958f030a9af9402f13a452cac","disposition":"still accurate","rationale":"Part Help now tests the documented retained hold through focus entry, physical keyup release, and suppression of a fresh key press inside Help. This matches the existing interaction recipe without changing input ownership."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"17a9494735c972be4af98abbb912c075ddbcf8d72638f938d17baa9467319727","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"80fc1b8dfa78296679a1f1a67e1056fbd97ce81bdd3b124b007add37beca4d60","disposition":"still accurate","rationale":"The only changed dependency is the release-notes unit test. Its ordering counterexample now uses fixed distinct past dates with a passing ordered control and a rejected reversed control, so new same-day release entries cannot make the negative case valid. No runtime source, physical law, solver, phase, accounting or verification policy changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"dbba76ac5684af4f9e445e3dea1407c8674fafc54e93b1fac03a3d4c4d98def3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"156b056046f5ebabbd8767fd60c19a92daddf1f7425bdbd4a30a8fa5c38e4d2c","disposition":"still accurate","rationale":"Witnesses now place and resize clear of the floor, retain funded coupler progress through OFF, preserve held controls through dialogs, and catch synchronous camera admission. Physical state preservation and numeric limits remain asserted. Gear integration still exceeds 2 ms on both measured sources; no physics or timing policy changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

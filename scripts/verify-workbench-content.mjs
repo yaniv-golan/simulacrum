@@ -502,12 +502,18 @@ try {
     JSON.parse(window.render_game_to_text()).power.sources.some((s) => s.duty !== 0),
   );
   await page.getByRole('button', { name: 'Help', exact: true }).click();
+  const helpTick = (await read()).tick;
+  await page.waitForFunction(
+    (tick) => JSON.parse(window.render_game_to_text()).tick > tick + 3,
+    helpTick,
+  );
+  evidence.assert('ok', [(await read()).power.sources.some((s) => s.duty !== 0)]);
+  await page.keyboard.press('Escape');
+  evidence.assert('ok', [(await read()).power.sources.some((s) => s.duty !== 0)]);
+  await page.keyboard.up('w');
   await page.waitForFunction(() =>
     JSON.parse(window.render_game_to_text()).power.sources.every((s) => s.duty === 0),
   );
-  await page.keyboard.press('Escape');
-  evidence.assert('ok', [(await read()).power.sources.every((s) => s.duty === 0)]);
-  await page.keyboard.up('w');
 
   await learn.click();
   const springLaunch = page.getByRole('button', { name: 'Try spring playground', exact: true });

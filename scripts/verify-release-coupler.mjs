@@ -135,9 +135,23 @@ try {
   });
   await page.keyboard.up('KeyW');
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).power.couplers[0].progressJ === 0,
+    () => JSON.parse(window.render_game_to_text()).power.couplers[0].reasonCode === 'OFF',
   );
-  evidence.assert('ok', [(await read()).power.couplers[0].heatJ > 0]);
+  const interrupted = await read(),
+    pausedFunding = interrupted.power.couplers[0];
+  evidence.assert('ok', [pausedFunding.progressJ > 0 && !pausedFunding.opened]);
+  await page.waitForFunction(
+    (tick) => JSON.parse(window.render_game_to_text()).tick > tick + 10,
+    interrupted.tick,
+  );
+  evidence.assert('equal', [(await read()).power.couplers[0].progressJ, pausedFunding.progressJ]);
+  evidence.assert('equal', [(await read()).power.couplers[0].heatJ, pausedFunding.heatJ]);
+  await page.keyboard.down('KeyW');
+  await page.waitForFunction(
+    () => JSON.parse(window.render_game_to_text()).power.couplers[0].opened,
+  );
+  await page.keyboard.up('KeyW');
+  evidence.assert('ok', [(await read()).power.couplers[0].heatJ > pausedFunding.heatJ]);
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).power.couplers[0].heatJ === 0,

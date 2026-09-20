@@ -194,6 +194,20 @@ try {
   await page.screenshot({ path: browserArtifactPath('artifacts/feedback-fixes/two-motors.png') });
   await page.locator('[data-command=build]').click();
   const diameter = page.getByLabel('Wheel diameter (mm)', { exact: true });
+  // Give the larger wheel ground clearance through the ordinary connected-group transform.
+  await page.locator('.placement-settings > summary').click();
+  const wheelHeight = (await read()).parts.find((part) => part.id === 'wheel2').position[1] + 0.5;
+  const positionY = page.getByRole('spinbutton', { name: 'Position Y', exact: true });
+  await positionY.fill(String(wheelHeight));
+  await positionY.press('Tab');
+  await page.waitForFunction(
+    (height) =>
+      window.workshopProbe
+        .observe()
+        .frames[0].metadata.blueprint.parts.find((part) => part.id === 'wheel2').position[1] ===
+      height,
+    wheelHeight,
+  );
   const beforeSize = await read();
   await diameter.fill('405');
   browserEvidence.assert('deepEqual', [

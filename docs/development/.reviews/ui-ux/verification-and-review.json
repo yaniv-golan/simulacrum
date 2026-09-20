@@ -4,7 +4,7 @@
     "scripts/manifest.json#check=verify-workbench-content": "f63985647ed87015f112c48b300f856a2d1738702e9bb91702ef4be8909ea46c",
     "src/presentation/workbench-content.mjs": "5dc4140e8a1284cb039b819483621fab2f491079caac5e23e9a2fc730244320b",
     "test/workbench-content.test.mjs": "7b4b9a221e0a1f925c9ae9d247f6ec4d8b35f68a01104371f77a890e21002f72",
-    "scripts/verify-workbench-content.mjs": "b66d6c7049f26c363a1ae1455e8d932161bba436acace74e70a7b79ca04f23ee",
+    "scripts/verify-workbench-content.mjs": "31407dfce5211c4a354783337a72044314dc9c4b4b6d26e96eeb8df61ed5a85c",
     "scripts/verify-learning-examples.mjs": "b084518b55637c893915cc326ee7468b9156a44afdfe6c7b06d7329f660d4a3c",
     "scripts/verify-authorable-scenes.mjs": "bfe95c8f4edb46c154ceb8fb5f8e573ffe31d1d32d81f3b8a9386dee85d6befa",
     "test/scene-editor.test.mjs": "7d90d18178f2f36b83e0e1134af6a98b22af37be21a5d760e7b9da20f8d8f5be",

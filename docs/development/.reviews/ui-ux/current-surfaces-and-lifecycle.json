@@ -40,7 +40,7 @@
     "scripts/module-graph.mjs": "eb612b104ed1cb9488c2be3c2c913b782663e836d4a12e91185c946073d7f083",
     "scripts/source-identity.mjs": "aabd1c772000c2968e2db8bdbab5f5fb623f6dcba7df649f07830fe7628a0e79",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
-    "scripts/verify-release-coupler.mjs": "94a966f0d1d2ed4b426b7b0f298a86a0921a2656d9cbf39cd710561aa655db55",
+    "scripts/verify-release-coupler.mjs": "9deb7e27aecd7188041dfca8d3cd47da22eeb30df8e37707e67522664e60d43c",
     "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
     "src/presentation/whats-new.mjs": "96f39c8134c1bc653af9dbeda0f4567dafe9ee0b78e63e181202d8ea2b45a199",
     "docs/development/playtesting.md#release-operations": "5feffa2083a809d4ff2355d542765712084dd2e0fc9e3bc2b2a514b74a3ef9f5",

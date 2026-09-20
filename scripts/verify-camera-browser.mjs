@@ -344,17 +344,29 @@ try {
     () => window.workshopProbe.readInteractionState().cameraPhoto.gallery.photos.length === 3,
   );
   await page.keyboard.down('w');
+  await page.waitForFunction(() =>
+    window.workshopProbe
+      .observe()
+      .frames[0].power.sources.filter((s) => s.node < 12)
+      .some((s) => s.duty !== 0),
+  );
   await page
     .locator('.machine-camera-bar')
     .getByRole('button', { name: 'Photos', exact: true })
     .click();
+  assert.ok(
+    (await page.evaluate(() => window.workshopProbe.observe().frames[0])).power.sources
+      .filter((s) => s.node < 12)
+      .some((s) => s.duty !== 0),
+    'Photos preserves an already held drive key',
+  );
+  await page.keyboard.up('w');
   await page.waitForFunction(() =>
     window.workshopProbe
       .observe()
       .frames[0].power.sources.filter((s) => s.node < 12)
       .every((s) => s.duty === 0),
   );
-  await page.keyboard.up('w');
   const count = (await state()).cameraPhoto.gallery.photos.length;
   await page.keyboard.press('p');
   assert.equal(

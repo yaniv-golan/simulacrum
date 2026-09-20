@@ -70,7 +70,7 @@ for (const t of trials) {
   assert.ok(t.phaseP95['integration-contacts'] <= 2);
   assert.ok(t.phaseP95['actuators-constraints'] <= 2);
 }
-await assert.rejects(() => createSession(fixture(CAMERA.maxParts + 1)), /CAMERA_LIMIT/);
+await assert.rejects(async () => createSession(fixture(CAMERA.maxParts + 1)), /CAMERA_LIMIT/);
 console.log(
   trials.map(({ trial, count, totalP95, phaseP95 }) => ({ trial, count, totalP95, phaseP95 })),
 );

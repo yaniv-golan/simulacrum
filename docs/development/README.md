@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Milestone status
-<!-- doc-review {"version":1,"fingerprint":"5a8a5b8669701111c037f567f0a03b81045a04bf641a65658c94bcc4c0231325","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"f333e159c1e3512aa95d684138d53b35b73463b1b56f54064f947afc3091be9c","disposition":"still accurate","rationale":"Only eight metadata consumer fingerprints changed after the position-field correction and added property-focus witness. Milestone, bar ownership and qualification results remain unchanged; the metadata invariant witnesses passed on the revised source."} -->
+<!-- doc-review {"version":1,"fingerprint":"4a3c1d434f5cd2108813f13a6d24ee444454ca1966cc1db8474dc158abd92704","dependencies":"docs/development/.reviews/README/milestone-status.json","dependencyDigest":"a93a26f01b26d77db0b94d5d7d37b857461116dfdd82f2c67bdcdd4f126667b8","disposition":"still accurate","rationale":"The five audited metadata digests change no milestone allocation, bar or qualification. Browser witness repairs and a failed gear budget do not establish release or F1 acceptance."} -->
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
@@ -353,7 +353,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"58cacb5b4e598178cc2ed512f72b43a445f0f6967eb6685ab8cb66d6ef1e501b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"eebe870ffe23fbd7e766b12dae7040d7aba246473e66390718afbd985b971a7f","disposition":"still accurate","rationale":"The second scope update contains consumer hashes only, with the same read classifications and exclusions. Property-focus adds native position stepping and empty-input preservation through existing browser helpers. Scheduler, scope selection and conservative unknown-path behavior remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4d33f152bb20f91a7d2fd8eab57ea159c96b50c47b4770cb6f7b06cc8f069d4e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5565d81f0aaacf92b183c8f2c5cce51b3cce88ff3d2a43197545b4d58c723e27","disposition":"still accurate","rationale":"Reviewed four consumer digests and the workbench source digest; fixture and identity read domains, imports, exclusions and reaching checks remain unchanged. Applied the five-row proposal with passing invariant controls; scheduling and selection policy are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -706,7 +706,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"83460514723e6e1ac9c03060a2d028ab763a39fa7ac232da7d8da77f8600b6b0","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b812f76d8c4fd1794f174c34a2fdf53fc454253c1c3140f476afac28e58038c1","disposition":"still accurate","rationale":"The latest manifest update records current consumer bytes after the position input fix. No candidate capture, attestation, destination-drift or landing behavior changed; the existing source-freeze and evidence requirements still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"8e6f858657394e8b1cd3d1b2d180c8f0969dedd67e6676db7592edff6cfed167","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7acfdf67375dedc6ea14775fde103c6c2e1731f2befd2f50bb794414b3102d3e","disposition":"still accurate","rationale":"Only test witness behavior and audited metadata changed. Capture, attestation, exact-tip landing and destination drift requirements are unchanged. The failed full candidate remains failed and cannot authorize landing."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"e3f81263bd99251f9ccf6aee8a93ca794f2d04986dac3a85b86e969a6b11d32f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"914c378b35576160bd2b39e3e9182c7571f51feec0aaaf4e959d622d411a4244","disposition":"still accurate","rationale":"The position control stays in its existing inspector section, preserves the native small-step spinner and accepts finite typed coordinates. Clearing it restores the admitted value without a command. The property-focus and gear journeys passed; no retained-state, scene-preview, Photos or visibility lifecycle described here changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"509fc98f149e066d52308be69eb5028d977f761bafbd7fcd39a9c04fc8bfae6b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"47271a8fea3802b383b7efb684b2a387469fa2d7d818f0300bac389442260592","disposition":"still accurate","rationale":"The coupler witness now proves retained partial funding, unchanged heat while off, resumed opening and reset on Retry. Existing surfaces, selection lifecycle and contextual Help remain accurate; no UI was added."} -->
 
 
 
@@ -651,7 +651,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"932631e9298a7548c3ac1962d76fbc43958519fc07632f9e0911b32deb4e7ec3","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"c89ac80f06731c0d2e49cb7cc423dafaf8cab242d83ed36c22353d1c969fb502","disposition":"still accurate","rationale":"The authorable-scene verifier retains live movement, scene import/export, history and layout assertions; it now separately checks draft-protected file refusal and invalid-file admission without changing authored state. Remote setup now explains terminal sequencing. Neither change supplies eligible-player observations, human acceptance or permission to substitute automation for the qualitative review required here."} -->
+<!-- doc-review {"version":1,"fingerprint":"dc4ff339651acb74d3f9d575692f9b33f774f246f26e5dcf969057e05a66c113","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"5e0286fa04b29a44f718799a59fee53cfe55835959304646b062d43984712066","disposition":"still accurate","rationale":"The workbench journey now asserts a held drive survives Help and Escape until keyup. Existing nonmutating content, preserved operations, downloaded save and layout checks remain. Its focused pass is automated evidence only, not human acceptance."} -->
 
 
 

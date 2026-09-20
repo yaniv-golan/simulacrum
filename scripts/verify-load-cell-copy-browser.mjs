@@ -41,7 +41,8 @@ try {
   await placement.getByText('Precise position', { exact: true }).click();
   for (const [axis, value] of [
     ['X', '2'],
-    ['Y', '0.02'],
+    // The selected Load Cell is the captured assembly's reference, not the chassis.
+    ['Y', String(sourceSensor.position[1])],
     ['Z', '0'],
   ]) {
     const field = placement.getByRole('spinbutton', {
