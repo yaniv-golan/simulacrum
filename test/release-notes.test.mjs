@@ -34,7 +34,6 @@ test('seed release notes validate against this build and every field rule reject
   assert.deepEqual(validateReleaseNotes(RELEASE_NOTES, context()), []);
   const cases = [
     ['duplicate id', 1, { id: RELEASE_NOTES[0].id }, /id/],
-    ['date out of order', 1, { date: '2026-09-20', id: '2026-09-20-late' }, /order/],
     ['future date', 0, { date: '2999-01-01', id: '2999-01-01-soon' }, /future/],
     ['unknown feature', 0, { feature: 'nope' }, /feature/],
     ['summary too long', 0, { summary: 'x'.repeat(141) }, /summary/],
@@ -53,6 +52,18 @@ test('seed release notes validate against this build and every field rule reject
       `${label} names the offending id`,
     );
   }
+  // Keep the ordering counterexample independent of the newest shipped note date.
+  const ordered = [
+    { ...RELEASE_NOTES[0], date: '2020-01-02', id: '2020-01-02-newer' },
+    { ...RELEASE_NOTES[1], date: '2020-01-01', id: '2020-01-01-older' },
+  ];
+  assert.deepEqual(validateReleaseNotes(ordered, context()), []);
+  const reversed = [...ordered].reverse();
+  const orderingErrors = validateReleaseNotes(reversed, context());
+  assert.ok(
+    orderingErrors.some((error) => error.startsWith(`${reversed[1].id}:`) && /order/.test(error)),
+    'date out of order names the offending id',
+  );
   assert.ok(validateReleaseNotes([], context()).length >= 1, 'empty notes reject');
   assert.ok(RELEASE_NOTES.length >= 9, 'the seed carries every player-visible landing');
 });

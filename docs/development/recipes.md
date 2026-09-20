@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5cb1ec1953a05c0c14cc8b8e1adb8b700b2b9a050eb6c12a562d9bf5027dd0bc","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b272ab9b99e8d3de08016c3191f199cd6bc39d1db99582211d4d56ff7d182352","disposition":"still accurate","rationale":"The latest delta is a position form fix and a browser witness: precise typing, native 2.5 cm grid stepping and empty-field preservation. All edits still enter transform admission; no physical law, tick, solver, energy accounting or performance assertion changed. Metadata fingerprints were refreshed with passing invariant witnesses."} -->
+<!-- doc-review {"version":1,"fingerprint":"17a9494735c972be4af98abbb912c075ddbcf8d72638f938d17baa9467319727","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"80fc1b8dfa78296679a1f1a67e1056fbd97ce81bdd3b124b007add37beca4d60","disposition":"still accurate","rationale":"The only changed dependency is the release-notes unit test. Its ordering counterexample now uses fixed distinct past dates with a passing ordered control and a rejected reversed control, so new same-day release entries cannot make the negative case valid. No runtime source, physical law, solver, phase, accounting or verification policy changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

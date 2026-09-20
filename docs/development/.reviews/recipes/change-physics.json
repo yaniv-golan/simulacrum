@@ -679,7 +679,7 @@
     "test/release-authoring.test.mjs": "950d7b7a4889a802c4ac51f576ddc0b729b35cd3e215d7b53818646eabd5706f",
     "test/release-determinism.test.mjs": "fd8a2d6fda6fe65a848a31be5b60837121fcbd6ae98cd4ed376403c6a579f9d1",
     "test/release-experiments.test.mjs": "47e769298debcd83a4216b8ca97006bf95d754bb7a77b3fbedd1eed69685accf",
-    "test/release-notes.test.mjs": "10fc8a7abc12d52c1a847506ef92e668f39b1ef8eb385bf8a7a29c930b7c39e2",
+    "test/release-notes.test.mjs": "c5caab4dfc75a85f8d118d25cb468dadf2ece0893ec5e9f35a2c2c593e490bf3",
     "test/release-pipeline.test.mjs": "e174c0acd0ef4db40e4e539e99cfc49425448c3d3bc16ef87f2d492fb42d542c",
     "test/release-power.test.mjs": "b5a73b0c612577d22d6440940fc426cb70530d38aa00d678469db6a95e9da748",
     "test/release-rope.test.mjs": "39b6dab210b99f2a5b4850377cc2734fce4f80fa893d06ecafbc87fee12e0b32",
