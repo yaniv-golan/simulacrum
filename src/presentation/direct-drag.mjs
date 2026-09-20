@@ -62,7 +62,9 @@ export function createDirectDrag({
       return;
     }
     surface.cancel(false);
-    if (!commit && drag.position) setMessage('Move cancelled. Your machine is unchanged.');
+    if (commit && drag.position && drag.blocked)
+      setMessage('Placement blocked; nothing was changed. Move the part clear and try again.');
+    else if (!commit && drag.position) setMessage('Move cancelled. Your machine is unchanged.');
     controls.enabled = true;
     if (renderer.domElement.hasPointerCapture(drag.pointerId))
       renderer.domElement.releasePointerCapture(drag.pointerId);

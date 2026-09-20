@@ -117,6 +117,43 @@ try {
     true,
     'editing preserves open engineering section',
   ]);
+  await page.locator('.placement-settings > summary').click();
+  const height = page.getByRole('spinbutton', { name: 'Position Y', exact: true });
+  const position = () =>
+    page.evaluate(
+      () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts[0].position,
+    );
+  await height.fill('.12');
+  await height.press('Tab');
+  browserEvidence.assert('equal', [
+    (await position())[1],
+    0.12,
+    'precise typed height is admitted',
+  ]);
+  await height.press('ArrowUp');
+  await height.press('Tab');
+  browserEvidence.assert('equal', [
+    (await position())[1],
+    0.125,
+    'native height stepping retains the 2.5 cm grid',
+  ]);
+  const beforeEmpty = await position();
+  const beforeEmptyReceipt = await page.evaluate(() =>
+    window.workshopProbe.readLastCommandResult(),
+  );
+  await height.fill('');
+  await height.press('Tab');
+  browserEvidence.assert('deepEqual', [
+    await position(),
+    beforeEmpty,
+    'empty position preserves the machine',
+  ]);
+  browserEvidence.assert('deepEqual', [
+    await page.evaluate(() => window.workshopProbe.readLastCommandResult()),
+    beforeEmptyReceipt,
+    'empty position emits no transform',
+  ]);
+  browserEvidence.assert('equal', [await height.inputValue(), '0.125']);
   browserEvidence.assert('deepEqual', [errors, []]);
   await page.screenshot({ path: `${out}/focus.png` });
   browserEvidence.assertUnchanged();

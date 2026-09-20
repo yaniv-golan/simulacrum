@@ -1023,8 +1023,7 @@ export function createLearningWorkspace({
             ],
           }),
     prepareDocumentReplacement() {
-      if (recording)
-        return { ok: false, reasonCode: 'LEARNING_ATTEMPT_ACTIVE', path: 'learning' };
+      if (recording) return { ok: false, reasonCode: 'LEARNING_ATTEMPT_ACTIVE', path: 'learning' };
       if (attempt && (attempt.samples.length || attempt.fault))
         return { ok: false, reasonCode: 'LEARNING_ATTEMPT_ACTIVE', path: 'learning' };
       attempt = null;
@@ -1049,7 +1048,9 @@ export function createLearningWorkspace({
       recording = null;
       attempt = null;
       cue = null;
-      message('Learning records were reset to empty. Download the original file first if you still need it.');
+      message(
+        'Learning records were reset to empty. Download the original file first if you still need it.',
+      );
     },
     async discardPending() {
       captureBlocked = false;

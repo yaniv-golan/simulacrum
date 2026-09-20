@@ -138,8 +138,7 @@ export function createReceiverArbiter(input) {
       const readings = new Map();
       for (const r of sample.readings) {
         if (
-          (!exact(r, 'length,node,speed,valid') &&
-            !exact(r, 'length,node,speed,status,valid')) ||
+          (!exact(r, 'length,node,speed,valid') && !exact(r, 'length,node,speed,status,valid')) ||
           !node(r.node) ||
           readings.has(r.node) ||
           typeof r.valid !== 'boolean' ||
@@ -229,7 +228,10 @@ export function createReceiverArbiter(input) {
         if (requested) {
           r.mode = requested.mode;
           r.reason = 'OK';
-          if (requested.mode === 'manual' && !own.some((e) => ['manual', 'release'].includes(e.type)))
+          if (
+            requested.mode === 'manual' &&
+            !own.some((e) => ['manual', 'release'].includes(e.type))
+          )
             r.duty = 0;
         }
         if (r.mode === 'learned') {
@@ -259,11 +261,11 @@ export function createReceiverArbiter(input) {
         }
         const reading = readings.get(controller.sensor);
         if (sample.tick !== tick - 1) continue;
-        if (!reading || !reading.valid) continue;
-        if (['no-power', 'disconnected'].includes(reading.status)) {
+        if (['no-power', 'disconnected'].includes(reading?.status)) {
           off('INVALID_SENSOR');
           continue;
         }
+        if (!reading || !reading.valid) continue;
         const demand = clamp(
           controller.neutral +
             controller.polarity *

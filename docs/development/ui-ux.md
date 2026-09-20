@@ -27,7 +27,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"45e98ce1abe032c208935a9af5b5eb9b892465e3e381fc0d176b6d6a05dc79f2","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"02009c6adb44b23f39f48f5108d6648a6429636fcf247b60eb3ee9004faa195f","disposition":"still accurate","rationale":"src/presentation/workshop-view.mjs is the only changed dependency, and it records the outcome this policy demands rather than a change to it: the gear-lift example copy was extended in place, so the disposition was extend and no new entry was earned, and the cord added no learning entry at all. The admission rules and the record this section requires are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b93568f3d5c6719e1cd68cd72b5ba734e55135e7cc1fdc7e82a373ba92f4d85","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4c8d4f27d0cd4438aaf2c1ac708b6ebb00743d64dc43cf07db5a9d633a3f16c9","disposition":"still accurate","rationale":"The final position-field correction keeps ordinary editing usable without teaching a workaround. No lesson or content placement changed; the existing extend decision for the coupler reference remains sufficient."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -128,7 +128,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"7047099e87e1d2034434697ee07e95595749ccfb02a3ac7fac96ed621b817332","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"250e93dee68966e5b6b919c910998bc1bdc304b9517e6ca81ad4469678af4a9a","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. No surface was added, moved or removed and nothing took new canvas space: this candidate's only player-facing addition is one entry in the tracked notes module that Help's What's new reads, which this section already describes, including the per-device last-seen id and the dot on the Help button. The shell, its stage group, the visibility and retrieval lifecycle and the displaced-UI rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e3f81263bd99251f9ccf6aee8a93ca794f2d04986dac3a85b86e969a6b11d32f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"914c378b35576160bd2b39e3e9182c7571f51feec0aaaf4e959d622d411a4244","disposition":"still accurate","rationale":"The position control stays in its existing inspector section, preserves the native small-step spinner and accepts finite typed coordinates. Clearing it restores the admitted value without a command. The property-focus and gear journeys passed; no retained-state, scene-preview, Photos or visibility lifecycle described here changed."} -->
 
 
 
@@ -258,7 +258,8 @@ replace orbit/edit tools while viewing, keep vehicle controls and recovery reach
 and restore the orbit on exit. Build is an explicitly unpowered placement preview;
 Run shows power/live/stale/failure status; Paused may retain the identified old image.
 The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
-Opening it releases held drive keys. Retained photos remain retrievable after camera
+Opening it preserves already held drive keys; keyup releases them through the usual
+control path. Retained photos remain retrievable after camera
 deletion and retries until this page closes. Camera help teaches mounting repair in
 context; no additional learning entry is admitted for this delivery.
 
@@ -650,7 +651,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"2e225d838df4e5b1f3b1bd571bfa28bd0493017cff7bec4f95c9f478b6c8efd1","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a90990019948858e9f47c3b14bde3fae285cc9e93c4c41d48112817eb72b04e7","disposition":"updated","rationale":"Updated: this section now records that the workbench-content browser journey checks the collapsed example rows with their launchers and instructions and the header x staying inside the dialog while its rows scroll in a short viewport. Its dependencies scripts/verify-workbench-content.mjs (the picker journey, the reopen-arrives-collapsed assertion and the dialog.scrollTop write), test/workbench-content.test.mjs, src/presentation/workbench-content.mjs and playtesting.md#remote-setup moved with that work."} -->
+<!-- doc-review {"version":1,"fingerprint":"932631e9298a7548c3ac1962d76fbc43958519fc07632f9e0911b32deb4e7ec3","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"c89ac80f06731c0d2e49cb7cc423dafaf8cab242d83ed36c22353d1c969fb502","disposition":"still accurate","rationale":"The authorable-scene verifier retains live movement, scene import/export, history and layout assertions; it now separately checks draft-protected file refusal and invalid-file admission without changing authored state. Remote setup now explains terminal sequencing. Neither change supplies eligible-player observations, human acceptance or permission to substitute automation for the qualitative review required here."} -->
 
 
 

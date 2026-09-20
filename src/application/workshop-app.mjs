@@ -605,7 +605,10 @@ export async function mountWorkshopApp(root) {
       }
       if (command.type === 'undo') editMessage = 'Last edit undone. Choose Redo to apply it again.';
       if (command.type === 'redo') editMessage = 'Edit reapplied. Choose Undo to reverse it.';
-      logInteraction('command-execute', { command: redactCommandInput(command), trigger: lastRecordedInput });
+      logInteraction('command-execute', {
+        command: redactCommandInput(command),
+        trigger: lastRecordedInput,
+      });
       const resumeAfterRejectedRestore =
         command.type === 'restore-build' && frame().metadata.mode === 'run' && !document.hidden;
       if (command.type === 'restore-build') clock.pause();
@@ -651,7 +654,8 @@ export async function mountWorkshopApp(root) {
       );
       return result;
     } catch (error) {
-      if (commandFailureCode(error) === 'BUSY') return { ok: false, reasonCode: 'BUSY', path: 'command' };
+      if (commandFailureCode(error) === 'BUSY')
+        return { ok: false, reasonCode: 'BUSY', path: 'command' };
       stopped(error);
       render();
       return normalizeFailure(error, 'SESSION_FAILED');

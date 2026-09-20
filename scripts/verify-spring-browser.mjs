@@ -336,7 +336,9 @@ try {
   await select('receiver');
   await page.locator('[data-command=run]').click();
   await page.getByRole('button', { name: 'Automatic', exact: true }).click();
-  await expectMode('off', 'INVALID_SENSOR'); // Deliberately unbound negative control.
+  const unbound = await expectMode('automatic');
+  evidence.assert('equal', [unbound.sensors.readings[0].channels.length.status, 'unavailable']);
+  // An unbound reading supplies no value; it no longer latches Automatic Off.
   await page.locator('[data-command=build]').click();
   await select('sensor');
   const springId = controlled.connections.find((c) => c.kind === 'spring').id;
@@ -567,32 +569,20 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).receiverControl.receivers[0].target === 0.26,
   );
-  await evidence.assertRejectedEdit({
-    snapshot: async () => {
-      const frame = await read(),
-        control = frame.receiverControl.receivers[0];
-      return { target: control.target, mode: control.mode, blueprint: frame.metadata.blueprint };
-    },
-    action: async () => {
-      const prior = await page.evaluate(
-        () => window.workshopProbe.readLastCommandResult().sequence,
-      );
-      await activeTarget.fill('0.34');
-      await activeTarget.press('Tab');
-      const handle = await page.waitForFunction((sequence) => {
-        const receipt = window.workshopProbe.readLastCommandResult();
-        return (
-          receipt.sequence > sequence &&
-          receipt.input.type === 'regulator-target' &&
-          receipt.input.target === 0.34 &&
-          receipt
-        );
-      }, prior);
-      const receipt = await handle.jsonValue();
-      await handle.dispose();
-      return receipt;
-    },
-  });
+  const targetSnapshot = async () => {
+    const frame = await read(),
+      control = frame.receiverControl.receivers[0];
+    return { target: control.target, mode: control.mode, blueprint: frame.metadata.blueprint };
+  };
+  const beforeRejectedTarget = await targetSnapshot();
+  const priorReceipt = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
+  await activeTarget.fill('0.34');
+  await activeTarget.press('Tab');
+  evidence.assert('deepEqual', [await targetSnapshot(), beforeRejectedTarget]);
+  evidence.assert('deepEqual', [
+    await page.evaluate(() => window.workshopProbe.readLastCommandResult()),
+    priorReceipt,
+  ]);
   evidence.assert('equal', [await activeTarget.inputValue(), '0.26']);
   evidence.assert('ok', [
     (await page.locator('[role=status]').allTextContents()).some((text) =>

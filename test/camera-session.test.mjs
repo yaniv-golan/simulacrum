@@ -224,10 +224,7 @@ test('camera ingest queues extra photos from one observation instead of dropping
     f.set({
       ok: true,
       cursor: { session: 's', epoch: 1 },
-      frames: [
-        observation(12, { serial: 1 }).frames[0],
-        observation(24, { serial: 2 }).frames[0],
-      ],
+      frames: [observation(12, { serial: 1 }).frames[0], observation(24, { serial: 2 }).frames[0]],
     });
     for (let i = 0; i < 8; i++) await new Promise((r) => setImmediate(r));
     assert.equal(f.encoded.length, 2);

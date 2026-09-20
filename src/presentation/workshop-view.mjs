@@ -260,8 +260,6 @@ export function createWorkshopView(
     if (
       sceneEditor?.draft() &&
       (command.type === 'run' ||
-        command.type === 'undo' ||
-        command.type === 'redo' ||
         command.type === 'load' ||
         command.type === 'new' ||
         command.replace === true ||
@@ -1238,8 +1236,9 @@ export function createWorkshopView(
     const busy = headerBusy();
     const mode = frame.metadata.mode;
     run.disabled = busy || mode === 'run';
-    undo.disabled = busy || mode !== 'build' || !frame.metadata.editing?.undoCount;
-    redo.disabled = busy || mode !== 'build' || !frame.metadata.editing?.redoCount;
+    const historyBusy = assemblies?.busy() || assemblyPlacement?.active() || sceneEditor?.pending();
+    undo.disabled = historyBusy || mode !== 'build' || !frame.metadata.editing?.undoCount;
+    redo.disabled = historyBusy || mode !== 'build' || !frame.metadata.editing?.redoCount;
     newButton.disabled = busy;
     loadButton.disabled = busy;
   }
@@ -3892,13 +3891,13 @@ export function createWorkshopView(
       input.disabled = mode !== 'build';
       input.setAttribute('aria-label', `Position ${['X', 'Y', 'Z'][axis]}`);
       input.addEventListener('change', () => {
-        if (!input.checkValidity() || !Number.isFinite(Number(input.value))) {
-          input.reportValidity();
+        // The spinner uses a small grid; typed finite coordinates may lie between its steps.
+        if (!Number.isFinite(input.valueAsNumber)) {
           input.value = part.position[axis];
           return;
         }
         const position = [...part.position];
-        position[axis] = Number(input.value);
+        position[axis] = input.valueAsNumber;
         send({ type: 'transform', id: part.id, position, rotation: part.rotation });
       });
       label.append(input);

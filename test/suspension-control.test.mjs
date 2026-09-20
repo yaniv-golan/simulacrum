@@ -328,3 +328,17 @@ test('Pause clears queued held manual drive even when its release cannot enter a
     w.dispose();
   }
 });
+
+test('powered-down or disconnected regulator readings stop Automatic while healthy misses retain it', () => {
+  for (const status of ['no-power', 'disconnected', 'unavailable', 'initializing', 'no-return']) {
+    const arbiter = createReceiverArbiter(configuration());
+    arbiter.step(1, sample(1), [mode('automatic')]);
+    const missing = sample(2);
+    Object.assign(missing.readings[0], { valid: false, status, length: 0, speed: 0 });
+    const result = arbiter.step(2, missing, [])[0];
+    const fault = ['no-power', 'disconnected'].includes(status);
+    assert.equal(result.mode, fault ? 'off' : 'automatic', status);
+    assert.equal(result.reason, fault ? 'INVALID_SENSOR' : 'OK', status);
+    if (fault) assert.equal(result.duty, 0, status);
+  }
+});

@@ -140,7 +140,7 @@ try {
     true,
   ]);
   const refusal = await page.locator('.mirror-status').innerText();
-  evidence.assert('match', [refusal, /overlap/i]);
+  evidence.assert('match', [refusal, /connector is already used/i]);
   evidence.assert('doesNotMatch', [refusal, /Part \d+/, 'refusal names the actual mirrored copy']);
   evidence.assert('deepEqual', [await snapshot('wrong-plane-refused'), original]);
   await page.keyboard.press('Escape');

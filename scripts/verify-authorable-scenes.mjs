@@ -357,6 +357,16 @@ try {
     }),
   );
   const beforeInvalid = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
+  await page.locator('input[type=file]').first().setInputFiles(`${out}/invalid.json`);
+  await page.getByText('Finish or cancel the scene preview first.', { exact: true }).waitFor();
+  assert.deepEqual((await sceneState()).preview, pendingBefore);
+  assert.deepEqual((await read()).metadata.blueprint, imported);
+  assert.deepEqual(
+    await page.evaluate(() => window.workshopProbe.readLastCommandResult()),
+    beforeInvalid,
+  );
+  await click('Cancel preview');
+  await click('Done');
   await uploadWorkshopFile(page, `${out}/invalid.json`);
   await page
     .getByText('The workshop could not open. Your current machine and scene are unchanged.', {
@@ -370,9 +380,6 @@ try {
   );
   assert.deepEqual((await read()).metadata.blueprint, imported);
   await page.keyboard.press('Escape');
-  assert.deepEqual((await sceneState()).preview, pendingBefore);
-  await click('Cancel preview');
-  await click('Done');
   await page.evaluate((environment) => {
     localStorage.setItem(
       'simulacrum.scenes.v1',

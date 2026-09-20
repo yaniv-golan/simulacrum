@@ -16,7 +16,7 @@ import {
   placementObstacleSolids,
 } from './surfaces.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
-import { validateBlueprint } from './blueprint.mjs';
+import { validateBlueprint } from './blueprint-validation.mjs';
 import { admitCompiledPowerTopology } from './power.mjs';
 import { BUILD_ENVIRONMENT, environmentObstacles } from './environment.mjs';
 import { immutableCopy } from './observation.mjs';

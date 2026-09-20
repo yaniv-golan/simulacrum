@@ -46,12 +46,7 @@ export function createControllerDispatcher(powerConfig, programs) {
     }
   const wires = new Set();
   for (const wire of config.signalWires) {
-    if (
-      !Array.isArray(wire) ||
-      wire.length !== 2 ||
-      !wire.every(node) ||
-      wire[0] === wire[1]
-    )
+    if (!Array.isArray(wire) || wire.length !== 2 || !wire.every(node) || wire[0] === wire[1])
       fail(code);
     if (wires.has(`${wire[0]}:${wire[1]}`)) continue;
     wires.add(`${wire[0]}:${wire[1]}`);

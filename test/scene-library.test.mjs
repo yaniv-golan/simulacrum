@@ -45,7 +45,6 @@ test('corrupt scene JSON keeps existing bytes and names a repairable unread stat
   assert.deepEqual(library.list(), []);
 });
 
-
 test('recording subset rejects oversized machine observations before encoding', async () => {
   const { createCaptureEncoder } = await import('../src/application/capture-stream.mjs');
   const encoder = createCaptureEncoder();

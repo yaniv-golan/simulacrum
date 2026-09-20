@@ -12,8 +12,7 @@ import { createPowerNetwork } from './power.mjs';
 import { createReceiverArbiter, receiverControlConfiguration } from './receiver-arbiter.mjs';
 import { createPhysicsWorld } from './physics/world.mjs';
 import { isReasonCode } from '../model/reasons.mjs';
-const coded = (reasonCode, message = reasonCode) =>
-  Object.assign(Error(message), { reasonCode });
+const coded = (reasonCode, message = reasonCode) => Object.assign(Error(message), { reasonCode });
 let sessionSequence = 0;
 const PHASE_STATUS = immutableCopy(Object.fromEntries(PHASES.map((phase) => [phase, 'active'])));
 const physicalConfig = ({ gravity, bodies, joints }) => ({ gravity, bodies, joints });
@@ -190,10 +189,7 @@ export async function createSession(
     installedPrograms = await programFactory(config.power);
     if (installedPrograms.length !== config.power.controllers.filter((c) => c.program).length)
       throw coded('MISSING_CONTROLLER_EXECUTOR');
-    dispatcher = createControllerDispatcher(config.power, [
-      ...hostPrograms,
-      ...installedPrograms,
-    ]);
+    dispatcher = createControllerDispatcher(config.power, [...hostPrograms, ...installedPrograms]);
     cameraIds = cameraNodes(config);
     cameras = createCameraState(cameraIds);
     receiverControl = createReceiverArbiter(receiverControlConfiguration(config.power));

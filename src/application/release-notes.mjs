@@ -21,6 +21,41 @@
 export const RELEASE_NOTES = Object.freeze(
   [
     {
+      id: '2026-09-20-recovery-controls',
+      date: '2026-09-20',
+      name: 'Keep building after a refused action',
+      summary:
+        'Run and Undo recover after busy actions. Precise positions accept small edits, and blocked drags leave your machine unchanged.',
+    },
+    {
+      id: '2026-09-20-machine-admission',
+      date: '2026-09-20',
+      name: 'Clearer machine checks',
+      summary:
+        'Loads and connections check overlaps, shaft alignment and sensor bindings before Run, with more specific repair messages.',
+    },
+    {
+      id: '2026-09-20-recording-library-recovery',
+      date: '2026-09-20',
+      name: 'Recover saved work and recordings',
+      summary:
+        'Damaged library items can be recovered separately. Recordings retain a usable checkpoint while a machine edit finishes.',
+    },
+    {
+      id: '2026-09-20-automatic-reading-status',
+      date: '2026-09-20',
+      name: 'Automatic handles missing readings',
+      summary:
+        'A healthy missing reading keeps Automatic selected. Lost sensor power or a disconnected sensor still switches it Off.',
+    },
+    {
+      id: '2026-09-20-coupler-progress',
+      date: '2026-09-20',
+      name: 'Latch progress survives a pause',
+      summary:
+        'Release Couplers keep their funded progress when you release the key or lose power. Restore power and hold the key to continue.',
+    },
+    {
       id: '2026-09-17-save-format-4',
       date: '2026-09-17',
       name: 'Old saves no longer open',

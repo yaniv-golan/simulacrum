@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"172344cd8424d1d0a4127c39c25ac95bc6a1e11940c29f7bf7491d016a13f4a5","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"b7ea8f5d3d31a13b18205db4d16787527f1f57baec75004148f12137f4e239f9","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are src/model/blueprint.schema.json and its regenerated validator, and in both the only edit is the trailing $comment, which now says only save version 4 is admitted so that it agrees with CURRENT_SAVE_VERSION in src/model/blueprint.mjs; the comment was stale, the admission rule was not. No catalog entry, parameter schema, createPart default, milestone declaration in features.mjs, authored primitive or surface region changed, and this candidate adds and extends no part, so every step of this recipe stands exactly as written."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cc93696cedbf937100b3b575053be74cbf5e66acd8382d8385b53d96d221ea2","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"9938cc4c70a84fcddffc4eb3acc9f76bedc67ed174f8035a04eea020d67aef97","disposition":"still accurate","rationale":"No catalog part or milestone is added. The extracted validator preserves the public blueprint API, while assembly now enforces overlap, shaft and binding admission earlier. Existing geometry/material ownership, ordinary authoring, compile-before-publish and part-help admission guidance remain applicable; Release Coupler copy was corrected in its existing reference rather than adding a lesson."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -122,7 +122,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"555334049c14989d66589ed5c01aabea9d739c6a48fd8b402aae85ab04e42799","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"f13d1a473fb09d3590388ecbf57868b89f6597535aae0999640116dd7fe2fad4","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. This candidate declares and admits no command: the src/model/workshop-command.d.ts declaration, the src/core/workshop.mjs admission, the boundary typing and the membership check that keeps declared and admitted commands equal are byte-identical, and npm run typecheck passed with the generated schema types reported fresh."} -->
+<!-- doc-review {"version":1,"fingerprint":"ae580c40366da106242503be59cca56d8e4746e95f78daa762502e0573671fa1","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"ba3195df803efd177cd7b807104574106deba2dc25a6e00c83f205117e9b2d00","disposition":"still accurate","rationale":"Core still validates and compiles a candidate before one accepted history operation; the updated program preparation and load admission strengthen that transaction boundary. The camera exposure request still owns no authored history, and scene replacement still uses expectedCursor. The new failure reasons and restorable busy checkpoint do not change the command recipe."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -151,7 +151,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"9ed2922ad9bcc8b1392c347d7a109cc22a89b91fc6637ad0fd2c61288ed46b05","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"bd3d8ca5edb21eb216085d8e81871a9349c3ae85eb53aee22eb3ac0e97a39b0a","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. This candidate adds no control and moves or replaces no surface; its only player-facing addition is one release-notes entry, which flows into the existing notes surface owned elsewhere. The steps this recipe prescribes, the UI and content policy it defers to and the owning regions it names are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ca707557f1b6aa27604c3e5c58afd465f625af9c326fcdaf4a277512010291a","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cda5006883cdf6c9c077b446496519430a06a1945bda0c9e7abe3a0ac507a50d","disposition":"updated","rationale":"Replaced the obsolete focus-entry release instruction with actual vehicle-controls behavior: Help owns reading keys, existing drive holds persist and keyup releases them. Scene Undo/Redo can stale a preview while replacement remains blocked; the scene journey verifies revalidation and preservation. The mirror witness now names occupied connectors while retaining refusal and unchanged-state checks."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -173,8 +173,8 @@ not dispatch a second reset or directly write actuator state.
 
 For reading controls, share [help input containment](../../src/presentation/part-help-input.mjs)
 between window capture and workshop shortcuts before handling surface/mirror keys.
-Preserve native navigation inside the help panel and release held receiver commands
-through vehicle controls on focus entry. Keep static help independent of selection,
+Preserve native navigation inside the help panel without synthesizing releases for
+already held receiver commands. Keyup remains owned by vehicle controls. Keep static help independent of selection,
 mode, frame refresh and authored history. Pointer focus must not open a tooltip
 between press and release and intercept placement. Place connection diagrams before
 text instructions in the How to connect tab of the nonmodal reference window.
@@ -200,7 +200,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"cdbca519a24890c5c7d37d19e5d00f0cb33e49d61ca646b08bd09416900146b7","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9ffa302700517fe4ef0e6911e4607afebc4ce11e75336a4410d93c29306f70a0","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. No diagnostic, reason code, readiness line or per-edge finding changed. The save-version rejection the new release note describes for the player already existed as SAVE_VERSION_UNSUPPORTED_OLD in src/model/messages.mjs and still reaches the player through the same reason-code registry, without dispatching on part identity."} -->
+<!-- doc-review {"version":1,"fingerprint":"148bfe529143744da5203151a0fefa63c09ecf2537fb3403cc0b979906a4df12","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"fc31aed1c911b933b0df14d573d0bf4ff6cbb7761dfb4225b575a819c6460545","disposition":"still accurate","rationale":"Specific model/runtime failures now reach the existing reason formatter, but diagnoseMotion, readinessLine and measurement accumulator remain the same owners with unchanged completed-data inputs and thresholds. The changed fixture admission does not make readiness a physical qualification or turn historical fault rows into teaching data."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -239,7 +239,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ca9ca8d2c9946ea83183657e4217b11c63007d4b34a4019f2f47bc2349aa80f1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95fd3fa1920d3a70d1cde05eda07c552768c4ecfe69ea457f280a22996f10d1a","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are scripts/manifest.json (15 consumerSourceHash values and nothing else), src/application/release-notes.mjs (one added entry at the head), src/model/blueprint.schema.json and its regenerated validator (the save-version $comment alone), and the package.json and package-lock.json version fields. No dependency specifier, resolved version or integrity hash changed and the vendored Rapier pin is byte-identical, so the physics library behind the narrow door is the same build this section's evidence was taken against. No law, tick order, single-integration rule, physics-door shape or evidence obligation moved. The wide flagged dependency list is this recipe's declared closure, which includes the installed-dependency and manifest identity, not behavior this section states."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cb1ec1953a05c0c14cc8b8e1adb8b700b2b9a050eb6c12a562d9bf5027dd0bc","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b272ab9b99e8d3de08016c3191f199cd6bc39d1db99582211d4d56ff7d182352","disposition":"still accurate","rationale":"The latest delta is a position form fix and a browser witness: precise typing, native 2.5 cm grid stepping and empty-field preservation. All edits still enter transform admission; no physical law, tick, solver, energy accounting or performance assertion changed. Metadata fingerprints were refreshed with passing invariant witnesses."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -533,7 +533,8 @@ native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
 settings and slop. Re-run existing contact/constraint cases when changing this policy.
 
 For a Release Coupler, held positive command and operating voltage accumulate delivered
-coil energy; interruption resets progress without refund. Fully funded actuation opens
+coil energy; interruption pauses progress without refund. Funding resumes when command
+and operating voltage return. Fully funded actuation opens
 on the following tick, even after key release. Every joule delivered to the coil is
 accounted as heat; it supplies no mechanical impulse. Once opened, it draws no further
 energy. The existing Command Receiver provides default W/Up control and optional key
@@ -588,10 +589,11 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"91b10fa2d337898815f4276d680831449e5a01ac3d6bf224ffcb99f3237f6846","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"4229b9c4b423cf53b213dd1be1a59c466f52c0bb9a470075a616653ed7a90ac8","disposition":"still accurate","rationale":"Unchanged prose. The changed dependencies are src/model/blueprint.schema.json and its regenerated validator, both only in the trailing save-version $comment. Subassembly instantiation, mirroring and the copy semantics this recipe states are untouched, and nothing in this candidate derives a material, mass, rating or drag selection from role, name, blueprint or rig position."} -->
+<!-- doc-review {"version":1,"fingerprint":"1e4ab682a2e203fc6276c2c70a82cdabe80207f4ddc21127ca17d20b4b208977","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ac367e807503d5d66044232425101c05a8142a442850df3bbc6f2755ffa7f851","disposition":"updated","rationale":"Aligned mechanical membership with connection-graph: fixed, pivot, shaft and spring join the editing group; rope and cord do not. Binding remapping, independent copied values, proper rigid transforms and compile-before-publication remain the required policy. Quarantine preserves invalid stored entries rather than making them admissible assemblies."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
-means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
+means fixed/pivot/shaft/spring connectivity; rope and cord do not join this group.
+It is not an editor selection, electrical network, or stored
 library group. Classify a selection's internal and crossing connections before choosing
 which edges an operation may copy. The classifier reports facts; the operation owns
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
@@ -685,7 +687,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"82c11e66f243924b3a660e7f9565ad18660423dd92729758e7aef93d4e7ada38","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0bbd096b68319791ebdc21e39a452428e464568c57dffeea0a00c4fb78b091e3","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. No overlay was added or restructured: connectionRenderSpecs, its narrow display-input boundary and the connection renderer that owns GPU resources are byte-identical, and the overlays' telemetry-only inputs are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6fe71b3d6c8c07f5ab390ed136ed5d849fadf81c70c6ff8416e2e00b60a73182","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"b3bcab965f972bf5589ec432773899e9036efe353482fd74fcf43e92353ff1f9","disposition":"updated","rationale":"Corrected the rendering distinction: workshop rope rendering still filters to rope, while camera-session exports rope and cord completed nodes and diameter to optical geometry. Neither family becomes electrical wiring. Connection overlay ownership, decoration bounds, no authored writes and resource-disposal guidance are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -696,9 +698,8 @@ The renderer never changes authored connectivity or sends a command. Visibility 
 explicit required field. Normal electrical links use straight schematic lines; fixed/shaft mechanical
 geometry and exploded dashed styling retain their existing behavior. Distributed elastic
 connections are not wiring: both rope and `cord` edges are excluded from the wiring
-overlay, and a cord is drawn in no surface yet — workshop rendering and the optical
-input both select rope connections — so it has completed geometry and no visual
-representation. The inspector still names it, through the shared connection labels. Gear meshes
+overlay. Workshop rendering currently selects rope connections; the optical camera
+input includes both rope and cord completed geometry with authored diameter. The inspector still names it, through the shared connection labels. Gear meshes
 use dashed relationships without a solid supporting rod; their cosmetic teeth are part of
 the body geometry and follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 
@@ -846,7 +847,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"11ba32b6735cae361db96b20f5924a1116e393b0a42a9dce7893eba62899fa55","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"5f8cd7a8beb3eecccf4f1c59922b27caf8930f0290adcbb4941c57f6c582d338","disposition":"still accurate","rationale":"The only changed dependency is scripts/verify-spring-browser.mjs, which opens one Learn row through the shared helper instead of reading a long example screen. Its adaptive-graphics measurements, budgets and owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"219f179541d5ce8564ce38e32e50dc46a89cca067c2ae9bcf373c10c7f3d9709","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"ae95e21510d0508c60b11629780dae574f16300d832d57d1a11b2481a1fe943c","disposition":"still accurate","rationale":"The spring browser verifier changed its Automatic missing-reading expectation and checks that invalid target entry emits no command while preserving target, mode and blueprint. It did not change the adaptive graphics probe, quality bounds, render budget, orbit-induced load, or the measured timing assertions described here."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

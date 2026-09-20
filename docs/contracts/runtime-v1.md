@@ -504,9 +504,9 @@ instead of continuing. Cords use the distributed elastic ledger the law produces
 `ropeNumericalLossJ` and `ropeSplitWorkJ` — and never the guided-spring terms, so a
 cord-only machine requires no spring preparation and does not consume the
 eight-spring allowance. Completed frames publish cord rows in `ropes` with the same
-fields; `springs` is unchanged. No surface draws a cord yet: workshop rendering and
-the optical input both select rope connections, so a cord has completed geometry and
-no visual representation, and it is not wiring. Mechanical energy never increases. An
+fields; `springs` is unchanged. Workshop rendering currently selects rope connections;
+the optical camera includes both rope and cord completed geometry. A cord is not
+wiring. Mechanical energy never increases. An
 undamped cord in the middle of the authored domain keeps swinging, so only the
 authored damper removes energy there; at the stiffest authored corner the implicit
 projection's own numerical loss settles the load without a damper, and that loss is

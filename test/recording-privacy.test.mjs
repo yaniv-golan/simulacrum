@@ -5,7 +5,9 @@ test('nested command payloads omit names, programs, numbers and assembly bodies'
   assert.deepEqual(
     redactCommandInput({
       type: 'insert-assembly',
-      definition: { parts: [{ name: 'secret', controllerProgram: { source: 'write("out1", 1)' } }] },
+      definition: {
+        parts: [{ name: 'secret', controllerProgram: { source: 'write("out1", 1)' } }],
+      },
       position: [1, 2, 3],
       rotation: [0, 0, 0, 1],
     }),
@@ -25,10 +27,12 @@ test('nested command payloads omit names, programs, numbers and assembly bodies'
     id: 'a',
     name: 'not captured',
   });
-  assert.deepEqual(
-    redactCommandInput({ type: 'parameter', id: 'a', key: 'length', value: 0.4 }),
-    { type: 'parameter', id: 'a', key: 'length', value: 'not captured' },
-  );
+  assert.deepEqual(redactCommandInput({ type: 'parameter', id: 'a', key: 'length', value: 0.4 }), {
+    type: 'parameter',
+    id: 'a',
+    key: 'length',
+    value: 'not captured',
+  });
   assert.deepEqual(
     redactCommandInput({
       type: 'create-assembly',

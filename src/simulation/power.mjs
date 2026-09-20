@@ -432,8 +432,7 @@ export function createPowerNetwork(configuration) {
             c.reasonCode,
           ) !== c.ready ||
           (c.reasonCode === 'NO_LATCH') !== d.joint < 0 ||
-          (c.reasonCode === 'ACTUATING' &&
-            !(c.progressJ > 0 && c.progressJ < d.energyJ)) ||
+          (c.reasonCode === 'ACTUATING' && !(c.progressJ > 0 && c.progressJ < d.energyJ)) ||
           (c.progressJ > 0 &&
             c.progressJ < d.energyJ &&
             !['ACTUATING', 'OFF', 'LOW_VOLTAGE', 'NO_POWER'].includes(c.reasonCode)) ||

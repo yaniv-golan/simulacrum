@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"30c3aa961b03fcc6b1a4b768341535a765be76ef9b50eda98ddb8f6791d3e978","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"3468aca1e7aea754e0357118116594ccc113f07c32fac5b9c6810ab58fa23698","disposition":"still accurate","rationale":"Unchanged prose; this section was not revised, so the disposition is still accurate rather than updated. docs/contracts/runtime-v1.md is the only changed dependency. The merged parametric-gear integration bumped the blueprint save version to 4 at the envelope, time-scale and slide sentences but left two sentences in Saves and checkpoints reading version 3, so the contract contradicted itself. This closure repairs those two: the checkpoint sentence now separates the session checkpoint version, which remains 3 as captureAnchor in src/simulation/session.mjs still writes it, from the blueprint save version 4, and the environment-admission sentence now reads version 4. The elastic cord energy paragraph also gained the scope of its row ledger. The layer table, the import rules and the phase order this section states are unchanged, and this section names no save or checkpoint version, so none of the repaired sentences is a claim it makes."} -->
+<!-- doc-review {"version":1,"fingerprint":"547ae138a671fa0a9f92a68fa9505cf6d96cde9c78874b7e973997be66d29e2a","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"ff59c1b0504b78c5da85665170b7c4a00d7a60da0bcb79227280848cfa401d24","disposition":"still accurate","rationale":"Runtime wording now acknowledges cord geometry in camera input. The layer table, DOM-free core, narrow physics door, numeric law isolation and one-integration tick order are unchanged; the validator extraction restores the stated acyclic import boundary."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,12 +10,12 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"f88222d53b88de624fc332e625c258243908f63bcf4a62ee9213535a6e6f141f","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"11a8a13b43c011889386750dc887dcf5b768ff377f1dddd1267521156cbd30d0","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. Every step of the traced edit path keeps the same owner and the same order: workshop app to view, createWorkshop admission and one history transaction, then validateBlueprint with placement admission and compileAssembly, then session stepping, controllers, the receiver arbiter, power and the single physics door."} -->
+<!-- doc-review {"version":1,"fingerprint":"2b061239124dbf893976e76d94a34362e92644ba1362e6e0c8250f19cfb20f5b","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"9bc6b388b1ec25aa26fb17eb1bd04bd6d6e3be3ed944a8da5a681c5a4648407b","disposition":"still accurate","rationale":"The final workshop-view change retains the position spinner grid while accepting finite typed coordinates between steps and rejecting blank numeric input. It still sends the ordinary transform command through core; no owner, publication boundary, preview lifecycle or help-key policy in this section changed."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes, and [cord compilation](../../src/model/cord.mjs) appends the same shape for an authored-stiffness elastic cord. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
 3. [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop) admits commands, prepares a candidate and commits accepted edits as one history operation. Rejected/no-op edits preserve their specified cursor/history effects; Undo/Redo restores authored candidates.
-4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
+4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration. The data-only [blueprint validator](../../src/model/blueprint-validation.mjs) sits below the assembly compiler; the public blueprint module also compiles loaded saves so physical refusal happens before replacement.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
 
@@ -99,7 +99,7 @@ The temporary [camera viewing cone](../../src/presentation/camera-frustum.mjs#so
 is owned by workshop inspection and never enters the optical scene.
 The dedicated [optical renderer](../../src/presentation/camera-renderer.mjs#source)
 receives only authored geometry settings and completed poses, without part identities,
-controller programs or editor scene input. Completed rope node positions and authored
+controller programs or editor scene input. Completed rope and cord node positions and authored
 diameter pass as plain geometry to the shared rope renderer, with selection disabled.
 It pins pixels before asynchronous encoding; no image result feeds back into the plant.
 [Feedback screenshot capture](../../src/presentation/workshop-screenshot.mjs#symbol=captureWorkshopScreenshot)
@@ -146,9 +146,10 @@ authored axis through the appearance cache; animation remains the completed body
 render one node per example part and resize their connection paths with the window.
 They never enter authored state or
 history. The shared [help input scope](../../src/presentation/part-help-input.mjs)
-precedes receiver capture and workshop shortcuts; entering it releases held receiver
-input through the ordinary vehicle-controls command path. Returning to the workbench
-requires a fresh key press. An open reference alone does not suppress controls.
+precedes receiver capture and workshop shortcuts for reading/navigation keys. Focusing
+the reference does not synthesize a release of already held drive keys; keyup still
+releases them. Window blur or hiding suspends drive, retaining held-key state for an
+explicit Run action to reapply. An open reference alone does not suppress controls.
 Because the fixed heading is outside the scrolling content, part help forwards
 reading keys from the header into the active page. Content focus keeps native
 scrolling, while buttons and tab navigation retain their activation behavior.
@@ -170,7 +171,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"fe194f53d77f84d1975f3e73f25eea9ae8699850d85b5b206944b744f14befa6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"7e6829f47b15ef2b6e5eb6e56938a1262f3759587461dcd77c6795281b8b927b","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. No canonical decision moved owner: the geometry, catalog, material, gearFacts and meshSpacingRepair rows this table names are byte-identical, and a generated validator is a consumer of the schema rather than the owner of any decision listed here."} -->
+<!-- doc-review {"version":1,"fingerprint":"b65bccc355daff77b55547fb01d7cbea670052311f37fb729d9d809efd3ffc51","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"0a5d76cf67a0817494eb0f94442878e368be8ec5f2247f71ff2f9cad549dde30","disposition":"still accurate","rationale":"The listed canonical owners remain authoritative: connection-graph now admits pivot membership while excluding rope/cord from rigid editing groups, assembly and surfaces own physical admission, and blueprint still exports availablePartName. Coupler funding persistence and more specific errors change no circuit accounting units, lamp load formula, linear-guide force owner or measurement owner stated in this section."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -237,7 +238,7 @@ from completed draw and remaining charge; an unbounded driver cannot report fals
 Ground contact and workshop motion are not Course qualification.
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"34aa0076d9f280349f9ab1e7727c4c8c68a93f8a18c85d03bf437bf8014c2a56","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"0ab1317176081679cc0a354f4da275fa1dae9dafeb9a3642d87d4ac726731dcf","disposition":"still accurate","rationale":"Unchanged prose. The only changed dependency is the regenerated src/model/generated/blueprint-validator.mjs, whose only difference from the previous file is the schema $comment now reading save version 4 instead of 3 inside its embedded literal; patching the old file with that one substitution reproduces the new one byte for byte, so no validator branch, accepted shape or rejection moved. No channel descriptor, sampling path, power funding rule, sensor inspector or measurement overlay changed, and none of them reads that comment, so the measurement ownership and completed-data-only rule this section states are untouched."} -->
+<!-- doc-review {"version":1,"fingerprint":"4203d805bcb08a0aead9214b7af9d158d61226d8459fdac57a9aa64bdca8fa00","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"e9a62746409f6215aef9828680abb71c080ea797200c1f8136be0f8d21de531d","disposition":"updated","rationale":"Clarified the receiver distinction proven by suspension-control tests: no-power/disconnected latches Off; a healthy missing or unavailable reading supplies no new demand while retaining Automatic. Load-cell sampled-force ownership, previous-tick sensor age, camera nonnumeric exposure latch and core-injected controller executors remain the same."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
@@ -271,7 +272,9 @@ initializing before the first completed integration.
 Invalid readings contain no numeric value. Reaction k is sampled and consumed during
 tick k+1. Checkpoints preserve both the world's latest reaction and the previous
 sensor evidence, each with its own completed opened-joint topology. Restore checks
-current and historical topology at their respective ages. Existing receiver faults leave Automatic Off until explicitly rearmed.
+current and historical topology at their respective ages. No-power and disconnected regulator readings leave Automatic Off until explicitly
+rearmed. Healthy missing or unavailable readings keep Automatic selected and supply
+no new demand.
 
 Cameras use the same funded sensor supply path but expose no numeric channels.
 Their [optical profile](../../src/model/camera.mjs#source) and checkpointed exposure

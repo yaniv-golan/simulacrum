@@ -35,7 +35,7 @@ export function createCameraState(nodes) {
           high = (input?.level ?? 0) > 0;
         if (!powered || owner !== r.owner) r.armed = false;
         if (powered && !high) r.armed = true;
-          if (powered && high && r.armed) {
+        if (powered && high && r.armed) {
           r.armed = false;
           if (!r.pending) r.pending = { id: 0, source: 'controller' };
           else deferredBusy.set(r.node, (deferredBusy.get(r.node) ?? 0) + 1);

@@ -96,8 +96,7 @@ export function createVehicleControls({ send, select, container }) {
   function update(next) {
     const oldMode = frame?.metadata.mode;
     frame = next;
-    if (oldMode === 'run' && frame.metadata.mode !== 'run')
-      clear({ retainPressed: true });
+    if (oldMode === 'run' && frame.metadata.mode !== 'run') clear({ retainPressed: true });
     for (const id of duties.keys())
       if (!eligible(id)) {
         duties.delete(id);
